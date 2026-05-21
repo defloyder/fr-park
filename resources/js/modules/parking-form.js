@@ -316,9 +316,8 @@ export function initParkingUi() {
             <div class="spot-card__actions">
                 <button class="favorite-button ${isFavorite ? 'is-favorite' : ''}" type="button" data-action="toggle-favorite" data-spot-id="${spot.id}" aria-label="${isFavorite ? 'Убрать из избранного' : 'Добавить в избранное'}">
                     <span aria-hidden="true">♥</span>
-                    ${isFavorite ? 'В избранном' : 'В избранное'}
                 </button>
-                <button class="ghost-button" type="button" data-action="edit-spot" data-spot-id="${spot.id}">Редактировать</button>
+                <button class="edit-button" type="button" data-action="edit-spot" data-spot-id="${spot.id}">Редактировать</button>
                 <a class="route-button" href="${escapeAttribute(spot.yandex_route_url)}" target="_blank" rel="noopener">Маршрут</a>
             </div>
         `;
