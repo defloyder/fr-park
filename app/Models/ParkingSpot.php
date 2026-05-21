@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Model;
 
 class ParkingSpot extends Model
@@ -34,5 +35,11 @@ class ParkingSpot extends Model
             'is_verified' => 'boolean',
             'photo_urls' => 'array',
         ];
+    }
+
+    public function favoritedBy(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'favorite_parking_spot')
+            ->withTimestamps();
     }
 }

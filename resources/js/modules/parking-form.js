@@ -1,4 +1,14 @@
-import { createParkingSpot, deleteParkingSpot, updateParkingSpot, uploadParkingPhoto } from './parking-api';
+import {
+    createParkingSpot,
+    deleteParkingSpot,
+    fetchAccountSession,
+    fetchFavorites,
+    logoutAccount,
+    submitAuth,
+    toggleFavoriteSpot,
+    updateParkingSpot,
+    uploadParkingPhoto,
+} from './parking-api';
 import { addParkingSpotToMap, clearPendingSelection, focusSpot, focusSpots, replaceParkingSpotsOnMap } from './yandex-map';
 
 const STATUS_LABELS = {
@@ -42,6 +52,10 @@ const state = {
     formPhotos: [],
     lightboxPhotos: [],
     lightboxIndex: 0,
+    user: null,
+    favoriteIds: new Set(),
+    authMode: 'login',
+    selectedSpot: null,
 };
 
 export function initParkingUi() {
@@ -51,6 +65,14 @@ export function initParkingUi() {
     const listItems = document.getElementById('spot-list-items');
     const searchPanel = document.getElementById('search-panel');
     const pickPanel = document.getElementById('pick-panel');
+    const profilePanel = document.getElementById('profile-panel');
+    const profileTitle = document.getElementById('profile-title');
+    const profileUser = document.getElementById('profile-user');
+    const authForm = document.getElementById('auth-form');
+    const authMessage = document.getElementById('auth-message');
+    const authSubmit = document.getElementById('auth-submit');
+    const favoritePanel = document.getElementById('favorite-panel');
+    const favoriteList = document.getElementById('favorite-list');
     const searchInput = document.getElementById('spot-search-input');
     const areaSelect = document.getElementById('spot-area-select');
     const searchResults = document.getElementById('search-results');
@@ -78,6 +100,8 @@ export function initParkingUi() {
             'close-search': closeSearch,
             'open-list': openList,
             'close-list': () => list.classList.add('hidden'),
+            'open-profile': openProfile,
+            'close-profile': closeProfile,
             'open-add': openCreateSheet,
             'close-add': closeSheet,
             'pick-on-map': startPicking,
@@ -93,9 +117,18 @@ export function initParkingUi() {
             'next-photo': () => moveLightbox(1),
             'remove-form-photo': () => removeFormPhoto(Number(event.target.closest('[data-photo-index]')?.dataset.photoIndex)),
             'delete-spot': deleteCurrentSpot,
+            'toggle-favorite': () => toggleFavorite(Number(event.target.closest('[data-spot-id]')?.dataset.spotId)),
+            'logout': logout,
         };
 
         actions[action]?.();
+    });
+
+    document.addEventListener('click', (event) => {
+        const authMode = event.target.closest('[data-auth-mode]')?.dataset.authMode;
+        if (!authMode) return;
+
+        setAuthMode(authMode);
     });
 
     document.addEventListener('keydown', (event) => {
@@ -110,9 +143,12 @@ export function initParkingUi() {
         renderList();
         renderSearchControls();
         renderSearchResults();
+        renderFavoriteList();
         hideStatus();
         if (state.spots.length === 0) showStatus('Пока нет добавленных парковок. Добавьте первую точку на карту.');
     });
+
+    loadAccountSession();
 
     window.addEventListener('parking:error', (event) => {
         fallback?.classList.remove('hidden');
@@ -124,6 +160,7 @@ export function initParkingUi() {
         list.classList.add('hidden');
         searchPanel?.classList.add('hidden');
         sheet.classList.add('hidden');
+        profilePanel?.classList.add('hidden');
         document.body.classList.remove('is-sheet-open');
     });
 
@@ -198,6 +235,7 @@ export function initParkingUi() {
     });
     searchInput?.addEventListener('input', () => renderSearchResults(true));
     areaSelect?.addEventListener('change', () => renderSearchResults(true));
+    authForm?.addEventListener('submit', submitAuthForm);
 
     function getPayload() {
         const payload = Object.fromEntries(new FormData(form).entries());
@@ -240,9 +278,11 @@ export function initParkingUi() {
 
     function renderCard(spot) {
         const photos = getSpotPhotos(spot);
+        state.selectedSpot = spot;
         state.lightboxPhotos = photos;
         const photo = photos.length > 0 ? renderPhotoCarousel(photos) : '<div class="spot-card__photo-placeholder"><span>Фото места</span></div>';
         const status = getAvailabilityStatus(spot);
+        const isFavorite = state.favoriteIds.has(Number(spot.id));
 
         card.innerHTML = `
             <div class="spot-card__photo">${photo}</div>
@@ -274,6 +314,10 @@ export function initParkingUi() {
                 ${renderDetail('Примечания', spot.parking_notes)}
             </div>
             <div class="spot-card__actions">
+                <button class="favorite-button ${isFavorite ? 'is-favorite' : ''}" type="button" data-action="toggle-favorite" data-spot-id="${spot.id}" aria-label="${isFavorite ? 'Убрать из избранного' : 'Добавить в избранное'}">
+                    <span aria-hidden="true">♥</span>
+                    ${isFavorite ? 'В избранном' : 'В избранное'}
+                </button>
                 <button class="ghost-button" type="button" data-action="edit-spot" data-spot-id="${spot.id}">Редактировать</button>
                 <a class="route-button" href="${escapeAttribute(spot.yandex_route_url)}" target="_blank" rel="noopener">Маршрут</a>
             </div>
@@ -312,6 +356,150 @@ export function initParkingUi() {
                 focusSpot(spot);
             });
         });
+    }
+
+    async function loadAccountSession() {
+        try {
+            applyAccountState(await fetchAccountSession());
+        } catch {
+            applyAccountState({ user: null, favorite_ids: [] });
+        }
+    }
+
+    function applyAccountState(data) {
+        state.user = data.user ?? null;
+        state.favoriteIds = new Set((data.favorite_ids ?? []).map(Number));
+        renderProfile();
+        rerenderOpenCard();
+    }
+
+    function renderProfile() {
+        if (!profilePanel) return;
+
+        const isSignedIn = Boolean(state.user);
+        profileTitle.textContent = isSignedIn ? 'Профиль' : 'Вход в профиль';
+        authForm?.classList.toggle('hidden', isSignedIn);
+        favoritePanel?.classList.toggle('hidden', !isSignedIn);
+        profileUser?.classList.toggle('hidden', !isSignedIn);
+
+        if (isSignedIn) {
+            profileUser.innerHTML = `
+                <div class="profile-avatar">${escapeHtml(getInitials(state.user.name))}</div>
+                <div>
+                    <strong>${escapeHtml(state.user.name)}</strong>
+                    <span>${escapeHtml(state.user.email)}</span>
+                </div>
+            `;
+            renderFavoriteList();
+        }
+    }
+
+    function renderFavoriteList() {
+        if (!favoriteList) return;
+
+        const favorites = state.spots.filter((spot) => state.favoriteIds.has(Number(spot.id)));
+        favoriteList.innerHTML = favorites.length > 0 ? favorites.map((spot) => `
+            <button class="favorite-item" type="button" data-spot-id="${spot.id}">
+                <span>
+                    <strong>${escapeHtml(spot.title)}</strong>
+                    <small>${escapeHtml(spot.address || 'Адрес не указан')}</small>
+                </span>
+                <em>${escapeHtml(getAvailabilityLabel(spot))}</em>
+            </button>
+        `).join('') : '<p class="search-empty">Здесь будут сохранённые парковки.</p>';
+
+        favoriteList.querySelectorAll('[data-spot-id]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const spot = state.spots.find((item) => item.id === Number(button.dataset.spotId));
+                if (!spot) return;
+                closeProfile();
+                focusSpot(spot);
+            });
+        });
+    }
+
+    function rerenderOpenCard() {
+        if (card.classList.contains('hidden') || !state.selectedSpot) return;
+
+        const freshSpot = state.spots.find((spot) => spot.id === state.selectedSpot.id) ?? state.selectedSpot;
+        renderCard(freshSpot);
+    }
+
+    function openProfile() {
+        profilePanel?.classList.remove('hidden');
+        list.classList.add('hidden');
+        searchPanel?.classList.add('hidden');
+        sheet.classList.add('hidden');
+        card.classList.add('hidden');
+        document.body.classList.remove('is-sheet-open');
+        renderProfile();
+    }
+
+    function closeProfile() {
+        profilePanel?.classList.add('hidden');
+    }
+
+    function setAuthMode(mode) {
+        state.authMode = mode === 'register' ? 'register' : 'login';
+        authForm?.querySelectorAll('[data-auth-mode]').forEach((button) => {
+            button.classList.toggle('is-active', button.dataset.authMode === state.authMode);
+        });
+        authForm?.querySelector('.auth-name-field')?.classList.toggle('hidden', state.authMode !== 'register');
+        if (authSubmit) authSubmit.textContent = state.authMode === 'register' ? 'Создать аккаунт' : 'Войти';
+        clearAuthMessage();
+    }
+
+    async function submitAuthForm(event) {
+        event.preventDefault();
+        clearAuthMessage();
+
+        const payload = Object.fromEntries(new FormData(authForm).entries());
+        if (state.authMode === 'login') {
+            delete payload.name;
+        }
+
+        authSubmit.disabled = true;
+        authSubmit.textContent = state.authMode === 'register' ? 'Создаю...' : 'Вхожу...';
+
+        try {
+            applyAccountState(await submitAuth(state.authMode, payload));
+            authForm.reset();
+            showToast(state.authMode === 'register' ? 'Аккаунт создан' : 'Вы вошли');
+        } catch (error) {
+            showAuthError(getValidationMessage(error));
+        } finally {
+            authSubmit.disabled = false;
+            setAuthMode(state.authMode);
+        }
+    }
+
+    async function logout() {
+        try {
+            applyAccountState(await logoutAccount());
+            showToast('Вы вышли из профиля');
+        } catch {
+            showToast('Не удалось выйти из профиля.', true);
+        }
+    }
+
+    async function toggleFavorite(id) {
+        if (!id) return;
+
+        if (!state.user) {
+            openProfile();
+            showAuthError('Войдите или зарегистрируйтесь, чтобы сохранять парковки.');
+            return;
+        }
+
+        try {
+            const response = await toggleFavoriteSpot(id);
+            state.favoriteIds = new Set((response.favorite_ids ?? []).map(Number));
+            renderFavoriteList();
+            rerenderOpenCard();
+            showToast(response.is_favorite ? 'Добавлено в избранное' : 'Удалено из избранного');
+        } catch {
+            showToast('Не удалось обновить избранное.', true);
+        }
     }
 
     function renderSearchControls() {
@@ -433,6 +621,7 @@ export function initParkingUi() {
         sheet.classList.remove('hidden');
         list.classList.add('hidden');
         searchPanel?.classList.add('hidden');
+        profilePanel?.classList.add('hidden');
         pickPanel?.classList.add('hidden');
         card.classList.add('hidden');
         document.body.classList.add('is-sheet-open');
@@ -469,6 +658,7 @@ export function initParkingUi() {
     function openList() {
         list.classList.remove('hidden');
         searchPanel?.classList.add('hidden');
+        profilePanel?.classList.add('hidden');
         sheet.classList.add('hidden');
         card.classList.add('hidden');
         document.body.classList.remove('is-sheet-open');
@@ -480,6 +670,7 @@ export function initParkingUi() {
         }
         list.classList.add('hidden');
         searchPanel?.classList.add('hidden');
+        profilePanel?.classList.add('hidden');
         pickPanel?.classList.add('hidden');
         sheet.classList.add('hidden');
         card.classList.add('hidden');
@@ -490,6 +681,7 @@ export function initParkingUi() {
     function openSearch() {
         searchPanel?.classList.remove('hidden');
         list.classList.add('hidden');
+        profilePanel?.classList.add('hidden');
         sheet.classList.add('hidden');
         card.classList.add('hidden');
         document.body.classList.remove('is-sheet-open');
@@ -573,9 +765,13 @@ export function initParkingUi() {
     function upsertSpot(spot) {
         const exists = state.spots.some((item) => item.id === spot.id);
         state.spots = exists ? state.spots.map((item) => (item.id === spot.id ? spot : item)) : [spot, ...state.spots];
+        if (state.selectedSpot?.id === spot.id) {
+            state.selectedSpot = spot;
+        }
         renderList();
         renderSearchControls();
         renderSearchResults();
+        renderFavoriteList();
     }
 
     async function deleteCurrentSpot() {
@@ -592,6 +788,7 @@ export function initParkingUi() {
             renderList();
             renderSearchControls();
             renderSearchResults();
+            renderFavoriteList();
             closeSheet();
             card.classList.add('hidden');
             showStatus('Точка удалена.');
@@ -657,6 +854,20 @@ export function initParkingUi() {
         formMessage.classList.remove('is-error', 'is-success');
     }
 
+    function showAuthError(message) {
+        if (!authMessage) return;
+        authMessage.textContent = message;
+        authMessage.classList.remove('hidden', 'is-success');
+        authMessage.classList.add('is-error');
+    }
+
+    function clearAuthMessage() {
+        if (!authMessage) return;
+        authMessage.textContent = '';
+        authMessage.classList.add('hidden');
+        authMessage.classList.remove('is-error', 'is-success');
+    }
+
     function setSaving(isSaving) {
         const submitButton = form.querySelector('[type="submit"]');
         submitButton.disabled = isSaving;
@@ -676,6 +887,15 @@ function getAvailabilityStatus(spot) {
 
 function getAvailabilityLabel(spot) {
     return spot.availability_label || STATUS_LABELS[getAvailabilityStatus(spot)] || STATUS_LABELS.unverified;
+}
+
+function getInitials(name) {
+    return String(name || 'PF')
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase())
+        .join('') || 'PF';
 }
 
 function getSpotArea(spot) {

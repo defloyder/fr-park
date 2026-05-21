@@ -15,9 +15,14 @@
                 <span class="eyebrow">Free parking map</span>
                 <h1>ParkFree Moscow</h1>
             </div>
-            <button class="icon-button" type="button" data-action="open-search" aria-label="Открыть поиск">
-                <span aria-hidden="true">⌕</span>
-            </button>
+            <div class="top-panel__actions">
+                <button class="icon-button" type="button" data-action="open-search" aria-label="Открыть поиск">
+                    <span aria-hidden="true">⌕</span>
+                </button>
+                <button class="icon-button" type="button" data-action="open-profile" aria-label="Открыть профиль">
+                    <span aria-hidden="true">◐</span>
+                </button>
+            </div>
         </header>
 
         <section id="status-panel" class="status-panel liquid-glass hidden" role="status"></section>
@@ -63,6 +68,51 @@
                 <button class="icon-button" type="button" data-action="close-list" aria-label="Закрыть список">×</button>
             </div>
             <div id="spot-list-items" class="spot-list__items"></div>
+        </section>
+
+        <section id="profile-panel" class="profile-panel liquid-glass hidden" aria-label="Профиль">
+            <div class="panel-header">
+                <div>
+                    <span class="eyebrow">Profile</span>
+                    <h2 id="profile-title">Аккаунт</h2>
+                </div>
+                <button class="icon-button" type="button" data-action="close-profile" aria-label="Закрыть профиль">×</button>
+            </div>
+
+            <div id="profile-user" class="profile-user hidden"></div>
+
+            <form id="auth-form" class="auth-form">
+                <div class="auth-tabs">
+                    <button class="auth-tab is-active" type="button" data-auth-mode="login">Вход</button>
+                    <button class="auth-tab" type="button" data-auth-mode="register">Регистрация</button>
+                </div>
+
+                <label class="auth-name-field hidden">
+                    <span>Имя</span>
+                    <input name="name" type="text" autocomplete="name" maxlength="255" placeholder="Как к вам обращаться">
+                </label>
+
+                <label>
+                    <span>Email</span>
+                    <input name="email" type="email" autocomplete="email" maxlength="255" placeholder="you@example.com" required>
+                </label>
+
+                <label>
+                    <span>Пароль</span>
+                    <input name="password" type="password" autocomplete="current-password" minlength="8" placeholder="Минимум 8 символов" required>
+                </label>
+
+                <p id="auth-message" class="form-message hidden"></p>
+                <button id="auth-submit" class="route-button" type="submit">Войти</button>
+            </form>
+
+            <div id="favorite-panel" class="favorite-panel hidden">
+                <div class="favorite-panel__head">
+                    <span class="eyebrow">Saved spots</span>
+                    <button class="ghost-button" type="button" data-action="logout">Выйти</button>
+                </div>
+                <div id="favorite-list" class="favorite-list"></div>
+            </div>
         </section>
 
         <nav class="floating-nav liquid-glass" aria-label="Основная навигация">
