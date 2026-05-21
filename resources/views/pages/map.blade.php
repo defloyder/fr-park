@@ -17,10 +17,16 @@
             </div>
             <div class="top-panel__actions">
                 <button class="icon-button" type="button" data-action="open-search" aria-label="Открыть поиск">
-                    <span aria-hidden="true">⌕</span>
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="m21 21-4.35-4.35"></path>
+                        <circle cx="11" cy="11" r="6.5"></circle>
+                    </svg>
                 </button>
                 <button class="icon-button" type="button" data-action="open-profile" aria-label="Открыть профиль">
-                    <span aria-hidden="true">◐</span>
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="8" r="4"></circle>
+                        <path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path>
+                    </svg>
                 </button>
             </div>
         </header>
