@@ -832,10 +832,14 @@ h2 {
 
 .photo-dropzone__actions {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     gap: 8px;
     width: 100%;
     margin-top: 8px;
+}
+
+.camera-button {
+    display: none;
 }
 
 .photo-dropzone__actions .ghost-button {
@@ -1427,12 +1431,16 @@ h2 {
         position: sticky;
         top: 0;
         z-index: 6;
-        margin: -2px -2px 0;
-        padding: 2px;
-        background: linear-gradient(180deg, rgba(5, 7, 14, 0.34), rgba(5, 7, 14, 0));
+        margin: -4px -4px 0;
+        padding: 8px;
+        background: linear-gradient(135deg, rgba(8, 10, 18, 0.82), rgba(8, 10, 18, 0.58));
+        border: 1px solid rgba(255, 255, 255, 0.13);
         border-radius: 18px;
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
+        box-shadow:
+            0 12px 30px rgba(0, 0, 0, 0.16),
+            inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(18px) saturate(150%);
+        -webkit-backdrop-filter: blur(18px) saturate(150%);
     }
 
     .map-theme-light .spot-card__header,
@@ -1440,7 +1448,8 @@ h2 {
     .map-theme-light .spot-list .panel-header,
     .map-theme-light .search-panel .panel-header,
     .map-theme-light .profile-panel .panel-header {
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0));
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.90), rgba(255, 255, 255, 0.68));
+        border-color: rgba(16, 23, 34, 0.10);
     }
 
     .spot-card__close,
@@ -1465,6 +1474,19 @@ h2 {
     .photo-dropzone__actions,
     .pick-panel div {
         grid-template-columns: 1fr;
+    }
+
+    .camera-button {
+        display: inline-flex;
+    }
+
+    .photo-dropzone span {
+        font-size: 0;
+    }
+
+    .photo-dropzone span::after {
+        content: "можно несколько файлов или снимок с камеры";
+        font-size: 0.78rem;
     }
 
     .bottom-sheet {

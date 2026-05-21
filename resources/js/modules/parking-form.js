@@ -809,7 +809,7 @@ export function initParkingUi() {
     function resetDropzoneText(message = null) {
         if (!photoDropzone) return;
         photoDropzone.querySelector('strong').textContent = message ?? 'Перетащите фото сюда';
-        photoDropzone.querySelector('span').textContent = 'можно несколько файлов или снимок с камеры';
+        photoDropzone.querySelector('span').textContent = 'можно несколько файлов';
     }
 
     function showStatus(message) {

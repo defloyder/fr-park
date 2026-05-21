@@ -178,10 +178,10 @@
                     <input id="photo-file-input" type="file" accept="image/jpeg,image/png,image/webp,image/*" multiple hidden>
                     <input id="photo-camera-input" type="file" accept="image/*" capture="environment" hidden>
                     <strong>Перетащите фото сюда</strong>
-                    <span>можно несколько файлов или снимок с камеры</span>
+                    <span>можно несколько файлов</span>
                     <div class="photo-dropzone__actions">
                         <button type="button" class="ghost-button" data-action="choose-photo">Выбрать фото</button>
-                        <button type="button" class="ghost-button" data-action="take-photo">Сфотографировать</button>
+                        <button type="button" class="ghost-button camera-button" data-action="take-photo">Сфотографировать</button>
                     </div>
                 </div>
 
