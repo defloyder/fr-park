@@ -1,0 +1,748 @@
+import { createParkingSpot, deleteParkingSpot, updateParkingSpot, uploadParkingPhoto } from './parking-api';
+import { addParkingSpotToMap, clearPendingSelection, focusSpot, focusSpots, replaceParkingSpotsOnMap } from './yandex-map';
+
+const STATUS_LABELS = {
+    verified: 'Проверено',
+    unverified: 'Не проверено',
+    temporary: 'Временная',
+    outdated: 'Неактуально',
+};
+
+const MOSCOW_DISTRICT_ALIASES = {
+    'патриарших прудов': 'Пресненский',
+    'патриаршие пруды': 'Пресненский',
+    'китай-город': 'Тверской',
+    'красные ворота': 'Басманный',
+};
+
+const MOSCOW_DISTRICT_KEYWORDS = [
+    { name: 'Арбат', words: ['арбат', 'старый арбат', 'новый арбат', 'смоленская'] },
+    { name: 'Басманный', words: ['чистые пруды', 'чистопруд', 'красные ворота', 'мясницкая', 'покровка'] },
+    { name: 'Замоскворечье', words: ['рэу', 'серпуховская', 'большая серпуховская', 'павелецкая', 'пятницкая'] },
+    { name: 'Мещанский', words: ['цветной бульвар', 'трубная', 'сухаревская', 'проспект мира'] },
+    { name: 'Пресненский', words: ['патриарш', 'преснен', 'маяковская', 'баррикадная', 'красная пресня'] },
+    { name: 'Тверской', words: ['тверская', 'китай-город', 'пушкинская', 'охотный ряд', 'театр', 'петровка'] },
+    { name: 'Якиманка', words: ['якиманка', 'полянка', 'октябрьская', 'крымский вал'] },
+];
+
+const MOSCOW_DISTRICT_BOUNDS = [
+    { name: 'Замоскворечье', bounds: [55.7200, 55.7485, 37.6100, 37.6550] },
+    { name: 'Якиманка', bounds: [55.7250, 55.7555, 37.5850, 37.6250] },
+    { name: 'Арбат', bounds: [55.7420, 55.7585, 37.5750, 37.6075] },
+    { name: 'Пресненский', bounds: [55.7480, 55.7800, 37.5350, 37.6100] },
+    { name: 'Тверской', bounds: [55.7550, 55.7860, 37.5900, 37.6370] },
+    { name: 'Мещанский', bounds: [55.7650, 55.7950, 37.6050, 37.6500] },
+    { name: 'Басманный', bounds: [55.7500, 55.7830, 37.6250, 37.6920] },
+];
+
+const state = {
+    spots: [],
+    picking: false,
+    editingSpotId: null,
+    formPhotos: [],
+    lightboxPhotos: [],
+    lightboxIndex: 0,
+};
+
+export function initParkingUi() {
+    const card = document.getElementById('selected-spot-card');
+    const sheet = document.getElementById('add-spot-sheet');
+    const list = document.getElementById('spot-list');
+    const listItems = document.getElementById('spot-list-items');
+    const searchPanel = document.getElementById('search-panel');
+    const pickPanel = document.getElementById('pick-panel');
+    const searchInput = document.getElementById('spot-search-input');
+    const areaSelect = document.getElementById('spot-area-select');
+    const searchResults = document.getElementById('search-results');
+    const statusPanel = document.getElementById('status-panel');
+    const fallback = document.getElementById('map-fallback');
+    const form = document.getElementById('add-spot-form');
+    const formMessage = document.getElementById('form-message');
+    const formTitle = document.getElementById('spot-form-title');
+    const formEyebrow = document.getElementById('spot-form-eyebrow');
+    const photoDropzone = document.getElementById('photo-dropzone');
+    const photoFileInput = document.getElementById('photo-file-input');
+    const photoCameraInput = document.getElementById('photo-camera-input');
+    const photoPreviewList = document.getElementById('photo-preview-list');
+    const deleteButton = document.getElementById('delete-spot-button');
+
+    if (!card || !sheet || !form) return;
+
+    document.addEventListener('click', (event) => {
+        const action = event.target.closest('[data-action]')?.dataset.action;
+        if (!action) return;
+
+        const actions = {
+            'show-map': closePanels,
+            'open-search': openSearch,
+            'close-search': closeSearch,
+            'open-list': openList,
+            'close-list': () => list.classList.add('hidden'),
+            'open-add': openCreateSheet,
+            'close-add': closeSheet,
+            'pick-on-map': startPicking,
+            'cancel-picking': cancelPicking,
+            'return-to-form': returnToForm,
+            'choose-photo': () => photoFileInput.click(),
+            'take-photo': () => photoCameraInput.click(),
+            'copy-address': () => copyAddress(event.target.closest('[data-address]')),
+            'edit-spot': () => openEditSheet(Number(event.target.closest('[data-spot-id]')?.dataset.spotId)),
+            'open-photo': () => openLightbox(Number(event.target.closest('[data-photo-index]')?.dataset.photoIndex)),
+            'close-lightbox': closeLightbox,
+            'prev-photo': () => moveLightbox(-1),
+            'next-photo': () => moveLightbox(1),
+            'remove-form-photo': () => removeFormPhoto(Number(event.target.closest('[data-photo-index]')?.dataset.photoIndex)),
+            'delete-spot': deleteCurrentSpot,
+        };
+
+        actions[action]?.();
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (!document.body.classList.contains('is-lightbox-open')) return;
+        if (event.key === 'Escape') closeLightbox();
+        if (event.key === 'ArrowLeft') moveLightbox(-1);
+        if (event.key === 'ArrowRight') moveLightbox(1);
+    });
+
+    window.addEventListener('parking:loaded', (event) => {
+        state.spots = event.detail ?? [];
+        renderList();
+        renderSearchControls();
+        renderSearchResults();
+        hideStatus();
+        if (state.spots.length === 0) showStatus('Пока нет добавленных парковок. Добавьте первую точку на карту.');
+    });
+
+    window.addEventListener('parking:error', (event) => {
+        fallback?.classList.remove('hidden');
+        showStatus(event.detail);
+    });
+
+    window.addEventListener('parking:selected', (event) => {
+        renderCard(event.detail);
+        list.classList.add('hidden');
+        searchPanel?.classList.add('hidden');
+        sheet.classList.add('hidden');
+        document.body.classList.remove('is-sheet-open');
+    });
+
+    window.addEventListener('map:coords-selected', (event) => {
+        const { latitude, longitude } = event.detail;
+        form.elements.latitude.value = Number(latitude).toFixed(7);
+        form.elements.longitude.value = Number(longitude).toFixed(7);
+
+        if (state.picking) {
+            showFormSuccess('Координаты выбраны на карте.');
+            hidePickPanel();
+            openSheet();
+            state.picking = false;
+        }
+    });
+
+    window.addEventListener('map:address-loading', () => {
+        if (!form.elements.address.value) form.elements.address.placeholder = 'Определяю адрес...';
+    });
+
+    window.addEventListener('map:address-resolved', (event) => {
+        const address = event.detail?.address;
+        if (address) form.elements.address.value = address;
+        form.elements.address.placeholder = address ? 'Адрес определён по карте' : 'Адрес не найден, можно ввести вручную';
+    });
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        clearFormMessage();
+        const payload = getPayload();
+
+        if (!payload.title || Number.isNaN(payload.latitude) || Number.isNaN(payload.longitude)) {
+            showFormError('Укажите название и координаты точки.');
+            return;
+        }
+
+        setSaving(true);
+        try {
+            const response = state.editingSpotId
+                ? await updateParkingSpot(state.editingSpotId, payload)
+                : await createParkingSpot(payload);
+            const spot = response.data;
+            upsertSpot(spot);
+            addParkingSpotToMap(spot);
+            form.reset();
+            closeSheet();
+            renderCard(spot);
+        } catch (error) {
+            showFormError(getValidationMessage(error));
+        } finally {
+            setSaving(false);
+        }
+    });
+
+    photoDropzone?.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        photoDropzone.classList.add('is-dragover');
+    });
+    photoDropzone?.addEventListener('dragleave', () => photoDropzone.classList.remove('is-dragover'));
+    photoDropzone?.addEventListener('drop', async (event) => {
+        event.preventDefault();
+        photoDropzone.classList.remove('is-dragover');
+        await uploadPhotoFiles([...event.dataTransfer.files]);
+    });
+    photoFileInput?.addEventListener('change', async () => {
+        await uploadPhotoFiles([...photoFileInput.files]);
+        photoFileInput.value = '';
+    });
+    photoCameraInput?.addEventListener('change', async () => {
+        await uploadPhotoFiles([...photoCameraInput.files]);
+        photoCameraInput.value = '';
+    });
+    searchInput?.addEventListener('input', () => renderSearchResults(true));
+    areaSelect?.addEventListener('change', () => renderSearchResults(true));
+
+    function getPayload() {
+        const payload = Object.fromEntries(new FormData(form).entries());
+        ['title', 'address', 'description', 'photo_url', 'access_instructions', 'landmarks', 'parking_notes'].forEach((field) => {
+            payload[field] = payload[field]?.trim() ?? '';
+        });
+
+        payload.availability_status = payload.availability_status || 'unverified';
+        payload.photo_urls = getFormPhotos();
+        payload.photo_url = payload.photo_urls[0] ?? payload.photo_url;
+        payload.latitude = Number(payload.latitude);
+        payload.longitude = Number(payload.longitude);
+        return payload;
+    }
+
+    async function uploadPhotoFiles(files) {
+        const images = files.filter((file) => file?.type.startsWith('image/'));
+        if (files.length > 0 && images.length === 0) return showFormError('Можно загрузить только изображения.');
+        if (getFormPhotos().length + images.length > 12) return showFormError('Можно добавить до 12 фото на одну точку.');
+
+        photoDropzone.classList.add('is-uploading');
+        try {
+            for (const [index, file] of images.entries()) {
+                photoDropzone.querySelector('strong').textContent = images.length > 1
+                    ? `Загружаю фото: ${index + 1}/${images.length}`
+                    : 'Загружаю фото...';
+                const response = await uploadParkingPhoto(file);
+                state.formPhotos.push(response.url);
+            }
+            form.elements.photo_url.value = state.formPhotos[0] ?? '';
+            renderPhotoPreviews();
+            showFormSuccess(images.length > 1 ? 'Фотографии добавлены к точке.' : 'Фото добавлено к точке.');
+        } catch (error) {
+            showFormError(getValidationMessage(error));
+        } finally {
+            photoDropzone.classList.remove('is-uploading');
+            resetDropzoneText();
+        }
+    }
+
+    function renderCard(spot) {
+        const photos = getSpotPhotos(spot);
+        state.lightboxPhotos = photos;
+        const photo = photos.length > 0 ? renderPhotoCarousel(photos) : '<div class="spot-card__photo-placeholder"><span>Фото места</span></div>';
+        const status = getAvailabilityStatus(spot);
+
+        card.innerHTML = `
+            <div class="spot-card__photo">${photo}</div>
+            <div class="spot-card__header">
+                <div>
+                    <span class="spot-card__label">Бесплатная парковка</span>
+                    <h2>${escapeHtml(spot.title)}</h2>
+                </div>
+                <button class="spot-card__close" type="button" aria-label="Закрыть карточку">×</button>
+            </div>
+            <div class="spot-card__address-row">
+                <p class="spot-card__address">${escapeHtml(spot.address || 'Адрес не указан')}</p>
+                <button class="copy-address-button" type="button" data-action="copy-address" data-address="${escapeAttribute(spot.address || '')}" aria-label="Скопировать адрес">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M8 7.5A2.5 2.5 0 0 1 10.5 5H17a2.5 2.5 0 0 1 2.5 2.5V14A2.5 2.5 0 0 1 17 16.5h-6.5A2.5 2.5 0 0 1 8 14V7.5Z"></path>
+                        <path d="M5 10v6.5A2.5 2.5 0 0 0 7.5 19H14"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="spot-card__meta">
+                <span>${Number(spot.latitude).toFixed(4)}</span>
+                <span>${Number(spot.longitude).toFixed(4)}</span>
+                <span class="spot-status spot-status--${status}">${escapeHtml(getAvailabilityLabel(spot))}</span>
+            </div>
+            <p class="spot-card__description">${escapeHtml(spot.description || 'Описание пока не добавлено.')}</p>
+            <div class="spot-card__details">
+                ${renderDetail('Как заехать', spot.access_instructions)}
+                ${renderDetail('Ориентиры', spot.landmarks)}
+                ${renderDetail('Примечания', spot.parking_notes)}
+            </div>
+            <div class="spot-card__actions">
+                <button class="ghost-button" type="button" data-action="edit-spot" data-spot-id="${spot.id}">Редактировать</button>
+                <a class="route-button" href="${escapeAttribute(spot.yandex_route_url)}" target="_blank" rel="noopener">Маршрут</a>
+            </div>
+        `;
+        card.querySelector('.spot-card__close').addEventListener('click', () => card.classList.add('hidden'));
+        card.classList.remove('hidden');
+    }
+
+    function renderPhotoCarousel(photos) {
+        return `
+            <div class="photo-carousel">
+                ${photos.map((photo, index) => `
+                    <button class="photo-slide" type="button" data-action="open-photo" data-photo-index="${index}">
+                        <img src="${escapeAttribute(photo)}" alt="${escapeAttribute(`Фото парковки ${index + 1}`)}" loading="lazy">
+                    </button>
+                `).join('')}
+            </div>
+            ${photos.length > 1 ? `<div class="photo-counter">1 / ${photos.length}</div>` : ''}
+        `;
+    }
+
+    function renderList() {
+        listItems.innerHTML = state.spots.map((spot) => `
+            <button class="spot-list__item" type="button" data-spot-id="${spot.id}">
+                <span>
+                    <strong>${escapeHtml(spot.title)}</strong>
+                    <small>${escapeHtml(spot.address || 'Адрес не указан')}</small>
+                </span>
+                <em class="spot-list__status spot-list__status--${getAvailabilityStatus(spot)}">${escapeHtml(getAvailabilityLabel(spot))}</em>
+            </button>
+        `).join('');
+
+        listItems.querySelectorAll('[data-spot-id]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const spot = state.spots.find((item) => item.id === Number(button.dataset.spotId));
+                focusSpot(spot);
+            });
+        });
+    }
+
+    function renderSearchControls() {
+        if (!areaSelect) return;
+
+        const currentValue = areaSelect.value;
+        const areas = [...new Set(state.spots.map(getSpotArea).filter(Boolean))]
+            .sort((first, second) => first.localeCompare(second, 'ru'));
+
+        areaSelect.innerHTML = `
+            <option value="">Все районы</option>
+            ${areas.map((area) => `<option value="${escapeAttribute(area)}">${escapeHtml(area)}</option>`).join('')}
+        `;
+
+        if (areas.includes(currentValue)) {
+            areaSelect.value = currentValue;
+        }
+    }
+
+    function renderSearchResults(shouldFocus = false) {
+        if (!searchResults) return;
+
+        const spots = getFilteredSearchSpots();
+        searchResults.innerHTML = spots.length > 0 ? spots.map((spot) => `
+            <button class="search-result" type="button" data-spot-id="${spot.id}">
+                <span>
+                    <strong>${escapeHtml(spot.title)}</strong>
+                    <small>${escapeHtml(spot.address || 'Адрес не указан')}</small>
+                </span>
+                <em class="spot-list__status spot-list__status--${getAvailabilityStatus(spot)}">${escapeHtml(getAvailabilityLabel(spot))}</em>
+            </button>
+        `).join('') : '<p class="search-empty">В этой зоне пока нет подходящих точек.</p>';
+
+        searchResults.querySelectorAll('[data-spot-id]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const spot = state.spots.find((item) => item.id === Number(button.dataset.spotId));
+                if (!spot) return;
+                focusSpot(spot);
+            });
+        });
+
+        if (shouldFocus && spots.length > 0) {
+            focusSpots(spots);
+        }
+    }
+
+    function getFilteredSearchSpots() {
+        const query = searchInput?.value.trim().toLowerCase() ?? '';
+        const area = areaSelect?.value ?? '';
+
+        return state.spots.filter((spot) => {
+            const matchesArea = !area || getSpotArea(spot) === area;
+            const searchableText = [
+                spot.title,
+                spot.address,
+                spot.description,
+                spot.access_instructions,
+                spot.landmarks,
+                spot.parking_notes,
+            ].filter(Boolean).join(' ').toLowerCase();
+
+            return matchesArea && (!query || searchableText.includes(query));
+        });
+    }
+
+    function renderPhotoPreviews() {
+        photoPreviewList.innerHTML = getFormPhotos().map((photo, index) => `
+            <div class="photo-preview">
+                <img src="${escapeAttribute(photo)}" alt="${escapeAttribute(`Фото ${index + 1}`)}">
+                <button type="button" data-action="remove-form-photo" data-photo-index="${index}" aria-label="Удалить фото">×</button>
+            </div>
+        `).join('');
+    }
+
+    function removeFormPhoto(index) {
+        state.formPhotos = getFormPhotos().filter((_, photoIndex) => photoIndex !== index);
+        form.elements.photo_url.value = state.formPhotos[0] ?? '';
+        renderPhotoPreviews();
+    }
+
+    function openCreateSheet() {
+        state.editingSpotId = null;
+        state.formPhotos = [];
+        form.reset();
+        form.elements.availability_status.value = 'unverified';
+        formEyebrow.textContent = 'New free spot';
+        formTitle.textContent = 'Добавить парковку';
+        form.querySelector('[type="submit"]').textContent = 'Сохранить';
+        deleteButton?.classList.add('hidden');
+        resetDropzoneText();
+        renderPhotoPreviews();
+        openSheet();
+    }
+
+    function openEditSheet(id) {
+        const spot = state.spots.find((item) => item.id === id);
+        if (!spot) return;
+
+        state.editingSpotId = id;
+        state.formPhotos = getSpotPhotos(spot);
+        formEyebrow.textContent = 'Edit free spot';
+        formTitle.textContent = 'Редактировать парковку';
+        form.querySelector('[type="submit"]').textContent = 'Обновить';
+        deleteButton?.classList.remove('hidden');
+
+        ['title', 'address', 'description', 'photo_url', 'access_instructions', 'landmarks', 'parking_notes'].forEach((field) => {
+            form.elements[field].value = spot[field] ?? '';
+        });
+        form.elements.availability_status.value = getAvailabilityStatus(spot);
+        form.elements.photo_url.value = state.formPhotos[0] ?? '';
+        form.elements.latitude.value = Number(spot.latitude).toFixed(7);
+        form.elements.longitude.value = Number(spot.longitude).toFixed(7);
+        resetDropzoneText(state.formPhotos.length ? `${state.formPhotos.length} фото прикреплено` : null);
+        renderPhotoPreviews();
+        openSheet();
+    }
+
+    function openSheet() {
+        sheet.classList.remove('hidden');
+        list.classList.add('hidden');
+        searchPanel?.classList.add('hidden');
+        pickPanel?.classList.add('hidden');
+        card.classList.add('hidden');
+        document.body.classList.add('is-sheet-open');
+    }
+
+    async function copyAddress(button) {
+        const address = button?.dataset.address;
+        if (!address) return;
+
+        try {
+            await navigator.clipboard.writeText(address);
+            button.classList.add('is-copied');
+            button.setAttribute('aria-label', 'Адрес скопирован');
+            showToast('Адрес скопирован');
+            setTimeout(() => {
+                button.classList.remove('is-copied');
+                button.setAttribute('aria-label', 'Скопировать адрес');
+            }, 1400);
+        } catch {
+            showToast('Не удалось скопировать адрес.', true);
+        }
+    }
+
+    function closeSheet() {
+        sheet.classList.add('hidden');
+        clearFormMessage();
+        state.picking = false;
+        hidePickPanel();
+        state.editingSpotId = null;
+        deleteButton?.classList.add('hidden');
+        document.body.classList.remove('is-sheet-open');
+    }
+
+    function openList() {
+        list.classList.remove('hidden');
+        searchPanel?.classList.add('hidden');
+        sheet.classList.add('hidden');
+        card.classList.add('hidden');
+        document.body.classList.remove('is-sheet-open');
+    }
+
+    function closePanels() {
+        if (state.picking) {
+            clearPendingSelection();
+        }
+        list.classList.add('hidden');
+        searchPanel?.classList.add('hidden');
+        pickPanel?.classList.add('hidden');
+        sheet.classList.add('hidden');
+        card.classList.add('hidden');
+        state.picking = false;
+        document.body.classList.remove('is-sheet-open');
+    }
+
+    function openSearch() {
+        searchPanel?.classList.remove('hidden');
+        list.classList.add('hidden');
+        sheet.classList.add('hidden');
+        card.classList.add('hidden');
+        document.body.classList.remove('is-sheet-open');
+        renderSearchControls();
+        renderSearchResults();
+        window.setTimeout(() => searchInput?.focus(), 80);
+    }
+
+    function closeSearch() {
+        searchPanel?.classList.add('hidden');
+    }
+
+    function startPicking() {
+        state.picking = true;
+        sheet.classList.add('hidden');
+        card.classList.add('hidden');
+        list.classList.add('hidden');
+        searchPanel?.classList.add('hidden');
+        document.body.classList.remove('is-sheet-open');
+        showStatus('Коснитесь карты в месте парковки.');
+        showPickPanel();
+    }
+
+    function cancelPicking() {
+        state.picking = false;
+        clearPendingSelection();
+        hidePickPanel();
+        hideStatus();
+        openSheet();
+    }
+
+    function returnToForm() {
+        state.picking = false;
+        hidePickPanel();
+        hideStatus();
+        openSheet();
+    }
+
+    function showPickPanel() {
+        pickPanel?.classList.remove('hidden');
+    }
+
+    function hidePickPanel() {
+        pickPanel?.classList.add('hidden');
+    }
+
+    function openLightbox(index) {
+        if (!state.lightboxPhotos[index]) return;
+        state.lightboxIndex = index;
+        renderLightbox();
+        document.body.classList.add('is-lightbox-open');
+    }
+
+    function closeLightbox() {
+        document.getElementById('photo-lightbox')?.remove();
+        document.body.classList.remove('is-lightbox-open');
+    }
+
+    function moveLightbox(direction) {
+        const total = state.lightboxPhotos.length;
+        if (total === 0) return;
+        state.lightboxIndex = (state.lightboxIndex + direction + total) % total;
+        renderLightbox();
+    }
+
+    function renderLightbox() {
+        document.getElementById('photo-lightbox')?.remove();
+        const lightbox = document.createElement('section');
+        lightbox.id = 'photo-lightbox';
+        lightbox.className = 'photo-lightbox';
+        lightbox.innerHTML = `
+            <button class="photo-lightbox__close" type="button" data-action="close-lightbox" aria-label="Закрыть">×</button>
+            <button class="photo-lightbox__nav photo-lightbox__nav--prev" type="button" data-action="prev-photo" aria-label="Предыдущее фото">‹</button>
+            <img src="${escapeAttribute(state.lightboxPhotos[state.lightboxIndex])}" alt="${escapeAttribute(`Фото ${state.lightboxIndex + 1}`)}">
+            <button class="photo-lightbox__nav photo-lightbox__nav--next" type="button" data-action="next-photo" aria-label="Следующее фото">›</button>
+            <div class="photo-lightbox__counter">${state.lightboxIndex + 1} / ${state.lightboxPhotos.length}</div>
+        `;
+        document.body.append(lightbox);
+    }
+
+    function upsertSpot(spot) {
+        const exists = state.spots.some((item) => item.id === spot.id);
+        state.spots = exists ? state.spots.map((item) => (item.id === spot.id ? spot : item)) : [spot, ...state.spots];
+        renderList();
+        renderSearchControls();
+        renderSearchResults();
+    }
+
+    async function deleteCurrentSpot() {
+        if (!state.editingSpotId || !deleteButton) return;
+        if (!window.confirm('Удалить эту точку с карты?')) return;
+
+        clearFormMessage();
+        deleteButton.disabled = true;
+
+        try {
+            await deleteParkingSpot(state.editingSpotId);
+            state.spots = state.spots.filter((spot) => spot.id !== state.editingSpotId);
+            replaceParkingSpotsOnMap(state.spots);
+            renderList();
+            renderSearchControls();
+            renderSearchResults();
+            closeSheet();
+            card.classList.add('hidden');
+            showStatus('Точка удалена.');
+        } catch {
+            showFormError('Не удалось удалить точку. Попробуйте ещё раз.');
+        } finally {
+            deleteButton.disabled = false;
+        }
+    }
+
+    function getFormPhotos() {
+        const manualPhoto = form.elements.photo_url.value.trim();
+        const photos = [...state.formPhotos];
+        if (manualPhoto && !photos.includes(manualPhoto)) photos.unshift(manualPhoto);
+        return [...new Set(photos)].filter(Boolean);
+    }
+
+    function resetDropzoneText(message = null) {
+        if (!photoDropzone) return;
+        photoDropzone.querySelector('strong').textContent = message ?? 'Перетащите фото сюда';
+        photoDropzone.querySelector('span').textContent = 'можно несколько файлов или снимок с камеры';
+    }
+
+    function showStatus(message) {
+        statusPanel.textContent = message;
+        statusPanel.classList.remove('hidden');
+    }
+
+    function hideStatus() {
+        statusPanel.classList.add('hidden');
+    }
+
+    function showToast(message, isError = false) {
+        document.querySelector('.app-toast')?.remove();
+
+        const toast = document.createElement('div');
+        toast.className = `app-toast${isError ? ' is-error' : ''}`;
+        toast.textContent = message;
+        document.body.append(toast);
+
+        window.setTimeout(() => toast.classList.add('is-visible'), 20);
+        window.setTimeout(() => {
+            toast.classList.remove('is-visible');
+            window.setTimeout(() => toast.remove(), 240);
+        }, 1800);
+    }
+
+    function showFormSuccess(message) {
+        formMessage.textContent = message;
+        formMessage.classList.remove('hidden', 'is-error');
+        formMessage.classList.add('is-success');
+    }
+
+    function showFormError(message) {
+        formMessage.textContent = message;
+        formMessage.classList.remove('hidden', 'is-success');
+        formMessage.classList.add('is-error');
+    }
+
+    function clearFormMessage() {
+        formMessage.textContent = '';
+        formMessage.classList.add('hidden');
+        formMessage.classList.remove('is-error', 'is-success');
+    }
+
+    function setSaving(isSaving) {
+        const submitButton = form.querySelector('[type="submit"]');
+        submitButton.disabled = isSaving;
+        submitButton.textContent = isSaving ? 'Сохраняю...' : (state.editingSpotId ? 'Обновить' : 'Сохранить');
+    }
+}
+
+function getSpotPhotos(spot) {
+    const photos = Array.isArray(spot.photo_urls) ? spot.photo_urls : [];
+    return photos.length > 0 ? photos.filter(Boolean) : (spot.photo_url ? [spot.photo_url] : []);
+}
+
+function getAvailabilityStatus(spot) {
+    if (spot.availability_status) return spot.availability_status;
+    return spot.is_verified ? 'verified' : 'unverified';
+}
+
+function getAvailabilityLabel(spot) {
+    return spot.availability_label || STATUS_LABELS[getAvailabilityStatus(spot)] || STATUS_LABELS.unverified;
+}
+
+function getSpotArea(spot) {
+    const text = [
+        spot.title,
+        spot.address,
+        spot.description,
+        spot.access_instructions,
+        spot.landmarks,
+    ].filter(Boolean).join(' ').toLowerCase();
+
+    const districtByAddress = getDistrictFromAddress(text);
+    if (districtByAddress) return districtByAddress;
+
+    const keywordDistrict = MOSCOW_DISTRICT_KEYWORDS.find(({ words }) => (
+        words.some((word) => text.includes(word))
+    ));
+    if (keywordDistrict) return keywordDistrict.name;
+
+    const latitude = Number(spot.latitude);
+    const longitude = Number(spot.longitude);
+    const boundsDistrict = MOSCOW_DISTRICT_BOUNDS.find(({ bounds }) => (
+        latitude >= bounds[0] && latitude <= bounds[1] && longitude >= bounds[2] && longitude <= bounds[3]
+    ));
+
+    return boundsDistrict?.name || 'Район не определён';
+}
+
+function getDistrictFromAddress(text) {
+    const district = text.match(/район\s+([^,]+)/i)?.[1]?.trim();
+    if (!district) return null;
+
+    const normalizedDistrict = district
+        .replace(/^площад[ьи]\s+/i, '')
+        .replace(/^улиц[аы]\s+/i, '')
+        .trim();
+
+    const alias = MOSCOW_DISTRICT_ALIASES[normalizedDistrict.toLowerCase()];
+
+    return alias || capitalizeDistrict(normalizedDistrict);
+}
+
+function capitalizeDistrict(value) {
+    return value
+        .split(/\s+/)
+        .map((part) => part ? `${part[0].toUpperCase()}${part.slice(1)}` : part)
+        .join(' ');
+}
+
+function renderDetail(title, value) {
+    if (!value) return '';
+    return `<article class="spot-detail"><span>${escapeHtml(title)}</span><p>${escapeHtml(value)}</p></article>`;
+}
+
+function getValidationMessage(error) {
+    return Object.values(error.errors ?? {})[0]?.[0] ?? 'Не удалось сохранить точку. Проверьте данные и попробуйте снова.';
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+}
+
+function escapeAttribute(value) {
+    return escapeHtml(value).replaceAll('`', '&#096;');
+}
