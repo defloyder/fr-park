@@ -4,6 +4,7 @@ let map = null;
 let clusterer = null;
 let spotsCache = [];
 let pendingPlacemark = null;
+let addressRequestId = 0;
 
 const MOSCOW_CENTER = [55.7558, 37.6173];
 const MAP_TYPE_STORAGE_KEY = 'parkfree:map-type';
@@ -167,25 +168,79 @@ async function resolveAddress(coords) {
         return;
     }
 
+    const requestId = ++addressRequestId;
     window.dispatchEvent(new CustomEvent('map:address-loading'));
 
     try {
-        const result = await window.ymaps.geocode(coords, { results: 1 });
-        const firstGeoObject = result.geoObjects.get(0);
-        const address = firstGeoObject?.getAddressLine();
+        const address = await geocodeAddress(coords);
+
+        if (requestId !== addressRequestId) {
+            return;
+        }
 
         window.dispatchEvent(new CustomEvent('map:address-resolved', {
             detail: {
                 address: address || '',
+                latitude: coords[0],
+                longitude: coords[1],
             },
         }));
     } catch {
+        if (requestId !== addressRequestId) {
+            return;
+        }
+
         window.dispatchEvent(new CustomEvent('map:address-resolved', {
             detail: {
                 address: '',
+                latitude: coords[0],
+                longitude: coords[1],
             },
         }));
     }
+}
+
+async function geocodeAddress(coords) {
+    const attempts = [
+        { kind: 'house', results: 5 },
+        { kind: 'street', results: 5 },
+        { results: 7 },
+    ];
+
+    for (const options of attempts) {
+        const result = await window.ymaps.geocode(coords, {
+            ...options,
+            boundedBy: map?.getBounds?.(),
+            strictBounds: false,
+        });
+        const address = getBestAddressFromGeocode(result);
+
+        if (address) {
+            return address;
+        }
+    }
+
+    return '';
+}
+
+function getBestAddressFromGeocode(result) {
+    const geoObjects = result.geoObjects;
+
+    for (let index = 0; index < geoObjects.getLength(); index += 1) {
+        const geoObject = geoObjects.get(index);
+        const address = [
+            geoObject?.getAddressLine?.(),
+            geoObject?.properties?.get?.('metaDataProperty.GeocoderMetaData.text'),
+            geoObject?.properties?.get?.('description'),
+            geoObject?.properties?.get?.('name'),
+        ].find((value) => typeof value === 'string' && value.trim().length > 0);
+
+        if (address) {
+            return address.trim();
+        }
+    }
+
+    return '';
 }
 
 function renderParkingSpots(spots) {

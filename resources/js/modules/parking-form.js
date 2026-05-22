@@ -178,12 +178,16 @@ export function initParkingUi() {
     });
 
     window.addEventListener('map:address-loading', () => {
-        if (!form.elements.address.value) form.elements.address.placeholder = 'Определяю адрес...';
+        if (!form.elements.address.value) {
+            form.elements.address.placeholder = 'Определяю адрес...';
+        }
     });
 
     window.addEventListener('map:address-resolved', (event) => {
         const address = event.detail?.address;
-        if (address) form.elements.address.value = address;
+        if (address) {
+            form.elements.address.value = address;
+        }
         form.elements.address.placeholder = address ? 'Адрес определён по карте' : 'Адрес не найден, можно ввести вручную';
     });
 
