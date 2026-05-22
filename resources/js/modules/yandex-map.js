@@ -328,7 +328,13 @@ function renderParkingSpots(spots) {
     clusterer.removeAll();
 
     const markerLayout = window.ymaps.templateLayoutFactory.createClass(
-        '<div class="map-marker $[properties.markerClass]" title="$[properties.hintContent]"><span></span></div>',
+        `<div class="map-marker $[properties.markerClass]" title="$[properties.hintContent]">
+            <svg viewBox="0 0 100 120" aria-hidden="true">
+                <path class="map-marker__pin" d="M50 114C50 114 15 70 15 42C15 21.5655 30.67 6 50 6C69.33 6 85 21.5655 85 42C85 70 50 114 50 114Z"></path>
+                <circle class="map-marker__core" cx="50" cy="42" r="27"></circle>
+                <text x="50" y="56" text-anchor="middle">P</text>
+            </svg>
+        </div>`,
     );
 
     const placemarks = spots.map((spot) => {
@@ -342,10 +348,10 @@ function renderParkingSpots(spots) {
                 iconLayout: markerLayout,
                 iconShape: {
                     type: 'Circle',
-                    coordinates: [0, 0],
-                    radius: 15,
+                    coordinates: [20, 24],
+                    radius: 20,
                 },
-                iconOffset: [-15, -15],
+                iconOffset: [-20, -48],
                 openEmptyBalloon: false,
             },
         );
@@ -378,7 +384,13 @@ function setPendingCoords(coords) {
     }
 
     const pendingLayout = window.ymaps.templateLayoutFactory.createClass(
-        '<div class="map-marker map-marker--new" title="Новая точка"><span></span></div>',
+        `<div class="map-marker map-marker--new" title="Новая точка">
+            <svg viewBox="0 0 100 120" aria-hidden="true">
+                <path class="map-marker__pin" d="M50 114C50 114 15 70 15 42C15 21.5655 30.67 6 50 6C69.33 6 85 21.5655 85 42C85 70 50 114 50 114Z"></path>
+                <circle class="map-marker__core" cx="50" cy="42" r="27"></circle>
+                <text x="50" y="56" text-anchor="middle">P</text>
+            </svg>
+        </div>`,
     );
 
     pendingPlacemark = new window.ymaps.Placemark(
@@ -388,10 +400,10 @@ function setPendingCoords(coords) {
             iconLayout: pendingLayout,
             iconShape: {
                 type: 'Circle',
-                coordinates: [0, 0],
-                radius: 15,
+                coordinates: [20, 24],
+                radius: 20,
             },
-            iconOffset: [-15, -15],
+            iconOffset: [-20, -48],
         },
     );
 

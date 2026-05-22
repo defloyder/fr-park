@@ -85,6 +85,8 @@ export function initParkingUi() {
     const form = document.getElementById('add-spot-form');
     const importForm = document.getElementById('import-spots-form');
     const importMessage = document.getElementById('import-message');
+    const importPanel = document.getElementById('import-panel');
+    const exportToolbar = document.getElementById('export-toolbar');
     const formMessage = document.getElementById('form-message');
     const formTitle = document.getElementById('spot-form-title');
     const formEyebrow = document.getElementById('spot-form-eyebrow');
@@ -123,10 +125,10 @@ export function initParkingUi() {
             'next-photo': () => moveLightbox(1),
             'remove-form-photo': () => removeFormPhoto(Number(event.target.closest('[data-photo-index]')?.dataset.photoIndex)),
             'delete-spot': deleteCurrentSpot,
-            'toggle-export-spot': () => toggleExportSpot(Number(event.target.closest('[data-spot-id]')?.dataset.spotId)),
-            'export-all': exportAllSpots,
-            'export-selected': exportSelectedSpots,
-            'clear-export-selection': clearExportSelection,
+            'toggle-export-spot': () => isAdmin() && toggleExportSpot(Number(event.target.closest('[data-spot-id]')?.dataset.spotId)),
+            'export-all': () => isAdmin() && exportAllSpots(),
+            'export-selected': () => isAdmin() && exportSelectedSpots(),
+            'clear-export-selection': () => isAdmin() && clearExportSelection(),
             'toggle-favorite': () => toggleFavorite(Number(event.target.closest('[data-spot-id]')?.dataset.spotId)),
             'logout': logout,
         };
@@ -355,11 +357,12 @@ export function initParkingUi() {
     }
 
     function renderList() {
+        const canExport = isAdmin();
         listItems.innerHTML = state.spots.map((spot) => `
             <article class="spot-list__item">
-                <button class="export-check ${state.exportSelectedIds.has(Number(spot.id)) ? 'is-checked' : ''}" type="button" data-action="toggle-export-spot" data-spot-id="${spot.id}" aria-label="Выбрать для экспорта">
+                ${canExport ? `<button class="export-check ${state.exportSelectedIds.has(Number(spot.id)) ? 'is-checked' : ''}" type="button" data-action="toggle-export-spot" data-spot-id="${spot.id}" aria-label="Выбрать для экспорта">
                     <span aria-hidden="true"></span>
-                </button>
+                </button>` : ''}
                 <button class="spot-list__content" type="button" data-spot-id="${spot.id}">
                     <span>
                         <strong>${escapeHtml(spot.title)}</strong>
@@ -391,8 +394,26 @@ export function initParkingUi() {
     function applyAccountState(data) {
         state.user = data.user ?? null;
         state.favoriteIds = new Set((data.favorite_ids ?? []).map(Number));
+        updateAdminControls();
+        renderList();
         renderProfile();
         rerenderOpenCard();
+    }
+
+    function isAdmin() {
+        return Boolean(state.user?.is_admin);
+    }
+
+    function updateAdminControls() {
+        const canManage = isAdmin();
+
+        importPanel?.classList.toggle('hidden', !canManage);
+        exportToolbar?.classList.toggle('hidden', !canManage);
+        exportSelectionCount?.classList.toggle('hidden', !canManage);
+
+        if (!canManage) {
+            state.exportSelectedIds.clear();
+        }
     }
 
     function renderProfile() {
@@ -854,6 +875,11 @@ export function initParkingUi() {
     async function submitImportForm(event) {
         event.preventDefault();
         clearImportMessage();
+
+        if (!isAdmin()) {
+            showImportError('Импорт доступен только администратору.');
+            return;
+        }
 
         const submitButton = importForm.querySelector('[type="submit"]');
         const file = importForm.elements.json_file?.files?.[0] ?? null;

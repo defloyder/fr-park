@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\ParkingSpot;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -64,6 +65,9 @@ class ParkingSpotApiTest extends TestCase
 
     public function test_it_imports_python_like_json_parking_spots(): void
     {
+        config(['parkfree.admin_email' => 'admin@example.com']);
+        $admin = User::factory()->create(['email' => 'admin@example.com']);
+
         $payload = <<<'JSON'
 [
   {
@@ -81,19 +85,30 @@ class ParkingSpotApiTest extends TestCase
 ]
 JSON;
 
-        $this->postJson('/api/parking-spots/import', [
+        $this->actingAs($admin)->postJson('/api/parking-spots/import', [
             'json_text' => $payload,
         ])
             ->assertOk()
             ->assertJsonPath('created_count', 1)
             ->assertJsonPath('data.0.title', 'Москва, Ленинский проспект, 20к1')
             ->assertJsonPath('data.0.source', 'imported')
-            ->assertJsonPath('data.0.photo_urls.0', '/storage/photos/5a23b169-fd16-44cd-a764-81338388b3c9.jpg');
+            ->assertJsonPath('data.0.photo_urls.0', url('/storage/photos/5a23b169-fd16-44cd-a764-81338388b3c9.jpg'));
 
         $this->assertDatabaseHas('parking_spots', [
             'title' => 'Москва, Ленинский проспект, 20к1',
             'source' => 'imported',
             'status' => 'active',
         ]);
+    }
+
+    public function test_import_requires_admin_user(): void
+    {
+        config(['parkfree.admin_email' => 'admin@example.com']);
+        $user = User::factory()->create(['email' => 'user@example.com']);
+
+        $this->actingAs($user)->postJson('/api/parking-spots/import', [
+            'json_text' => '[]',
+        ])
+            ->assertForbidden();
     }
 }

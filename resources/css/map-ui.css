@@ -128,78 +128,78 @@ textarea {
 .map-cluster {
     position: relative;
     display: grid;
-    width: 30px;
-    height: 30px;
+    width: 40px;
+    height: 48px;
     place-items: center;
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
     cursor: pointer;
 }
 
 .map-marker {
-    background: rgba(255, 255, 255, 0.82);
-    border: 3px solid #74f4ae;
-    box-shadow:
-        0 8px 18px rgba(3, 4, 10, 0.24),
-        0 0 0 4px rgba(116, 244, 174, 0.18);
+    --marker-a: #7cffb2;
+    --marker-b: #00b8a9;
+    filter:
+        drop-shadow(0 10px 12px rgba(0, 8, 20, 0.34))
+        drop-shadow(0 0 10px rgba(124, 255, 178, 0.26));
 }
 
-.map-marker span {
-    display: block;
-    width: 9px;
-    height: 9px;
-    background: #74f4ae;
-    border-radius: 50%;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
+.map-marker svg {
+    width: 40px;
+    height: 48px;
+    overflow: visible;
+}
+
+.map-marker__pin {
+    fill: var(--marker-a);
+}
+
+.map-marker__core {
+    fill: rgba(8, 17, 31, 0.28);
+}
+
+.map-marker text {
+    fill: #08111f;
+    font-family: Inter, system-ui, sans-serif;
+    font-size: 42px;
+    font-weight: 900;
+    line-height: 1;
 }
 
 .map-marker--pending,
 .map-marker--unverified {
-    border-color: #ffd979;
-    box-shadow:
-        0 8px 18px rgba(3, 4, 10, 0.24),
-        0 0 0 4px rgba(255, 217, 121, 0.18);
-}
-
-.map-marker--pending span,
-.map-marker--unverified span {
-    background: #ffd979;
+    --marker-a: #ffd979;
+    --marker-b: #f59e0b;
+    filter:
+        drop-shadow(0 10px 12px rgba(0, 8, 20, 0.34))
+        drop-shadow(0 0 10px rgba(255, 217, 121, 0.28));
 }
 
 .map-marker--temporary {
-    border-color: #b996ff;
-    box-shadow:
-        0 8px 18px rgba(3, 4, 10, 0.24),
-        0 0 0 4px rgba(185, 150, 255, 0.20);
-}
-
-.map-marker--temporary span {
-    background: #b996ff;
+    --marker-a: #b996ff;
+    --marker-b: #8b5cf6;
+    filter:
+        drop-shadow(0 10px 12px rgba(0, 8, 20, 0.34))
+        drop-shadow(0 0 10px rgba(185, 150, 255, 0.30));
 }
 
 .map-marker--outdated {
-    border-color: #ff6d82;
-    box-shadow:
-        0 8px 18px rgba(3, 4, 10, 0.24),
-        0 0 0 4px rgba(255, 109, 130, 0.20);
-}
-
-.map-marker--outdated span {
-    background: #ff6d82;
+    --marker-a: #ff6d82;
+    --marker-b: #dc2626;
+    filter:
+        drop-shadow(0 10px 12px rgba(0, 8, 20, 0.34))
+        drop-shadow(0 0 10px rgba(255, 109, 130, 0.30));
 }
 
 .map-marker--new {
-    border-color: #8deeff;
-    box-shadow:
-        0 8px 18px rgba(3, 4, 10, 0.24),
-        0 0 0 4px rgba(141, 238, 255, 0.18);
-}
-
-.map-marker--new span {
-    background: #8deeff;
+    --marker-a: #8deeff;
+    --marker-b: #00e5ff;
+    filter:
+        drop-shadow(0 10px 12px rgba(0, 8, 20, 0.34))
+        drop-shadow(0 0 10px rgba(141, 238, 255, 0.30));
 }
 
 .map-cluster {
+    width: 30px;
+    height: 30px;
     color: #061018;
     font-size: 0.82rem;
     font-weight: 800;

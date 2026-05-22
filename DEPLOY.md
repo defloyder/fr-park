@@ -96,6 +96,7 @@ nano .env.production
 APP_KEY=base64:...
 DB_PASSWORD=strong_random_password
 YANDEX_MAPS_API_KEY=your_real_yandex_key
+PARKFREE_ADMIN_EMAIL=your_admin_email@example.com
 ```
 
 ## 5. Первый запуск

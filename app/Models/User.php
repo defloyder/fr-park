@@ -43,4 +43,13 @@ class User extends Authenticatable
         return $this->belongsToMany(ParkingSpot::class, 'favorite_parking_spot')
             ->withTimestamps();
     }
+
+    public function isAdmin(): bool
+    {
+        $adminEmail = config('parkfree.admin_email');
+
+        return is_string($adminEmail)
+            && $adminEmail !== ''
+            && mb_strtolower($this->email) === mb_strtolower($adminEmail);
+    }
 }

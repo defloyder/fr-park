@@ -73,12 +73,12 @@
                 </div>
                 <button class="icon-button" type="button" data-action="close-list" aria-label="Закрыть список">×</button>
             </div>
-            <div class="export-toolbar">
+            <div id="export-toolbar" class="export-toolbar hidden">
                 <button class="ghost-button" type="button" data-action="export-all">Экспорт всех</button>
                 <button class="ghost-button" type="button" data-action="export-selected">Экспорт выбранных</button>
                 <button class="ghost-button" type="button" data-action="clear-export-selection">Сброс</button>
             </div>
-            <p id="export-selection-count" class="export-selection-count">Выбрано: 0</p>
+            <p id="export-selection-count" class="export-selection-count hidden">Выбрано: 0</p>
             <div id="spot-list-items" class="spot-list__items"></div>
         </section>
 
@@ -227,7 +227,7 @@
                 <button id="delete-spot-button" class="danger-button hidden" type="button" data-action="delete-spot">Удалить точку</button>
             </form>
 
-            <details class="import-panel">
+            <details id="import-panel" class="import-panel hidden">
                 <summary>Массовый импорт JSON</summary>
                 <form id="import-spots-form" class="import-form">
                     <label>

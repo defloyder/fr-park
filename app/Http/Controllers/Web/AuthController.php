@@ -20,6 +20,7 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'is_admin' => $user->isAdmin(),
             ] : null,
             'favorite_ids' => $user
                 ? $user->favoriteParkingSpots()->pluck('parking_spots.id')->values()
@@ -72,6 +73,7 @@ class AuthController extends Controller
         return response()->json([
             'user' => null,
             'favorite_ids' => [],
+            'is_admin' => false,
             'csrf_token' => csrf_token(),
         ]);
     }

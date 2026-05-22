@@ -24,8 +24,8 @@ class ParkingSpotResource extends JsonResource
             'latitude' => (float) $this->latitude,
             'longitude' => (float) $this->longitude,
             'description' => $this->description,
-            'photo_url' => $this->photo_url,
-            'photo_urls' => $photos->all(),
+            'photo_url' => $this->normalizePhotoUrl($this->photo_url),
+            'photo_urls' => $photos->map(fn (string $photo) => $this->normalizePhotoUrl($photo))->filter()->values()->all(),
             'access_instructions' => $this->access_instructions,
             'landmarks' => $this->landmarks,
             'parking_notes' => $this->parking_notes,
@@ -47,5 +47,18 @@ class ParkingSpotResource extends JsonResource
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
+    }
+
+    private function normalizePhotoUrl(?string $photo): ?string
+    {
+        if (! $photo) {
+            return null;
+        }
+
+        if (str_starts_with($photo, 'http://') || str_starts_with($photo, 'https://')) {
+            return $photo;
+        }
+
+        return url($photo);
     }
 }

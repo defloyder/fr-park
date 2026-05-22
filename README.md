@@ -80,9 +80,11 @@ php artisan key:generate
 
 ```env
 YANDEX_MAPS_API_KEY=your_key_here
+PARKFREE_ADMIN_EMAIL=admin@example.com
 ```
 
 Без ключа приложение откроется, но интерактивная карта не загрузится.
+`PARKFREE_ADMIN_EMAIL` включает админ-доступ для аккаунта с этим email: импорт и экспорт точек доступны только ему.
 
 ## База данных
 
@@ -277,6 +279,7 @@ APP_URL=http://127.0.0.1:8000
 
 DB_CONNECTION=sqlite
 YANDEX_MAPS_API_KEY=your_key_here
+PARKFREE_ADMIN_EMAIL=admin@example.com
 ```
 
 Не коммитьте `.env`: он уже добавлен в `.gitignore`.

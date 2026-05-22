@@ -77,7 +77,7 @@ class ParkingSpotController extends Controller
         $path = $validated['photo']->store('parking-spots', 'public');
 
         return response()->json([
-            'url' => '/storage/'.$path,
+            'url' => url('/storage/'.$path),
         ]);
     }
 
@@ -292,9 +292,9 @@ class ParkingSpotController extends Controller
             'lat' => (float) $spot->latitude,
             'lng' => (float) $spot->longitude,
             'description' => $spot->description,
-            'photo_url' => $spot->photo_url,
-            'photo_urls' => $photos->all(),
-            'photos' => $photos->all(),
+            'photo_url' => $this->normalizePhotoUrl($spot->photo_url),
+            'photo_urls' => $photos->map(fn (string $photo) => $this->normalizePhotoUrl($photo))->filter()->values()->all(),
+            'photos' => $photos->map(fn (string $photo) => $this->normalizePhotoUrl($photo))->filter()->values()->all(),
             'access_instructions' => $spot->access_instructions,
             'landmarks' => $spot->landmarks,
             'parking_notes' => $spot->parking_notes,
@@ -305,5 +305,18 @@ class ParkingSpotController extends Controller
             'created_at' => $spot->created_at?->toISOString(),
             'updated_at' => $spot->updated_at?->toISOString(),
         ];
+    }
+
+    private function normalizePhotoUrl(?string $photo): ?string
+    {
+        if (! $photo) {
+            return null;
+        }
+
+        if (Str::startsWith($photo, ['http://', 'https://'])) {
+            return $photo;
+        }
+
+        return url($photo);
     }
 }
