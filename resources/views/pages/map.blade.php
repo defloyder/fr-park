@@ -1,6 +1,6 @@
-<x-layouts.app title="ParkFree Moscow">
-    <div class="bg-calligraphy bg-calligraphy-left">ParkFree</div>
-    <div class="bg-calligraphy bg-calligraphy-right">Moscow</div>
+<x-layouts.app title="Auralith Maps">
+    <div class="bg-calligraphy bg-calligraphy-left">Auralith</div>
+    <div class="bg-calligraphy bg-calligraphy-right">Maps</div>
 
     <main class="map-screen" data-yandex-api-ready="{{ config('services.yandex_maps.key') ? 'true' : 'false' }}">
         <div id="yandex-map" class="map-canvas" aria-label="Карта бесплатных парковок Москвы"></div>
@@ -12,8 +12,8 @@
 
         <header class="top-panel liquid-glass">
             <div>
-                <span class="eyebrow">Free parking map</span>
-                <h1>ParkFree Moscow</h1>
+                <span class="eyebrow">Карта бесплатных парковок</span>
+                <h1>Auralith Maps</h1>
             </div>
             <div class="top-panel__actions">
                 <button class="icon-button" type="button" data-action="open-search" aria-label="Открыть поиск">
@@ -136,7 +136,7 @@
         <section id="add-spot-sheet" class="bottom-sheet liquid-glass hidden" aria-label="Добавить точку парковки">
             <div class="panel-header">
                 <div>
-                    <span id="spot-form-eyebrow" class="eyebrow">New free spot</span>
+                    <span id="spot-form-eyebrow" class="eyebrow">New parking point</span>
                     <h2 id="spot-form-title">Добавить парковку</h2>
                 </div>
                 <button class="icon-button" type="button" data-action="close-add" aria-label="Закрыть форму">×</button>

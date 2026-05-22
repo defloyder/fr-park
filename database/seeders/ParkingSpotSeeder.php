@@ -101,7 +101,7 @@ class ParkingSpotSeeder extends Seeder
                 ['title' => $spot['title']],
                 [
                     ...$spot,
-                    'description' => 'Демонстрационная точка ParkFree Moscow с примером подробного описания места, заезда и ориентиров.',
+                    'description' => 'Демонстрационная точка Auralith Maps с примером подробного описания места, заезда и ориентиров.',
                     'status' => 'active',
                     'source' => 'manual',
                 ]

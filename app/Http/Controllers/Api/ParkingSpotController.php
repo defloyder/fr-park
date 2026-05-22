@@ -102,12 +102,12 @@ class ParkingSpotController extends Controller
         return response()
             ->json([
                 'exported_at' => now()->toISOString(),
-                'app' => 'ParkFree Moscow',
+                'app' => 'Auralith Maps',
                 'version' => 1,
                 'count' => $spots->count(),
                 'data' => $spots->map(fn (ParkingSpot $spot) => $this->formatSpotForExport($spot))->values(),
             ], 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)
-            ->header('Content-Disposition', 'attachment; filename="parkfree-spots-'.now()->format('Y-m-d-H-i-s').'.json"');
+            ->header('Content-Disposition', 'attachment; filename="auralith-maps-spots-'.now()->format('Y-m-d-H-i-s').'.json"');
     }
 
     public function import(Request $request): JsonResponse

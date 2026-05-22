@@ -118,7 +118,7 @@ export function initParkingUi() {
             'choose-photo': () => photoFileInput.click(),
             'take-photo': () => photoCameraInput.click(),
             'copy-address': () => copyAddress(event.target.closest('[data-address]')),
-            'edit-spot': () => openEditSheet(Number(event.target.closest('[data-spot-id]')?.dataset.spotId)),
+            'edit-spot': () => isAdmin() && openEditSheet(Number(event.target.closest('[data-spot-id]')?.dataset.spotId)),
             'open-photo': () => openLightbox(Number(event.target.closest('[data-photo-index]')?.dataset.photoIndex)),
             'close-lightbox': closeLightbox,
             'prev-photo': () => moveLightbox(-1),
@@ -301,12 +301,15 @@ export function initParkingUi() {
         const photo = photos.length > 0 ? renderPhotoCarousel(photos) : '<div class="spot-card__photo-placeholder"><span>Фото места</span></div>';
         const status = getAvailabilityStatus(spot);
         const isFavorite = state.favoriteIds.has(Number(spot.id));
+        const editButton = isAdmin()
+            ? `<button class="edit-button" type="button" data-action="edit-spot" data-spot-id="${spot.id}">Редактировать</button>`
+            : '';
 
         card.innerHTML = `
             <div class="spot-card__photo">${photo}</div>
             <div class="spot-card__header">
                 <div>
-                    <span class="spot-card__label">Бесплатная парковка</span>
+                    <span class="spot-card__label">Auralith Maps</span>
                     <h2>${escapeHtml(spot.title)}</h2>
                 </div>
                 <button class="spot-card__close" type="button" aria-label="Закрыть карточку">×</button>
@@ -335,7 +338,7 @@ export function initParkingUi() {
                 <button class="favorite-button ${isFavorite ? 'is-favorite' : ''}" type="button" data-action="toggle-favorite" data-spot-id="${spot.id}" aria-label="${isFavorite ? 'Убрать из избранного' : 'Добавить в избранное'}">
                     <span aria-hidden="true">♥</span>
                 </button>
-                <button class="edit-button" type="button" data-action="edit-spot" data-spot-id="${spot.id}">Редактировать</button>
+                ${editButton}
                 <a class="route-button" href="${escapeAttribute(spot.yandex_route_url)}" target="_blank" rel="noopener">Маршрут</a>
             </div>
         `;
@@ -624,11 +627,17 @@ export function initParkingUi() {
     }
 
     function openCreateSheet() {
+        if (!state.user) {
+            openProfile();
+            showAuthError('Войдите или зарегистрируйтесь, чтобы добавить парковку.');
+            return;
+        }
+
         state.editingSpotId = null;
         state.formPhotos = [];
         form.reset();
         form.elements.availability_status.value = 'unverified';
-        formEyebrow.textContent = 'New free spot';
+        formEyebrow.textContent = 'New parking point';
         formTitle.textContent = 'Добавить парковку';
         form.querySelector('[type="submit"]').textContent = 'Сохранить';
         deleteButton?.classList.add('hidden');
@@ -638,12 +647,17 @@ export function initParkingUi() {
     }
 
     function openEditSheet(id) {
+        if (!isAdmin()) {
+            showToast('Редактирование доступно только администратору.', true);
+            return;
+        }
+
         const spot = state.spots.find((item) => item.id === id);
         if (!spot) return;
 
         state.editingSpotId = id;
         state.formPhotos = getSpotPhotos(spot);
-        formEyebrow.textContent = 'Edit free spot';
+        formEyebrow.textContent = 'Edit parking point';
         formTitle.textContent = 'Редактировать парковку';
         form.querySelector('[type="submit"]').textContent = 'Обновить';
         deleteButton?.classList.remove('hidden');

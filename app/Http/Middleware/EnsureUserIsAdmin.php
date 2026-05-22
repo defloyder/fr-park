@@ -11,6 +11,10 @@ class EnsureUserIsAdmin
     public function handle(Request $request, Closure $next): Response
     {
         if (! $request->user()?->isAdmin()) {
+            if (! $request->expectsJson()) {
+                return redirect('/')->with('admin_error', 'Войдите под администратором.');
+            }
+
             return response()->json([
                 'message' => 'Доступ только для администратора.',
             ], $request->user() ? 403 : 401);

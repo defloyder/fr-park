@@ -46,7 +46,7 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        $adminEmail = config('parkfree.admin_email');
+        $adminEmail = config('auralith.admin_email');
 
         return is_string($adminEmail)
             && $adminEmail !== ''

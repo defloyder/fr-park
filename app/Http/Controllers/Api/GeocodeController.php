@@ -85,7 +85,7 @@ class GeocodeController extends Controller
             $response = Http::timeout(8)
                 ->withoutVerifying()
                 ->withHeaders([
-                    'User-Agent' => 'ParkFreeMoscow/1.0 (local development)',
+                    'User-Agent' => 'AuralithMaps/1.0 (local development)',
                 ])
                 ->get('https://nominatim.openstreetmap.org/reverse', [
                     'format' => 'jsonv2',

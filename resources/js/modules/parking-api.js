@@ -1,5 +1,6 @@
 export async function fetchParkingSpots() {
     const response = await fetch('/api/parking-spots', {
+        credentials: 'same-origin',
         headers: {
             Accept: 'application/json',
         },
@@ -15,6 +16,7 @@ export async function fetchParkingSpots() {
 export async function createParkingSpot(payload) {
     const response = await fetch('/api/parking-spots', {
         method: 'POST',
+        credentials: 'same-origin',
         headers: {
             'Content-Type': 'application/json',
             Accept: 'application/json',
@@ -39,6 +41,7 @@ export async function createParkingSpot(payload) {
 export async function updateParkingSpot(id, payload) {
     const response = await fetch(`/api/parking-spots/${id}`, {
         method: 'PATCH',
+        credentials: 'same-origin',
         headers: {
             'Content-Type': 'application/json',
             Accept: 'application/json',
@@ -66,6 +69,7 @@ export async function uploadParkingPhoto(file) {
 
     const response = await fetch('/api/parking-spots/photo', {
         method: 'POST',
+        credentials: 'same-origin',
         headers: {
             Accept: 'application/json',
             'X-CSRF-TOKEN': document
@@ -99,6 +103,7 @@ export async function importParkingSpots({ file = null, text = '' }) {
 
     const response = await fetch('/api/parking-spots/import', {
         method: 'POST',
+        credentials: 'same-origin',
         headers: {
             Accept: 'application/json',
             'X-CSRF-TOKEN': document
@@ -134,6 +139,7 @@ export function getParkingSpotsExportUrl(ids = []) {
 export async function deleteParkingSpot(id) {
     const response = await fetch(`/api/parking-spots/${id}`, {
         method: 'DELETE',
+        credentials: 'same-origin',
         headers: {
             Accept: 'application/json',
             'X-CSRF-TOKEN': document
@@ -153,6 +159,7 @@ export async function reverseGeocode(latitude, longitude) {
         longitude,
     });
     const response = await fetch(`/api/geocode/reverse?${query.toString()}`, {
+        credentials: 'same-origin',
         headers: {
             Accept: 'application/json',
         },
@@ -167,6 +174,7 @@ export async function reverseGeocode(latitude, longitude) {
 
 export async function fetchAccountSession() {
     const response = await fetch('/account/session', {
+        credentials: 'same-origin',
         headers: {
             Accept: 'application/json',
         },
@@ -182,6 +190,7 @@ export async function fetchAccountSession() {
 export async function submitAuth(mode, payload) {
     const response = await fetch(`/account/${mode}`, {
         method: 'POST',
+        credentials: 'same-origin',
         headers: {
             'Content-Type': 'application/json',
             Accept: 'application/json',
@@ -206,6 +215,7 @@ export async function submitAuth(mode, payload) {
 export async function logoutAccount() {
     const response = await fetch('/account/logout', {
         method: 'POST',
+        credentials: 'same-origin',
         headers: {
             Accept: 'application/json',
             'X-CSRF-TOKEN': document
@@ -223,6 +233,7 @@ export async function logoutAccount() {
 
 export async function fetchFavorites() {
     const response = await fetch('/account/favorites', {
+        credentials: 'same-origin',
         headers: {
             Accept: 'application/json',
         },
@@ -238,6 +249,7 @@ export async function fetchFavorites() {
 export async function toggleFavoriteSpot(id) {
     const response = await fetch(`/account/favorites/${id}/toggle`, {
         method: 'POST',
+        credentials: 'same-origin',
         headers: {
             Accept: 'application/json',
             'X-CSRF-TOKEN': document

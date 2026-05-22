@@ -1,6 +1,6 @@
 # Production Deploy
 
-Инструкция для выката ParkFree Moscow на VPS `fr-map.ru` через Docker Compose. Docker-образ приложения использует PHP 8.4.
+Инструкция для выката Auralith Maps на VPS `fr-map.ru` через Docker Compose. Docker-образ приложения использует PHP 8.4.
 
 ## 0. Безопасность
 
@@ -96,7 +96,7 @@ nano .env.production
 APP_KEY=base64:...
 DB_PASSWORD=strong_random_password
 YANDEX_MAPS_API_KEY=your_real_yandex_key
-PARKFREE_ADMIN_EMAIL=your_admin_email@example.com
+AURALITH_ADMIN_EMAIL=your_admin_email@example.com
 ```
 
 ## 5. Первый запуск

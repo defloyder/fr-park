@@ -44,7 +44,9 @@ class ParkingSpotApiTest extends TestCase
 
     public function test_it_creates_pending_user_parking_spot(): void
     {
-        $this->postJson('/api/parking-spots', [
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->postJson('/api/parking-spots', [
             'title' => 'Новая парковка',
             'address' => 'Москва, тестовый адрес',
             'latitude' => 55.7600000,
@@ -63,9 +65,19 @@ class ParkingSpotApiTest extends TestCase
         ]);
     }
 
+    public function test_guest_cannot_create_parking_spot(): void
+    {
+        $this->postJson('/api/parking-spots', [
+            'title' => 'Гостевая парковка',
+            'latitude' => 55.7600000,
+            'longitude' => 37.6200000,
+        ])
+            ->assertUnauthorized();
+    }
+
     public function test_it_imports_python_like_json_parking_spots(): void
     {
-        config(['parkfree.admin_email' => 'admin@example.com']);
+        config(['auralith.admin_email' => 'admin@example.com']);
         $admin = User::factory()->create(['email' => 'admin@example.com']);
 
         $payload = <<<'JSON'
@@ -103,7 +115,7 @@ JSON;
 
     public function test_import_requires_admin_user(): void
     {
-        config(['parkfree.admin_email' => 'admin@example.com']);
+        config(['auralith.admin_email' => 'admin@example.com']);
         $user = User::factory()->create(['email' => 'user@example.com']);
 
         $this->actingAs($user)->postJson('/api/parking-spots/import', [

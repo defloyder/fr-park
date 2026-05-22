@@ -8,7 +8,7 @@ let addressRequestId = 0;
 let isPickingMode = false;
 
 const MOSCOW_CENTER = [55.7558, 37.6173];
-const MAP_TYPE_STORAGE_KEY = 'parkfree:map-type';
+const MAP_TYPE_STORAGE_KEY = 'auralith:map-type';
 const DEFAULT_MAP_TYPE = 'yandex#map';
 const LIGHT_UI_MAP_TYPES = ['yandex#satellite', 'yandex#hybrid'];
 
@@ -44,6 +44,7 @@ export async function initYandexMap() {
         }, {
             suppressMapOpenBlock: true,
             yandexMapDisablePoiInteractivity: true,
+            viewportMargin: 64,
         });
 
         map.behaviors.enable(['drag', 'scrollZoom', 'multiTouch']);
@@ -59,8 +60,9 @@ export async function initYandexMap() {
             clusterDisableClickZoom: false,
             clusterHideIconOnBalloonOpen: false,
             geoObjectHideIconOnBalloonOpen: false,
-            gridSize: 80,
-            maxZoom: 15,
+            gridSize: isMobile ? 128 : 112,
+            maxZoom: isMobile ? 16 : 15,
+            minClusterSize: 3,
             clusterIconLayout: window.ymaps.templateLayoutFactory.createClass(
                 '<div class="map-cluster">$[properties.geoObjects.length]</div>',
             ),
@@ -73,6 +75,7 @@ export async function initYandexMap() {
 
         map.geoObjects.add(clusterer);
         bindMapEvents();
+        bindPerformanceMode();
 
         try {
             const response = await fetchParkingSpots();
@@ -84,6 +87,21 @@ export async function initYandexMap() {
             }));
         }
     });
+}
+
+function bindPerformanceMode() {
+    let timer = null;
+    const start = () => {
+        document.body.classList.add('is-map-interacting');
+        window.clearTimeout(timer);
+    };
+    const stop = () => {
+        window.clearTimeout(timer);
+        timer = window.setTimeout(() => document.body.classList.remove('is-map-interacting'), 180);
+    };
+
+    map.events.add(['actionbegin', 'boundschange'], start);
+    map.events.add(['actionend', 'click'], stop);
 }
 
 function waitForYmaps(timeout = 10000) {
