@@ -119,6 +119,18 @@ export async function importParkingSpots({ file = null, text = '' }) {
     return data;
 }
 
+export function getParkingSpotsExportUrl(ids = []) {
+    const query = new URLSearchParams();
+
+    if (ids.length > 0) {
+        query.set('ids', ids.join(','));
+    }
+
+    const suffix = query.toString();
+
+    return `/api/parking-spots/export${suffix ? `?${suffix}` : ''}`;
+}
+
 export async function deleteParkingSpot(id) {
     const response = await fetch(`/api/parking-spots/${id}`, {
         method: 'DELETE',

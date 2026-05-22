@@ -73,6 +73,12 @@
                 </div>
                 <button class="icon-button" type="button" data-action="close-list" aria-label="Закрыть список">×</button>
             </div>
+            <div class="export-toolbar">
+                <button class="ghost-button" type="button" data-action="export-all">Экспорт всех</button>
+                <button class="ghost-button" type="button" data-action="export-selected">Экспорт выбранных</button>
+                <button class="ghost-button" type="button" data-action="clear-export-selection">Сброс</button>
+            </div>
+            <p id="export-selection-count" class="export-selection-count">Выбрано: 0</p>
             <div id="spot-list-items" class="spot-list__items"></div>
         </section>
 

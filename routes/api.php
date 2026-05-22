@@ -13,5 +13,8 @@ Route::post('parking-spots/photo', [ParkingSpotController::class, 'uploadPhoto']
 Route::post('parking-spots/import', [ParkingSpotController::class, 'import'])
     ->name('parking-spots.import');
 
+Route::get('parking-spots/export', [ParkingSpotController::class, 'export'])
+    ->name('parking-spots.export');
+
 Route::apiResource('parking-spots', ParkingSpotController::class)
     ->parameters(['parking-spots' => 'parkingSpot']);

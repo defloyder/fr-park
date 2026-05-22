@@ -81,6 +81,35 @@ class ParkingSpotController extends Controller
         ]);
     }
 
+    public function export(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $ids = collect(explode(',', $validated['ids'] ?? ''))
+            ->map(fn ($id) => (int) trim($id))
+            ->filter()
+            ->unique()
+            ->values();
+
+        $spots = ParkingSpot::query()
+            ->whereIn('status', ['active', 'pending'])
+            ->when($ids->isNotEmpty(), fn ($query) => $query->whereIn('id', $ids))
+            ->orderBy('id')
+            ->get();
+
+        return response()
+            ->json([
+                'exported_at' => now()->toISOString(),
+                'app' => 'ParkFree Moscow',
+                'version' => 1,
+                'count' => $spots->count(),
+                'data' => $spots->map(fn (ParkingSpot $spot) => $this->formatSpotForExport($spot))->values(),
+            ], 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)
+            ->header('Content-Disposition', 'attachment; filename="parkfree-spots-'.now()->format('Y-m-d-H-i-s').'.json"');
+    }
+
     public function import(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -122,6 +151,9 @@ class ParkingSpotController extends Controller
                 'photo_url' => ['nullable', 'string', 'max:1000'],
                 'photo_urls' => ['nullable', 'array', 'max:12'],
                 'photo_urls.*' => ['string', 'max:1000'],
+                'access_instructions' => ['nullable', 'string', 'max:2000'],
+                'landmarks' => ['nullable', 'string', 'max:2000'],
+                'parking_notes' => ['nullable', 'string', 'max:2000'],
             ]);
 
             if ($validator->fails()) {
@@ -150,10 +182,10 @@ class ParkingSpotController extends Controller
 
             $created->push(ParkingSpot::create([
                 ...$data,
-                'status' => 'active',
+                'status' => $payload['status'] ?? 'active',
                 'source' => 'imported',
-                'availability_status' => 'unverified',
-                'is_verified' => false,
+                'availability_status' => $payload['availability_status'] ?? 'unverified',
+                'is_verified' => ($payload['availability_status'] ?? null) === 'verified',
             ]));
         }
 
@@ -218,6 +250,13 @@ class ParkingSpotController extends Controller
             'description' => trim((string) ($item['description'] ?? '')),
             'photo_url' => $photos[0] ?? null,
             'photo_urls' => $photos,
+            'access_instructions' => trim((string) ($item['access_instructions'] ?? '')),
+            'landmarks' => trim((string) ($item['landmarks'] ?? '')),
+            'parking_notes' => trim((string) ($item['parking_notes'] ?? '')),
+            'status' => in_array(($item['status'] ?? null), ['active', 'pending'], true) ? $item['status'] : 'active',
+            'availability_status' => in_array(($item['availability_status'] ?? null), ['verified', 'unverified', 'temporary', 'outdated'], true)
+                ? $item['availability_status']
+                : 'unverified',
         ];
     }
 
@@ -230,5 +269,41 @@ class ParkingSpotController extends Controller
         }
 
         return '/storage/'.ltrim($photo, '/');
+    }
+
+    private function formatSpotForExport(ParkingSpot $spot): array
+    {
+        $photos = collect($spot->photo_urls ?? [])
+            ->filter()
+            ->values();
+
+        if ($photos->isEmpty() && $spot->photo_url) {
+            $photos = collect([$spot->photo_url]);
+        }
+
+        return [
+            'id' => $spot->id,
+            'title' => $spot->title,
+            'name' => $spot->title,
+            'address' => $spot->address,
+            'address_text' => $spot->address,
+            'latitude' => (float) $spot->latitude,
+            'longitude' => (float) $spot->longitude,
+            'lat' => (float) $spot->latitude,
+            'lng' => (float) $spot->longitude,
+            'description' => $spot->description,
+            'photo_url' => $spot->photo_url,
+            'photo_urls' => $photos->all(),
+            'photos' => $photos->all(),
+            'access_instructions' => $spot->access_instructions,
+            'landmarks' => $spot->landmarks,
+            'parking_notes' => $spot->parking_notes,
+            'status' => $spot->status,
+            'source' => $spot->source,
+            'is_verified' => (bool) $spot->is_verified,
+            'availability_status' => $spot->availability_status,
+            'created_at' => $spot->created_at?->toISOString(),
+            'updated_at' => $spot->updated_at?->toISOString(),
+        ];
     }
 }

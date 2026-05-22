@@ -1415,40 +1415,99 @@ h2 {
     display: flex;
     min-height: 58px;
     align-items: center;
-    justify-content: space-between;
     gap: 12px;
     width: 100%;
     padding: 10px 12px;
     color: var(--text-primary);
-    text-align: left;
     background: rgba(255, 255, 255, 0.065);
     border: 1px solid rgba(255, 255, 255, 0.10);
     border-radius: 18px;
 }
 
-.spot-list__item span {
+.spot-list__content {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex: 1;
+    padding: 0;
+    color: inherit;
+    text-align: left;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+}
+
+.spot-list__content span {
     display: grid;
     min-width: 0;
     gap: 3px;
 }
 
-.spot-list__item strong,
-.spot-list__item small {
+.spot-list__content strong,
+.spot-list__content small {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.spot-list__item small {
+.spot-list__content small {
     color: var(--text-muted);
 }
 
-.spot-list__item em {
+.spot-list__content em {
     flex: 0 0 auto;
     color: var(--accent-primary);
     font-size: 0.72rem;
     font-style: normal;
     font-weight: 800;
+}
+
+.export-toolbar {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.export-toolbar .ghost-button {
+    min-height: 38px;
+    padding: 0 10px;
+    font-size: 0.78rem;
+    border-radius: 15px;
+}
+
+.export-selection-count {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.export-check {
+    display: grid;
+    width: 30px;
+    height: 30px;
+    place-items: center;
+    flex: 0 0 30px;
+    background: rgba(255, 255, 255, 0.055);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.export-check span {
+    width: 12px;
+    height: 12px;
+    background: transparent;
+    border-radius: 50%;
+}
+
+.export-check.is-checked {
+    border-color: rgba(117, 247, 175, 0.64);
+}
+
+.export-check.is-checked span {
+    background: var(--accent-green);
 }
 
 .spot-list__status {

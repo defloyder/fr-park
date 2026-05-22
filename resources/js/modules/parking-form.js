@@ -3,6 +3,7 @@ import {
     deleteParkingSpot,
     fetchAccountSession,
     fetchFavorites,
+    getParkingSpotsExportUrl,
     logoutAccount,
     importParkingSpots,
     submitAuth,
@@ -57,6 +58,7 @@ const state = {
     favoriteIds: new Set(),
     authMode: 'login',
     selectedSpot: null,
+    exportSelectedIds: new Set(),
 };
 
 export function initParkingUi() {
@@ -64,6 +66,7 @@ export function initParkingUi() {
     const sheet = document.getElementById('add-spot-sheet');
     const list = document.getElementById('spot-list');
     const listItems = document.getElementById('spot-list-items');
+    const exportSelectionCount = document.getElementById('export-selection-count');
     const searchPanel = document.getElementById('search-panel');
     const pickPanel = document.getElementById('pick-panel');
     const profilePanel = document.getElementById('profile-panel');
@@ -120,6 +123,10 @@ export function initParkingUi() {
             'next-photo': () => moveLightbox(1),
             'remove-form-photo': () => removeFormPhoto(Number(event.target.closest('[data-photo-index]')?.dataset.photoIndex)),
             'delete-spot': deleteCurrentSpot,
+            'toggle-export-spot': () => toggleExportSpot(Number(event.target.closest('[data-spot-id]')?.dataset.spotId)),
+            'export-all': exportAllSpots,
+            'export-selected': exportSelectedSpots,
+            'clear-export-selection': clearExportSelection,
             'toggle-favorite': () => toggleFavorite(Number(event.target.closest('[data-spot-id]')?.dataset.spotId)),
             'logout': logout,
         };
@@ -349,16 +356,23 @@ export function initParkingUi() {
 
     function renderList() {
         listItems.innerHTML = state.spots.map((spot) => `
-            <button class="spot-list__item" type="button" data-spot-id="${spot.id}">
-                <span>
-                    <strong>${escapeHtml(spot.title)}</strong>
-                    <small>${escapeHtml(spot.address || 'Адрес не указан')}</small>
-                </span>
-                <em class="spot-list__status spot-list__status--${getAvailabilityStatus(spot)}">${escapeHtml(getAvailabilityLabel(spot))}</em>
-            </button>
+            <article class="spot-list__item">
+                <button class="export-check ${state.exportSelectedIds.has(Number(spot.id)) ? 'is-checked' : ''}" type="button" data-action="toggle-export-spot" data-spot-id="${spot.id}" aria-label="Выбрать для экспорта">
+                    <span aria-hidden="true"></span>
+                </button>
+                <button class="spot-list__content" type="button" data-spot-id="${spot.id}">
+                    <span>
+                        <strong>${escapeHtml(spot.title)}</strong>
+                        <small>${escapeHtml(spot.address || 'Адрес не указан')}</small>
+                    </span>
+                    <em class="spot-list__status spot-list__status--${getAvailabilityStatus(spot)}">${escapeHtml(getAvailabilityLabel(spot))}</em>
+                </button>
+            </article>
         `).join('');
 
-        listItems.querySelectorAll('[data-spot-id]').forEach((button) => {
+        updateExportSelectionCount();
+
+        listItems.querySelectorAll('.spot-list__content[data-spot-id]').forEach((button) => {
             button.addEventListener('click', () => {
                 const spot = state.spots.find((item) => item.id === Number(button.dataset.spotId));
                 focusSpot(spot);
@@ -797,6 +811,44 @@ export function initParkingUi() {
         renderSearchControls();
         renderSearchResults();
         renderFavoriteList();
+    }
+
+    function toggleExportSpot(id) {
+        if (!id) return;
+
+        if (state.exportSelectedIds.has(id)) {
+            state.exportSelectedIds.delete(id);
+        } else {
+            state.exportSelectedIds.add(id);
+        }
+
+        renderList();
+    }
+
+    function clearExportSelection() {
+        state.exportSelectedIds.clear();
+        renderList();
+    }
+
+    function exportAllSpots() {
+        window.location.href = getParkingSpotsExportUrl();
+    }
+
+    function exportSelectedSpots() {
+        const ids = [...state.exportSelectedIds];
+
+        if (ids.length === 0) {
+            showToast('Выберите точки для экспорта.', true);
+            return;
+        }
+
+        window.location.href = getParkingSpotsExportUrl(ids);
+    }
+
+    function updateExportSelectionCount() {
+        if (!exportSelectionCount) return;
+
+        exportSelectionCount.textContent = `Выбрано: ${state.exportSelectedIds.size}`;
     }
 
     async function submitImportForm(event) {
