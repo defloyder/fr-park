@@ -12,19 +12,30 @@ const MAP_TYPE_STORAGE_KEY = 'parkfree:map-type';
 const DEFAULT_MAP_TYPE = 'yandex#map';
 const LIGHT_UI_MAP_TYPES = ['yandex#satellite', 'yandex#hybrid'];
 
-export function initYandexMap() {
+export async function initYandexMap() {
     if (!document.getElementById('yandex-map')) {
         return;
     }
 
-    if (!window.ymaps) {
+    if (document.querySelector('.map-screen')?.dataset.yandexApiReady !== 'true') {
         window.dispatchEvent(new CustomEvent('parking:error', {
             detail: 'Добавьте ключ Яндекс.Карт в .env, чтобы увидеть интерактивную карту.',
         }));
         return;
     }
 
+    try {
+        await waitForYmaps();
+    } catch {
+        window.dispatchEvent(new CustomEvent('parking:error', {
+            detail: 'Не удалось загрузить Яндекс.Карты. Проверьте соединение и обновите страницу.',
+        }));
+        return;
+    }
+
     window.ymaps.ready(async () => {
+        const isMobile = window.matchMedia('(max-width: 520px)').matches;
+
         map = new window.ymaps.Map('yandex-map', {
             center: MOSCOW_CENTER,
             zoom: 12,
@@ -36,7 +47,8 @@ export function initYandexMap() {
         });
 
         map.behaviors.enable(['drag', 'scrollZoom', 'multiTouch']);
-        map.options.set('scrollZoomSpeed', 5);
+        map.options.set('scrollZoomSpeed', isMobile ? 3 : 5);
+        configureMapControls(isMobile);
         syncMapTheme();
         map.events.add('typechange', () => {
             saveMapType();
@@ -71,6 +83,49 @@ export function initYandexMap() {
                 detail: 'Не удалось загрузить точки. Проверьте соединение и попробуйте снова.',
             }));
         }
+    });
+}
+
+function waitForYmaps(timeout = 10000) {
+    if (window.ymaps) {
+        return Promise.resolve();
+    }
+
+    return new Promise((resolve, reject) => {
+        const startedAt = Date.now();
+        const interval = window.setInterval(() => {
+            if (window.ymaps) {
+                window.clearInterval(interval);
+                resolve();
+                return;
+            }
+
+            if (Date.now() - startedAt > timeout) {
+                window.clearInterval(interval);
+                reject(new Error('Yandex Maps API timeout'));
+            }
+        }, 80);
+    });
+}
+
+function configureMapControls(isMobile) {
+    const topOffset = isMobile ? 92 : 12;
+
+    map.controls.get('zoomControl')?.options.set('position', {
+        top: isMobile ? 112 : 110,
+        left: isMobile ? 10 : 12,
+    });
+    map.controls.get('geolocationControl')?.options.set('position', {
+        top: topOffset,
+        left: isMobile ? 10 : 12,
+    });
+    map.controls.get('typeSelector')?.options.set('position', {
+        top: topOffset,
+        right: isMobile ? 10 : 12,
+    });
+    map.controls.get('fullscreenControl')?.options.set('position', {
+        top: topOffset + 42,
+        right: isMobile ? 10 : 12,
     });
 }
 

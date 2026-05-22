@@ -96,6 +96,7 @@ textarea {
     inset: 0;
     z-index: 1;
     background: #17202b;
+    touch-action: none;
 }
 
 .map-canvas::after {
@@ -1553,6 +1554,19 @@ h2 {
 }
 
 @media (max-width: 520px) {
+    .liquid-glass {
+        backdrop-filter: blur(12px) saturate(120%);
+        -webkit-backdrop-filter: blur(12px) saturate(120%);
+    }
+
+    .map-canvas::after {
+        background: linear-gradient(180deg, rgba(3, 4, 10, 0.04), transparent 34%, rgba(3, 4, 10, 0.06));
+    }
+
+    .map-canvas [class*="ground-pane"] {
+        filter: brightness(0.99) saturate(0.96) contrast(1.01);
+    }
+
     .top-panel {
         top: max(8px, env(safe-area-inset-top));
         left: 8px;
@@ -1583,6 +1597,17 @@ h2 {
         max-height: calc(100svh - 92px);
         padding: 10px;
         border-radius: 22px;
+    }
+
+    .spot-list,
+    .search-panel {
+        top: calc(84px + env(safe-area-inset-top));
+        bottom: calc(82px + env(safe-area-inset-bottom));
+        max-height: none;
+        gap: 10px;
+        padding: 10px;
+        overflow-y: auto;
+        overscroll-behavior: contain;
     }
 
     .spot-card__photo,
@@ -1625,6 +1650,18 @@ h2 {
         border-color: rgba(16, 23, 34, 0.10);
     }
 
+    .spot-list .panel-header h2,
+    .search-panel .panel-header h2 {
+        font-size: 1.05rem;
+        line-height: 1.12;
+    }
+
+    .spot-list .panel-header .eyebrow,
+    .search-panel .panel-header .eyebrow {
+        margin-bottom: 2px;
+        font-size: 0.62rem;
+    }
+
     .spot-card__close,
     .bottom-sheet .panel-header .icon-button,
     .spot-list .panel-header .icon-button,
@@ -1634,6 +1671,60 @@ h2 {
         height: 40px;
         min-height: 40px;
         flex-basis: 40px;
+    }
+
+    .search-field {
+        gap: 5px;
+        font-size: 0.72rem;
+    }
+
+    .search-field input,
+    .search-field select {
+        min-height: 42px;
+        padding: 10px 12px;
+        border-radius: 14px;
+    }
+
+    .search-results,
+    .spot-list__items {
+        gap: 7px;
+    }
+
+    .search-result,
+    .spot-list__item {
+        min-height: 52px;
+        gap: 9px;
+        padding: 9px 10px;
+        border-radius: 15px;
+    }
+
+    .search-result strong,
+    .spot-list__content strong {
+        font-size: 0.9rem;
+        line-height: 1.15;
+    }
+
+    .search-result small,
+    .spot-list__content small {
+        font-size: 0.74rem;
+        line-height: 1.2;
+    }
+
+    .spot-list__status {
+        max-width: 86px;
+        min-height: 24px;
+        padding: 3px 7px;
+        font-size: 0.62rem;
+        line-height: 1.08;
+    }
+
+    .export-toolbar {
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+
+    .export-toolbar .ghost-button {
+        min-height: 34px;
     }
 
     .spot-card__address,
