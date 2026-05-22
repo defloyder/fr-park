@@ -10,5 +10,8 @@ Route::get('geocode/reverse', [GeocodeController::class, 'reverse'])
 Route::post('parking-spots/photo', [ParkingSpotController::class, 'uploadPhoto'])
     ->name('parking-spots.photo');
 
+Route::post('parking-spots/import', [ParkingSpotController::class, 'import'])
+    ->name('parking-spots.import');
+
 Route::apiResource('parking-spots', ParkingSpotController::class)
     ->parameters(['parking-spots' => 'parkingSpot']);

@@ -86,6 +86,39 @@ export async function uploadParkingPhoto(file) {
     return data;
 }
 
+export async function importParkingSpots({ file = null, text = '' }) {
+    const formData = new FormData();
+
+    if (file) {
+        formData.append('json_file', file);
+    }
+
+    if (text.trim()) {
+        formData.append('json_text', text.trim());
+    }
+
+    const response = await fetch('/api/parking-spots/import', {
+        method: 'POST',
+        headers: {
+            Accept: 'application/json',
+            'X-CSRF-TOKEN': document
+                .querySelector('meta[name="csrf-token"]')
+                ?.getAttribute('content'),
+        },
+        body: formData,
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+        const message = data?.message ?? 'Failed to import parking spots';
+        const errors = data?.errors ?? {};
+        throw Object.assign(new Error(message), { errors });
+    }
+
+    return data;
+}
+
 export async function deleteParkingSpot(id) {
     const response = await fetch(`/api/parking-spots/${id}`, {
         method: 'DELETE',

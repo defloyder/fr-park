@@ -809,7 +809,8 @@ h2 {
     gap: 12px;
 }
 
-.spot-form label {
+.spot-form label,
+.import-form label {
     display: grid;
     gap: 7px;
     color: var(--text-secondary);
@@ -819,7 +820,9 @@ h2 {
 
 .spot-form input,
 .spot-form textarea,
-.spot-form select {
+.spot-form select,
+.import-form input,
+.import-form textarea {
     width: 100%;
     min-height: 46px;
     padding: 12px 13px;
@@ -847,13 +850,16 @@ h2 {
 }
 
 .spot-form input::placeholder,
-.spot-form textarea::placeholder {
+.spot-form textarea::placeholder,
+.import-form textarea::placeholder {
     color: var(--text-muted);
 }
 
 .spot-form input:focus,
 .spot-form textarea:focus,
-.spot-form select:focus {
+.spot-form select:focus,
+.import-form input:focus,
+.import-form textarea:focus {
     border-color: rgba(167, 243, 255, 0.72);
     box-shadow: 0 0 0 3px rgba(167, 243, 255, 0.12);
 }
@@ -1083,6 +1089,31 @@ h2 {
 
 .form-message.is-success {
     background: rgba(124, 255, 178, 0.16);
+}
+
+.import-panel {
+    display: grid;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.055);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 18px;
+}
+
+.import-panel summary {
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.import-form {
+    display: grid;
+    gap: 12px;
+    margin-top: 13px;
+}
+
+.import-form .ghost-button {
+    min-height: 44px;
 }
 
 .map-theme-light .form-message.is-error {

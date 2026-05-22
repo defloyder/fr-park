@@ -4,6 +4,7 @@ import {
     fetchAccountSession,
     fetchFavorites,
     logoutAccount,
+    importParkingSpots,
     submitAuth,
     toggleFavoriteSpot,
     updateParkingSpot,
@@ -79,6 +80,8 @@ export function initParkingUi() {
     const statusPanel = document.getElementById('status-panel');
     const fallback = document.getElementById('map-fallback');
     const form = document.getElementById('add-spot-form');
+    const importForm = document.getElementById('import-spots-form');
+    const importMessage = document.getElementById('import-message');
     const formMessage = document.getElementById('form-message');
     const formTitle = document.getElementById('spot-form-title');
     const formEyebrow = document.getElementById('spot-form-eyebrow');
@@ -241,6 +244,7 @@ export function initParkingUi() {
     searchInput?.addEventListener('input', () => renderSearchResults(true));
     areaSelect?.addEventListener('change', () => renderSearchResults(true));
     authForm?.addEventListener('submit', submitAuthForm);
+    importForm?.addEventListener('submit', submitImportForm);
 
     function getPayload() {
         const payload = Object.fromEntries(new FormData(form).entries());
@@ -783,6 +787,50 @@ export function initParkingUi() {
         renderFavoriteList();
     }
 
+    function upsertManySpots(spots) {
+        spots.forEach((spot) => {
+            const exists = state.spots.some((item) => item.id === spot.id);
+            state.spots = exists ? state.spots.map((item) => (item.id === spot.id ? spot : item)) : [spot, ...state.spots];
+        });
+
+        renderList();
+        renderSearchControls();
+        renderSearchResults();
+        renderFavoriteList();
+    }
+
+    async function submitImportForm(event) {
+        event.preventDefault();
+        clearImportMessage();
+
+        const submitButton = importForm.querySelector('[type="submit"]');
+        const file = importForm.elements.json_file?.files?.[0] ?? null;
+        const text = importForm.elements.json_text?.value ?? '';
+
+        if (!file && !text.trim()) {
+            showImportError('Загрузите файл или вставьте JSON.');
+            return;
+        }
+
+        submitButton.disabled = true;
+        submitButton.textContent = 'Импортирую...';
+
+        try {
+            const response = await importParkingSpots({ file, text });
+            const importedSpots = response.data ?? [];
+            upsertManySpots(importedSpots);
+            replaceParkingSpotsOnMap(state.spots);
+            importForm.reset();
+            showImportSuccess(`Добавлено: ${response.created_count}. Пропущено: ${response.skipped_count}. Ошибок: ${response.error_count}.`);
+            showToast(`Импортировано точек: ${response.created_count}`);
+        } catch (error) {
+            showImportError(getValidationMessage(error));
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Импортировать точки';
+        }
+    }
+
     async function deleteCurrentSpot() {
         if (!state.editingSpotId || !deleteButton) return;
         if (!window.confirm('Удалить эту точку с карты?')) return;
@@ -875,6 +923,27 @@ export function initParkingUi() {
         authMessage.textContent = '';
         authMessage.classList.add('hidden');
         authMessage.classList.remove('is-error', 'is-success');
+    }
+
+    function showImportSuccess(message) {
+        if (!importMessage) return;
+        importMessage.textContent = message;
+        importMessage.classList.remove('hidden', 'is-error');
+        importMessage.classList.add('is-success');
+    }
+
+    function showImportError(message) {
+        if (!importMessage) return;
+        importMessage.textContent = message;
+        importMessage.classList.remove('hidden', 'is-success');
+        importMessage.classList.add('is-error');
+    }
+
+    function clearImportMessage() {
+        if (!importMessage) return;
+        importMessage.textContent = '';
+        importMessage.classList.add('hidden');
+        importMessage.classList.remove('is-error', 'is-success');
     }
 
     function setSaving(isSaving) {

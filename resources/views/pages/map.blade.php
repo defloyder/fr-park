@@ -220,6 +220,24 @@
 
                 <button id="delete-spot-button" class="danger-button hidden" type="button" data-action="delete-spot">Удалить точку</button>
             </form>
+
+            <details class="import-panel">
+                <summary>Массовый импорт JSON</summary>
+                <form id="import-spots-form" class="import-form">
+                    <label>
+                        <span>Файл JSON / TXT</span>
+                        <input id="import-json-file" name="json_file" type="file" accept=".json,.txt,application/json,text/plain">
+                    </label>
+
+                    <label>
+                        <span>Или вставьте JSON</span>
+                        <textarea name="json_text" rows="5" placeholder="[{'name': 'Москва...', 'lat': 55.7, 'lng': 37.6}]"></textarea>
+                    </label>
+
+                    <p id="import-message" class="form-message hidden"></p>
+                    <button class="ghost-button" type="submit">Импортировать точки</button>
+                </form>
+            </details>
         </section>
     </main>
 </x-layouts.app>

@@ -61,4 +61,39 @@ class ParkingSpotApiTest extends TestCase
             'source' => 'user',
         ]);
     }
+
+    public function test_it_imports_python_like_json_parking_spots(): void
+    {
+        $payload = <<<'JSON'
+[
+  {
+    'name': 'Москва, Ленинский проспект, 20к1',
+    'description': 'Порядка 7 автомобилей.',
+    'id': 73,
+    'lat': 55.7171588,
+    'lng': 37.5925154,
+    'address_text': None,
+    'photos': [
+      'photos/5a23b169-fd16-44cd-a764-81338388b3c9.jpg'
+    ],
+    'hidden_by_user': False
+  }
+]
+JSON;
+
+        $this->postJson('/api/parking-spots/import', [
+            'json_text' => $payload,
+        ])
+            ->assertOk()
+            ->assertJsonPath('created_count', 1)
+            ->assertJsonPath('data.0.title', 'Москва, Ленинский проспект, 20к1')
+            ->assertJsonPath('data.0.source', 'imported')
+            ->assertJsonPath('data.0.photo_urls.0', '/storage/photos/5a23b169-fd16-44cd-a764-81338388b3c9.jpg');
+
+        $this->assertDatabaseHas('parking_spots', [
+            'title' => 'Москва, Ленинский проспект, 20к1',
+            'source' => 'imported',
+            'status' => 'active',
+        ]);
+    }
 }
