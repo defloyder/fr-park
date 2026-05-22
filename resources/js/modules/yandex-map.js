@@ -1,10 +1,11 @@
-import { fetchParkingSpots } from './parking-api';
+import { fetchParkingSpots, reverseGeocode } from './parking-api';
 
 let map = null;
 let clusterer = null;
 let spotsCache = [];
 let pendingPlacemark = null;
 let addressRequestId = 0;
+let isPickingMode = false;
 
 const MOSCOW_CENTER = [55.7558, 37.6173];
 const MAP_TYPE_STORAGE_KEY = 'parkfree:map-type';
@@ -147,8 +148,16 @@ export function clearPendingSelection() {
     pendingPlacemark = null;
 }
 
+export function setMapPickingMode(isActive) {
+    isPickingMode = isActive;
+}
+
 function bindMapEvents() {
     map.events.add('click', (event) => {
+        if (!isPickingMode) {
+            return;
+        }
+
         const coords = event.get('coords');
         setPendingCoords(coords);
 
@@ -201,6 +210,12 @@ async function resolveAddress(coords) {
 }
 
 async function geocodeAddress(coords) {
+    const serverAddress = await geocodeAddressOnServer(coords);
+
+    if (serverAddress) {
+        return serverAddress;
+    }
+
     const attempts = [
         { kind: 'house', results: 5 },
         { kind: 'street', results: 5 },
@@ -221,6 +236,16 @@ async function geocodeAddress(coords) {
     }
 
     return '';
+}
+
+async function geocodeAddressOnServer(coords) {
+    try {
+        const response = await reverseGeocode(coords[0], coords[1]);
+
+        return typeof response.address === 'string' ? response.address.trim() : '';
+    } catch {
+        return '';
+    }
 }
 
 function getBestAddressFromGeocode(result) {

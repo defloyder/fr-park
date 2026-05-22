@@ -9,7 +9,7 @@ import {
     updateParkingSpot,
     uploadParkingPhoto,
 } from './parking-api';
-import { addParkingSpotToMap, clearPendingSelection, focusSpot, focusSpots, replaceParkingSpotsOnMap } from './yandex-map';
+import { addParkingSpotToMap, clearPendingSelection, focusSpot, focusSpots, replaceParkingSpotsOnMap, setMapPickingMode } from './yandex-map';
 
 const STATUS_LABELS = {
     verified: 'Проверено',
@@ -174,6 +174,7 @@ export function initParkingUi() {
             hidePickPanel();
             openSheet();
             state.picking = false;
+            setMapPickingMode(false);
         }
     });
 
@@ -652,6 +653,7 @@ export function initParkingUi() {
         sheet.classList.add('hidden');
         clearFormMessage();
         state.picking = false;
+        setMapPickingMode(false);
         hidePickPanel();
         state.editingSpotId = null;
         deleteButton?.classList.add('hidden');
@@ -678,6 +680,7 @@ export function initParkingUi() {
         sheet.classList.add('hidden');
         card.classList.add('hidden');
         state.picking = false;
+        setMapPickingMode(false);
         document.body.classList.remove('is-sheet-open');
     }
 
@@ -699,6 +702,7 @@ export function initParkingUi() {
 
     function startPicking() {
         state.picking = true;
+        setMapPickingMode(true);
         sheet.classList.add('hidden');
         card.classList.add('hidden');
         list.classList.add('hidden');
@@ -710,6 +714,7 @@ export function initParkingUi() {
 
     function cancelPicking() {
         state.picking = false;
+        setMapPickingMode(false);
         clearPendingSelection();
         hidePickPanel();
         hideStatus();
@@ -718,6 +723,7 @@ export function initParkingUi() {
 
     function returnToForm() {
         state.picking = false;
+        setMapPickingMode(false);
         hidePickPanel();
         hideStatus();
         openSheet();

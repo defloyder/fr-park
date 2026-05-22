@@ -102,6 +102,24 @@ export async function deleteParkingSpot(id) {
     }
 }
 
+export async function reverseGeocode(latitude, longitude) {
+    const query = new URLSearchParams({
+        latitude,
+        longitude,
+    });
+    const response = await fetch(`/api/geocode/reverse?${query.toString()}`, {
+        headers: {
+            Accept: 'application/json',
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to reverse geocode coordinates');
+    }
+
+    return response.json();
+}
+
 export async function fetchAccountSession() {
     const response = await fetch('/account/session', {
         headers: {

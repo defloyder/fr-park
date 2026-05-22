@@ -144,9 +144,17 @@
                     <input name="title" type="text" maxlength="255" autocomplete="off" placeholder="Например, парковка у Арбата" required>
                 </label>
 
-                <label>
+                <label class="address-picker-field">
                     <span>Адрес</span>
-                    <input name="address" type="text" maxlength="500" autocomplete="off" placeholder="Адрес определится по точке на карте">
+                    <div class="address-picker-field__control">
+                        <input name="address" type="text" maxlength="500" autocomplete="off" placeholder="Адрес определится по точке на карте">
+                        <button class="field-icon-button" type="button" data-action="pick-on-map" aria-label="Выбрать точку на карте">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 21s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12Z"></path>
+                                <circle cx="12" cy="9" r="2.5"></circle>
+                            </svg>
+                        </button>
+                    </div>
                 </label>
 
                 <label>
@@ -208,10 +216,7 @@
                     <textarea name="parking_notes" rows="2" maxlength="2000" placeholder="Ограничения, время, что проверить на месте"></textarea>
                 </label>
 
-                <div class="form-actions">
-                    <button class="ghost-button" type="button" data-action="pick-on-map">Выбрать на карте</button>
-                    <button class="route-button" type="submit">Сохранить</button>
-                </div>
+                <button class="route-button" type="submit">Сохранить</button>
 
                 <button id="delete-spot-button" class="danger-button hidden" type="button" data-action="delete-spot">Удалить точку</button>
             </form>
