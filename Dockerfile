@@ -19,7 +19,7 @@ COPY resources ./resources
 COPY vite.config.js ./
 RUN npm run build
 
-FROM dunglas/frankenphp:1-php8.3-alpine AS app
+FROM dunglas/frankenphp:1-php8.4-alpine AS app
 WORKDIR /app
 
 RUN apk add --no-cache \

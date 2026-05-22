@@ -1,6 +1,6 @@
 # Production Deploy
 
-Инструкция для выката ParkFree Moscow на VPS `fr-map.ru` через Docker Compose.
+Инструкция для выката ParkFree Moscow на VPS `fr-map.ru` через Docker Compose. Docker-образ приложения использует PHP 8.4.
 
 ## 0. Безопасность
 
@@ -133,6 +133,53 @@ cd /var/www/fr-park
 git pull
 docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
 docker compose --env-file .env.production -f docker-compose.prod.yml exec app php artisan migrate --force
+```
+
+## 7.1 Автообновление с GitHub
+
+Код приложения не стоит обновлять через Docker volume: volume лучше использовать для данных (`storage`, Postgres, Redis, сертификаты Caddy). Для кода безопаснее автообновление через `git pull`/`docker compose up --build`.
+
+В репозитории есть готовый скрипт:
+
+```bash
+/var/www/fr-park/deploy/auto-update.sh
+```
+
+Он:
+
+- проверяет `origin/main`;
+- если появился новый commit, делает `git reset --hard origin/main`;
+- пересобирает контейнеры;
+- запускает миграции;
+- обновляет Laravel cache.
+
+Установить systemd timer:
+
+```bash
+cd /var/www/fr-park
+chmod +x deploy/auto-update.sh
+cp deploy/systemd/parkfree-auto-update.service /etc/systemd/system/
+cp deploy/systemd/parkfree-auto-update.timer /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now parkfree-auto-update.timer
+```
+
+Проверить таймер:
+
+```bash
+systemctl list-timers | grep parkfree
+```
+
+Запустить обновление вручную:
+
+```bash
+systemctl start parkfree-auto-update.service
+```
+
+Посмотреть лог:
+
+```bash
+journalctl -u parkfree-auto-update.service -n 100 --no-pager
 ```
 
 ## 8. Полезные команды
