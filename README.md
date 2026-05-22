@@ -166,6 +166,26 @@ npm run build
 php artisan test
 ```
 
+## Production Deploy
+
+Для продакшн-развёртывания через Docker Compose используйте:
+
+```text
+DEPLOY.md
+docker-compose.prod.yml
+Dockerfile
+.env.production.example
+```
+
+Коротко:
+
+```bash
+cp .env.production.example .env.production
+docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
+```
+
+Подробная инструкция: [DEPLOY.md](DEPLOY.md).
+
 ## Основные API endpoints
 
 ```http
