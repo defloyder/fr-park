@@ -68,9 +68,10 @@ export async function initYandexMap() {
             ),
             clusterIconShape: {
                 type: 'Circle',
-                coordinates: [0, 0],
-                radius: 22,
+                coordinates: [17, 17],
+                radius: 17,
             },
+            clusterIconOffset: [-17, -17],
         });
 
         map.geoObjects.add(clusterer);

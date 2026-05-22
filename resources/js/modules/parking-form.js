@@ -512,7 +512,9 @@ export function initParkingUi() {
             authForm.reset();
             showToast(state.authMode === 'register' ? 'Аккаунт создан' : 'Вы вошли');
         } catch (error) {
-            showAuthError(getValidationMessage(error));
+            const message = getValidationMessage(error);
+            showAuthError(message);
+            showToast(message, true);
         } finally {
             authSubmit.disabled = false;
             setAuthMode(state.authMode);
@@ -1121,7 +1123,9 @@ function renderDetail(title, value) {
 }
 
 function getValidationMessage(error) {
-    return Object.values(error.errors ?? {})[0]?.[0] ?? 'Не удалось сохранить точку. Проверьте данные и попробуйте снова.';
+    return Object.values(error.errors ?? {})[0]?.[0]
+        ?? error.message
+        ?? 'Не удалось выполнить действие. Проверьте данные и попробуйте снова.';
 }
 
 function escapeHtml(value) {

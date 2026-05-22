@@ -27,12 +27,10 @@ export async function createParkingSpot(payload) {
         body: JSON.stringify(payload),
     });
 
-    const data = await response.json().catch(() => ({}));
+    const data = await readJson(response);
 
     if (!response.ok) {
-        const message = data?.message ?? 'Failed to create parking spot';
-        const errors = data?.errors ?? {};
-        throw Object.assign(new Error(message), { errors });
+        throwApiError(response, data, 'Failed to create parking spot');
     }
 
     return data;
@@ -52,12 +50,10 @@ export async function updateParkingSpot(id, payload) {
         body: JSON.stringify(payload),
     });
 
-    const data = await response.json().catch(() => ({}));
+    const data = await readJson(response);
 
     if (!response.ok) {
-        const message = data?.message ?? 'Failed to update parking spot';
-        const errors = data?.errors ?? {};
-        throw Object.assign(new Error(message), { errors });
+        throwApiError(response, data, 'Failed to update parking spot');
     }
 
     return data;
@@ -79,12 +75,10 @@ export async function uploadParkingPhoto(file) {
         body: formData,
     });
 
-    const data = await response.json().catch(() => ({}));
+    const data = await readJson(response);
 
     if (!response.ok) {
-        const message = data?.message ?? 'Failed to upload photo';
-        const errors = data?.errors ?? {};
-        throw Object.assign(new Error(message), { errors });
+        throwApiError(response, data, 'Failed to upload photo');
     }
 
     return data;
@@ -113,12 +107,10 @@ export async function importParkingSpots({ file = null, text = '' }) {
         body: formData,
     });
 
-    const data = await response.json().catch(() => ({}));
+    const data = await readJson(response);
 
     if (!response.ok) {
-        const message = data?.message ?? 'Failed to import parking spots';
-        const errors = data?.errors ?? {};
-        throw Object.assign(new Error(message), { errors });
+        throwApiError(response, data, 'Failed to import parking spots');
     }
 
     return data;
@@ -201,12 +193,10 @@ export async function submitAuth(mode, payload) {
         body: JSON.stringify(payload),
     });
 
-    const data = await response.json().catch(() => ({}));
+    const data = await readJson(response);
 
     if (!response.ok) {
-        const message = data?.message ?? 'Failed to authenticate';
-        const errors = data?.errors ?? {};
-        throw Object.assign(new Error(message), { errors });
+        throwApiError(response, data, 'Failed to authenticate');
     }
 
     return syncCsrfToken(data);
@@ -258,7 +248,7 @@ export async function toggleFavoriteSpot(id) {
         },
     });
 
-    const data = await response.json().catch(() => ({}));
+    const data = await readJson(response);
 
     if (!response.ok) {
         throw new Error(data?.message ?? 'Failed to toggle favorite');
@@ -275,4 +265,21 @@ function syncCsrfToken(data) {
     }
 
     return data;
+}
+
+async function readJson(response) {
+    return response.json().catch(() => ({}));
+}
+
+function throwApiError(response, data, fallback) {
+    const messages = {
+        401: 'Войдите в профиль и попробуйте снова.',
+        403: 'Недостаточно прав для этого действия.',
+        419: 'Сессия истекла или браузер не принял cookie. Обновите страницу и попробуйте снова.',
+        422: 'Проверьте заполненные поля.',
+    };
+    const message = data?.message ?? messages[response.status] ?? fallback;
+    const errors = data?.errors ?? {};
+
+    throw Object.assign(new Error(message), { errors, status: response.status });
 }
