@@ -62,7 +62,7 @@
         <section id="search-panel" class="search-panel liquid-glass hidden" aria-label="Поиск парковок">
             <div class="panel-header">
                 <div>
-                    <span class="eyebrow">Search area</span>
+                    <span class="eyebrow">Поиск</span>
                     <h2>Поиск парковки</h2>
                 </div>
                 <button class="icon-button" type="button" data-action="close-search" aria-label="Закрыть поиск">×</button>
@@ -86,7 +86,7 @@
         <section id="spot-list" class="spot-list liquid-glass hidden" aria-label="Список парковок">
             <div class="panel-header">
                 <div>
-                    <span class="eyebrow">Nearby points</span>
+                    <span class="eyebrow">Парковки рядом</span>
                     <h2>Парковки в центре</h2>
                 </div>
                 <button class="icon-button" type="button" data-action="close-list" aria-label="Закрыть список">×</button>
@@ -103,7 +103,7 @@
         <section id="profile-panel" class="profile-panel liquid-glass hidden" aria-label="Профиль">
             <div class="panel-header">
                 <div>
-                    <span class="eyebrow">Profile</span>
+                    <span class="eyebrow">Профиль</span>
                     <h2 id="profile-title">Аккаунт</h2>
                 </div>
                 <button class="icon-button" type="button" data-action="close-profile" aria-label="Закрыть профиль">×</button>
@@ -154,7 +154,7 @@
         <section id="add-spot-sheet" class="bottom-sheet liquid-glass hidden" aria-label="Добавить точку парковки">
             <div class="panel-header">
                 <div>
-                    <span id="spot-form-eyebrow" class="eyebrow">New parking point</span>
+                    <span id="spot-form-eyebrow" class="eyebrow">Новая точка</span>
                     <h2 id="spot-form-title">Добавить парковку</h2>
                 </div>
                 <button class="icon-button" type="button" data-action="close-add" aria-label="Закрыть форму">×</button>

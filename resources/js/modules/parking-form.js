@@ -639,7 +639,7 @@ export function initParkingUi() {
         state.formPhotos = [];
         form.reset();
         form.elements.availability_status.value = 'unverified';
-        formEyebrow.textContent = 'New parking point';
+        formEyebrow.textContent = 'Новая точка';
         formTitle.textContent = 'Добавить парковку';
         form.querySelector('[type="submit"]').textContent = 'Сохранить';
         deleteButton?.classList.add('hidden');
@@ -659,7 +659,7 @@ export function initParkingUi() {
 
         state.editingSpotId = id;
         state.formPhotos = getSpotPhotos(spot);
-        formEyebrow.textContent = 'Edit parking point';
+        formEyebrow.textContent = 'Редактирование';
         formTitle.textContent = 'Редактировать парковку';
         form.querySelector('[type="submit"]').textContent = 'Обновить';
         deleteButton?.classList.remove('hidden');
