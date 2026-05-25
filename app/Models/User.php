@@ -18,6 +18,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'is_admin',
     ];
 
     protected $hidden = [
@@ -35,6 +36,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_admin' => 'boolean',
         ];
     }
 
@@ -46,6 +48,10 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
+        if ((bool) $this->is_admin) {
+            return true;
+        }
+
         $adminEmail = config('auralith.admin_email');
 
         if (! is_string($adminEmail)) {
@@ -55,7 +61,6 @@ class User extends Authenticatable
         $adminEmail = trim($adminEmail);
         $userEmail = trim((string) $this->email);
 
-        return $adminEmail !== ''
-            && strcasecmp($userEmail, $adminEmail) === 0;
+        return $adminEmail !== '' && strcasecmp($userEmail, $adminEmail) === 0;
     }
 }

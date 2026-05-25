@@ -63,7 +63,10 @@ textarea {
 
 .export-toolbar.hidden,
 .export-selection-count.hidden,
-.import-panel.hidden {
+.import-panel.hidden,
+.admin-editor-form.hidden,
+.admin-empty-editor.hidden,
+.admin-map-modal.hidden {
     display: none;
 }
 
@@ -655,6 +658,8 @@ h2 {
     color: #031116;
     font-weight: 700;
     text-decoration: none;
+    border: 0;
+    cursor: pointer;
     background: linear-gradient(135deg, #89F3FF, #7CF6AE);
     border-radius: 22px;
     box-shadow:
@@ -810,11 +815,12 @@ h2 {
 
 .admin-shell {
     display: grid;
-    min-height: 100svh;
+    height: 100svh;
+    min-height: 0;
     grid-template-columns: 280px minmax(0, 1fr) 380px;
     gap: 14px;
     padding: 14px;
-    overflow: hidden;
+    overflow: auto;
     background:
         radial-gradient(circle at 18% 8%, rgba(33, 168, 255, 0.18), transparent 28%),
         radial-gradient(circle at 84% 18%, rgba(139, 92, 246, 0.18), transparent 30%),
@@ -828,11 +834,14 @@ h2 {
     display: grid;
     min-height: 0;
     padding: 16px;
+    overflow: hidden;
 }
 
 .admin-sidebar {
     align-content: start;
     gap: 18px;
+    max-height: calc(100svh - 28px);
+    overflow: auto;
 }
 
 .brand-lockup,
@@ -850,18 +859,63 @@ h2 {
     justify-content: space-between;
 }
 
+.brand-lockup--map {
+    justify-content: flex-start;
+    min-width: 0;
+}
+
+.brand-lockup--map h1 {
+    font-size: 1.12rem;
+}
+
 .brand-mark {
     display: grid;
     width: 52px;
     height: 52px;
     place-items: center;
     flex: 0 0 52px;
-    color: #fff;
-    font-size: 1.4rem;
-    font-weight: 900;
-    background: linear-gradient(135deg, #119dff, #8b3dff);
+    color: #7b4dff;
+    background:
+        linear-gradient(135deg, rgba(10, 167, 255, 0.12), rgba(139, 61, 255, 0.12)),
+        #050814;
     border-radius: 18px;
     box-shadow: 0 18px 40px rgba(33, 168, 255, 0.22);
+}
+
+.brand-lockup--map .brand-mark {
+    width: 38px;
+    height: 38px;
+    flex-basis: 38px;
+    border-radius: 14px;
+}
+
+.auralith-mark svg {
+    width: 72%;
+    height: 72%;
+    overflow: visible;
+}
+
+.auralith-mark path:not([fill]),
+.auralith-mark circle:not([fill]) {
+    fill: currentColor;
+}
+
+.auralith-mark {
+    position: relative;
+}
+
+.auralith-mark::before {
+    position: absolute;
+    inset: 10px;
+    content: "";
+    background: linear-gradient(135deg, #0aa7ff, #8b3dff);
+    filter: blur(12px);
+    opacity: 0.5;
+}
+
+.auralith-mark svg {
+    position: relative;
+    z-index: 1;
 }
 
 .admin-stats {
@@ -870,15 +924,20 @@ h2 {
 }
 
 .admin-stats article,
-.admin-nav a {
+.admin-nav a,
+.admin-nav button {
     display: grid;
     gap: 3px;
     padding: 12px;
     color: var(--text-primary);
+    font: inherit;
+    font-weight: 800;
+    text-align: left;
     text-decoration: none;
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.10);
     border-radius: 16px;
+    cursor: pointer;
 }
 
 .admin-stats span {
@@ -896,10 +955,75 @@ h2 {
     gap: 8px;
 }
 
+.admin-users {
+    display: grid;
+    min-height: 0;
+    gap: 10px;
+}
+
+.admin-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.admin-section-head button {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.admin-users-list {
+    display: grid;
+    max-height: 220px;
+    gap: 7px;
+    overflow: auto;
+}
+
+.admin-user {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 9px;
+    background: rgba(255, 255, 255, 0.055);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 14px;
+}
+
+.admin-user span {
+    display: grid;
+    min-width: 0;
+}
+
+.admin-user strong,
+.admin-user small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-user small {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}
+
 .admin-workspace,
 .admin-editor {
     grid-template-rows: auto auto auto minmax(0, 1fr);
     gap: 12px;
+    max-height: calc(100svh - 28px);
+}
+
+.admin-workspace {
+    overflow: hidden;
 }
 
 .admin-editor {
@@ -935,6 +1059,31 @@ h2 {
     flex-wrap: wrap;
 }
 
+.admin-bulkbar .ghost-button,
+.admin-bulkbar .danger-button,
+.admin-icon-action {
+    width: 42px;
+    min-width: 42px;
+    min-height: 38px;
+    padding: 0;
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.admin-icon-action.is-active {
+    color: #fff;
+    background: linear-gradient(135deg, #21A8FF, #8B5CF6);
+}
+
+.admin-icon-action:disabled {
+    cursor: default;
+    opacity: 0.52;
+}
+
+.icon-text-button {
+    gap: 7px;
+}
+
 .admin-bulkbar span {
     color: var(--text-muted);
     font-size: 0.85rem;
@@ -944,6 +1093,7 @@ h2 {
 .admin-table-wrap {
     min-height: 0;
     overflow: auto;
+    overscroll-behavior: contain;
 }
 
 .admin-table {
@@ -997,12 +1147,55 @@ h2 {
     gap: 10px;
 }
 
+.admin-empty-editor {
+    display: grid;
+    align-content: center;
+    gap: 8px;
+    min-height: 170px;
+    padding: 18px;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.055);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 18px;
+}
+
+.admin-empty-editor strong {
+    color: var(--text-primary);
+}
+
 .admin-editor-form label {
     display: grid;
     gap: 6px;
     color: var(--text-secondary);
     font-size: 0.8rem;
     font-weight: 800;
+}
+
+.admin-map-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: grid;
+    place-items: center;
+    padding: 22px;
+    background: rgba(2, 4, 12, 0.58);
+}
+
+.admin-map-window {
+    display: grid;
+    width: min(980px, calc(100vw - 44px));
+    height: min(640px, calc(100svh - 44px));
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 12px;
+    padding: 14px;
+}
+
+.admin-map-window iframe {
+    width: 100%;
+    height: 100%;
+    background: #101722;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 18px;
 }
 
 .is-sheet-open .add-button {

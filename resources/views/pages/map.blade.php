@@ -1,8 +1,10 @@
 <x-layouts.app title="Auralith Maps">
-    <div class="bg-calligraphy bg-calligraphy-left">Auralith</div>
-    <div class="bg-calligraphy bg-calligraphy-right">Maps</div>
+    @unless($isEmbed)
+        <div class="bg-calligraphy bg-calligraphy-left">Auralith</div>
+        <div class="bg-calligraphy bg-calligraphy-right">Maps</div>
+    @endunless
 
-    <main class="map-screen" data-yandex-api-ready="{{ config('services.yandex_maps.key') ? 'true' : 'false' }}">
+    <main class="map-screen {{ $isEmbed ? 'map-screen--embed' : '' }}" data-yandex-api-ready="{{ config('services.yandex_maps.key') ? 'true' : 'false' }}">
         <div id="yandex-map" class="map-canvas" aria-label="Карта бесплатных парковок Москвы"></div>
 
         <div id="map-fallback" class="map-fallback liquid-glass hidden">
@@ -10,10 +12,25 @@
             <strong>Добавьте YANDEX_MAPS_API_KEY в .env</strong>
         </div>
 
+        @unless($isEmbed)
         <header class="top-panel liquid-glass">
-            <div>
-                <span class="eyebrow">Карта бесплатных парковок</span>
-                <h1>Auralith Maps</h1>
+            <div class="brand-lockup brand-lockup--map">
+                <div class="brand-mark auralith-mark" aria-hidden="true">
+                    <svg viewBox="0 0 64 64">
+                        <defs>
+                            <linearGradient id="auralithGradientMap" x1="9" y1="52" x2="55" y2="11" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#0AA7FF"/>
+                                <stop offset="1" stop-color="#8B3DFF"/>
+                            </linearGradient>
+                        </defs>
+                        <path fill="url(#auralithGradientMap)" d="M32 8 10 49h24c9 0 13-5 15-11l-7-4c-1 4-4 6-9 6H25l12-23 11 20c2 4 6 6 10 4s5-7 3-11L46 8c-3-6-11-6-14 0Z"></path>
+                        <circle fill="url(#auralithGradientMap)" cx="52" cy="48" r="8"></circle>
+                    </svg>
+                </div>
+                <div>
+                    <span class="eyebrow">Карта бесплатных парковок</span>
+                    <h1>Парковки Москвы</h1>
+                </div>
             </div>
             <div class="top-panel__actions">
                 <button class="icon-button" type="button" data-action="open-search" aria-label="Открыть поиск">
@@ -245,5 +262,6 @@
                 </form>
             </details>
         </section>
+        @endunless
     </main>
 </x-layouts.app>

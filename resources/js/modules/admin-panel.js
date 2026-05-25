@@ -8,6 +8,7 @@ const STATUS_LABELS = {
 };
 
 let spots = [];
+let users = [];
 let selectedIds = new Set();
 
 export function initAdminPanel() {
@@ -19,22 +20,31 @@ export function initAdminPanel() {
     const status = root.querySelector('[data-admin-status]');
     const visibility = root.querySelector('[data-admin-visibility]');
     const editor = root.querySelector('[data-admin-editor]');
+    const emptyEditor = root.querySelector('[data-admin-empty-editor]');
     const editorTitle = root.querySelector('[data-admin-editor-title]');
     const message = root.querySelector('[data-admin-message]');
     const selectedCount = root.querySelector('[data-admin-selected-count]');
     const checkAll = root.querySelector('[data-admin-check-all]');
     const importForm = root.querySelector('#import-spots-form');
     const importMessage = root.querySelector('#import-message');
+    const usersList = root.querySelector('[data-admin-users]');
+    const mapModal = root.querySelector('[data-admin-map-modal]');
 
     root.addEventListener('click', async (event) => {
         const editButton = event.target.closest('[data-admin-edit]');
         const checkButton = event.target.closest('[data-admin-row-check]');
         const bulkStatus = event.target.closest('[data-admin-bulk]')?.dataset.adminBulk;
+        const userAdminButton = event.target.closest('[data-admin-user]');
 
         if (editButton) fillEditor(findSpot(editButton.dataset.adminEdit));
         if (checkButton) toggleSelected(Number(checkButton.dataset.adminRowCheck));
         if (event.target.closest('[data-admin-refresh]')) await loadSpots();
+        if (event.target.closest('[data-admin-users-refresh]')) await loadUsers();
         if (event.target.closest('[data-admin-export-selected]')) exportSelected();
+        if (event.target.closest('[data-admin-open-map]')) openMapModal();
+        if (event.target.closest('[data-admin-close-map]')) closeMapModal();
+        if (event.target === mapModal) closeMapModal();
+        if (userAdminButton) await toggleUserAdmin(Number(userAdminButton.dataset.adminUser), userAdminButton.dataset.adminRole === 'true');
         if (bulkStatus) await bulk('status', { availability_status: bulkStatus });
         if (event.target.closest('[data-admin-hide]')) await bulk('hide');
         if (event.target.closest('[data-admin-activate]')) await bulk('activate');
@@ -103,6 +113,7 @@ export function initAdminPanel() {
     });
 
     loadSpots();
+    loadUsers();
 
     async function loadSpots() {
         const response = await fetch('/aura-vault-7f3c/spots', {
@@ -113,6 +124,16 @@ export function initAdminPanel() {
         spots = data.data ?? [];
         selectedIds.clear();
         render();
+    }
+
+    async function loadUsers() {
+        const response = await fetch('/aura-vault-7f3c/users', {
+            credentials: 'same-origin',
+            headers: { Accept: 'application/json' },
+        });
+        const data = await response.json();
+        users = data.data ?? [];
+        renderUsers();
     }
 
     function render() {
@@ -127,13 +148,27 @@ export function initAdminPanel() {
                 <td><em class="spot-list__status spot-list__status--${getStatus(spot)}">${STATUS_LABELS[getStatus(spot)]}</em></td>
                 <td>${getPhotos(spot).length}</td>
                 <td>${escapeHtml(spot.status)}</td>
-                <td><button class="ghost-button" type="button" data-admin-edit="${spot.id}">Открыть</button></td>
+                <td><button class="ghost-button admin-icon-action" type="button" data-admin-edit="${spot.id}" title="Открыть точку">↗</button></td>
             </tr>
         `).join('');
 
         selectedCount.textContent = `Выбрано: ${selectedIds.size}`;
         checkAll.checked = filtered.length > 0 && filtered.every((spot) => selectedIds.has(Number(spot.id)));
         updateStats();
+    }
+
+    function renderUsers() {
+        usersList.innerHTML = users.map((user) => `
+            <article class="admin-user">
+                <span>
+                    <strong>${escapeHtml(user.name)}</strong>
+                    <small>${escapeHtml(user.email)}</small>
+                </span>
+                <button class="ghost-button admin-icon-action ${user.is_admin ? 'is-active' : ''}" type="button" data-admin-user="${user.id}" data-admin-role="${user.is_admin ? 'false' : 'true'}" ${user.is_root_admin ? 'disabled' : ''} title="${user.is_admin ? 'Снять админа' : 'Назначить админом'}">
+                    ${user.is_admin ? '★' : '☆'}
+                </button>
+            </article>
+        `).join('');
     }
 
     function getFilteredSpots() {
@@ -148,6 +183,8 @@ export function initAdminPanel() {
 
     function fillEditor(spot) {
         if (!spot) return;
+        emptyEditor?.classList.add('hidden');
+        editor?.classList.remove('hidden');
         editorTitle.textContent = spot.title;
         editor.elements.id.value = spot.id;
         editor.elements.title.value = spot.title ?? '';
@@ -180,6 +217,36 @@ export function initAdminPanel() {
         data.data?.forEach(upsert);
         selectedIds.clear();
         render();
+    }
+
+    async function toggleUserAdmin(id, isAdmin) {
+        const response = await fetch(`/aura-vault-7f3c/users/${id}/admin`, {
+            method: 'PATCH',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
+            },
+            body: JSON.stringify({ is_admin: isAdmin }),
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            window.alert(data.message || 'Не удалось обновить роль.');
+            return;
+        }
+
+        users = users.map((user) => (Number(user.id) === Number(id) ? data.data : user));
+        renderUsers();
+    }
+
+    function openMapModal() {
+        mapModal?.classList.remove('hidden');
+    }
+
+    function closeMapModal() {
+        mapModal?.classList.add('hidden');
     }
 
     function exportSelected() {

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ParkingSpotResource;
 use App\Models\ParkingSpot;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -24,6 +25,50 @@ class AdminController extends Controller
 
         return response()->json([
             'data' => ParkingSpotResource::collection($spots)->resolve(),
+        ]);
+    }
+
+    public function users(): JsonResponse
+    {
+        return response()->json([
+            'data' => User::query()
+                ->latest()
+                ->get()
+                ->map(fn (User $user) => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'is_admin' => $user->isAdmin(),
+                    'is_root_admin' => $this->isRootAdmin($user),
+                    'created_at' => $user->created_at?->toISOString(),
+                ])
+                ->values(),
+        ]);
+    }
+
+    public function toggleAdmin(Request $request, User $user): JsonResponse
+    {
+        if ($this->isRootAdmin($user)) {
+            return response()->json([
+                'message' => 'Главного администратора нельзя снять через панель.',
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'is_admin' => ['required', 'boolean'],
+        ]);
+
+        $user->update(['is_admin' => $validated['is_admin']]);
+
+        return response()->json([
+            'data' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'is_admin' => $user->isAdmin(),
+                'is_root_admin' => false,
+                'created_at' => $user->created_at?->toISOString(),
+            ],
         ]);
     }
 
@@ -53,5 +98,14 @@ class AdminController extends Controller
                 ParkingSpot::query()->whereIn('id', $validated['ids'])->get()
             )->resolve(),
         ]);
+    }
+
+    private function isRootAdmin(User $user): bool
+    {
+        $adminEmail = config('auralith.admin_email');
+
+        return is_string($adminEmail)
+            && trim($adminEmail) !== ''
+            && strcasecmp(trim($user->email), trim($adminEmail)) === 0;
     }
 }

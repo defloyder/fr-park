@@ -2,7 +2,18 @@
     <main class="admin-shell" data-admin-app>
         <aside class="admin-sidebar liquid-glass">
             <div class="brand-lockup">
-                <div class="brand-mark" aria-hidden="true">A.</div>
+                <div class="brand-mark auralith-mark" aria-hidden="true">
+                    <svg viewBox="0 0 64 64">
+                        <defs>
+                            <linearGradient id="auralithGradientAdmin" x1="9" y1="52" x2="55" y2="11" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#0AA7FF"/>
+                                <stop offset="1" stop-color="#8B3DFF"/>
+                            </linearGradient>
+                        </defs>
+                        <path fill="url(#auralithGradientAdmin)" d="M32 8 10 49h24c9 0 13-5 15-11l-7-4c-1 4-4 6-9 6H25l12-23 11 20c2 4 6 6 10 4s5-7 3-11L46 8c-3-6-11-6-14 0Z"></path>
+                        <circle fill="url(#auralithGradientAdmin)" cx="52" cy="48" r="8"></circle>
+                    </svg>
+                </div>
                 <div>
                     <span class="eyebrow">Auralith Maps</span>
                     <h1>Админ-панель</h1>
@@ -25,9 +36,17 @@
             </div>
 
             <nav class="admin-nav">
-                <a href="/">Карта</a>
+                <button type="button" data-admin-open-map title="Открыть карту">⌖ <span>Карта</span></button>
                 <a href="/api/parking-spots/export" data-admin-export-all>Экспорт JSON</a>
             </nav>
+
+            <section class="admin-users">
+                <div class="admin-section-head">
+                    <span class="eyebrow">Users</span>
+                    <button type="button" data-admin-users-refresh title="Обновить пользователей">⟳</button>
+                </div>
+                <div data-admin-users class="admin-users-list"></div>
+            </section>
         </aside>
 
         <section class="admin-workspace liquid-glass">
@@ -37,8 +56,8 @@
                     <h2>Точки парковок</h2>
                 </div>
                 <div class="admin-actions">
-                    <button class="ghost-button" type="button" data-admin-refresh>Обновить</button>
-                    <button class="route-button" type="button" data-admin-export-selected>Экспорт выбранных</button>
+                    <button class="ghost-button icon-text-button" type="button" data-admin-refresh title="Обновить">⟳ <span>Обновить</span></button>
+                    <button class="route-button icon-text-button" type="button" data-admin-export-selected title="Экспорт выбранных">⇩ <span>Экспорт</span></button>
                 </div>
             </header>
 
@@ -61,11 +80,11 @@
 
             <div class="admin-bulkbar">
                 <span data-admin-selected-count>Выбрано: 0</span>
-                <button class="ghost-button" type="button" data-admin-bulk="verified">Проверено</button>
-                <button class="ghost-button" type="button" data-admin-bulk="temporary">Временная</button>
-                <button class="ghost-button" type="button" data-admin-bulk="outdated">Неактуально</button>
-                <button class="ghost-button" type="button" data-admin-activate>Активировать</button>
-                <button class="danger-button" type="button" data-admin-hide>Скрыть</button>
+                <button class="ghost-button" type="button" data-admin-bulk="verified" title="Проверено">✓</button>
+                <button class="ghost-button" type="button" data-admin-bulk="temporary" title="Временная">◌</button>
+                <button class="ghost-button" type="button" data-admin-bulk="outdated" title="Неактуально">!</button>
+                <button class="ghost-button" type="button" data-admin-activate title="Активировать">↻</button>
+                <button class="danger-button" type="button" data-admin-hide title="Скрыть">×</button>
             </div>
 
             <div class="admin-table-wrap">
@@ -93,7 +112,12 @@
                 </div>
             </div>
 
-            <form data-admin-editor class="admin-editor-form">
+            <div class="admin-empty-editor" data-admin-empty-editor>
+                <strong>Точка не выбрана</strong>
+                <span>Нажмите «Открыть» в таблице, чтобы редактировать адрес, описание, фото и статус.</span>
+            </div>
+
+            <form data-admin-editor class="admin-editor-form hidden">
                 <input name="id" type="hidden">
                 <label>
                     <span>Название</span>
@@ -142,7 +166,7 @@
                 <button class="route-button" type="submit">Сохранить</button>
             </form>
 
-            <details id="import-panel" class="import-panel" open>
+            <details id="import-panel" class="import-panel">
                 <summary>Массовый импорт JSON</summary>
                 <form id="import-spots-form" class="import-form">
                     <label>
@@ -158,5 +182,18 @@
                 </form>
             </details>
         </aside>
+
+        <section class="admin-map-modal hidden" data-admin-map-modal>
+            <div class="admin-map-window liquid-glass">
+                <header class="admin-header">
+                    <div>
+                        <span class="eyebrow">Map preview</span>
+                        <h2>Карта</h2>
+                    </div>
+                    <button class="icon-button" type="button" data-admin-close-map aria-label="Закрыть карту">×</button>
+                </header>
+                <iframe src="/?embed=1" title="Auralith Maps"></iframe>
+            </div>
+        </section>
     </main>
 </x-layouts.app>
