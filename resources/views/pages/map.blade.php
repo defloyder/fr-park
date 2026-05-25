@@ -30,7 +30,7 @@
                 </div>
                 <div>
                     <span class="eyebrow">Карта бесплатных парковок</span>
-                    <h1>Парковки Москвы</h1>
+                    <h1>Auralith</h1>
                 </div>
             </div>
             <div class="top-panel__actions">

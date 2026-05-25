@@ -661,7 +661,7 @@ h2 {
     text-decoration: none;
     border: 0;
     cursor: pointer;
-    background: linear-gradient(135deg, #44C6FF, #7E5CFF);
+    background: linear-gradient(135deg, #00D4FF, #446CFF 58%, #A259FF);
     border-radius: 14px;
     box-shadow:
         0 14px 34px rgba(68, 108, 255, 0.24),
@@ -676,9 +676,11 @@ h2 {
 
 .ghost-button {
     color: var(--text-primary);
-    background: rgba(255, 255, 255, 0.07);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10);
+    background: rgba(26, 31, 46, 0.72);
+    border: 1px solid rgba(242, 244, 251, 0.12);
+    box-shadow:
+        0 10px 28px rgba(0, 0, 0, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.10);
 }
 
 .route-button:disabled {
@@ -702,8 +704,8 @@ h2 {
     color: rgba(255, 122, 144, 0.92);
     font-size: 1.28rem;
     font-weight: 800;
-    background: rgba(255, 255, 255, 0.07);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(26, 31, 46, 0.70);
+    border: 1px solid rgba(255, 122, 144, 0.22);
     border-radius: 14px;
     cursor: pointer;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10);
@@ -729,8 +731,8 @@ h2 {
     padding: 0 14px;
     color: var(--text-primary);
     font-weight: 800;
-    background: rgba(255, 255, 255, 0.075);
-    border: 1px solid rgba(255, 255, 255, 0.13);
+    background: rgba(26, 31, 46, 0.70);
+    border: 1px solid rgba(242, 244, 251, 0.12);
     border-radius: 14px;
     cursor: pointer;
     box-shadow:
@@ -763,7 +765,7 @@ h2 {
     width: min(360px, calc(100vw - 28px));
     padding: 5px;
     transform: translateX(-50%);
-    border-radius: 999px;
+    border-radius: 18px;
 }
 
 .floating-nav.hidden {
@@ -777,7 +779,9 @@ h2 {
     font-size: 0.88rem;
     font-weight: 700;
     background: transparent;
-    border-radius: 999px;
+    border: 0;
+    border-radius: 13px;
+    cursor: pointer;
 }
 
 .map-theme-light .nav-button {
@@ -787,7 +791,7 @@ h2 {
 .nav-button.is-active,
 .nav-button:hover {
     color: var(--text-primary);
-    background: linear-gradient(135deg, rgba(33, 168, 255, 0.24), rgba(139, 92, 246, 0.22));
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.22), rgba(68, 108, 255, 0.24), rgba(162, 89, 255, 0.22));
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
@@ -886,7 +890,9 @@ h2 {
 }
 
 .brand-lockup--map h1 {
-    font-size: 1.12rem;
+    font-size: 1.08rem;
+    font-weight: 800;
+    text-transform: uppercase;
 }
 
 .brand-mark {
@@ -906,10 +912,10 @@ h2 {
 }
 
 .brand-lockup--map .brand-mark {
-    width: 38px;
-    height: 38px;
-    flex-basis: 38px;
-    border-radius: 14px;
+    width: 42px;
+    height: 42px;
+    flex-basis: 42px;
+    border-radius: 13px;
 }
 
 .auralith-mark svg {
@@ -1516,20 +1522,35 @@ h2 {
     position: fixed;
     inset: 0;
     z-index: 20;
-    display: grid;
-    place-items: center;
-    padding: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
     background: rgba(3, 4, 10, 0.88);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
+    touch-action: pinch-zoom;
+}
+
+.photo-lightbox__stage {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+    overscroll-behavior: contain;
+    touch-action: pinch-zoom;
 }
 
 .photo-lightbox img {
-    max-width: min(1100px, 100%);
-    max-height: calc(100svh - 92px);
+    width: auto;
+    max-width: min(1180px, 100%);
+    max-height: calc(100svh - 72px);
     object-fit: contain;
-    border-radius: 18px;
+    border-radius: 14px;
     box-shadow: 0 24px 90px rgba(0, 0, 0, 0.48);
+    touch-action: pinch-zoom;
 }
 
 .photo-lightbox__close,
@@ -2059,7 +2080,13 @@ h2 {
     }
 
     .photo-lightbox {
-        padding: 12px;
+        padding: 8px;
+    }
+
+    .photo-lightbox img {
+        width: 100%;
+        max-width: none;
+        max-height: calc(100svh - 74px);
     }
 
     .photo-lightbox__nav {

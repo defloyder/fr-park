@@ -292,9 +292,9 @@ class ParkingSpotController extends Controller
             'lat' => (float) $spot->latitude,
             'lng' => (float) $spot->longitude,
             'description' => $spot->description,
-            'photo_url' => $this->normalizePhotoUrl($spot->photo_url),
-            'photo_urls' => $photos->map(fn (string $photo) => $this->normalizePhotoUrl($photo))->filter()->values()->all(),
-            'photos' => $photos->map(fn (string $photo) => $this->normalizePhotoUrl($photo))->filter()->values()->all(),
+            'photo_url' => $this->normalizePhotoUrl($spot->photo_url, request()),
+            'photo_urls' => $photos->map(fn (string $photo) => $this->normalizePhotoUrl($photo, request()))->filter()->values()->all(),
+            'photos' => $photos->map(fn (string $photo) => $this->normalizePhotoUrl($photo, request()))->filter()->values()->all(),
             'access_instructions' => $spot->access_instructions,
             'landmarks' => $spot->landmarks,
             'parking_notes' => $spot->parking_notes,
@@ -307,16 +307,30 @@ class ParkingSpotController extends Controller
         ];
     }
 
-    private function normalizePhotoUrl(?string $photo): ?string
+    private function normalizePhotoUrl(?string $photo, Request $request): ?string
     {
         if (! $photo) {
             return null;
         }
 
+        $photo = trim($photo);
+
         if (Str::startsWith($photo, ['http://', 'https://'])) {
+            $parts = parse_url($photo);
+            $appIp = config('app.ip');
+            $appDomain = config('app.domain');
+            $host = $parts['host'] ?? null;
+            $path = $parts['path'] ?? '';
+
+            if ($host && in_array($host, array_filter([$appIp, $appDomain, $request->getHost()]), true)) {
+                $query = isset($parts['query']) ? '?'.$parts['query'] : '';
+
+                return $request->getSchemeAndHttpHost().$path.$query;
+            }
+
             return $photo;
         }
 
-        return url($photo);
+        return $request->getSchemeAndHttpHost().'/'.ltrim($photo, '/');
     }
 }

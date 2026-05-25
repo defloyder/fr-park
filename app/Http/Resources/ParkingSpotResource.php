@@ -24,8 +24,8 @@ class ParkingSpotResource extends JsonResource
             'latitude' => (float) $this->latitude,
             'longitude' => (float) $this->longitude,
             'description' => $this->description,
-            'photo_url' => $this->normalizePhotoUrl($this->photo_url),
-            'photo_urls' => $photos->map(fn (string $photo) => $this->normalizePhotoUrl($photo))->filter()->values()->all(),
+            'photo_url' => $this->normalizePhotoUrl($this->photo_url, $request),
+            'photo_urls' => $photos->map(fn (string $photo) => $this->normalizePhotoUrl($photo, $request))->filter()->values()->all(),
             'access_instructions' => $this->access_instructions,
             'landmarks' => $this->landmarks,
             'parking_notes' => $this->parking_notes,
@@ -49,16 +49,30 @@ class ParkingSpotResource extends JsonResource
         ];
     }
 
-    private function normalizePhotoUrl(?string $photo): ?string
+    private function normalizePhotoUrl(?string $photo, Request $request): ?string
     {
         if (! $photo) {
             return null;
         }
 
+        $photo = trim($photo);
+
         if (str_starts_with($photo, 'http://') || str_starts_with($photo, 'https://')) {
+            $parts = parse_url($photo);
+            $appIp = config('app.ip');
+            $appDomain = config('app.domain');
+            $host = $parts['host'] ?? null;
+            $path = $parts['path'] ?? '';
+
+            if ($host && in_array($host, array_filter([$appIp, $appDomain, $request->getHost()]), true)) {
+                $query = isset($parts['query']) ? '?'.$parts['query'] : '';
+
+                return $request->getSchemeAndHttpHost().$path.$query;
+            }
+
             return $photo;
         }
 
-        return url($photo);
+        return $request->getSchemeAndHttpHost().'/'.ltrim($photo, '/');
     }
 }

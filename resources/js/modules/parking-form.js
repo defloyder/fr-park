@@ -806,22 +806,25 @@ export function initParkingUi() {
 
     function moveLightbox(direction) {
         const total = state.lightboxPhotos.length;
-        if (total === 0) return;
+        if (total <= 1) return;
         state.lightboxIndex = (state.lightboxIndex + direction + total) % total;
         renderLightbox();
     }
 
     function renderLightbox() {
         document.getElementById('photo-lightbox')?.remove();
+        const hasManyPhotos = state.lightboxPhotos.length > 1;
         const lightbox = document.createElement('section');
         lightbox.id = 'photo-lightbox';
         lightbox.className = 'photo-lightbox';
         lightbox.innerHTML = `
             <button class="photo-lightbox__close" type="button" data-action="close-lightbox" aria-label="Закрыть">×</button>
-            <button class="photo-lightbox__nav photo-lightbox__nav--prev" type="button" data-action="prev-photo" aria-label="Предыдущее фото">‹</button>
-            <img src="${escapeAttribute(state.lightboxPhotos[state.lightboxIndex])}" alt="${escapeAttribute(`Фото ${state.lightboxIndex + 1}`)}">
-            <button class="photo-lightbox__nav photo-lightbox__nav--next" type="button" data-action="next-photo" aria-label="Следующее фото">›</button>
-            <div class="photo-lightbox__counter">${state.lightboxIndex + 1} / ${state.lightboxPhotos.length}</div>
+            ${hasManyPhotos ? '<button class="photo-lightbox__nav photo-lightbox__nav--prev" type="button" data-action="prev-photo" aria-label="Предыдущее фото">‹</button>' : ''}
+            <div class="photo-lightbox__stage">
+                <img src="${escapeAttribute(state.lightboxPhotos[state.lightboxIndex])}" alt="${escapeAttribute(`Фото ${state.lightboxIndex + 1}`)}">
+            </div>
+            ${hasManyPhotos ? '<button class="photo-lightbox__nav photo-lightbox__nav--next" type="button" data-action="next-photo" aria-label="Следующее фото">›</button>' : ''}
+            ${hasManyPhotos ? `<div class="photo-lightbox__counter">${state.lightboxIndex + 1} / ${state.lightboxPhotos.length}</div>` : ''}
         `;
         document.body.append(lightbox);
     }
