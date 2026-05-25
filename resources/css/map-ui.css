@@ -61,6 +61,12 @@ textarea {
     transform: translateY(18px);
 }
 
+.export-toolbar.hidden,
+.export-selection-count.hidden,
+.import-panel.hidden {
+    display: none;
+}
+
 .app-shell {
     position: relative;
 }

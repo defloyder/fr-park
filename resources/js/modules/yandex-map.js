@@ -40,7 +40,7 @@ export async function initYandexMap() {
             center: MOSCOW_CENTER,
             zoom: 12,
             type: getStoredMapType(),
-            controls: ['zoomControl', 'geolocationControl', 'typeSelector', 'fullscreenControl'],
+            controls: ['zoomControl', 'typeSelector', 'fullscreenControl'],
         }, {
             suppressMapOpenBlock: true,
             yandexMapDisablePoiInteractivity: true,
@@ -128,23 +128,28 @@ function waitForYmaps(timeout = 10000) {
 }
 
 function configureMapControls(isMobile) {
-    const topOffset = isMobile ? 92 : 12;
+    const topOffset = isMobile ? 96 : 16;
 
-    map.controls.get('zoomControl')?.options.set('position', {
+    setControlPosition('zoomControl', {
         top: isMobile ? 112 : 110,
         left: isMobile ? 10 : 12,
     });
-    map.controls.get('geolocationControl')?.options.set('position', {
-        top: topOffset,
-        left: isMobile ? 10 : 12,
-    });
-    map.controls.get('typeSelector')?.options.set('position', {
+    setControlPosition('typeSelector', {
         top: topOffset,
         right: isMobile ? 10 : 12,
     });
-    map.controls.get('fullscreenControl')?.options.set('position', {
+    setControlPosition('fullscreenControl', {
         top: topOffset + 42,
         right: isMobile ? 10 : 12,
+    });
+}
+
+function setControlPosition(name, position) {
+    const control = map.controls.get(name);
+
+    control?.options.set({
+        float: 'none',
+        position,
     });
 }
 
