@@ -48,8 +48,14 @@ class User extends Authenticatable
     {
         $adminEmail = config('auralith.admin_email');
 
-        return is_string($adminEmail)
-            && $adminEmail !== ''
-            && mb_strtolower($this->email) === mb_strtolower($adminEmail);
+        if (! is_string($adminEmail)) {
+            return false;
+        }
+
+        $adminEmail = trim($adminEmail);
+        $userEmail = trim((string) $this->email);
+
+        return $adminEmail !== ''
+            && strcasecmp($userEmail, $adminEmail) === 0;
     }
 }
