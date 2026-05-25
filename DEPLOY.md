@@ -112,14 +112,19 @@ AURALITH_ADMIN_EMAIL=your_admin_email@example.com
 docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
 ```
 
-После `git pull` пересоберите образ без кэша, иначе фронтенд может остаться старым:
+После `git pull` пересоберите и перезапустите контейнер. **Обновление страницы в браузере без пересборки Docker ничего не меняет** — на сервере крутится старый образ.
 
 ```bash
 git pull origin main
-docker compose --env-file .env.production -f docker-compose.prod.yml build --no-cache app
+docker compose --env-file .env.production -f docker-compose.prod.yml build app
 docker compose --env-file .env.production -f docker-compose.prod.yml up -d
+docker compose --env-file .env.production -f docker-compose.prod.yml exec app php artisan view:clear
 docker compose --env-file .env.production -f docker-compose.prod.yml exec app php artisan config:clear
 ```
+
+Сборка `app` теперь быстрая: готовый фронтенд лежит в `public/build` в репозитории, Docker не гоняет `npm run build`, если manifest уже есть.
+
+Если карта всё ещё пустая после деплоя — жёсткое обновление в браузере: `Ctrl+Shift+R`.
 
 Посмотрите логи:
 

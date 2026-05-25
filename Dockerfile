@@ -15,10 +15,12 @@ FROM node:22-alpine AS assets
 WORKDIR /app
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 COPY package.json package-lock.json .npmrc ./
-RUN npm ci --ignore-scripts
 COPY resources ./resources
 COPY vite.config.js ./
-RUN npm run build
+COPY public/build ./public/build
+RUN if [ ! -f public/build/manifest.json ]; then \
+        npm ci --ignore-scripts && npm run build; \
+    fi
 
 FROM dunglas/frankenphp:1-php8.4-alpine AS app
 WORKDIR /app
