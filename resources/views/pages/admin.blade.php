@@ -3,15 +3,16 @@
         <aside class="admin-sidebar liquid-glass">
             <div class="brand-lockup">
                 <div class="brand-mark auralith-mark" aria-hidden="true">
-                    <svg viewBox="0 0 64 64">
+                    <svg viewBox="0 0 80 80">
                         <defs>
-                            <linearGradient id="auralithGradientAdmin" x1="9" y1="52" x2="55" y2="11" gradientUnits="userSpaceOnUse">
-                                <stop stop-color="#0AA7FF"/>
-                                <stop offset="1" stop-color="#8B3DFF"/>
+                            <linearGradient id="auralithGradientAdmin" x1="12" y1="68" x2="64" y2="12" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#00D4FF"/>
+                                <stop offset="0.55" stop-color="#446CFF"/>
+                                <stop offset="1" stop-color="#A259FF"/>
                             </linearGradient>
                         </defs>
-                        <path fill="url(#auralithGradientAdmin)" d="M32 8 10 49h24c9 0 13-5 15-11l-7-4c-1 4-4 6-9 6H25l12-23 11 20c2 4 6 6 10 4s5-7 3-11L46 8c-3-6-11-6-14 0Z"></path>
-                        <circle fill="url(#auralithGradientAdmin)" cx="52" cy="48" r="8"></circle>
+                        <path fill="url(#auralithGradientAdmin)" d="M42.6 12.8c-5.7 0-8.2 3-10.7 7.7L11.7 58.8c-2.8 5.3 1 11.7 7 11.7h31.2c8.1 0 14.2-4 17.6-11.3 2.4-5.2-3-10.4-8.1-7.8-2.2 1.1-3.9 2.9-5.7 4.4-2 1.8-4.3 2.5-7.5 2.5H31.1l14-26.7 8.3 15.7c2.9 5.4 10.6 5.8 14 .7 1.6-2.4 1.7-5.5.4-8.1L53.7 20.5c-2.5-4.7-5.4-7.7-11.1-7.7Z"/>
+                        <circle fill="url(#auralithGradientAdmin)" cx="61.5" cy="62" r="9.5"/>
                     </svg>
                 </div>
                 <div>
@@ -36,17 +37,9 @@
             </div>
 
             <nav class="admin-nav">
-                <button type="button" data-admin-open-map title="Открыть карту">⌖ <span>Карта</span></button>
+                <button type="button" data-admin-open-map title="Открыть карту">Карта</button>
                 <a href="/api/parking-spots/export" data-admin-export-all>Экспорт JSON</a>
             </nav>
-
-            <section class="admin-users">
-                <div class="admin-section-head">
-                    <span class="eyebrow">Users</span>
-                    <button type="button" data-admin-users-refresh title="Обновить пользователей">⟳</button>
-                </div>
-                <div data-admin-users class="admin-users-list"></div>
-            </section>
         </aside>
 
         <section class="admin-workspace liquid-glass">
@@ -56,8 +49,8 @@
                     <h2>Точки парковок</h2>
                 </div>
                 <div class="admin-actions">
-                    <button class="ghost-button icon-text-button" type="button" data-admin-refresh title="Обновить">⟳ <span>Обновить</span></button>
-                    <button class="route-button icon-text-button" type="button" data-admin-export-selected title="Экспорт выбранных">⇩ <span>Экспорт</span></button>
+                    <button class="ghost-button" type="button" data-admin-refresh>Обновить</button>
+                    <button class="route-button" type="button" data-admin-export-selected>Экспорт выбранных</button>
                 </div>
             </header>
 
@@ -80,11 +73,11 @@
 
             <div class="admin-bulkbar">
                 <span data-admin-selected-count>Выбрано: 0</span>
-                <button class="ghost-button" type="button" data-admin-bulk="verified" title="Проверено">✓</button>
-                <button class="ghost-button" type="button" data-admin-bulk="temporary" title="Временная">◌</button>
-                <button class="ghost-button" type="button" data-admin-bulk="outdated" title="Неактуально">!</button>
-                <button class="ghost-button" type="button" data-admin-activate title="Активировать">↻</button>
-                <button class="danger-button" type="button" data-admin-hide title="Скрыть">×</button>
+                <button class="ghost-button" type="button" data-admin-bulk="verified">Проверено</button>
+                <button class="ghost-button" type="button" data-admin-bulk="temporary">Временная</button>
+                <button class="ghost-button" type="button" data-admin-bulk="outdated">Неактуально</button>
+                <button class="ghost-button" type="button" data-admin-activate>Активировать</button>
+                <button class="danger-button" type="button" data-admin-hide>Скрыть</button>
             </div>
 
             <div class="admin-table-wrap">
@@ -162,6 +155,12 @@
                     <span>Фото URL через запятую</span>
                     <textarea name="photo_urls" rows="3"></textarea>
                 </label>
+                <div class="admin-photo-dropzone" data-admin-photo-dropzone tabindex="0">
+                    <input data-admin-photo-input type="file" accept="image/jpeg,image/png,image/webp,image/*" multiple hidden>
+                    <strong>Перетащите фото сюда</strong>
+                    <span>или нажмите, чтобы выбрать несколько файлов</span>
+                </div>
+                <div class="admin-photo-preview-list" data-admin-photo-preview></div>
                 <p class="form-message hidden" data-admin-message></p>
                 <button class="route-button" type="submit">Сохранить</button>
             </form>
@@ -182,6 +181,30 @@
                 </form>
             </details>
         </aside>
+
+        <section class="admin-users-panel liquid-glass">
+            <header class="admin-header">
+                <div>
+                    <span class="eyebrow">Users</span>
+                    <h2>Пользователи</h2>
+                </div>
+                <button class="ghost-button" type="button" data-admin-users-refresh>Обновить</button>
+            </header>
+            <div class="admin-table-wrap">
+                <table class="admin-table admin-users-table">
+                    <thead>
+                        <tr>
+                            <th>Пользователь</th>
+                            <th>Email</th>
+                            <th>Роль</th>
+                            <th>Дата регистрации</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody data-admin-users></tbody>
+                </table>
+            </div>
+        </section>
 
         <section class="admin-map-modal hidden" data-admin-map-modal>
             <div class="admin-map-window liquid-glass">

@@ -1,4 +1,4 @@
-import { importParkingSpots, updateParkingSpot } from './parking-api';
+import { importParkingSpots, updateParkingSpot, uploadParkingPhoto } from './parking-api';
 
 const STATUS_LABELS = {
     verified: 'Проверено',
@@ -10,6 +10,7 @@ const STATUS_LABELS = {
 let spots = [];
 let users = [];
 let selectedIds = new Set();
+let editorPhotos = [];
 
 export function initAdminPanel() {
     const root = document.querySelector('[data-admin-app]');
@@ -29,6 +30,9 @@ export function initAdminPanel() {
     const importMessage = root.querySelector('#import-message');
     const usersList = root.querySelector('[data-admin-users]');
     const mapModal = root.querySelector('[data-admin-map-modal]');
+    const photoDropzone = root.querySelector('[data-admin-photo-dropzone]');
+    const photoInput = root.querySelector('[data-admin-photo-input]');
+    const photoPreview = root.querySelector('[data-admin-photo-preview]');
 
     root.addEventListener('click', async (event) => {
         const editButton = event.target.closest('[data-admin-edit]');
@@ -73,10 +77,7 @@ export function initAdminPanel() {
             description: editor.elements.description.value.trim(),
             access_instructions: editor.elements.access_instructions.value.trim(),
             landmarks: editor.elements.landmarks.value.trim(),
-            photo_urls: editor.elements.photo_urls.value
-                .split(',')
-                .map((photo) => photo.trim())
-                .filter(Boolean),
+            photo_urls: getEditorPhotos(),
         };
         payload.photo_url = payload.photo_urls[0] ?? '';
 
@@ -110,6 +111,28 @@ export function initAdminPanel() {
             importMessage.classList.remove('hidden', 'is-success');
             importMessage.classList.add('is-error');
         }
+    });
+
+    photoDropzone?.addEventListener('click', () => photoInput?.click());
+    photoDropzone?.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            photoInput?.click();
+        }
+    });
+    photoDropzone?.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        photoDropzone.classList.add('is-dragover');
+    });
+    photoDropzone?.addEventListener('dragleave', () => photoDropzone.classList.remove('is-dragover'));
+    photoDropzone?.addEventListener('drop', async (event) => {
+        event.preventDefault();
+        photoDropzone.classList.remove('is-dragover');
+        await uploadEditorPhotos([...event.dataTransfer.files]);
+    });
+    photoInput?.addEventListener('change', async () => {
+        await uploadEditorPhotos([...photoInput.files]);
+        photoInput.value = '';
     });
 
     loadSpots();
@@ -148,7 +171,7 @@ export function initAdminPanel() {
                 <td><em class="spot-list__status spot-list__status--${getStatus(spot)}">${STATUS_LABELS[getStatus(spot)]}</em></td>
                 <td>${getPhotos(spot).length}</td>
                 <td>${escapeHtml(spot.status)}</td>
-                <td><button class="ghost-button admin-icon-action" type="button" data-admin-edit="${spot.id}" title="Открыть точку">↗</button></td>
+                <td><button class="ghost-button admin-row-action" type="button" data-admin-edit="${spot.id}">Редактировать</button></td>
             </tr>
         `).join('');
 
@@ -159,15 +182,17 @@ export function initAdminPanel() {
 
     function renderUsers() {
         usersList.innerHTML = users.map((user) => `
-            <article class="admin-user">
-                <span>
-                    <strong>${escapeHtml(user.name)}</strong>
-                    <small>${escapeHtml(user.email)}</small>
-                </span>
-                <button class="ghost-button admin-icon-action ${user.is_admin ? 'is-active' : ''}" type="button" data-admin-user="${user.id}" data-admin-role="${user.is_admin ? 'false' : 'true'}" ${user.is_root_admin ? 'disabled' : ''} title="${user.is_admin ? 'Снять админа' : 'Назначить админом'}">
-                    ${user.is_admin ? '★' : '☆'}
-                </button>
-            </article>
+            <tr>
+                <td><strong>${escapeHtml(user.name)}</strong></td>
+                <td><small>${escapeHtml(user.email)}</small></td>
+                <td><em class="admin-role-badge ${user.is_admin ? 'is-admin' : ''}">${user.is_root_admin ? 'Главный админ' : (user.is_admin ? 'Админ' : 'Пользователь')}</em></td>
+                <td><small>${formatDate(user.created_at)}</small></td>
+                <td>
+                    <button class="ghost-button admin-row-action ${user.is_admin ? 'is-active' : ''}" type="button" data-admin-user="${user.id}" data-admin-role="${user.is_admin ? 'false' : 'true'}" ${user.is_root_admin ? 'disabled' : ''}>
+                        ${user.is_root_admin ? 'Защищен' : (user.is_admin ? 'Снять роль' : 'Назначить админом')}
+                    </button>
+                </td>
+            </tr>
         `).join('');
     }
 
@@ -195,13 +220,66 @@ export function initAdminPanel() {
         editor.elements.description.value = spot.description ?? '';
         editor.elements.access_instructions.value = spot.access_instructions ?? '';
         editor.elements.landmarks.value = spot.landmarks ?? '';
-        editor.elements.photo_urls.value = getPhotos(spot).join(', ');
+        editorPhotos = getPhotos(spot);
+        editor.elements.photo_urls.value = editorPhotos.join(', ');
+        renderEditorPhotos();
         setMessage('');
+    }
+
+    async function uploadEditorPhotos(files) {
+        const images = files.filter((file) => file.type.startsWith('image/'));
+        if (images.length === 0) return;
+
+        photoDropzone?.classList.add('is-uploading');
+        setMessage('Загружаю фото...');
+
+        try {
+            const uploaded = await Promise.all(images.map((file) => uploadParkingPhoto(file)));
+            editorPhotos = [...new Set([...editorPhotos, ...uploaded.map((item) => item.url).filter(Boolean)])];
+            editor.elements.photo_urls.value = editorPhotos.join(', ');
+            renderEditorPhotos();
+            setMessage('Фото добавлены.', false);
+        } catch (error) {
+            setMessage(error.message || 'Не удалось загрузить фото.', true);
+        } finally {
+            photoDropzone?.classList.remove('is-uploading');
+        }
+    }
+
+    function renderEditorPhotos() {
+        if (!photoPreview) return;
+
+        photoPreview.innerHTML = editorPhotos.map((photo, index) => `
+            <article class="admin-photo-preview">
+                <img src="${escapeAttribute(photo)}" alt="">
+                <button type="button" data-admin-remove-photo="${index}" aria-label="Удалить фото">×</button>
+            </article>
+        `).join('');
+
+        photoPreview.querySelectorAll('[data-admin-remove-photo]').forEach((button) => {
+            button.addEventListener('click', () => {
+                editorPhotos.splice(Number(button.dataset.adminRemovePhoto), 1);
+                editor.elements.photo_urls.value = editorPhotos.join(', ');
+                renderEditorPhotos();
+            });
+        });
+    }
+
+    function getEditorPhotos() {
+        const manualPhotos = editor.elements.photo_urls.value
+            .split(',')
+            .map((photo) => photo.trim())
+            .filter(Boolean);
+
+        return [...new Set([...editorPhotos, ...manualPhotos])];
     }
 
     async function bulk(action, extra = {}) {
         const ids = [...selectedIds];
-        if (ids.length === 0) return;
+        if (ids.length === 0) {
+            window.alert('Сначала выберите одну или несколько точек.');
+            return;
+        }
 
         const response = await fetch('/aura-vault-7f3c/spots/bulk', {
             method: 'POST',
@@ -251,7 +329,10 @@ export function initAdminPanel() {
 
     function exportSelected() {
         const ids = [...selectedIds];
-        if (ids.length === 0) return;
+        if (ids.length === 0) {
+            window.alert('Сначала выберите точки для экспорта.');
+            return;
+        }
         window.location.href = `/api/parking-spots/export?ids=${ids.join(',')}`;
     }
 
@@ -301,4 +382,18 @@ function escapeHtml(value) {
         '"': '&quot;',
         "'": '&#039;',
     }[char]));
+}
+
+function escapeAttribute(value) {
+    return escapeHtml(value).replace(/`/g, '&#096;');
+}
+
+function formatDate(value) {
+    if (!value) return '—';
+
+    return new Intl.DateTimeFormat('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+    }).format(new Date(value));
 }

@@ -16,15 +16,16 @@
         <header class="top-panel liquid-glass">
             <div class="brand-lockup brand-lockup--map">
                 <div class="brand-mark auralith-mark" aria-hidden="true">
-                    <svg viewBox="0 0 64 64">
+                    <svg viewBox="0 0 80 80">
                         <defs>
-                            <linearGradient id="auralithGradientMap" x1="9" y1="52" x2="55" y2="11" gradientUnits="userSpaceOnUse">
-                                <stop stop-color="#0AA7FF"/>
-                                <stop offset="1" stop-color="#8B3DFF"/>
+                            <linearGradient id="auralithGradientMap" x1="12" y1="68" x2="64" y2="12" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#00D4FF"/>
+                                <stop offset="0.55" stop-color="#446CFF"/>
+                                <stop offset="1" stop-color="#A259FF"/>
                             </linearGradient>
                         </defs>
-                        <path fill="url(#auralithGradientMap)" d="M32 8 10 49h24c9 0 13-5 15-11l-7-4c-1 4-4 6-9 6H25l12-23 11 20c2 4 6 6 10 4s5-7 3-11L46 8c-3-6-11-6-14 0Z"></path>
-                        <circle fill="url(#auralithGradientMap)" cx="52" cy="48" r="8"></circle>
+                        <path fill="url(#auralithGradientMap)" d="M42.6 12.8c-5.7 0-8.2 3-10.7 7.7L11.7 58.8c-2.8 5.3 1 11.7 7 11.7h31.2c8.1 0 14.2-4 17.6-11.3 2.4-5.2-3-10.4-8.1-7.8-2.2 1.1-3.9 2.9-5.7 4.4-2 1.8-4.3 2.5-7.5 2.5H31.1l14-26.7 8.3 15.7c2.9 5.4 10.6 5.8 14 .7 1.6-2.4 1.7-5.5.4-8.1L53.7 20.5c-2.5-4.7-5.4-7.7-11.1-7.7Z"/>
+                        <circle fill="url(#auralithGradientMap)" cx="61.5" cy="62" r="9.5"/>
                     </svg>
                 </div>
                 <div>
