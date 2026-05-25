@@ -1,82 +1,70 @@
 import { fetchParkingSpots, reverseGeocode } from './parking-api';
 
 let map = null;
-let clusterer = null;
 let spotsCache = [];
-let pendingPlacemark = null;
+let pendingMarker = null;
 let addressRequestId = 0;
 let isPickingMode = false;
 
-const MOSCOW_CENTER = [55.7558, 37.6173];
-const MAP_TYPE_STORAGE_KEY = 'auralith:map-type';
-const DEFAULT_MAP_TYPE = 'yandex#map';
-const LIGHT_UI_MAP_TYPES = ['yandex#satellite', 'yandex#hybrid'];
+const MOSCOW_CENTER = [37.6173, 55.7558];
+const SOURCE_ID = 'parking-spots';
+const PENDING_SOURCE_ID = 'pending-parking-spot';
 
 export async function initYandexMap() {
     if (!document.getElementById('yandex-map')) {
         return;
     }
 
-    if (document.querySelector('.map-screen')?.dataset.yandexApiReady !== 'true') {
-        window.dispatchEvent(new CustomEvent('parking:error', {
-            detail: 'Добавьте ключ Яндекс.Карт в .env, чтобы увидеть интерактивную карту.',
-        }));
-        return;
-    }
-
     try {
-        await waitForYmaps();
+        await waitForMapLibre();
+        initMapLibreMap();
     } catch {
         window.dispatchEvent(new CustomEvent('parking:error', {
-            detail: 'Не удалось загрузить Яндекс.Карты. Проверьте соединение и обновите страницу.',
+            detail: 'Не удалось загрузить карту. Проверьте соединение и обновите страницу.',
         }));
-        return;
     }
+}
 
-    window.ymaps.ready(async () => {
-        const isMobile = window.matchMedia('(max-width: 520px)').matches;
-
-        map = new window.ymaps.Map('yandex-map', {
-            center: MOSCOW_CENTER,
-            zoom: 12,
-            type: getStoredMapType(),
-            controls: ['zoomControl', 'typeSelector', 'fullscreenControl'],
-        }, {
-            suppressMapOpenBlock: true,
-            yandexMapDisablePoiInteractivity: true,
-            viewportMargin: 64,
-        });
-
-        map.behaviors.enable(['drag', 'scrollZoom', 'multiTouch']);
-        map.options.set('scrollZoomSpeed', isMobile ? 3 : 5);
-        configureMapControls(isMobile);
-        syncMapTheme();
-        map.events.add('typechange', () => {
-            saveMapType();
-            syncMapTheme();
-        });
-
-        clusterer = new window.ymaps.Clusterer({
-            clusterDisableClickZoom: false,
-            clusterHideIconOnBalloonOpen: false,
-            geoObjectHideIconOnBalloonOpen: false,
-            gridSize: isMobile ? 128 : 112,
-            maxZoom: isMobile ? 16 : 15,
-            minClusterSize: 3,
-            clusterIconLayout: window.ymaps.templateLayoutFactory.createClass(
-                '<div class="map-cluster">$[properties.geoObjects.length]</div>',
-            ),
-            clusterIconShape: {
-                type: 'Circle',
-                coordinates: [17, 17],
-                radius: 17,
+function initMapLibreMap() {
+    map = new window.maplibregl.Map({
+        container: 'yandex-map',
+        center: MOSCOW_CENTER,
+        zoom: 11.4,
+        minZoom: 3,
+        maxZoom: 19,
+        attributionControl: false,
+        style: {
+            version: 8,
+            glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
+            sources: {
+                osm: {
+                    type: 'raster',
+                    tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+                    tileSize: 256,
+                    attribution: '© OpenStreetMap contributors',
+                },
             },
-            clusterIconOffset: [-17, -17],
-        });
+            layers: [
+                {
+                    id: 'osm',
+                    type: 'raster',
+                    source: 'osm',
+                },
+            ],
+        },
+    });
 
-        map.geoObjects.add(clusterer);
+    map.addControl(new window.maplibregl.NavigationControl({ visualizePitch: false }), 'top-left');
+    map.addControl(new window.maplibregl.FullscreenControl(), 'top-right');
+    map.addControl(new window.maplibregl.AttributionControl({ compact: true }), 'bottom-left');
+
+    bindPerformanceMode();
+
+    map.on('load', async () => {
+        addParkingSource();
+        addParkingLayers();
+        addPendingSourceAndLayer();
         bindMapEvents();
-        bindPerformanceMode();
 
         try {
             const response = await fetchParkingSpots();
@@ -87,6 +75,28 @@ export async function initYandexMap() {
                 detail: 'Не удалось загрузить точки. Проверьте соединение и попробуйте снова.',
             }));
         }
+    });
+}
+
+function waitForMapLibre(timeout = 10000) {
+    if (window.maplibregl) {
+        return Promise.resolve();
+    }
+
+    return new Promise((resolve, reject) => {
+        const startedAt = Date.now();
+        const interval = window.setInterval(() => {
+            if (window.maplibregl) {
+                window.clearInterval(interval);
+                resolve();
+                return;
+            }
+
+            if (Date.now() - startedAt > timeout) {
+                window.clearInterval(interval);
+                reject(new Error('MapLibre GL JS timeout'));
+            }
+        }, 80);
     });
 }
 
@@ -101,85 +111,186 @@ function bindPerformanceMode() {
         timer = window.setTimeout(() => document.body.classList.remove('is-map-interacting'), 180);
     };
 
-    map.events.add(['actionbegin', 'boundschange'], start);
-    map.events.add(['actionend', 'click'], stop);
+    map.on('movestart', start);
+    map.on('zoomstart', start);
+    map.on('moveend', stop);
+    map.on('zoomend', stop);
+    map.on('click', stop);
 }
 
-function waitForYmaps(timeout = 10000) {
-    if (window.ymaps) {
-        return Promise.resolve();
+function addParkingSource() {
+    map.addSource(SOURCE_ID, {
+        type: 'geojson',
+        data: buildFeatureCollection([]),
+        cluster: true,
+        clusterMaxZoom: 15,
+        clusterRadius: 58,
+    });
+}
+
+function addParkingLayers() {
+    map.addLayer({
+        id: 'clusters',
+        type: 'circle',
+        source: SOURCE_ID,
+        filter: ['has', 'point_count'],
+        paint: {
+            'circle-color': '#4A9EFF',
+            'circle-radius': ['step', ['get', 'point_count'], 19, 10, 23, 35, 28],
+            'circle-stroke-width': 4,
+            'circle-stroke-color': 'rgba(248, 250, 252, 0.92)',
+            'circle-opacity': 0.94,
+            'circle-stroke-opacity': 0.9,
+        },
+    });
+
+    map.addLayer({
+        id: 'cluster-count',
+        type: 'symbol',
+        source: SOURCE_ID,
+        filter: ['has', 'point_count'],
+        layout: {
+            'text-field': ['get', 'point_count_abbreviated'],
+            'text-font': ['Noto Sans Regular'],
+            'text-size': 14,
+            'text-allow-overlap': true,
+        },
+        paint: {
+            'text-color': '#F8FAFC',
+        },
+    });
+
+    map.addLayer({
+        id: 'spots-pin',
+        type: 'circle',
+        source: SOURCE_ID,
+        filter: ['!', ['has', 'point_count']],
+        paint: {
+            'circle-color': ['get', 'markerColor'],
+            'circle-radius': 16,
+            'circle-stroke-width': 5,
+            'circle-stroke-color': ['get', 'markerHalo'],
+            'circle-opacity': 0.96,
+        },
+    });
+
+    map.addLayer({
+        id: 'spots-symbol',
+        type: 'symbol',
+        source: SOURCE_ID,
+        filter: ['!', ['has', 'point_count']],
+        layout: {
+            'text-field': 'P',
+            'text-font': ['Noto Sans Regular'],
+            'text-size': 15,
+            'text-allow-overlap': true,
+        },
+        paint: {
+            'text-color': '#08111F',
+        },
+    });
+}
+
+function addPendingSourceAndLayer() {
+    map.addSource(PENDING_SOURCE_ID, {
+        type: 'geojson',
+        data: buildFeatureCollection([]),
+    });
+
+    map.addLayer({
+        id: 'pending-spot-halo',
+        type: 'circle',
+        source: PENDING_SOURCE_ID,
+        paint: {
+            'circle-color': 'rgba(0, 212, 255, 0.22)',
+            'circle-radius': 22,
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#F8FAFC',
+        },
+    });
+
+    map.addLayer({
+        id: 'pending-spot',
+        type: 'circle',
+        source: PENDING_SOURCE_ID,
+        paint: {
+            'circle-color': '#00D4FF',
+            'circle-radius': 10,
+            'circle-stroke-width': 4,
+            'circle-stroke-color': 'rgba(248, 250, 252, 0.82)',
+        },
+    });
+}
+
+function bindMapEvents() {
+    map.on('click', 'clusters', async (event) => {
+        const feature = map.queryRenderedFeatures(event.point, { layers: ['clusters'] })[0];
+        const clusterId = feature?.properties?.cluster_id;
+        const source = map.getSource(SOURCE_ID);
+
+        if (!source || clusterId === undefined) return;
+
+        const zoom = await source.getClusterExpansionZoom(clusterId);
+        map.easeTo({
+            center: feature.geometry.coordinates,
+            zoom,
+            duration: 220,
+        });
+    });
+
+    map.on('click', 'spots-pin', (event) => selectSpotFromFeature(event.features?.[0]));
+    map.on('click', 'spots-symbol', (event) => selectSpotFromFeature(event.features?.[0]));
+
+    map.on('mouseenter', 'clusters', () => setMapCursor('pointer'));
+    map.on('mouseleave', 'clusters', () => setMapCursor(''));
+    map.on('mouseenter', 'spots-pin', () => setMapCursor('pointer'));
+    map.on('mouseleave', 'spots-pin', () => setMapCursor(''));
+    map.on('mouseenter', 'spots-symbol', () => setMapCursor('pointer'));
+    map.on('mouseleave', 'spots-symbol', () => setMapCursor(''));
+
+    map.on('click', (event) => {
+        if (!isPickingMode || clickedFeature(event.point)) {
+            return;
+        }
+
+        const coords = [event.lngLat.lat, event.lngLat.lng];
+        setPendingCoords(coords);
+
+        window.dispatchEvent(new CustomEvent('map:coords-selected', {
+            detail: {
+                latitude: coords[0],
+                longitude: coords[1],
+            },
+        }));
+
+        resolveAddress(coords);
+    });
+}
+
+function clickedFeature(point) {
+    return map.queryRenderedFeatures(point, { layers: ['clusters', 'spots-pin', 'spots-symbol'] }).length > 0;
+}
+
+function setMapCursor(cursor) {
+    map.getCanvas().style.cursor = cursor;
+}
+
+function selectSpotFromFeature(feature) {
+    if (!feature?.properties?.spotId) {
+        return;
     }
 
-    return new Promise((resolve, reject) => {
-        const startedAt = Date.now();
-        const interval = window.setInterval(() => {
-            if (window.ymaps) {
-                window.clearInterval(interval);
-                resolve();
-                return;
-            }
+    const spot = spotsCache.find((item) => Number(item.id) === Number(feature.properties.spotId));
 
-            if (Date.now() - startedAt > timeout) {
-                window.clearInterval(interval);
-                reject(new Error('Yandex Maps API timeout'));
-            }
-        }, 80);
-    });
-}
-
-function configureMapControls(isMobile) {
-    const topOffset = isMobile ? 96 : 16;
-
-    setControlPosition('zoomControl', {
-        top: isMobile ? 112 : 110,
-        left: isMobile ? 10 : 12,
-    });
-    setControlPosition('typeSelector', {
-        top: topOffset,
-        right: isMobile ? 10 : 12,
-    });
-    setControlPosition('fullscreenControl', {
-        top: topOffset + 42,
-        right: isMobile ? 10 : 12,
-    });
-}
-
-function setControlPosition(name, position) {
-    const control = map.controls.get(name);
-
-    control?.options.set({
-        float: 'none',
-        position,
-    });
-}
-
-function getStoredMapType() {
-    const storedType = window.localStorage?.getItem(MAP_TYPE_STORAGE_KEY);
-    const allowedTypes = ['yandex#map', 'yandex#satellite', 'yandex#hybrid'];
-
-    return allowedTypes.includes(storedType) ? storedType : DEFAULT_MAP_TYPE;
-}
-
-function saveMapType() {
-    const currentType = getCurrentMapType();
-
-    if (currentType) {
-        window.localStorage?.setItem(MAP_TYPE_STORAGE_KEY, currentType);
+    if (spot) {
+        window.dispatchEvent(new CustomEvent('parking:selected', { detail: spot }));
     }
-}
-
-function syncMapTheme() {
-    document.body.classList.toggle('map-theme-light', LIGHT_UI_MAP_TYPES.includes(getCurrentMapType()));
-}
-
-function getCurrentMapType() {
-    return typeof map?.getType === 'function' ? map.getType() : DEFAULT_MAP_TYPE;
 }
 
 export function addParkingSpotToMap(spot) {
-    const exists = spotsCache.some((item) => item.id === spot.id);
+    const exists = spotsCache.some((item) => Number(item.id) === Number(spot.id));
     spotsCache = exists
-        ? spotsCache.map((item) => (item.id === spot.id ? spot : item))
+        ? spotsCache.map((item) => (Number(item.id) === Number(spot.id) ? spot : item))
         : [spot, ...spotsCache];
 
     renderParkingSpots(spotsCache);
@@ -196,7 +307,11 @@ export function focusSpot(spot) {
         return;
     }
 
-    map.setCenter([spot.latitude, spot.longitude], 15, { duration: 220 });
+    map.easeTo({
+        center: [Number(spot.longitude), Number(spot.latitude)],
+        zoom: Math.max(map.getZoom(), 15),
+        duration: 220,
+    });
     window.dispatchEvent(new CustomEvent('parking:selected', { detail: spot }));
 }
 
@@ -206,61 +321,37 @@ export function focusSpots(spots) {
     }
 
     if (spots.length === 1) {
-        map.setCenter([spots[0].latitude, spots[0].longitude], 15, { duration: 220 });
+        focusSpot(spots[0]);
         return;
     }
 
-    const coordinates = spots.map((spot) => [spot.latitude, spot.longitude]);
-    map.setBounds(window.ymaps.util.bounds.fromPoints(coordinates), {
-        checkZoomRange: true,
+    const bounds = new window.maplibregl.LngLatBounds();
+    spots.forEach((spot) => bounds.extend([Number(spot.longitude), Number(spot.latitude)]));
+
+    map.fitBounds(bounds, {
+        padding: { top: 96, right: 90, bottom: 120, left: 90 },
         duration: 220,
-        zoomMargin: [90, 90, 120, 90],
+        maxZoom: 15,
     });
 }
 
 export function clearPendingSelection() {
-    if (!map || !pendingPlacemark) {
-        return;
-    }
-
-    map.geoObjects.remove(pendingPlacemark);
-    pendingPlacemark = null;
+    pendingMarker = null;
+    updatePendingSource();
 }
 
 export function setMapPickingMode(isActive) {
     isPickingMode = isActive;
-}
-
-function bindMapEvents() {
-    map.events.add('click', (event) => {
-        if (!isPickingMode) {
-            return;
-        }
-
-        const coords = event.get('coords');
-        setPendingCoords(coords);
-
-        window.dispatchEvent(new CustomEvent('map:coords-selected', {
-            detail: {
-                latitude: coords[0],
-                longitude: coords[1],
-            },
-        }));
-
-        resolveAddress(coords);
-    });
+    setMapCursor(isActive ? 'crosshair' : '');
 }
 
 async function resolveAddress(coords) {
-    if (!window.ymaps?.geocode) {
-        return;
-    }
-
     const requestId = ++addressRequestId;
     window.dispatchEvent(new CustomEvent('map:address-loading'));
 
     try {
-        const address = await geocodeAddress(coords);
+        const response = await reverseGeocode(coords[0], coords[1]);
+        const address = typeof response.address === 'string' ? response.address.trim() : '';
 
         if (requestId !== addressRequestId) {
             return;
@@ -268,7 +359,7 @@ async function resolveAddress(coords) {
 
         window.dispatchEvent(new CustomEvent('map:address-resolved', {
             detail: {
-                address: address || '',
+                address,
                 latitude: coords[0],
                 longitude: coords[1],
             },
@@ -288,106 +379,47 @@ async function resolveAddress(coords) {
     }
 }
 
-async function geocodeAddress(coords) {
-    const serverAddress = await geocodeAddressOnServer(coords);
-
-    if (serverAddress) {
-        return serverAddress;
-    }
-
-    const attempts = [
-        { kind: 'house', results: 5 },
-        { kind: 'street', results: 5 },
-        { results: 7 },
-    ];
-
-    for (const options of attempts) {
-        const result = await window.ymaps.geocode(coords, {
-            ...options,
-            boundedBy: map?.getBounds?.(),
-            strictBounds: false,
-        });
-        const address = getBestAddressFromGeocode(result);
-
-        if (address) {
-            return address;
-        }
-    }
-
-    return '';
-}
-
-async function geocodeAddressOnServer(coords) {
-    try {
-        const response = await reverseGeocode(coords[0], coords[1]);
-
-        return typeof response.address === 'string' ? response.address.trim() : '';
-    } catch {
-        return '';
-    }
-}
-
-function getBestAddressFromGeocode(result) {
-    const geoObjects = result.geoObjects;
-
-    for (let index = 0; index < geoObjects.getLength(); index += 1) {
-        const geoObject = geoObjects.get(index);
-        const address = [
-            geoObject?.getAddressLine?.(),
-            geoObject?.properties?.get?.('metaDataProperty.GeocoderMetaData.text'),
-            geoObject?.properties?.get?.('description'),
-            geoObject?.properties?.get?.('name'),
-        ].find((value) => typeof value === 'string' && value.trim().length > 0);
-
-        if (address) {
-            return address.trim();
-        }
-    }
-
-    return '';
-}
-
 function renderParkingSpots(spots) {
     spotsCache = spots;
-    clusterer.removeAll();
+    const source = map?.getSource(SOURCE_ID);
 
-    const markerLayout = window.ymaps.templateLayoutFactory.createClass(
-        `<div class="map-marker $[properties.markerClass]" title="$[properties.hintContent]">
-            <svg viewBox="0 0 100 120" aria-hidden="true">
-                <path class="map-marker__pin" d="M50 114C50 114 15 70 15 42C15 21.5655 30.67 6 50 6C69.33 6 85 21.5655 85 42C85 70 50 114 50 114Z"></path>
-                <circle class="map-marker__core" cx="50" cy="42" r="27"></circle>
-                <text x="50" y="56" text-anchor="middle">P</text>
-            </svg>
-        </div>`,
-    );
+    if (source) {
+        source.setData(buildFeatureCollection(spots));
+    }
+}
 
-    const placemarks = spots.map((spot) => {
-        const placemark = new window.ymaps.Placemark(
-            [spot.latitude, spot.longitude],
-            {
-                hintContent: spot.title,
-                markerClass: `map-marker--${getAvailabilityStatus(spot)}`,
+function buildFeatureCollection(spots) {
+    return {
+        type: 'FeatureCollection',
+        features: spots.map((spot) => ({
+            type: 'Feature',
+            properties: {
+                spotId: Number(spot.id),
+                status: getAvailabilityStatus(spot),
+                markerColor: getMarkerColor(spot),
+                markerHalo: getMarkerHalo(spot),
             },
-            {
-                iconLayout: markerLayout,
-                iconShape: {
-                    type: 'Circle',
-                    coordinates: [20, 24],
-                    radius: 20,
-                },
-                iconOffset: [-20, -48],
-                openEmptyBalloon: false,
+            geometry: {
+                type: 'Point',
+                coordinates: [Number(spot.longitude), Number(spot.latitude)],
             },
-        );
+        })),
+    };
+}
 
-        placemark.events.add('click', () => {
-            window.dispatchEvent(new CustomEvent('parking:selected', { detail: spot }));
-        });
+function setPendingCoords(coords) {
+    pendingMarker = {
+        latitude: coords[0],
+        longitude: coords[1],
+    };
+    updatePendingSource();
+}
 
-        return placemark;
-    });
+function updatePendingSource() {
+    const source = map?.getSource(PENDING_SOURCE_ID);
+    const spots = pendingMarker ? [{ ...pendingMarker, id: 'pending', availability_status: 'new' }] : [];
 
-    clusterer.add(placemarks);
+    source?.setData(buildFeatureCollection(spots));
 }
 
 function getAvailabilityStatus(spot) {
@@ -398,38 +430,22 @@ function getAvailabilityStatus(spot) {
     return spot.is_verified ? 'verified' : 'unverified';
 }
 
-function setPendingCoords(coords) {
-    if (!map) {
-        return;
-    }
+function getMarkerColor(spot) {
+    return {
+        verified: '#34D399',
+        unverified: '#FFD166',
+        temporary: '#A259FF',
+        outdated: '#F87171',
+        new: '#00D4FF',
+    }[getAvailabilityStatus(spot)] ?? '#00D4FF';
+}
 
-    if (pendingPlacemark) {
-        map.geoObjects.remove(pendingPlacemark);
-    }
-
-    const pendingLayout = window.ymaps.templateLayoutFactory.createClass(
-        `<div class="map-marker map-marker--new" title="Новая точка">
-            <svg viewBox="0 0 100 120" aria-hidden="true">
-                <path class="map-marker__pin" d="M50 114C50 114 15 70 15 42C15 21.5655 30.67 6 50 6C69.33 6 85 21.5655 85 42C85 70 50 114 50 114Z"></path>
-                <circle class="map-marker__core" cx="50" cy="42" r="27"></circle>
-                <text x="50" y="56" text-anchor="middle">P</text>
-            </svg>
-        </div>`,
-    );
-
-    pendingPlacemark = new window.ymaps.Placemark(
-        coords,
-        { hintContent: 'Новая точка' },
-        {
-            iconLayout: pendingLayout,
-            iconShape: {
-                type: 'Circle',
-                coordinates: [20, 24],
-                radius: 20,
-            },
-            iconOffset: [-20, -48],
-        },
-    );
-
-    map.geoObjects.add(pendingPlacemark);
+function getMarkerHalo(spot) {
+    return {
+        verified: 'rgba(52, 211, 153, 0.24)',
+        unverified: 'rgba(255, 209, 102, 0.28)',
+        temporary: 'rgba(162, 89, 255, 0.28)',
+        outdated: 'rgba(248, 113, 113, 0.28)',
+        new: 'rgba(0, 212, 255, 0.30)',
+    }[getAvailabilityStatus(spot)] ?? 'rgba(0, 212, 255, 0.30)';
 }

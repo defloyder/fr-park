@@ -4,12 +4,12 @@
         <div class="bg-calligraphy bg-calligraphy-right">Maps</div>
     @endunless
 
-    <main class="map-screen {{ $isEmbed ? 'map-screen--embed' : '' }}" data-yandex-api-ready="{{ config('services.yandex_maps.key') ? 'true' : 'false' }}">
+    <main class="map-screen {{ $isEmbed ? 'map-screen--embed' : '' }}" data-map-provider="maplibre">
         <div id="yandex-map" class="map-canvas" aria-label="Карта бесплатных парковок Москвы"></div>
 
         <div id="map-fallback" class="map-fallback liquid-glass hidden">
-            <span>Карта ожидает ключ API</span>
-            <strong>Добавьте YANDEX_MAPS_API_KEY в .env</strong>
+            <span>Карта временно недоступна</span>
+            <strong>Проверьте соединение и обновите страницу</strong>
         </div>
 
         @unless($isEmbed)
@@ -92,9 +92,18 @@
                 <button class="icon-button" type="button" data-action="close-list" aria-label="Закрыть список">×</button>
             </div>
             <div id="export-toolbar" class="export-toolbar hidden">
-                <button class="ghost-button" type="button" data-action="export-all">Экспорт всех</button>
-                <button class="ghost-button" type="button" data-action="export-selected">Экспорт выбранных</button>
-                <button class="ghost-button" type="button" data-action="clear-export-selection">Сброс</button>
+                <button class="ghost-button" type="button" data-action="export-all" title="Экспорт всех точек">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 19h14"></path></svg>
+                    <span>Все</span>
+                </button>
+                <button class="ghost-button" type="button" data-action="export-selected" title="Экспорт выбранных точек">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h11M8 12h11M8 18h11M4 6h.01M4 12h.01M4 18h.01"></path></svg>
+                    <span>Выбранные</span>
+                </button>
+                <button class="ghost-button" type="button" data-action="clear-export-selection" title="Сбросить выбор">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+                    <span>Сброс</span>
+                </button>
             </div>
             <p id="export-selection-count" class="export-selection-count hidden">Выбрано: 0</p>
             <div id="spot-list-items" class="spot-list__items"></div>
@@ -146,9 +155,18 @@
         </section>
 
         <nav class="floating-nav liquid-glass" aria-label="Основная навигация">
-            <button type="button" class="nav-button is-active" data-action="show-map">Карта</button>
-            <button type="button" class="nav-button" data-action="open-list">Список</button>
-            <button type="button" class="nav-button" data-action="open-add">Добавить</button>
+            <button type="button" class="nav-button is-active" data-action="show-map" aria-label="Карта">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z"></path><path d="M9 3v15M15 6v15"></path></svg>
+                <span>Карта</span>
+            </button>
+            <button type="button" class="nav-button" data-action="open-list" aria-label="Список">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"></path></svg>
+                <span>Список</span>
+            </button>
+            <button type="button" class="nav-button" data-action="open-add" aria-label="Добавить">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+                <span>Добавить</span>
+            </button>
         </nav>
 
         <section id="add-spot-sheet" class="bottom-sheet liquid-glass hidden" aria-label="Добавить точку парковки">
