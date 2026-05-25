@@ -11,7 +11,7 @@ import {
     updateParkingSpot,
     uploadParkingPhoto,
 } from './parking-api';
-import { addParkingSpotToMap, clearPendingSelection, focusSpot, focusSpots, replaceParkingSpotsOnMap, setMapPickingMode } from './yandex-map';
+import { addParkingSpotToMap, clearPendingSelection, focusSpot, focusSpots, replaceParkingSpotsOnMap, setMapPickingMode } from './map';
 
 const STATUS_LABELS = {
     verified: 'Проверено',
@@ -339,7 +339,7 @@ export function initParkingUi() {
                     <span aria-hidden="true">♥</span>
                 </button>
                 ${editButton}
-                <a class="route-button" href="${escapeAttribute(spot.yandex_route_url)}" target="_blank" rel="noopener">Маршрут</a>
+                <a class="route-button" href="${escapeAttribute(spot.route_url)}" target="_blank" rel="noopener">Маршрут</a>
             </div>
         `;
         card.querySelector('.spot-card__close').addEventListener('click', () => card.classList.add('hidden'));

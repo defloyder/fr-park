@@ -1,3 +1,5 @@
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { fetchParkingSpots, reverseGeocode } from './parking-api';
 
 let map = null;
@@ -7,16 +9,16 @@ let addressRequestId = 0;
 let isPickingMode = false;
 
 const MOSCOW_CENTER = [37.6173, 55.7558];
+const MAP_CONTAINER_ID = 'parking-map';
 const SOURCE_ID = 'parking-spots';
 const PENDING_SOURCE_ID = 'pending-parking-spot';
 
-export async function initYandexMap() {
-    if (!document.getElementById('yandex-map')) {
+export async function initParkingMap() {
+    if (!document.getElementById(MAP_CONTAINER_ID)) {
         return;
     }
 
     try {
-        await waitForMapLibre();
         initMapLibreMap();
     } catch {
         window.dispatchEvent(new CustomEvent('parking:error', {
@@ -26,8 +28,8 @@ export async function initYandexMap() {
 }
 
 function initMapLibreMap() {
-    map = new window.maplibregl.Map({
-        container: 'yandex-map',
+    map = new maplibregl.Map({
+        container: MAP_CONTAINER_ID,
         center: MOSCOW_CENTER,
         zoom: 11.4,
         minZoom: 3,
@@ -54,9 +56,9 @@ function initMapLibreMap() {
         },
     });
 
-    map.addControl(new window.maplibregl.NavigationControl({ visualizePitch: false }), 'top-left');
-    map.addControl(new window.maplibregl.FullscreenControl(), 'top-right');
-    map.addControl(new window.maplibregl.AttributionControl({ compact: true }), 'bottom-left');
+    map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), 'top-left');
+    map.addControl(new maplibregl.FullscreenControl(), 'top-right');
+    map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
 
     bindPerformanceMode();
 
@@ -75,28 +77,6 @@ function initMapLibreMap() {
                 detail: 'Не удалось загрузить точки. Проверьте соединение и попробуйте снова.',
             }));
         }
-    });
-}
-
-function waitForMapLibre(timeout = 10000) {
-    if (window.maplibregl) {
-        return Promise.resolve();
-    }
-
-    return new Promise((resolve, reject) => {
-        const startedAt = Date.now();
-        const interval = window.setInterval(() => {
-            if (window.maplibregl) {
-                window.clearInterval(interval);
-                resolve();
-                return;
-            }
-
-            if (Date.now() - startedAt > timeout) {
-                window.clearInterval(interval);
-                reject(new Error('MapLibre GL JS timeout'));
-            }
-        }, 80);
     });
 }
 
@@ -325,7 +305,7 @@ export function focusSpots(spots) {
         return;
     }
 
-    const bounds = new window.maplibregl.LngLatBounds();
+    const bounds = new maplibregl.LngLatBounds();
     spots.forEach((spot) => bounds.extend([Number(spot.longitude), Number(spot.latitude)]));
 
     map.fitBounds(bounds, {

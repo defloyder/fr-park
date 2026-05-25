@@ -1,13 +1,13 @@
 # Auralith Maps
 
-Мобильный веб-сервис на Laravel для поиска и добавления парковочных точек в Москве. Главный экран — интерактивная карта Яндекса с точками, карточками мест, маршрутами, фото, статусами и формой добавления/редактирования.
+Мобильный веб-сервис на Laravel для поиска и добавления парковочных точек в Москве. Главный экран — интерактивная карта на MapLibre GL и OpenStreetMap с точками, карточками мест, маршрутами, фото, статусами и формой добавления/редактирования.
 
 ## Возможности
 
-- карта Яндекса с кластеризацией и кастомными маркерами;
+- карта MapLibre GL с кластеризацией и кастомными маркерами;
 - список и поиск точек по районам Москвы;
 - карточка парковки с адресом, координатами, описанием, фото, ориентирами и инструкцией заезда;
-- построение маршрута через Яндекс Карты;
+- построение маршрута через OpenStreetMap;
 - добавление точки кликом по карте;
 - автоматическое определение адреса по координатам;
 - загрузка нескольких фото, drag and drop и камера на телефоне;
@@ -23,7 +23,8 @@
 - Blade
 - Laravel Vite
 - Vanilla JS
-- Yandex Maps JavaScript API 2.1
+- MapLibre GL JS
+- OpenStreetMap tiles и Nominatim для геокодинга
 
 ## Требования
 
@@ -74,17 +75,16 @@ Copy-Item .env.example .env
 php artisan key:generate
 ```
 
-## Настройка карты
+## Настройка админа
 
-Получите ключ Yandex Maps JavaScript API и добавьте его в `.env`:
+Для импорта и экспорта точек укажите email администратора в `.env`:
 
 ```env
-YANDEX_MAPS_API_KEY=your_key_here
 AURALITH_ADMIN_EMAIL=admin@example.com
 ```
 
-Без ключа приложение откроется, но интерактивная карта не загрузится.
-`AURALITH_ADMIN_EMAIL` включает админ-доступ для аккаунта с этим email: импорт и экспорт точек доступны только ему.
+Карта работает без API-ключей: тайлы OpenStreetMap и обратное геокодирование через Nominatim.
+`AURALITH_ADMIN_EMAIL` включает админ-доступ для аккаунта с этим email.
 
 ## База данных
 
@@ -226,8 +226,8 @@ php artisan migrate --seed
 
 Если карта не появляется:
 
-- проверьте `YANDEX_MAPS_API_KEY` в `.env`;
-- очистите конфиг: `php artisan config:clear`;
+- убедитесь, что собран frontend: `npm run build`;
+- проверьте доступ к `tile.openstreetmap.org` из браузера;
 - убедитесь, что сайт открыт через `php artisan serve`, а не просто как файл.
 
 Если фото загрузилось, но не открывается:
@@ -261,7 +261,7 @@ database/seeders/ParkingSpotSeeder.php
 resources/views/pages/map.blade.php
 resources/js/modules/parking-api.js
 resources/js/modules/parking-form.js
-resources/js/modules/yandex-map.js
+resources/js/modules/map.js
 resources/css/map-ui.css
 routes/api.php
 routes/web.php
@@ -278,7 +278,6 @@ APP_DEBUG=true
 APP_URL=http://127.0.0.1:8000
 
 DB_CONNECTION=sqlite
-YANDEX_MAPS_API_KEY=your_key_here
 AURALITH_ADMIN_EMAIL=admin@example.com
 ```
 

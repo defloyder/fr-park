@@ -39,7 +39,7 @@ class ParkingSpotApiTest extends TestCase
             ->assertJsonCount(2, 'data')
             ->assertJsonFragment(['title' => 'Active spot'])
             ->assertJsonFragment(['title' => 'Pending spot'])
-            ->assertJsonFragment(['yandex_route_url' => 'https://yandex.ru/maps/?rtext=~55.7558000,37.6173000&rtt=auto']);
+            ->assertJsonFragment(['route_url' => 'https://www.openstreetmap.org/directions?to=55.7558000,37.6173000']);
     }
 
     public function test_it_creates_pending_user_parking_spot(): void

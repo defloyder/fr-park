@@ -122,16 +122,6 @@ textarea {
         radial-gradient(circle at center, transparent 58%, rgba(3, 4, 10, 0.10));
 }
 
-.map-canvas [class*="ground-pane"] {
-    filter: none;
-}
-
-.map-canvas [class*="places-pane"],
-.map-canvas [class*="copyrights-pane"],
-.map-canvas [class*="controls-pane"] {
-    filter: none;
-}
-
 .maplibregl-ctrl-group {
     overflow: hidden;
     background: rgba(17, 24, 39, 0.72) !important;
@@ -2163,10 +2153,6 @@ h2 {
 
     .map-canvas::after {
         background: linear-gradient(180deg, rgba(3, 4, 10, 0.04), transparent 34%, rgba(3, 4, 10, 0.06));
-    }
-
-    .map-canvas [class*="ground-pane"] {
-        filter: none;
     }
 
     .map-marker,

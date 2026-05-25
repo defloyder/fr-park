@@ -17,66 +17,14 @@ class GeocodeController extends Controller
             'longitude' => ['required', 'numeric', 'between:-180,180'],
         ]);
 
-        $address = $this->resolveAddress(
+        $address = $this->resolveAddressWithOpenStreetMap(
             (float) $validated['latitude'],
             (float) $validated['longitude'],
-            config('services.yandex_maps.key')
         );
 
         return response()->json([
             'address' => $address,
         ]);
-    }
-
-    private function resolveAddress(float $latitude, float $longitude, ?string $key): string
-    {
-        if ($key) {
-            foreach (['house', 'street', null] as $kind) {
-                try {
-                    $response = Http::timeout(6)
-                        ->withoutVerifying()
-                        ->retry(1, 150)
-                        ->get('https://geocode-maps.yandex.ru/1.x/', array_filter([
-                            'apikey' => $key,
-                            'format' => 'json',
-                            'lang' => 'ru_RU',
-                            'geocode' => $longitude.','.$latitude,
-                            'kind' => $kind,
-                            'results' => 5,
-                        ]))
-                        ->throw()
-                        ->json();
-
-                    $address = $this->extractYandexAddress($response);
-
-                    if ($address !== '') {
-                        return $address;
-                    }
-                } catch (Throwable) {
-                    continue;
-                }
-            }
-        }
-
-        return $this->resolveAddressWithOpenStreetMap($latitude, $longitude);
-    }
-
-    private function extractYandexAddress(array $response): string
-    {
-        $members = data_get($response, 'response.GeoObjectCollection.featureMember', []);
-
-        foreach ($members as $member) {
-            $geoObject = data_get($member, 'GeoObject', []);
-            $address = data_get($geoObject, 'metaDataProperty.GeocoderMetaData.text')
-                ?: data_get($geoObject, 'description')
-                ?: data_get($geoObject, 'name');
-
-            if (is_string($address) && trim($address) !== '') {
-                return trim($address);
-            }
-        }
-
-        return '';
     }
 
     private function resolveAddressWithOpenStreetMap(float $latitude, float $longitude): string
@@ -85,7 +33,7 @@ class GeocodeController extends Controller
             $response = Http::timeout(8)
                 ->withoutVerifying()
                 ->withHeaders([
-                    'User-Agent' => 'AuralithMaps/1.0 (local development)',
+                    'User-Agent' => 'AuralithMaps/1.0',
                 ])
                 ->get('https://nominatim.openstreetmap.org/reverse', [
                     'format' => 'jsonv2',

@@ -12,12 +12,5 @@
 </head>
 <body class="app-shell">
     {{ $slot }}
-
-    @if (config('services.yandex_maps.key'))
-        <script
-            src="https://api-maps.yandex.ru/2.1/?apikey={{ config('services.yandex_maps.key') }}&lang=ru_RU"
-            type="text/javascript">
-        </script>
-    @endif
 </body>
 </html>

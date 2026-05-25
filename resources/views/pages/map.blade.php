@@ -5,7 +5,7 @@
     @endunless
 
     <main class="map-screen {{ $isEmbed ? 'map-screen--embed' : '' }}" data-map-provider="maplibre">
-        <div id="yandex-map" class="map-canvas" aria-label="Карта бесплатных парковок Москвы"></div>
+        <div id="parking-map" class="map-canvas" aria-label="Карта бесплатных парковок Москвы"></div>
 
         <div id="map-fallback" class="map-fallback liquid-glass hidden">
             <span>Карта временно недоступна</span>

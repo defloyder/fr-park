@@ -101,7 +101,6 @@ APP_DOMAIN=park.auralith.ru
 APP_IP=185.117.152.106
 SESSION_DOMAIN=null
 DB_PASSWORD=strong_random_password
-YANDEX_MAPS_API_KEY=your_real_yandex_key
 AURALITH_ADMIN_EMAIL=your_admin_email@example.com
 ```
 

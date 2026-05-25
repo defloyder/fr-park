@@ -1,7 +1,7 @@
 import { initParkingUi } from './modules/parking-form';
-import { initYandexMap } from './modules/yandex-map';
+import { initParkingMap } from './modules/map';
 import { initAdminPanel } from './modules/admin-panel';
 
 initParkingUi();
-initYandexMap();
+initParkingMap();
 initAdminPanel();

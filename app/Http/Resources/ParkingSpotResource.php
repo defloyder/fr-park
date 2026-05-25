@@ -39,8 +39,8 @@ class ParkingSpotResource extends JsonResource
                 'outdated' => 'Неактуально',
                 default => 'Не проверено',
             },
-            'yandex_route_url' => sprintf(
-                'https://yandex.ru/maps/?rtext=~%s,%s&rtt=auto',
+            'route_url' => sprintf(
+                'https://www.openstreetmap.org/directions?to=%s,%s',
                 $this->latitude,
                 $this->longitude
             ),
