@@ -1,6 +1,6 @@
 # Production Deploy
 
-Инструкция для выката Auralith Maps на VPS `fr-map.ru` через Docker Compose. Docker-образ приложения использует PHP 8.4.
+Инструкция для выката Auralith Maps на VPS `185.117.152.106` и домен `park.auralith.ru` через Docker Compose. Docker-образ приложения использует PHP 8.4.
 
 ## 0. Безопасность
 
@@ -15,18 +15,20 @@
 
 ## 1. DNS
 
-В DNSmanager создайте A-запись:
+В DNS создайте A-запись:
 
 ```text
-fr-map.ru.      A      185.117.152.106
-www.fr-map.ru.  A      185.117.152.106
+park.auralith.ru.  A  185.117.152.106
 ```
 
 Дождитесь обновления DNS. Проверка:
 
 ```bash
-dig +short fr-map.ru
+dig +short A park.auralith.ru @8.8.8.8
+dig +short A park.auralith.ru @1.1.1.1
 ```
+
+IP-доступ остаётся запасным входом по `http://185.117.152.106`. Основной домен работает по `https://park.auralith.ru`, когда DNS уже обновился.
 
 ## 2. Подготовка сервера
 
@@ -94,6 +96,10 @@ nano .env.production
 
 ```env
 APP_KEY=base64:...
+APP_URL=https://park.auralith.ru
+APP_DOMAIN=park.auralith.ru
+APP_IP=185.117.152.106
+SESSION_DOMAIN=null
 DB_PASSWORD=strong_random_password
 YANDEX_MAPS_API_KEY=your_real_yandex_key
 AURALITH_ADMIN_EMAIL=your_admin_email@example.com
@@ -218,7 +224,8 @@ docker compose --env-file .env.production -f docker-compose.prod.yml down
 ## 9. Что должно открыться
 
 ```text
-https://fr-map.ru
+https://park.auralith.ru
+http://185.117.152.106
 ```
 
 Caddy внутри app-контейнера сам получит TLS-сертификат Let's Encrypt, если DNS уже смотрит на сервер и порты 80/443 открыты.

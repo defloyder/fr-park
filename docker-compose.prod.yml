@@ -7,7 +7,8 @@ services:
     env_file:
       - ${APP_ENV_FILE:-.env.production}
     environment:
-      APP_DOMAIN: ${APP_DOMAIN:-fr-map.ru}
+      APP_DOMAIN: ${APP_DOMAIN:-park.auralith.ru}
+      APP_IP: ${APP_IP:-185.117.152.106}
       DB_HOST: postgres
       REDIS_HOST: redis
     ports:
