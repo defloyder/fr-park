@@ -13,6 +13,7 @@ RUN composer install \
 
 FROM node:22-alpine AS assets
 WORKDIR /app
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 COPY package.json package-lock.json .npmrc ./
 RUN npm ci --ignore-scripts
 COPY resources ./resources

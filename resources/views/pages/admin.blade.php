@@ -2,19 +2,7 @@
     <main class="admin-shell" data-admin-app>
         <aside class="admin-sidebar liquid-glass">
             <div class="brand-lockup">
-                <div class="brand-mark auralith-mark" aria-hidden="true">
-                    <svg viewBox="0 0 80 80">
-                        <defs>
-                            <linearGradient id="auralithGradientAdmin" x1="12" y1="68" x2="64" y2="12" gradientUnits="userSpaceOnUse">
-                                <stop stop-color="#00D4FF"/>
-                                <stop offset="0.55" stop-color="#446CFF"/>
-                                <stop offset="1" stop-color="#A259FF"/>
-                            </linearGradient>
-                        </defs>
-                        <path fill="url(#auralithGradientAdmin)" d="M42.6 12.8c-5.7 0-8.2 3-10.7 7.7L11.7 58.8c-2.8 5.3 1 11.7 7 11.7h31.2c8.1 0 14.2-4 17.6-11.3 2.4-5.2-3-10.4-8.1-7.8-2.2 1.1-3.9 2.9-5.7 4.4-2 1.8-4.3 2.5-7.5 2.5H31.1l14-26.7 8.3 15.7c2.9 5.4 10.6 5.8 14 .7 1.6-2.4 1.7-5.5.4-8.1L53.7 20.5c-2.5-4.7-5.4-7.7-11.1-7.7Z"/>
-                        <circle fill="url(#auralithGradientAdmin)" cx="61.5" cy="62" r="9.5"/>
-                    </svg>
-                </div>
+                <x-brand-logo />
                 <div>
                     <span class="eyebrow">Auralith Maps</span>
                     <h1>Админ-панель</h1>

@@ -112,6 +112,15 @@ AURALITH_ADMIN_EMAIL=your_admin_email@example.com
 docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
 ```
 
+После `git pull` пересоберите образ без кэша, иначе фронтенд может остаться старым:
+
+```bash
+git pull origin main
+docker compose --env-file .env.production -f docker-compose.prod.yml build --no-cache app
+docker compose --env-file .env.production -f docker-compose.prod.yml up -d
+docker compose --env-file .env.production -f docker-compose.prod.yml exec app php artisan config:clear
+```
+
 Посмотрите логи:
 
 ```bash

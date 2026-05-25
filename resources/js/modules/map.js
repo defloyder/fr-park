@@ -13,18 +13,50 @@ const MAP_CONTAINER_ID = 'parking-map';
 const SOURCE_ID = 'parking-spots';
 const PENDING_SOURCE_ID = 'pending-parking-spot';
 
+const MAP_STYLE = {
+    version: 8,
+    sources: {
+        basemap: {
+            type: 'raster',
+            tiles: [
+                'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+                'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+                'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+                'https://d.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+            ],
+            tileSize: 256,
+            attribution: '© OpenStreetMap © CARTO',
+        },
+    },
+    layers: [
+        {
+            id: 'basemap',
+            type: 'raster',
+            source: 'basemap',
+        },
+    ],
+};
+
 export async function initParkingMap() {
     if (!document.getElementById(MAP_CONTAINER_ID)) {
         return;
     }
 
+    if (!maplibregl.supported({ failIfMajorPerformanceCaveat: false })) {
+        reportMapError('Карта не поддерживается в этом браузере. Попробуйте Chrome или Safari.');
+        return;
+    }
+
     try {
         initMapLibreMap();
-    } catch {
-        window.dispatchEvent(new CustomEvent('parking:error', {
-            detail: 'Не удалось загрузить карту. Проверьте соединение и обновите страницу.',
-        }));
+    } catch (error) {
+        console.error('Map init failed', error);
+        reportMapError('Не удалось загрузить карту. Проверьте соединение и обновите страницу.');
     }
+}
+
+function reportMapError(message) {
+    window.dispatchEvent(new CustomEvent('parking:error', { detail: message }));
 }
 
 function initMapLibreMap() {
@@ -35,49 +67,44 @@ function initMapLibreMap() {
         minZoom: 3,
         maxZoom: 19,
         attributionControl: false,
-        style: {
-            version: 8,
-            glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
-            sources: {
-                osm: {
-                    type: 'raster',
-                    tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-                    tileSize: 256,
-                    attribution: '© OpenStreetMap contributors',
-                },
-            },
-            layers: [
-                {
-                    id: 'osm',
-                    type: 'raster',
-                    source: 'osm',
-                },
-            ],
-        },
+        style: MAP_STYLE,
+        fadeDuration: 0,
     });
 
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), 'top-left');
     map.addControl(new maplibregl.FullscreenControl(), 'top-right');
     map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
 
+    map.on('error', (event) => {
+        console.error('MapLibre error', event.error);
+    });
+
     bindPerformanceMode();
 
-    map.on('load', async () => {
-        addParkingSource();
-        addParkingLayers();
-        addPendingSourceAndLayer();
-        bindMapEvents();
+    map.once('load', async () => {
+        map.resize();
+
+        try {
+            addParkingSource();
+            addParkingLayers();
+            addPendingSourceAndLayer();
+            bindMapEvents();
+        } catch (error) {
+            console.error('Map layers failed', error);
+            reportMapError('Не удалось отрисовать карту. Обновите страницу.');
+            return;
+        }
 
         try {
             const response = await fetchParkingSpots();
             renderParkingSpots(response.data);
             window.dispatchEvent(new CustomEvent('parking:loaded', { detail: response.data }));
         } catch {
-            window.dispatchEvent(new CustomEvent('parking:error', {
-                detail: 'Не удалось загрузить точки. Проверьте соединение и попробуйте снова.',
-            }));
+            reportMapError('Не удалось загрузить точки. Проверьте соединение и попробуйте снова.');
         }
     });
+
+    window.addEventListener('resize', () => map?.resize());
 }
 
 function bindPerformanceMode() {
@@ -125,22 +152,6 @@ function addParkingLayers() {
     });
 
     map.addLayer({
-        id: 'cluster-count',
-        type: 'symbol',
-        source: SOURCE_ID,
-        filter: ['has', 'point_count'],
-        layout: {
-            'text-field': ['get', 'point_count_abbreviated'],
-            'text-font': ['Noto Sans Regular'],
-            'text-size': 14,
-            'text-allow-overlap': true,
-        },
-        paint: {
-            'text-color': '#F8FAFC',
-        },
-    });
-
-    map.addLayer({
         id: 'spots-pin',
         type: 'circle',
         source: SOURCE_ID,
@@ -156,17 +167,13 @@ function addParkingLayers() {
 
     map.addLayer({
         id: 'spots-symbol',
-        type: 'symbol',
+        type: 'circle',
         source: SOURCE_ID,
         filter: ['!', ['has', 'point_count']],
-        layout: {
-            'text-field': 'P',
-            'text-font': ['Noto Sans Regular'],
-            'text-size': 15,
-            'text-allow-overlap': true,
-        },
         paint: {
-            'text-color': '#08111F',
+            'circle-color': '#08111F',
+            'circle-radius': 6,
+            'circle-opacity': 0.9,
         },
     });
 }
