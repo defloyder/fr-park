@@ -2320,6 +2320,13 @@ body[data-map-layer="satellite"] .nav-button:not(.is-active):hover {
     border-radius: 12px;
 }
 
+.export-toolbar .ghost-button span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .export-selection-count {
     color: var(--text-muted);
     font-size: 0.8rem;
@@ -2355,10 +2362,10 @@ body[data-map-layer="satellite"] .nav-button:not(.is-active):hover {
 
 .spot-list__status {
     display: inline-flex;
-    max-width: 112px;
     min-height: 28px;
     align-items: center;
     justify-content: center;
+    flex: 0 0 auto;
     padding: 4px 9px;
     font-size: 0.72rem;
     font-style: normal;
@@ -2367,7 +2374,7 @@ body[data-map-layer="satellite"] .nav-button:not(.is-active):hover {
     text-align: center;
     border: 1px solid;
     border-radius: 999px;
-    white-space: normal;
+    white-space: nowrap;
 }
 
 @media (max-width: 390px) {
@@ -2437,6 +2444,7 @@ body[data-map-layer="satellite"] .nav-button:not(.is-active):hover {
     .layer-switcher {
         top: calc(108px + env(safe-area-inset-top));
         right: 20px;
+        z-index: 3;
     }
 
     .layer-switcher__trigger {
@@ -2585,20 +2593,29 @@ body[data-map-layer="satellite"] .nav-button:not(.is-active):hover {
     }
 
     .spot-list__status {
-        max-width: 86px;
         min-height: 24px;
-        padding: 3px 7px;
-        font-size: 0.62rem;
+        padding: 3px 8px;
+        font-size: 0.58rem;
         line-height: 1.08;
     }
 
     .export-toolbar {
-        grid-template-columns: 1fr;
-        gap: 6px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 5px;
     }
 
     .export-toolbar .ghost-button {
-        min-height: 34px;
+        min-height: 32px;
+        padding: 0 7px;
+        gap: 4px;
+        font-size: 0.68rem;
+        border-radius: 10px;
+    }
+
+    .export-toolbar .ghost-button svg {
+        width: 14px;
+        height: 14px;
+        flex-basis: 14px;
     }
 
     .spot-card__address,
