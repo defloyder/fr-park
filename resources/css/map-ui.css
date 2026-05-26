@@ -2392,15 +2392,15 @@ body[data-map-layer="satellite"] .nav-button:not(.is-active):hover {
     height: 30px;
     place-items: center;
     flex: 0 0 30px;
-    background: rgba(255, 255, 255, 0.055);
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.12);
+    border: 1.5px solid rgba(255, 255, 255, 0.34);
     border-radius: 50%;
     cursor: pointer;
 }
 
 .export-check span {
-    width: 12px;
-    height: 12px;
+    width: 11px;
+    height: 11px;
     background: transparent;
     border-radius: 50%;
 }
@@ -2411,6 +2411,23 @@ body[data-map-layer="satellite"] .nav-button:not(.is-active):hover {
 
 .export-check.is-checked span {
     background: var(--accent-green);
+}
+
+.map-theme-light .export-check,
+body[data-map-layer="dark"] .export-check,
+body[data-map-layer="satellite"] .export-check {
+    background: rgba(255, 255, 255, 0.72);
+    border-color: rgba(8, 127, 85, 0.46);
+    box-shadow:
+        0 4px 12px rgba(3, 8, 20, 0.08),
+        inset 0 0 0 2px rgba(255, 255, 255, 0.58);
+}
+
+.map-theme-light .export-check.is-checked,
+body[data-map-layer="dark"] .export-check.is-checked,
+body[data-map-layer="satellite"] .export-check.is-checked {
+    background: rgba(236, 253, 245, 0.94);
+    border-color: rgba(16, 185, 129, 0.9);
 }
 
 .spot-list__status {
