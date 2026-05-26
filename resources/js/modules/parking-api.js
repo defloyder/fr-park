@@ -1,8 +1,69 @@
+// ---------------------------------------------------------------------------
+// Encrypted session — один токен + AES-ключ на загрузку страницы.
+// POST /api/session/init выдаёт токен (кладётся в X-Api-Token) и
+// base64-ключ для расшифровки AES-256-GCM ответов.
+// ---------------------------------------------------------------------------
+
+let _sessionPromise = null;
+
+function _getSession() {
+    if (!_sessionPromise) {
+        _sessionPromise = _initSession();
+    }
+    return _sessionPromise;
+}
+
+async function _initSession() {
+    const res = await fetch('/api/session/init', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) throw new Error('Failed to init API session');
+    const { token, key } = await res.json();
+    const cryptoKey = await crypto.subtle.importKey(
+        'raw',
+        _b64ToBuffer(key),
+        { name: 'AES-GCM' },
+        false,
+        ['decrypt'],
+    );
+    return { token, cryptoKey };
+}
+
+async function _decrypt(payload, cryptoKey) {
+    const iv   = _b64ToBuffer(payload.iv);
+    const data = _b64ToBytes(payload.data);
+    const tag  = _b64ToBytes(payload.tag);
+    // SubtleCrypto ожидает: ciphertext || tag в одном буфере
+    const combined = new Uint8Array(data.byteLength + tag.byteLength);
+    combined.set(data, 0);
+    combined.set(tag, data.byteLength);
+    const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, cryptoKey, combined);
+    return JSON.parse(new TextDecoder().decode(plain));
+}
+
+function _b64ToBuffer(b64) {
+    return _b64ToBytes(b64).buffer;
+}
+
+function _b64ToBytes(b64) {
+    const bin = atob(b64);
+    const buf = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+    return buf;
+}
+
+// ---------------------------------------------------------------------------
+
 export async function fetchParkingSpots() {
+    const { token, cryptoKey } = await _getSession();
+
     const response = await fetch('/api/parking-spots', {
         credentials: 'same-origin',
         headers: {
             Accept: 'application/json',
+            'X-Api-Token': token,
         },
     });
 
@@ -10,7 +71,8 @@ export async function fetchParkingSpots() {
         throw new Error('Failed to load parking spots');
     }
 
-    return response.json();
+    const encrypted = await response.json();
+    return _decrypt(encrypted, cryptoKey);
 }
 
 export async function createParkingSpot(payload) {
