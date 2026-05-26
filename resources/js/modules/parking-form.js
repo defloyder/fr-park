@@ -11,7 +11,7 @@ import {
     updateParkingSpot,
     uploadParkingPhoto,
 } from './parking-api';
-import { addParkingSpotToMap, clearPendingSelection, focusSpot, focusSpots, replaceParkingSpotsOnMap, setMapPickingMode } from './map';
+import { addParkingSpotToMap, clearPendingSelection, focusSpot, focusSpots, focusUserLocation, replaceParkingSpotsOnMap, setMapPickingMode } from './map';
 
 const STATUS_LABELS = {
     verified: 'Проверено',
@@ -59,6 +59,7 @@ const state = {
     authMode: 'login',
     selectedSpot: null,
     exportSelectedIds: new Set(),
+    userLocation: null,
 };
 
 export function initParkingUi() {
@@ -95,6 +96,7 @@ export function initParkingUi() {
     const photoCameraInput = document.getElementById('photo-camera-input');
     const photoPreviewList = document.getElementById('photo-preview-list');
     const deleteButton = document.getElementById('delete-spot-button');
+    const navButtons = document.querySelectorAll('.floating-nav .nav-button[data-action]');
 
     if (!card || !sheet || !form) return;
 
@@ -105,6 +107,7 @@ export function initParkingUi() {
         const actions = {
             'show-map': closePanels,
             'open-search': openSearch,
+            'locate-me': locateMe,
             'close-search': closeSearch,
             'open-list': openList,
             'close-list': () => list.classList.add('hidden'),
@@ -361,7 +364,8 @@ export function initParkingUi() {
 
     function renderList() {
         const canExport = isAdmin();
-        listItems.innerHTML = state.spots.map((spot) => `
+        const spots = getListSpots();
+        listItems.innerHTML = spots.map((spot) => `
             <article class="spot-list__item">
                 ${canExport ? `<button class="export-check ${state.exportSelectedIds.has(Number(spot.id)) ? 'is-checked' : ''}" type="button" data-action="toggle-export-spot" data-spot-id="${spot.id}" aria-label="Выбрать для экспорта">
                     <span aria-hidden="true"></span>
@@ -369,7 +373,7 @@ export function initParkingUi() {
                 <button class="spot-list__content" type="button" data-spot-id="${spot.id}">
                     <span>
                         <strong>${escapeHtml(spot.title)}</strong>
-                        <small>${escapeHtml(spot.address || 'Адрес не указан')}</small>
+                        <small>${escapeHtml(getSpotListMeta(spot))}</small>
                     </span>
                     <em class="spot-list__status spot-list__status--${getAvailabilityStatus(spot)}">${escapeHtml(getAvailabilityLabel(spot))}</em>
                 </button>
@@ -384,6 +388,25 @@ export function initParkingUi() {
                 focusSpot(spot);
             });
         });
+    }
+
+    function getListSpots() {
+        if (!state.userLocation) {
+            return state.spots;
+        }
+
+        return [...state.spots].sort((first, second) => (
+            getDistanceMeters(state.userLocation, first) - getDistanceMeters(state.userLocation, second)
+        ));
+    }
+
+    function getSpotListMeta(spot) {
+        const address = spot.address || 'Адрес не указан';
+        if (!state.userLocation) {
+            return address;
+        }
+
+        return `${formatDistance(getDistanceMeters(state.userLocation, spot))} · ${address}`;
     }
 
     async function loadAccountSession() {
@@ -677,6 +700,7 @@ export function initParkingUi() {
     }
 
     function openSheet() {
+        setActiveNav('open-add');
         sheet.classList.remove('hidden');
         list.classList.add('hidden');
         searchPanel?.classList.add('hidden');
@@ -713,9 +737,11 @@ export function initParkingUi() {
         state.editingSpotId = null;
         deleteButton?.classList.add('hidden');
         document.body.classList.remove('is-sheet-open');
+        setActiveNav('show-map');
     }
 
     function openList() {
+        setActiveNav('open-list');
         list.classList.remove('hidden');
         searchPanel?.classList.add('hidden');
         profilePanel?.classList.add('hidden');
@@ -724,7 +750,41 @@ export function initParkingUi() {
         document.body.classList.remove('is-sheet-open');
     }
 
+    function locateMe() {
+        if (!navigator.geolocation) {
+            showToast('Браузер не поддерживает определение местоположения.', true);
+            return;
+        }
+
+        showStatus('Определяю местоположение...');
+        navigator.geolocation.getCurrentPosition(
+            ({ coords }) => {
+                state.userLocation = {
+                    latitude: coords.latitude,
+                    longitude: coords.longitude,
+                    accuracy: coords.accuracy,
+                };
+
+                focusUserLocation(state.userLocation);
+                renderList();
+                openList();
+                hideStatus();
+                showToast('Показал ближайшие парковки рядом с вами.');
+            },
+            () => {
+                hideStatus();
+                showToast('Не удалось определить местоположение. Проверьте разрешение в браузере.', true);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 12000,
+                maximumAge: 30000,
+            },
+        );
+    }
+
     function closePanels() {
+        setActiveNav('show-map');
         if (state.picking) {
             clearPendingSelection();
         }
@@ -737,6 +797,12 @@ export function initParkingUi() {
         state.picking = false;
         setMapPickingMode(false);
         document.body.classList.remove('is-sheet-open');
+    }
+
+    function setActiveNav(action) {
+        navButtons.forEach((button) => {
+            button.classList.toggle('is-active', button.dataset.action === action);
+        });
     }
 
     function openSearch() {
@@ -1062,6 +1128,38 @@ function getAvailabilityStatus(spot) {
 
 function getAvailabilityLabel(spot) {
     return spot.availability_label || STATUS_LABELS[getAvailabilityStatus(spot)] || STATUS_LABELS.unverified;
+}
+
+function getDistanceMeters(origin, spot) {
+    const latitude = Number(spot.latitude);
+    const longitude = Number(spot.longitude);
+
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        return Number.POSITIVE_INFINITY;
+    }
+
+    const earthRadius = 6371000;
+    const toRadians = (value) => value * Math.PI / 180;
+    const dLat = toRadians(latitude - origin.latitude);
+    const dLng = toRadians(longitude - origin.longitude);
+    const lat1 = toRadians(origin.latitude);
+    const lat2 = toRadians(latitude);
+    const a = Math.sin(dLat / 2) ** 2
+        + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+
+    return earthRadius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function formatDistance(meters) {
+    if (!Number.isFinite(meters)) {
+        return 'далеко';
+    }
+
+    if (meters < 1000) {
+        return `${Math.max(10, Math.round(meters / 10) * 10)} м`;
+    }
+
+    return `${(meters / 1000).toFixed(meters < 10000 ? 1 : 0)} км`;
 }
 
 function getInitials(name) {

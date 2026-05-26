@@ -11,6 +11,7 @@ const MOSCOW_CENTER = [37.6173, 55.7558];
 const MAP_CONTAINER_ID = 'parking-map';
 const SOURCE_ID = 'parking-spots';
 const PENDING_SOURCE_ID = 'pending-parking-spot';
+const USER_LOCATION_SOURCE_ID = 'user-location';
 const BASE_LAYER_IDS = ['light', 'dark', 'satellite'];
 const DEFAULT_BASE_LAYER_ID = 'light';
 const BASE_LAYER_STORAGE_KEY = 'auralith:map-layer';
@@ -164,6 +165,7 @@ function initMapLibreMap() {
             addParkingSource();
             addParkingLayers();
             addPendingSourceAndLayer();
+            addUserLocationSourceAndLayer();
             bindMapEvents();
         } catch (error) {
             console.error('Map layers failed', error);
@@ -381,6 +383,49 @@ function addPendingSourceAndLayer() {
     });
 }
 
+function addUserLocationSourceAndLayer() {
+    map.addSource(USER_LOCATION_SOURCE_ID, {
+        type: 'geojson',
+        data: {
+            type: 'FeatureCollection',
+            features: [],
+        },
+    });
+
+    map.addLayer({
+        id: 'user-location-accuracy',
+        type: 'circle',
+        source: USER_LOCATION_SOURCE_ID,
+        paint: {
+            'circle-radius': [
+                'interpolate',
+                ['linear'],
+                ['zoom'],
+                10,
+                ['/', ['get', 'accuracy'], 18],
+                16,
+                ['/', ['get', 'accuracy'], 2.8],
+            ],
+            'circle-color': 'rgba(33, 168, 255, 0.16)',
+            'circle-stroke-color': 'rgba(33, 168, 255, 0.34)',
+            'circle-stroke-width': 1,
+        },
+    });
+
+    map.addLayer({
+        id: 'user-location-dot',
+        type: 'circle',
+        source: USER_LOCATION_SOURCE_ID,
+        paint: {
+            'circle-radius': 8,
+            'circle-color': '#21A8FF',
+            'circle-stroke-color': '#FFFFFF',
+            'circle-stroke-width': 3,
+            'circle-stroke-opacity': 0.96,
+        },
+    });
+}
+
 function bindMapEvents() {
     map.on('click', 'clusters', async (event) => {
         await expandCluster(event);
@@ -497,6 +542,32 @@ export function focusSpots(spots) {
         padding: { top: 96, right: 90, bottom: 120, left: 90 },
         duration: 220,
         maxZoom: 15,
+    });
+}
+
+export function focusUserLocation({ latitude, longitude, accuracy = 0 }) {
+    if (!map) {
+        return;
+    }
+
+    map.getSource(USER_LOCATION_SOURCE_ID)?.setData({
+        type: 'FeatureCollection',
+        features: [{
+            type: 'Feature',
+            properties: {
+                accuracy: Math.max(Number(accuracy) || 0, 20),
+            },
+            geometry: {
+                type: 'Point',
+                coordinates: [Number(longitude), Number(latitude)],
+            },
+        }],
+    });
+
+    map.easeTo({
+        center: [Number(longitude), Number(latitude)],
+        zoom: Math.max(map.getZoom(), 15.5),
+        duration: 260,
     });
 }
 

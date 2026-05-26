@@ -22,6 +22,13 @@
                 </div>
             </div>
             <div class="top-panel__actions">
+                <button class="icon-button" type="button" data-action="locate-me" aria-label="Определить мое местоположение">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M12 2v3M12 19v3M2 12h3M19 12h3"></path>
+                        <path d="M5 5l2.2 2.2M16.8 16.8 19 19M19 5l-2.2 2.2M7.2 16.8 5 19"></path>
+                    </svg>
+                </button>
                 <button class="icon-button" type="button" data-action="open-search" aria-label="Открыть поиск">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                         <path d="m21 21-4.35-4.35"></path>

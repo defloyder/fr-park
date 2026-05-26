@@ -1002,6 +1002,7 @@ body[data-map-layer="satellite"] .layer-switcher__option:hover {
     bottom: calc(16px + env(safe-area-inset-bottom));
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
     width: min(354px, calc(100vw - 28px));
     padding: 4px;
     transform: translateX(-50%);
@@ -1010,6 +1011,7 @@ body[data-map-layer="satellite"] .layer-switcher__option:hover {
         rgba(10, 14, 24, 0.72);
     border-color: rgba(242, 244, 251, 0.13);
     border-radius: 16px;
+    overflow: hidden;
 }
 
 .floating-nav.hidden {
@@ -1031,6 +1033,16 @@ body[data-map-layer="satellite"] .layer-switcher__option:hover {
     border: 0;
     border-radius: 12px;
     cursor: pointer;
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.nav-button span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .nav-button svg,
@@ -1062,39 +1074,52 @@ body[data-map-layer="satellite"] .nav-button {
     color: rgba(16, 23, 34, 0.62);
 }
 
-.nav-button.is-active,
-.nav-button:hover {
+.nav-button.is-active {
+    z-index: 2;
     color: #f7fbff;
     background:
         linear-gradient(135deg, rgba(0, 212, 255, 0.26), rgba(68, 108, 255, 0.42) 58%, rgba(162, 89, 255, 0.28)),
         rgba(255, 255, 255, 0.10);
     box-shadow:
-        0 10px 24px rgba(68, 108, 255, 0.20),
-        inset 0 1px 0 rgba(255, 255, 255, 0.18);
+        inset 0 1px 0 rgba(255, 255, 255, 0.18),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.07);
 }
 
-.map-theme-light .nav-button.is-active,
-.map-theme-light .nav-button:hover {
+.nav-button:not(.is-active):hover {
+    color: #f7fbff;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.map-theme-light .nav-button.is-active {
     color: #0b1220;
     background:
         linear-gradient(135deg, rgba(0, 212, 255, 0.24), rgba(68, 108, 255, 0.30) 58%, rgba(162, 89, 255, 0.22)),
         rgba(255, 255, 255, 0.72);
     box-shadow:
-        0 10px 24px rgba(68, 108, 255, 0.18),
-        inset 0 1px 0 rgba(255, 255, 255, 0.68);
+        inset 0 1px 0 rgba(255, 255, 255, 0.68),
+        inset 0 0 0 1px rgba(162, 89, 255, 0.08);
+}
+
+.map-theme-light .nav-button:not(.is-active):hover {
+    color: #0b1220;
+    background: rgba(16, 23, 34, 0.07);
 }
 
 body[data-map-layer="dark"] .nav-button.is-active,
-body[data-map-layer="dark"] .nav-button:hover,
-body[data-map-layer="satellite"] .nav-button.is-active,
-body[data-map-layer="satellite"] .nav-button:hover {
+body[data-map-layer="satellite"] .nav-button.is-active {
     color: #0b1220;
     background:
         linear-gradient(135deg, rgba(0, 212, 255, 0.24), rgba(68, 108, 255, 0.30) 58%, rgba(162, 89, 255, 0.22)),
         rgba(255, 255, 255, 0.72);
     box-shadow:
-        0 10px 24px rgba(68, 108, 255, 0.18),
-        inset 0 1px 0 rgba(255, 255, 255, 0.68);
+        inset 0 1px 0 rgba(255, 255, 255, 0.68),
+        inset 0 0 0 1px rgba(162, 89, 255, 0.08);
+}
+
+body[data-map-layer="dark"] .nav-button:not(.is-active):hover,
+body[data-map-layer="satellite"] .nav-button:not(.is-active):hover {
+    color: #0b1220;
+    background: rgba(16, 23, 34, 0.07);
 }
 
 .add-button {

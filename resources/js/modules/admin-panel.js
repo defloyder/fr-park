@@ -19,7 +19,6 @@ export function initAdminPanel() {
     const rows = root.querySelector('[data-admin-rows]');
     const search = root.querySelector('[data-admin-search]');
     const status = root.querySelector('[data-admin-status]');
-    const visibility = root.querySelector('[data-admin-visibility]');
     const editor = root.querySelector('[data-admin-editor]');
     const emptyEditor = root.querySelector('[data-admin-empty-editor]');
     const editorTitle = root.querySelector('[data-admin-editor-title]');
@@ -56,7 +55,6 @@ export function initAdminPanel() {
 
     search?.addEventListener('input', render);
     status?.addEventListener('change', render);
-    visibility?.addEventListener('change', render);
     checkAll?.addEventListener('change', () => {
         selectedIds = checkAll.checked ? new Set(getFilteredSpots().map((spot) => Number(spot.id))) : new Set();
         render();
@@ -170,7 +168,6 @@ export function initAdminPanel() {
                 </td>
                 <td><em class="spot-list__status spot-list__status--${getStatus(spot)}">${STATUS_LABELS[getStatus(spot)]}</em></td>
                 <td>${getPhotos(spot).length}</td>
-                <td>${escapeHtml(spot.status)}</td>
                 <td><button class="ghost-button admin-row-action" type="button" data-admin-edit="${spot.id}">Редактировать</button></td>
             </tr>
         `).join('');
@@ -201,8 +198,7 @@ export function initAdminPanel() {
         return spots.filter((spot) => {
             const haystack = [spot.title, spot.address, spot.description, spot.access_instructions, spot.landmarks].filter(Boolean).join(' ').toLowerCase();
             return (!query || haystack.includes(query))
-                && (!status.value || getStatus(spot) === status.value)
-                && (!visibility.value || spot.status === visibility.value);
+                && (!status.value || getStatus(spot) === status.value);
         });
     }
 

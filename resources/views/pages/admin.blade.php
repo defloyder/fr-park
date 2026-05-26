@@ -51,12 +51,6 @@
                     <option value="temporary">Временная</option>
                     <option value="outdated">Неактуально</option>
                 </select>
-                <select data-admin-visibility>
-                    <option value="">Все видимости</option>
-                    <option value="active">Активные</option>
-                    <option value="pending">Ожидают</option>
-                    <option value="hidden">Скрытые</option>
-                </select>
             </div>
 
             <div class="admin-bulkbar">
@@ -75,7 +69,6 @@
                             <th>Точка</th>
                             <th>Статус</th>
                             <th>Фото</th>
-                            <th>Видимость</th>
                             <th></th>
                         </tr>
                     </thead>
