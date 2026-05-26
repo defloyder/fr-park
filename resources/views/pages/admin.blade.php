@@ -62,9 +62,8 @@
             <div class="admin-bulkbar">
                 <span data-admin-selected-count>Выбрано: 0</span>
                 <button class="ghost-button" type="button" data-admin-bulk="verified">Проверено</button>
+                <button class="ghost-button" type="button" data-admin-bulk="unverified">Не проверено</button>
                 <button class="ghost-button" type="button" data-admin-bulk="temporary">Временная</button>
-                <button class="ghost-button" type="button" data-admin-bulk="outdated">Неактуально</button>
-                <button class="ghost-button" type="button" data-admin-activate>Активировать</button>
                 <button class="danger-button" type="button" data-admin-hide>Скрыть</button>
             </div>
 
