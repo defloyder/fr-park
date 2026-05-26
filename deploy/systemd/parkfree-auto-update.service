@@ -1,0 +1,13 @@
+[Unit]
+Description=Auto-update ParkFree Moscow Docker deployment
+Wants=network-online.target docker.service
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+Environment=APP_DIR=/var/www/fr-park
+Environment=COMPOSE_FILE=docker-compose.prod.yml
+Environment=ENV_FILE=.env.production
+Environment=BRANCH=main
+ExecStart=/var/www/fr-park/deploy/auto-update.sh
+WorkingDirectory=/var/www/fr-park
