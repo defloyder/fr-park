@@ -47,6 +47,26 @@
         </section>
         <section id="selected-spot-card" class="spot-card liquid-glass hidden" aria-live="polite"></section>
 
+        <div class="layer-switcher" data-layer-switcher>
+            <button class="layer-switcher__trigger liquid-glass" type="button" data-map-layer-toggle aria-label="Переключить слой карты" aria-expanded="false">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 4-8 4-8-4 8-4Z"></path><path d="m4 12 8 4 8-4"></path><path d="m4 17 8 4 8-4"></path></svg>
+            </button>
+            <div class="layer-switcher__panel liquid-glass" data-map-layer-panel>
+                <button class="layer-switcher__option is-active" type="button" data-map-layer="light">
+                    <span class="layer-switcher__swatch layer-switcher__swatch--light"></span>
+                    <span>Светлая</span>
+                </button>
+                <button class="layer-switcher__option" type="button" data-map-layer="dark">
+                    <span class="layer-switcher__swatch layer-switcher__swatch--dark"></span>
+                    <span>Тёмная</span>
+                </button>
+                <button class="layer-switcher__option" type="button" data-map-layer="satellite">
+                    <span class="layer-switcher__swatch layer-switcher__swatch--satellite"></span>
+                    <span>Спутник</span>
+                </button>
+            </div>
+        </div>
+
         <section id="search-panel" class="search-panel liquid-glass hidden" aria-label="Поиск парковок">
             <div class="panel-header">
                 <div>

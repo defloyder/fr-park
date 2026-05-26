@@ -11,12 +11,14 @@ const MOSCOW_CENTER = [37.6173, 55.7558];
 const MAP_CONTAINER_ID = 'parking-map';
 const SOURCE_ID = 'parking-spots';
 const PENDING_SOURCE_ID = 'pending-parking-spot';
+const BASE_LAYER_IDS = ['light', 'dark', 'satellite'];
+const DEFAULT_BASE_LAYER_ID = 'light';
 
 const MAP_STYLE = {
     version: 8,
     glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
     sources: {
-        basemap: {
+        'basemap-light': {
             type: 'raster',
             tiles: [
                 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -24,16 +26,62 @@ const MAP_STYLE = {
             tileSize: 256,
             attribution: '© OpenStreetMap contributors',
         },
+        'basemap-dark': {
+            type: 'raster',
+            tiles: [
+                'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+                'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+                'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+                'https://d.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+            ],
+            tileSize: 256,
+            attribution: '© OpenStreetMap © CARTO',
+        },
+        'basemap-satellite': {
+            type: 'raster',
+            tiles: [
+                'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            ],
+            tileSize: 256,
+            attribution: 'Tiles © Esri',
+        },
     },
     layers: [
         {
-            id: 'basemap',
+            id: 'basemap-light',
             type: 'raster',
-            source: 'basemap',
+            source: 'basemap-light',
             paint: {
                 'raster-opacity': 0.96,
                 'raster-saturation': -0.12,
                 'raster-contrast': 0.04,
+            },
+        },
+        {
+            id: 'basemap-dark',
+            type: 'raster',
+            source: 'basemap-dark',
+            layout: {
+                visibility: 'none',
+            },
+            paint: {
+                'raster-opacity': 0.9,
+                'raster-brightness-min': 0.12,
+                'raster-brightness-max': 0.86,
+                'raster-contrast': -0.06,
+            },
+        },
+        {
+            id: 'basemap-satellite',
+            type: 'raster',
+            source: 'basemap-satellite',
+            layout: {
+                visibility: 'none',
+            },
+            paint: {
+                'raster-opacity': 0.96,
+                'raster-saturation': -0.08,
+                'raster-contrast': -0.02,
             },
         },
     ],
@@ -102,10 +150,12 @@ function initMapLibreMap() {
         console.error('MapLibre error', event.error);
     });
 
+    bindLayerSwitcher();
     bindPerformanceMode();
 
     map.once('load', async () => {
         map.resize();
+        setBaseMapLayer(DEFAULT_BASE_LAYER_ID);
 
         try {
             await addMarkerImages();
@@ -129,6 +179,57 @@ function initMapLibreMap() {
     });
 
     window.addEventListener('resize', () => map?.resize());
+}
+
+function bindLayerSwitcher() {
+    const switcher = document.querySelector('[data-layer-switcher]');
+    const trigger = switcher?.querySelector('[data-map-layer-toggle]');
+    const panel = switcher?.querySelector('[data-map-layer-panel]');
+
+    if (!switcher || !trigger || !panel) {
+        return;
+    }
+
+    trigger.addEventListener('click', () => {
+        const isOpen = switcher.classList.toggle('is-open');
+        trigger.setAttribute('aria-expanded', String(isOpen));
+    });
+
+    switcher.querySelectorAll('[data-map-layer]').forEach((button) => {
+        button.addEventListener('click', () => {
+            setBaseMapLayer(button.dataset.mapLayer);
+            switcher.classList.remove('is-open');
+            trigger.setAttribute('aria-expanded', 'false');
+        });
+    });
+
+    document.addEventListener('click', (event) => {
+        if (switcher.contains(event.target)) {
+            return;
+        }
+
+        switcher.classList.remove('is-open');
+        trigger.setAttribute('aria-expanded', 'false');
+    });
+}
+
+function setBaseMapLayer(layerId = DEFAULT_BASE_LAYER_ID) {
+    if (!BASE_LAYER_IDS.includes(layerId)) {
+        return;
+    }
+
+    BASE_LAYER_IDS.forEach((id) => {
+        const mapLayerId = `basemap-${id}`;
+
+        if (map?.getLayer(mapLayerId)) {
+            map.setLayoutProperty(mapLayerId, 'visibility', id === layerId ? 'visible' : 'none');
+        }
+    });
+
+    document.body.dataset.mapLayer = layerId;
+    document.querySelectorAll('[data-map-layer]').forEach((button) => {
+        button.classList.toggle('is-active', button.dataset.mapLayer === layerId);
+    });
 }
 
 async function addMarkerImages() {

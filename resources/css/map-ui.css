@@ -160,6 +160,18 @@ textarea {
     font-family: Manrope, Inter, system-ui, sans-serif;
 }
 
+body[data-map-layer="dark"] .map-screen > .map-canvas::after {
+    background:
+        linear-gradient(180deg, rgba(3, 4, 10, 0.05), transparent 36%, rgba(3, 4, 10, 0.08)),
+        radial-gradient(circle at center, transparent 68%, rgba(3, 4, 10, 0.08));
+}
+
+body[data-map-layer="satellite"] .map-screen > .map-canvas::after {
+    background:
+        linear-gradient(180deg, rgba(3, 4, 10, 0.12), transparent 38%, rgba(3, 4, 10, 0.16)),
+        radial-gradient(circle at center, transparent 64%, rgba(3, 4, 10, 0.14));
+}
+
 .map-theme-light .map-canvas::after {
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 42%, rgba(255, 255, 255, 0.04));
 }
@@ -405,6 +417,125 @@ h2 {
 
 .map-fallback strong {
     color: var(--text-primary);
+}
+
+.layer-switcher {
+    position: fixed;
+    top: 66px;
+    right: 14px;
+    z-index: 5;
+}
+
+.layer-switcher__trigger {
+    display: grid;
+    width: 46px;
+    height: 46px;
+    place-items: center;
+    color: #f8fbff;
+    background:
+        linear-gradient(135deg, rgba(36, 43, 61, 0.74), rgba(9, 13, 23, 0.70)),
+        rgba(9, 13, 23, 0.68);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow:
+        0 18px 50px rgba(2, 6, 14, 0.26),
+        inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.layer-switcher__trigger svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+}
+
+.layer-switcher__panel {
+    position: absolute;
+    top: 54px;
+    right: 0;
+    display: grid;
+    width: 168px;
+    gap: 4px;
+    padding: 6px;
+    background:
+        linear-gradient(135deg, rgba(24, 30, 43, 0.84), rgba(8, 12, 22, 0.76)),
+        rgba(8, 12, 22, 0.74);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 18px;
+    box-shadow:
+        0 20px 58px rgba(2, 6, 14, 0.32),
+        inset 0 1px 0 rgba(255, 255, 255, 0.13);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-6px) scale(0.98);
+    transform-origin: top right;
+    transition:
+        opacity 180ms ease,
+        transform 180ms ease;
+}
+
+.layer-switcher.is-open .layer-switcher__panel {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+}
+
+.layer-switcher__option {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr);
+    min-height: 42px;
+    align-items: center;
+    gap: 9px;
+    padding: 5px 10px 5px 5px;
+    color: rgba(248, 251, 255, 0.74);
+    font-size: 0.84rem;
+    font-weight: 800;
+    text-align: left;
+    background: transparent;
+    border: 0;
+    border-radius: 13px;
+    cursor: pointer;
+}
+
+.layer-switcher__option.is-active,
+.layer-switcher__option:hover {
+    color: #fff;
+    background:
+        linear-gradient(135deg, rgba(33, 168, 255, 0.18), rgba(139, 92, 246, 0.20)),
+        rgba(255, 255, 255, 0.07);
+}
+
+.layer-switcher__swatch {
+    display: block;
+    width: 30px;
+    height: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 10px;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.22),
+        0 8px 18px rgba(0, 0, 0, 0.18);
+}
+
+.layer-switcher__swatch--light {
+    background:
+        linear-gradient(135deg, #dbeafe 0 34%, #a7f3d0 34% 58%, #e5e7eb 58%),
+        #dbeafe;
+}
+
+.layer-switcher__swatch--dark {
+    background:
+        linear-gradient(135deg, #111827 0 38%, #2563eb 38% 56%, #020617 56%),
+        #111827;
+}
+
+.layer-switcher__swatch--satellite {
+    background:
+        radial-gradient(circle at 68% 28%, #b8d66f 0 15%, transparent 16%),
+        linear-gradient(135deg, #204832, #5f6f38 46%, #223849);
 }
 
 .spot-card {
@@ -2153,6 +2284,21 @@ h2 {
     .maplibregl-ctrl-top-right {
         top: calc(58px + env(safe-area-inset-top)) !important;
         right: 10px !important;
+    }
+
+    .layer-switcher {
+        top: calc(106px + env(safe-area-inset-top));
+        right: 10px;
+    }
+
+    .layer-switcher__trigger {
+        width: 42px;
+        height: 42px;
+    }
+
+    .layer-switcher__panel {
+        top: 50px;
+        width: 156px;
     }
 
     .top-panel .icon-button {
