@@ -1,12 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Auralith">
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="128" viewBox="0 0 180 128" role="img" aria-label="Auralith">
   <defs>
-    <linearGradient id="auralith-gradient" x1="24" y1="104" x2="98" y2="18" gradientUnits="userSpaceOnUse">
+    <linearGradient id="auralith-gradient" x1="28" y1="106" x2="128" y2="18" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#24C6FF"/>
       <stop offset="0.52" stop-color="#6268FF"/>
       <stop offset="1" stop-color="#C13DFF"/>
     </linearGradient>
+    <filter id="auralith-glow" x="-45%" y="-55%" width="210%" height="220%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0.35 0 0 0 0.10  0 0.28 0 0 0.52  0 0 0.45 0 1  0 0 0 0.58 0" result="glow"/>
+      <feMerge>
+        <feMergeNode in="glow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
-  <path fill="url(#auralith-gradient)" d="M57.8 22.7c7.2-13 26.2-12.5 32.7.9l26.1 54c4.8 9.9-2.4 21.4-13.4 21.4h-5.4c-5.7 0-10.9-3.3-13.4-8.4L72.8 66.3 58.2 92.7c-2.6 4.7-7.6 7.6-12.9 7.6H22.9c-11.2 0-18.3-12-12.9-21.8l47.8-55.8Z"/>
-  <path fill="#071015" d="M69.4 66.1 58.8 85.4h18.7c6.1 0 11.1-5 11.1-11.1 0-6.6-5.7-11.8-12.3-11l-6.9 2.8Z" opacity=".38"/>
-  <circle cx="104" cy="87" r="16" fill="url(#auralith-gradient)"/>
+  <g filter="url(#auralith-glow)">
+    <path fill="url(#auralith-gradient)" d="M78.4 21.9c8.6-15.4 31-14.8 38.8 1l30.9 62.6c5.7 11.6-2.8 25-15.7 25h-6.2c-6.8 0-13-3.9-16-10l-13.8-27.6-16.9 30.4c-3.1 5.6-8.9 9-15.3 9H37.8c-13.2 0-21.6-14.1-15.2-25.7l55.8-64.7Z"/>
+    <path fill="#071015" d="M92.2 72.8 79.4 96h23.2c7.2 0 13.1-5.8 13.1-13.1 0-7.7-6.8-13.9-14.5-12.9l-9 2.8Z" opacity=".36"/>
+    <circle cx="145" cy="96" r="19.5" fill="url(#auralith-gradient)"/>
+  </g>
 </svg>

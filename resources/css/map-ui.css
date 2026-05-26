@@ -1193,11 +1193,12 @@ body[data-map-layer="satellite"] .nav-button:hover {
 }
 
 .brand-lockup--map .brand-mark {
-    width: 54px;
-    height: 54px;
-    flex-basis: 54px;
-    margin-left: -3px;
+    width: 76px;
+    height: 58px;
+    flex-basis: 76px;
+    margin: -8px -4px -8px -8px;
     border-radius: 0;
+    overflow: visible;
 }
 
 .auralith-mark img {
@@ -1205,7 +1206,10 @@ body[data-map-layer="satellite"] .nav-button:hover {
     width: 100%;
     height: 100%;
     object-fit: contain;
-    filter: drop-shadow(0 10px 22px rgba(36, 198, 255, 0.18));
+    object-position: center;
+    filter:
+        drop-shadow(0 12px 24px rgba(36, 198, 255, 0.18))
+        drop-shadow(0 0 16px rgba(193, 61, 255, 0.12));
 }
 
 .admin-stats {

@@ -2,8 +2,8 @@
     <img
         src="{{ asset('images/auralith-mark.svg') }}"
         alt=""
-        width="52"
-        height="52"
+        width="84"
+        height="60"
         decoding="async"
     >
 </div>
