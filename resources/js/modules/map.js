@@ -1,5 +1,4 @@
 import maplibregl from 'maplibre-gl';
-import 'maplibre-gl/dist/maplibre-gl.css';
 import { fetchParkingSpots, reverseGeocode } from './parking-api';
 
 let map = null;
@@ -42,7 +41,7 @@ export async function initParkingMap() {
         return;
     }
 
-    if (!maplibregl.supported({ failIfMajorPerformanceCaveat: false })) {
+    if (!isWebGlSupported()) {
         reportMapError('Карта не поддерживается в этом браузере. Попробуйте Chrome или Safari.');
         return;
     }
@@ -57,6 +56,19 @@ export async function initParkingMap() {
 
 function reportMapError(message) {
     window.dispatchEvent(new CustomEvent('parking:error', { detail: message }));
+}
+
+function isWebGlSupported() {
+    try {
+        const canvas = document.createElement('canvas');
+
+        return Boolean(
+            window.WebGLRenderingContext
+                && (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')),
+        );
+    } catch {
+        return false;
+    }
 }
 
 function initMapLibreMap() {

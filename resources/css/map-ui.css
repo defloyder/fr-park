@@ -103,15 +103,17 @@ textarea {
     overflow: hidden;
 }
 
-.map-canvas {
+.map-screen > .map-canvas {
     position: absolute;
     inset: 0;
+    width: 100%;
+    min-height: 100svh;
     z-index: 1;
     background: #17202b;
     touch-action: none;
 }
 
-.map-canvas::after {
+.map-screen > .map-canvas::after {
     position: absolute;
     inset: 0;
     content: "";
