@@ -13,6 +13,7 @@ const SOURCE_ID = 'parking-spots';
 const PENDING_SOURCE_ID = 'pending-parking-spot';
 const BASE_LAYER_IDS = ['light', 'dark', 'satellite'];
 const DEFAULT_BASE_LAYER_ID = 'light';
+const BASE_LAYER_STORAGE_KEY = 'auralith:map-layer';
 
 const MAP_STYLE = {
     version: 8,
@@ -156,7 +157,7 @@ function initMapLibreMap() {
 
     map.once('load', async () => {
         map.resize();
-        setBaseMapLayer(DEFAULT_BASE_LAYER_ID);
+        setBaseMapLayer(getSavedBaseMapLayer());
 
         try {
             await addMarkerImages();
@@ -191,6 +192,8 @@ function bindLayerSwitcher() {
         return;
     }
 
+    setBaseMapLayer(getSavedBaseMapLayer(), { persist: false });
+
     trigger.addEventListener('click', () => {
         const isOpen = switcher.classList.toggle('is-open');
         trigger.setAttribute('aria-expanded', String(isOpen));
@@ -198,7 +201,7 @@ function bindLayerSwitcher() {
 
     switcher.querySelectorAll('[data-map-layer]').forEach((button) => {
         button.addEventListener('click', () => {
-            setBaseMapLayer(button.dataset.mapLayer);
+            setBaseMapLayer(button.dataset.mapLayer, { persist: true });
             switcher.classList.remove('is-open');
             trigger.setAttribute('aria-expanded', 'false');
         });
@@ -214,7 +217,13 @@ function bindLayerSwitcher() {
     });
 }
 
-function setBaseMapLayer(layerId = DEFAULT_BASE_LAYER_ID) {
+function getSavedBaseMapLayer() {
+    const savedLayer = window.localStorage?.getItem(BASE_LAYER_STORAGE_KEY);
+
+    return BASE_LAYER_IDS.includes(savedLayer) ? savedLayer : DEFAULT_BASE_LAYER_ID;
+}
+
+function setBaseMapLayer(layerId = DEFAULT_BASE_LAYER_ID, { persist = false } = {}) {
     if (!BASE_LAYER_IDS.includes(layerId)) {
         return;
     }
@@ -228,6 +237,10 @@ function setBaseMapLayer(layerId = DEFAULT_BASE_LAYER_ID) {
     });
 
     document.body.dataset.mapLayer = layerId;
+    if (persist) {
+        window.localStorage?.setItem(BASE_LAYER_STORAGE_KEY, layerId);
+    }
+
     document.querySelectorAll('[data-map-layer]').forEach((button) => {
         button.classList.toggle('is-active', button.dataset.mapLayer === layerId);
     });

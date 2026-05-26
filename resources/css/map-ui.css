@@ -1065,24 +1065,36 @@ body[data-map-layer="satellite"] .nav-button {
 .nav-button.is-active,
 .nav-button:hover {
     color: #f7fbff;
-    background: linear-gradient(135deg, rgba(0, 212, 255, 0.20), rgba(68, 108, 255, 0.34), rgba(162, 89, 255, 0.22));
+    background:
+        linear-gradient(135deg, rgba(0, 212, 255, 0.26), rgba(68, 108, 255, 0.42) 58%, rgba(162, 89, 255, 0.28)),
+        rgba(255, 255, 255, 0.10);
     box-shadow:
-        0 10px 24px rgba(68, 108, 255, 0.18),
-        inset 0 1px 0 rgba(255, 255, 255, 0.14);
+        0 10px 24px rgba(68, 108, 255, 0.20),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .map-theme-light .nav-button.is-active,
 .map-theme-light .nav-button:hover {
-    color: #101722;
-    background: rgba(16, 23, 34, 0.08);
+    color: #0b1220;
+    background:
+        linear-gradient(135deg, rgba(0, 212, 255, 0.24), rgba(68, 108, 255, 0.30) 58%, rgba(162, 89, 255, 0.22)),
+        rgba(255, 255, 255, 0.72);
+    box-shadow:
+        0 10px 24px rgba(68, 108, 255, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.68);
 }
 
 body[data-map-layer="dark"] .nav-button.is-active,
 body[data-map-layer="dark"] .nav-button:hover,
 body[data-map-layer="satellite"] .nav-button.is-active,
 body[data-map-layer="satellite"] .nav-button:hover {
-    color: #101722;
-    background: rgba(16, 23, 34, 0.08);
+    color: #0b1220;
+    background:
+        linear-gradient(135deg, rgba(0, 212, 255, 0.24), rgba(68, 108, 255, 0.30) 58%, rgba(162, 89, 255, 0.22)),
+        rgba(255, 255, 255, 0.72);
+    box-shadow:
+        0 10px 24px rgba(68, 108, 255, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.68);
 }
 
 .add-button {
