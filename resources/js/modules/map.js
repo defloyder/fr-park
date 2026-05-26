@@ -43,6 +43,7 @@ const MAP_STYLE = {
                 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             ],
             tileSize: 256,
+            maxzoom: 17,
             attribution: 'Tiles © Esri',
         },
     },
