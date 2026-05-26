@@ -1,9 +1,9 @@
 <div {{ $attributes->class(['brand-mark', 'auralith-mark']) }} aria-hidden="true">
     <img
-        src="{{ asset('images/auralith-logo.png') }}"
+        src="{{ asset('images/auralith-mark.svg') }}"
         alt=""
-        width="40"
-        height="40"
+        width="52"
+        height="52"
         decoding="async"
     >
 </div>

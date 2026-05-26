@@ -421,15 +421,15 @@ h2 {
 
 .layer-switcher {
     position: fixed;
-    top: 66px;
-    right: 14px;
+    top: 72px;
+    right: 22px;
     z-index: 5;
 }
 
 .layer-switcher__trigger {
     display: grid;
-    width: 46px;
-    height: 46px;
+    width: 40px;
+    height: 40px;
     place-items: center;
     color: #f8fbff;
     background:
@@ -444,8 +444,8 @@ h2 {
 }
 
 .layer-switcher__trigger svg {
-    width: 20px;
-    height: 20px;
+    width: 19px;
+    height: 19px;
     fill: none;
     stroke: currentColor;
     stroke-linecap: round;
@@ -1091,10 +1091,11 @@ h2 {
 }
 
 .brand-lockup--map .brand-mark {
-    width: 42px;
-    height: 42px;
-    flex-basis: 42px;
-    border-radius: 13px;
+    width: 54px;
+    height: 54px;
+    flex-basis: 54px;
+    margin-left: -3px;
+    border-radius: 0;
 }
 
 .auralith-mark img {
@@ -1102,6 +1103,7 @@ h2 {
     width: 100%;
     height: 100%;
     object-fit: contain;
+    filter: drop-shadow(0 10px 22px rgba(36, 198, 255, 0.18));
 }
 
 .admin-stats {
@@ -2287,13 +2289,13 @@ h2 {
     }
 
     .layer-switcher {
-        top: calc(106px + env(safe-area-inset-top));
-        right: 10px;
+        top: calc(108px + env(safe-area-inset-top));
+        right: 20px;
     }
 
     .layer-switcher__trigger {
-        width: 42px;
-        height: 42px;
+        width: 40px;
+        height: 40px;
     }
 
     .layer-switcher__panel {
