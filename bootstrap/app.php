@@ -14,7 +14,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'admin' => EnsureUserIsAdmin::class,
+            'admin'           => EnsureUserIsAdmin::class,
+            'api.token'       => \App\Http\Middleware\ValidateApiToken::class,
+            'api.encrypt'     => \App\Http\Middleware\EncryptApiResponse::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
