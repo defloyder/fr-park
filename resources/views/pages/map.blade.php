@@ -22,12 +22,6 @@
                 </div>
             </div>
             <div class="top-panel__actions">
-                <button class="icon-button" type="button" data-action="locate-me" aria-label="Определить мое местоположение">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M12 3 20 21l-8-4-8 4 8-18Z"></path>
-                        <path d="M12 3v14"></path>
-                    </svg>
-                </button>
                 <button class="icon-button" type="button" data-action="open-search" aria-label="Открыть поиск">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                         <path d="m21 21-4.35-4.35"></path>
@@ -52,6 +46,13 @@
             </div>
         </section>
         <section id="selected-spot-card" class="spot-card liquid-glass hidden" aria-live="polite"></section>
+
+        <button class="map-location-button liquid-glass" type="button" data-action="locate-me" aria-label="Определить мое местоположение">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3 20 21l-8-4-8 4 8-18Z"></path>
+                <path d="M12 3v14"></path>
+            </svg>
+        </button>
 
         <div class="layer-switcher" data-layer-switcher>
             <button class="layer-switcher__trigger liquid-glass" type="button" data-map-layer-toggle aria-label="Переключить слой карты" aria-expanded="false">
