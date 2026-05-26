@@ -2,8 +2,6 @@
     <img
         src="{{ asset('images/logo_transient.png') }}"
         alt=""
-        width="84"
-        height="60"
         decoding="async"
     >
 </div>
