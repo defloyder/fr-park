@@ -14,17 +14,15 @@ const PENDING_SOURCE_ID = 'pending-parking-spot';
 
 const MAP_STYLE = {
     version: 8,
+    glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
     sources: {
         basemap: {
             type: 'raster',
             tiles: [
-                'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
-                'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
-                'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
-                'https://d.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
             ],
             tileSize: 256,
-            attribution: '© OpenStreetMap © CARTO',
+            attribution: '© OpenStreetMap contributors',
         },
     },
     layers: [
@@ -32,8 +30,21 @@ const MAP_STYLE = {
             id: 'basemap',
             type: 'raster',
             source: 'basemap',
+            paint: {
+                'raster-opacity': 0.96,
+                'raster-saturation': -0.12,
+                'raster-contrast': 0.04,
+            },
         },
     ],
+};
+
+const MARKER_IMAGES = {
+    verified: ['#7CFFB2', '#00B8A9'],
+    unverified: ['#FFD979', '#F59E0B'],
+    temporary: ['#B996FF', '#8B5CF6'],
+    outdated: ['#FF6D82', '#DC2626'],
+    new: ['#8DEEFF', '#00E5FF'],
 };
 
 export async function initParkingMap() {
@@ -97,6 +108,7 @@ function initMapLibreMap() {
         map.resize();
 
         try {
+            await addMarkerImages();
             addParkingSource();
             addParkingLayers();
             addPendingSourceAndLayer();
@@ -117,6 +129,43 @@ function initMapLibreMap() {
     });
 
     window.addEventListener('resize', () => map?.resize());
+}
+
+async function addMarkerImages() {
+    await Promise.all(Object.entries(MARKER_IMAGES).map(([status, colors]) => (
+        addSvgImage(`parking-marker-${status}`, createMarkerSvg(...colors))
+    )));
+}
+
+function addSvgImage(name, svg) {
+    if (map.hasImage(name)) {
+        return Promise.resolve();
+    }
+
+    return new Promise((resolve, reject) => {
+        const image = new Image(40, 48);
+        image.onload = () => {
+            map.addImage(name, image, { pixelRatio: 1 });
+            resolve();
+        };
+        image.onerror = reject;
+        image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    });
+}
+
+function createMarkerSvg(fill, accent) {
+    return `
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="48" viewBox="0 0 40 48">
+  <defs>
+    <filter id="shadow" x="-40%" y="-30%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="7" stdDeviation="4" flood-color="#000814" flood-opacity="0.38"/>
+    </filter>
+  </defs>
+  <path filter="url(#shadow)" fill="${fill}" d="M20 2C10.6 2 3 9.6 3 19c0 12.8 17 27 17 27s17-14.2 17-27C37 9.6 29.4 2 20 2Z"/>
+  <path fill="${accent}" opacity="0.94" d="M20 6C12.8 6 7 11.8 7 19c0 8.2 8.2 18.1 13 23.1C24.8 37.1 33 27.2 33 19 33 11.8 27.2 6 20 6Z"/>
+  <circle cx="20" cy="19" r="8.2" fill="#08111F" opacity="0.24"/>
+  <text x="20" y="24" text-anchor="middle" fill="#08111F" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="900">P</text>
+</svg>`;
 }
 
 function bindPerformanceMode() {
@@ -164,28 +213,35 @@ function addParkingLayers() {
     });
 
     map.addLayer({
-        id: 'spots-pin',
-        type: 'circle',
+        id: 'cluster-count',
+        type: 'symbol',
         source: SOURCE_ID,
-        filter: ['!', ['has', 'point_count']],
+        filter: ['has', 'point_count'],
+        layout: {
+            'text-field': ['get', 'point_count_abbreviated'],
+            'text-font': ['Noto Sans Regular'],
+            'text-size': 14,
+            'text-allow-overlap': true,
+            'text-ignore-placement': true,
+        },
         paint: {
-            'circle-color': ['get', 'markerColor'],
-            'circle-radius': 16,
-            'circle-stroke-width': 5,
-            'circle-stroke-color': ['get', 'markerHalo'],
-            'circle-opacity': 0.96,
+            'text-color': '#F8FAFC',
+            'text-halo-color': 'rgba(8, 17, 31, 0.55)',
+            'text-halo-width': 1,
         },
     });
 
     map.addLayer({
-        id: 'spots-symbol',
-        type: 'circle',
+        id: 'spots-pin',
+        type: 'symbol',
         source: SOURCE_ID,
         filter: ['!', ['has', 'point_count']],
-        paint: {
-            'circle-color': '#08111F',
-            'circle-radius': 6,
-            'circle-opacity': 0.9,
+        layout: {
+            'icon-image': ['concat', 'parking-marker-', ['get', 'status']],
+            'icon-anchor': 'bottom',
+            'icon-size': 1,
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true,
         },
     });
 }
@@ -197,55 +253,35 @@ function addPendingSourceAndLayer() {
     });
 
     map.addLayer({
-        id: 'pending-spot-halo',
-        type: 'circle',
-        source: PENDING_SOURCE_ID,
-        paint: {
-            'circle-color': 'rgba(0, 212, 255, 0.22)',
-            'circle-radius': 22,
-            'circle-stroke-width': 2,
-            'circle-stroke-color': '#F8FAFC',
-        },
-    });
-
-    map.addLayer({
         id: 'pending-spot',
-        type: 'circle',
+        type: 'symbol',
         source: PENDING_SOURCE_ID,
-        paint: {
-            'circle-color': '#00D4FF',
-            'circle-radius': 10,
-            'circle-stroke-width': 4,
-            'circle-stroke-color': 'rgba(248, 250, 252, 0.82)',
+        layout: {
+            'icon-image': 'parking-marker-new',
+            'icon-anchor': 'bottom',
+            'icon-size': 1,
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true,
         },
     });
 }
 
 function bindMapEvents() {
     map.on('click', 'clusters', async (event) => {
-        const feature = map.queryRenderedFeatures(event.point, { layers: ['clusters'] })[0];
-        const clusterId = feature?.properties?.cluster_id;
-        const source = map.getSource(SOURCE_ID);
-
-        if (!source || clusterId === undefined) return;
-
-        const zoom = await source.getClusterExpansionZoom(clusterId);
-        map.easeTo({
-            center: feature.geometry.coordinates,
-            zoom,
-            duration: 220,
-        });
+        await expandCluster(event);
+    });
+    map.on('click', 'cluster-count', async (event) => {
+        await expandCluster(event);
     });
 
     map.on('click', 'spots-pin', (event) => selectSpotFromFeature(event.features?.[0]));
-    map.on('click', 'spots-symbol', (event) => selectSpotFromFeature(event.features?.[0]));
 
     map.on('mouseenter', 'clusters', () => setMapCursor('pointer'));
     map.on('mouseleave', 'clusters', () => setMapCursor(''));
+    map.on('mouseenter', 'cluster-count', () => setMapCursor('pointer'));
+    map.on('mouseleave', 'cluster-count', () => setMapCursor(''));
     map.on('mouseenter', 'spots-pin', () => setMapCursor('pointer'));
     map.on('mouseleave', 'spots-pin', () => setMapCursor(''));
-    map.on('mouseenter', 'spots-symbol', () => setMapCursor('pointer'));
-    map.on('mouseleave', 'spots-symbol', () => setMapCursor(''));
 
     map.on('click', (event) => {
         if (!isPickingMode || clickedFeature(event.point)) {
@@ -266,8 +302,23 @@ function bindMapEvents() {
     });
 }
 
+async function expandCluster(event) {
+    const feature = map.queryRenderedFeatures(event.point, { layers: ['clusters', 'cluster-count'] })[0];
+    const clusterId = feature?.properties?.cluster_id;
+    const source = map.getSource(SOURCE_ID);
+
+    if (!source || clusterId === undefined) return;
+
+    const zoom = await source.getClusterExpansionZoom(clusterId);
+    map.easeTo({
+        center: feature.geometry.coordinates,
+        zoom,
+        duration: 220,
+    });
+}
+
 function clickedFeature(point) {
-    return map.queryRenderedFeatures(point, { layers: ['clusters', 'spots-pin', 'spots-symbol'] }).length > 0;
+    return map.queryRenderedFeatures(point, { layers: ['clusters', 'cluster-count', 'spots-pin'] }).length > 0;
 }
 
 function setMapCursor(cursor) {

@@ -109,7 +109,7 @@ textarea {
     width: 100%;
     min-height: 100svh;
     z-index: 1;
-    background: #17202b;
+    background: #d9e3e8;
     touch-action: none;
 }
 
@@ -120,8 +120,8 @@ textarea {
     pointer-events: none;
     z-index: 2;
     background:
-        linear-gradient(180deg, rgba(3, 4, 10, 0.10), transparent 28%, rgba(3, 4, 10, 0.12)),
-        radial-gradient(circle at center, transparent 58%, rgba(3, 4, 10, 0.10));
+        linear-gradient(180deg, rgba(3, 4, 10, 0.04), transparent 30%, rgba(3, 4, 10, 0.06)),
+        radial-gradient(circle at center, transparent 64%, rgba(3, 4, 10, 0.07));
 }
 
 .maplibregl-ctrl-group {
