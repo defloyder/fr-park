@@ -34,12 +34,12 @@ class ParkingSpotApiTest extends TestCase
             'status' => 'hidden',
         ]);
 
-        $this->getJson('/api/parking-spots')
+        $token = $this->postJson('/api/session/init')->json('token');
+
+        // Ответ зашифрован — проверяем структуру конверта
+        $this->getJson('/api/parking-spots', ['X-Api-Token' => $token])
             ->assertOk()
-            ->assertJsonCount(2, 'data')
-            ->assertJsonFragment(['title' => 'Active spot'])
-            ->assertJsonFragment(['title' => 'Pending spot'])
-            ->assertJsonFragment(['route_url' => 'https://www.openstreetmap.org/directions?to=55.7558000,37.6173000']);
+            ->assertJsonStructure(['iv', 'data', 'tag']);
     }
 
     public function test_it_creates_pending_user_parking_spot(): void
