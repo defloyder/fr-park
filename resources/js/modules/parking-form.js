@@ -63,6 +63,9 @@ const state = {
     navigationSpot: null,
     navigationRoute: null,
     navigationWatchId: null,
+    currentSpeedKmh: 0,
+    speedLimitKmh: 60,
+    listQuery: '',
 };
 
 export function initParkingUi() {
@@ -82,6 +85,7 @@ export function initParkingUi() {
     const favoritePanel = document.getElementById('favorite-panel');
     const favoriteList = document.getElementById('favorite-list');
     const searchInput = document.getElementById('spot-search-input');
+    const listSearchInput = document.getElementById('spot-list-search-input');
     const areaSelect = document.getElementById('spot-area-select');
     const searchResults = document.getElementById('search-results');
     const statusPanel = document.getElementById('status-panel');
@@ -269,6 +273,10 @@ export function initParkingUi() {
         await uploadPhotoFiles([...photoCameraInput.files]);
         photoCameraInput.value = '';
     });
+    listSearchInput?.addEventListener('input', () => {
+        state.listQuery = listSearchInput.value.trim().toLowerCase();
+        renderList();
+    });
     searchInput?.addEventListener('input', () => renderSearchResults(true));
     areaSelect?.addEventListener('change', () => renderSearchResults(true));
     authForm?.addEventListener('submit', submitAuthForm);
@@ -431,13 +439,28 @@ export function initParkingUi() {
     }
 
     function getListSpots() {
+        const filtered = state.listQuery
+            ? state.spots.filter((spot) => getSpotSearchText(spot).includes(state.listQuery))
+            : state.spots;
+
         if (!state.userLocation) {
-            return state.spots;
+            return filtered;
         }
 
-        return [...state.spots].sort((first, second) => (
+        return [...filtered].sort((first, second) => (
             getDistanceMeters(state.userLocation, first) - getDistanceMeters(state.userLocation, second)
         ));
+    }
+
+    function getSpotSearchText(spot) {
+        return [
+            spot.title,
+            spot.address,
+            spot.description,
+            spot.landmarks,
+            spot.access_instructions,
+            getSpotArea(spot),
+        ].filter(Boolean).join(' ').toLowerCase();
     }
 
     function getSpotListMeta(spot) {
@@ -982,9 +1005,14 @@ export function initParkingUi() {
         if (document.body.classList.contains('is-navigation-following')) {
             const remainingDistance = getRemainingRouteDistance();
             const remainingDuration = getRemainingRouteDuration(remainingDistance);
+            const instruction = getNextRouteInstruction(state.navigationRoute, state.userLocation);
+            const isSpeeding = state.currentSpeedKmh > state.speedLimitKmh + 15;
             const guidance = document.createElement('section');
             guidance.className = 'navigation-guidance liquid-glass';
             guidance.innerHTML = `
+                <div class="navigation-guidance__arrow" aria-hidden="true">
+                    ${getManeuverIconSvg(instruction)}
+                </div>
                 <div class="navigation-guidance__main">
                     <strong>${escapeHtml(getNavigationInstruction(state.navigationRoute, state.userLocation))}</strong>
                     <span>${escapeHtml(getTrafficLabel(state.navigationRoute))}</span>
@@ -992,6 +1020,11 @@ export function initParkingUi() {
                 <div class="navigation-guidance__metrics">
                     <b>${formatDuration(remainingDuration)}</b>
                     <span>${formatDistance(remainingDistance)}</span>
+                </div>
+                <div class="navigation-speedometer ${isSpeeding ? 'is-speeding' : ''}">
+                    <strong>${Math.round(state.currentSpeedKmh)}</strong>
+                    <span>км/ч</span>
+                    <em>${state.speedLimitKmh}</em>
                 </div>
             `;
             document.body.append(guidance);
@@ -1050,6 +1083,8 @@ export function initParkingUi() {
                     accuracy: coords.accuracy,
                     updatedAt: Date.now(),
                 };
+                state.currentSpeedKmh = getGpsSpeedKmh(coords);
+                state.speedLimitKmh = estimateSpeedLimitKmh(state.navigationRoute, state.userLocation);
 
                 focusUserLocation(state.userLocation, { focus: false });
                 updateActiveRouteProgress(state.userLocation, state.navigationRoute);
@@ -1657,6 +1692,28 @@ function getNextRouteInstruction(route, userLocation) {
     };
 }
 
+function getManeuverIconSvg(instruction) {
+    const type = String(instruction?.maneuver || '').toLowerCase();
+    const modifier = String(instruction?.modifier || instruction?.text || '').toLowerCase();
+    const turnLeft = modifier.includes('left') || modifier.includes('налево') || modifier.includes('левее');
+    const turnRight = modifier.includes('right') || modifier.includes('направо') || modifier.includes('правее') || type.includes('exit') || type.includes('ramp');
+    const arrive = type.includes('arrive') || modifier.includes('прибы');
+
+    if (arrive) {
+        return '<svg viewBox="0 0 24 24"><path d="M12 21s7-5.2 7-11a7 7 0 0 0-14 0c0 5.8 7 11 7 11Z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>';
+    }
+
+    if (turnLeft) {
+        return '<svg viewBox="0 0 24 24"><path d="M6 8h9a4 4 0 0 1 4 4v8"></path><path d="m6 8 5-5"></path><path d="m6 8 5 5"></path></svg>';
+    }
+
+    if (turnRight) {
+        return '<svg viewBox="0 0 24 24"><path d="M18 8H9a4 4 0 0 0-4 4v8"></path><path d="m18 8-5-5"></path><path d="m18 8-5 5"></path></svg>';
+    }
+
+    return '<svg viewBox="0 0 24 24"><path d="M12 21V4"></path><path d="m6 10 6-6 6 6"></path></svg>';
+}
+
 function getRouteProgressMeters(coordinates, userLocation) {
     const current = [Number(userLocation.longitude), Number(userLocation.latitude)];
     let progress = 0;
@@ -1731,6 +1788,64 @@ function getTrafficLabel(route) {
     }
 
     return 'Приблизительный маршрут без данных о пробках';
+}
+
+function getGpsSpeedKmh(coords) {
+    const speed = Number(coords?.speed);
+
+    return Number.isFinite(speed) && speed > 0 ? speed * 3.6 : 0;
+}
+
+function estimateSpeedLimitKmh(route, userLocation) {
+    const speedLimit = getTomTomSpeedLimit(route, userLocation);
+
+    if (speedLimit) {
+        return speedLimit;
+    }
+
+    const instruction = getNextRouteInstruction(route, userLocation);
+    const text = `${instruction?.roadName || ''} ${instruction?.text || ''}`.toLowerCase();
+
+    if (/(мкад|кад|автобан|autobahn|motorway|highway)/i.test(text)) return 100;
+    if (/(шоссе|проспект|allee|ring|tunnel|bridge|мост)/i.test(text)) return 80;
+    if (/(двор|парков|проезд|residential|living)/i.test(text)) return 20;
+    if (/(straße|strasse|street|улица|переулок|lane|road)/i.test(text)) return 50;
+
+    return 60;
+}
+
+function getTomTomSpeedLimit(route, userLocation) {
+    if (!route?.speedLimits?.length || !route?.geometry?.coordinates?.length || !userLocation) {
+        return null;
+    }
+
+    const currentIndex = getClosestRouteCoordinateIndex(route.geometry.coordinates, userLocation);
+    const section = route.speedLimits.find((item) => (
+        Number(item.startPointIndex) <= currentIndex && Number(item.endPointIndex) >= currentIndex
+    ));
+    const limit = Number(section?.speedLimitKmh);
+
+    return Number.isFinite(limit) && limit > 0 ? limit : null;
+}
+
+function getClosestRouteCoordinateIndex(coordinates, userLocation) {
+    const current = [Number(userLocation.longitude), Number(userLocation.latitude)];
+    let closestIndex = 0;
+    let closestDistance = Number.POSITIVE_INFINITY;
+
+    coordinates.forEach((coordinate, index) => {
+        const distance = getDistanceMeters(
+            { longitude: current[0], latitude: current[1] },
+            { longitude: coordinate[0], latitude: coordinate[1] },
+        );
+
+        if (distance < closestDistance) {
+            closestDistance = distance;
+            closestIndex = index;
+        }
+    });
+
+    return closestIndex;
 }
 
 function formatDuration(seconds) {

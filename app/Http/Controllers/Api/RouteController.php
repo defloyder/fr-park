@@ -100,7 +100,7 @@ class RouteController extends Controller
                 'computeTravelTimeFor' => 'all',
                 'instructionsType' => 'text',
                 'language' => 'ru-RU',
-                'sectionType' => 'traffic',
+                'sectionType' => 'traffic,speedLimit',
             ])
             ->throw()
             ->json();
@@ -134,6 +134,7 @@ class RouteController extends Controller
             ],
             'segments' => $this->buildTomTomTrafficSegments($coordinates, (array) data_get($route, 'sections', []), $trafficDelay, $durationSeconds),
             'instructions' => $this->normalizeTomTomInstructions((array) data_get($route, 'guidance.instructions', [])),
+            'speedLimits' => $this->normalizeTomTomSpeedLimits((array) data_get($route, 'sections', [])),
             'distanceMeters' => $distanceMeters,
             'durationSeconds' => $durationSeconds,
             'trafficDelaySeconds' => $trafficDelay,
@@ -157,6 +158,28 @@ class RouteController extends Controller
                     'distanceMeters' => 0,
                     'distanceFromStartMeters' => (float) data_get($instruction, 'routeOffsetInMeters', 0),
                     'maneuver' => (string) data_get($instruction, 'instructionType', ''),
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    private function normalizeTomTomSpeedLimits(array $sections): array
+    {
+        return collect($sections)
+            ->filter(fn ($section) => strtoupper((string) data_get($section, 'sectionType')) === 'SPEED_LIMIT')
+            ->map(function ($section): ?array {
+                $limit = (int) data_get($section, 'maxSpeedLimitInKmh', 0);
+
+                if ($limit <= 0) {
+                    return null;
+                }
+
+                return [
+                    'startPointIndex' => (int) data_get($section, 'startPointIndex', 0),
+                    'endPointIndex' => (int) data_get($section, 'endPointIndex', 0),
+                    'speedLimitKmh' => $limit,
                 ];
             })
             ->filter()

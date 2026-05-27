@@ -6,6 +6,7 @@ let spotsCache = [];
 let pendingMarker = null;
 let addressRequestId = 0;
 let isPickingMode = false;
+let isTrafficSuppressedByRoute = false;
 
 const MOSCOW_CENTER = [37.6173, 55.7558];
 const MAP_CONTAINER_ID = 'parking-map';
@@ -152,7 +153,6 @@ function initMapLibreMap() {
         fadeDuration: 0,
     });
 
-    map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), 'top-left');
     map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
 
     map.on('error', (event) => {
@@ -161,6 +161,7 @@ function initMapLibreMap() {
 
     bindLayerSwitcher();
     bindTrafficToggle();
+    bindMapControlButtons();
     bindPerformanceMode();
 
     map.once('load', async () => {
@@ -294,7 +295,19 @@ function setTrafficLayerVisibility(isVisible) {
         return;
     }
 
-    map.setLayoutProperty(TRAFFIC_FLOW_LAYER_ID, 'visibility', isVisible ? 'visible' : 'none');
+    map.setLayoutProperty(TRAFFIC_FLOW_LAYER_ID, 'visibility', isVisible && !isTrafficSuppressedByRoute ? 'visible' : 'none');
+}
+
+function bindMapControlButtons() {
+    document.querySelectorAll('[data-map-control]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const control = button.dataset.mapControl;
+
+            if (control === 'zoom-in') map?.zoomIn({ duration: 180 });
+            if (control === 'zoom-out') map?.zoomOut({ duration: 180 });
+            if (control === 'reset-bearing') map?.easeTo({ bearing: 0, pitch: 0, duration: 260 });
+        });
+    });
 }
 
 async function addMarkerImages() {
@@ -783,6 +796,7 @@ export async function buildRouteToSpot(userLocation, spot, { camera = 'overview'
     const source = map.getSource(ROUTE_SOURCE_ID);
 
     cacheRoute(finish, route);
+    setRouteTrafficMode(true);
 
     source?.setData(buildRouteFeatureCollection(route));
     if (['yandex-traffic', 'tomtom-traffic'].includes(route.source)) {
@@ -875,6 +889,12 @@ function buildRouteFeatureCollection(route) {
 
 export function clearActiveRoute() {
     map?.getSource(ROUTE_SOURCE_ID)?.setData(buildFeatureCollection([]));
+    setRouteTrafficMode(false);
+}
+
+function setRouteTrafficMode(isActive) {
+    isTrafficSuppressedByRoute = isActive;
+    setTrafficLayerVisibility(isTrafficLayerEnabled());
 }
 
 export function updateActiveRouteProgress(userLocation, route) {

@@ -18,22 +18,8 @@
                 <x-brand-logo />
                 <div>
                     <span class="eyebrow">Карта бесплатных парковок</span>
-                    <h1>Auralith</h1>
+                    <h1>Auralith Maps</h1>
                 </div>
-            </div>
-            <div class="top-panel__actions">
-                <button class="icon-button" type="button" data-action="open-search" aria-label="Открыть поиск">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="m21 21-4.35-4.35"></path>
-                        <circle cx="11" cy="11" r="6.5"></circle>
-                    </svg>
-                </button>
-                <button class="icon-button" type="button" data-action="open-profile" aria-label="Открыть профиль">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <circle cx="12" cy="8" r="4"></circle>
-                        <path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path>
-                    </svg>
-                </button>
             </div>
         </header>
 
@@ -48,11 +34,20 @@
         <section id="selected-spot-card" class="spot-card liquid-glass hidden" aria-live="polite"></section>
 
         <div class="map-control-stack liquid-glass" aria-label="Инструменты карты">
+            <button class="map-control-button" type="button" data-map-control="zoom-in" aria-label="Приблизить">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+            </button>
+            <button class="map-control-button" type="button" data-map-control="zoom-out" aria-label="Отдалить">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path></svg>
+            </button>
+            <button class="map-control-button" type="button" data-map-control="reset-bearing" aria-label="Север сверху">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 5 18-5-4-5 4 5-18Z"></path></svg>
+            </button>
             <button class="map-control-button map-fullscreen-button" type="button" data-action="toggle-fullscreen" aria-label="На весь экран">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H4a1 1 0 0 0-1 1v4"></path><path d="M16 3h4a1 1 0 0 1 1 1v4"></path><path d="M21 16v4a1 1 0 0 1-1 1h-4"></path><path d="M8 21H4a1 1 0 0 1-1-1v-4"></path></svg>
             </button>
             <button class="map-control-button map-traffic-button" type="button" data-traffic-toggle aria-label="Включить пробки" aria-pressed="false">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16"></path><path d="M7 16 11 5"></path><path d="m13 5 4 11"></path><path d="M8.2 12h7.6"></path></svg>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="3" width="8" height="18" rx="4"></rect><circle cx="12" cy="8" r="1.4"></circle><circle cx="12" cy="12" r="1.4"></circle><circle cx="12" cy="16" r="1.4"></circle></svg>
             </button>
             <div class="layer-switcher" data-layer-switcher>
                 <button class="map-control-button layer-switcher__trigger" type="button" data-map-layer-toggle aria-label="Переключить слой карты" aria-expanded="false">
@@ -77,6 +72,9 @@
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="m12 2 7 19-7-4-7 4 7-19Z"></path>
                 </svg>
+            </button>
+            <button class="map-control-button" type="button" data-action="open-profile" aria-label="Открыть профиль">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg>
             </button>
         </div>
 
@@ -112,6 +110,10 @@
                 </div>
                 <button class="icon-button" type="button" data-action="close-list" aria-label="Закрыть список">×</button>
             </div>
+            <label class="search-field spot-list-search">
+                <span>Поиск</span>
+                <input id="spot-list-search-input" type="search" autocomplete="off" placeholder="Адрес, название, ориентир">
+            </label>
             <div id="export-toolbar" class="export-toolbar hidden">
                 <button class="ghost-button" type="button" data-action="export-all" title="Экспорт всех точек">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 19h14"></path></svg>
