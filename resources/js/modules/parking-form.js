@@ -958,7 +958,11 @@ export function initParkingUi() {
         pickPanel?.classList.add('hidden');
         document.body.classList.remove('is-sheet-open');
         document.body.classList.add('is-navigation-mode');
+        document.body.classList.add('is-navigation-following');
+        document.body.classList.remove('is-navigation-detached');
         setActiveNav('show-map');
+        startRouteNavigation(route);
+        startNavigationLocationWatch();
         renderNavigationPanel();
     }
 

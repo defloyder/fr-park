@@ -1338,7 +1338,7 @@ body[data-map-layer="satellite"] .route-picker__summary small {
     right: 18px;
     bottom: calc(18px + env(safe-area-inset-bottom));
     left: 18px;
-    z-index: 19;
+    z-index: 60;
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(150px, 210px) 44px;
     align-items: center;
@@ -1448,7 +1448,7 @@ body.is-navigation-following .navigation-panel__drive {
     position: fixed;
     top: calc(18px + env(safe-area-inset-top));
     left: 50%;
-    z-index: 19;
+    z-index: 61;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     min-width: min(620px, calc(100vw - 32px));
@@ -1499,7 +1499,7 @@ body.is-navigation-following .navigation-panel__drive {
     position: fixed;
     right: 18px;
     bottom: calc(112px + env(safe-area-inset-bottom));
-    z-index: 19;
+    z-index: 61;
     display: grid;
     grid-template-columns: 22px minmax(0, 1fr);
     align-items: center;

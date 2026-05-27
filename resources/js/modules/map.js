@@ -489,9 +489,9 @@ function addRouteSourceAndLayer() {
             'line-join': 'round',
         },
         paint: {
-            'line-color': 'rgba(255, 255, 255, 0.92)',
-            'line-width': ['interpolate', ['linear'], ['zoom'], 11, 7, 16, 12],
-            'line-opacity': 0.92,
+            'line-color': 'rgba(8, 17, 31, 0.62)',
+            'line-width': ['interpolate', ['linear'], ['zoom'], 11, 12, 16, 22],
+            'line-opacity': 0.68,
         },
     }, 'spots-pin');
 
@@ -504,9 +504,9 @@ function addRouteSourceAndLayer() {
             'line-join': 'round',
         },
         paint: {
-            'line-color': '#21A8FF',
-            'line-width': ['interpolate', ['linear'], ['zoom'], 11, 4, 16, 8],
-            'line-opacity': 0.96,
+            'line-color': '#22C55E',
+            'line-width': ['interpolate', ['linear'], ['zoom'], 11, 8, 16, 15],
+            'line-opacity': 0.72,
         },
     }, 'spots-pin');
 }
@@ -521,7 +521,7 @@ function addTrafficFlowLayer() {
     map.addSource(TRAFFIC_FLOW_SOURCE_ID, {
         type: 'raster',
         tiles: [
-            `https://api.tomtom.com/traffic/map/4/tile/flow/relative/{z}/{x}/{y}.png?key=${encodeURIComponent(apiKey)}&tileSize=256&thickness=7`,
+            `https://api.tomtom.com/traffic/map/4/tile/flow/relative/{z}/{x}/{y}.png?key=${encodeURIComponent(apiKey)}&tileSize=256&thickness=6`,
         ],
         tileSize: 256,
         minzoom: 5,
@@ -534,10 +534,12 @@ function addTrafficFlowLayer() {
         type: 'raster',
         source: TRAFFIC_FLOW_SOURCE_ID,
         paint: {
-            'raster-opacity': 0.82,
+            'raster-opacity': 0.70,
             'raster-fade-duration': 0,
         },
     }, ROUTE_CASING_LAYER_ID);
+
+    keepNavigationLayersOrdered();
 }
 
 function getTomTomTrafficKey() {
@@ -736,11 +738,12 @@ export async function buildRouteToSpot(userLocation, spot, { camera = 'overview'
             '#FF7A1A',
             'slow',
             '#FFD84D',
-            '#21A8FF',
+            '#22C55E',
         ]);
     } else {
-        map.setPaintProperty(ROUTE_LINE_LAYER_ID, 'line-color', '#21A8FF');
+        map.setPaintProperty(ROUTE_LINE_LAYER_ID, 'line-color', '#22C55E');
     }
+    keepNavigationLayersOrdered();
 
     if (camera === 'follow') {
         focusRouteStart(route.geometry.coordinates);
@@ -755,6 +758,29 @@ export async function buildRouteToSpot(userLocation, spot, { camera = 'overview'
     }
 
     return route;
+}
+
+function keepNavigationLayersOrdered() {
+    const orderedTopLayers = [
+        'clusters',
+        ROUTE_CASING_LAYER_ID,
+        ROUTE_LINE_LAYER_ID,
+        'spots-pin',
+        'cluster-count',
+        'pending-spot',
+        'user-location-accuracy',
+        'user-location-dot',
+    ];
+
+    if (map.getLayer(TRAFFIC_FLOW_LAYER_ID) && map.getLayer(ROUTE_CASING_LAYER_ID)) {
+        map.moveLayer(TRAFFIC_FLOW_LAYER_ID, ROUTE_CASING_LAYER_ID);
+    }
+
+    orderedTopLayers.forEach((layerId) => {
+        if (map.getLayer(layerId)) {
+            map.moveLayer(layerId);
+        }
+    });
 }
 
 function buildRouteFeatureCollection(route) {
