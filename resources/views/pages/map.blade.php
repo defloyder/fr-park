@@ -34,14 +34,8 @@
         <section id="selected-spot-card" class="spot-card liquid-glass hidden" aria-live="polite"></section>
 
         <div class="map-control-stack liquid-glass" aria-label="Инструменты карты">
-            <button class="map-control-button" type="button" data-map-control="zoom-in" aria-label="Приблизить">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
-            </button>
-            <button class="map-control-button" type="button" data-map-control="zoom-out" aria-label="Отдалить">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path></svg>
-            </button>
-            <button class="map-control-button map-fullscreen-button" type="button" data-action="toggle-fullscreen" aria-label="На весь экран">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H4a1 1 0 0 0-1 1v4"></path><path d="M16 3h4a1 1 0 0 1 1 1v4"></path><path d="M21 16v4a1 1 0 0 1-1 1h-4"></path><path d="M8 21H4a1 1 0 0 1-1-1v-4"></path></svg>
+            <button class="map-control-button map-traffic-button" type="button" data-traffic-toggle aria-label="Включить пробки" aria-pressed="false">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="3" width="8" height="18" rx="3"></rect><circle cx="12" cy="8" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="16" r="1.5"></circle><path d="M6 7H4"></path><path d="M6 12H4"></path><path d="M6 17H4"></path><path d="M20 7h-2"></path><path d="M20 12h-2"></path><path d="M20 17h-2"></path></svg>
             </button>
             <div class="layer-switcher" data-layer-switcher>
                 <button class="map-control-button layer-switcher__trigger" type="button" data-map-layer-toggle aria-label="Переключить слой карты" aria-expanded="false">
@@ -67,13 +61,25 @@
             </button>
         </div>
 
-        <div class="map-control-stack map-control-stack--secondary liquid-glass" aria-label="Пробки и геолокация">
-            <button class="map-control-button map-traffic-button" type="button" data-traffic-toggle aria-label="Включить пробки" aria-pressed="false">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 20 10 4"></path><path d="M14 20 17 4"></path><path d="M4 8h4"></path><path d="M16 8h4"></path><path d="M3 16h4"></path><path d="M15 16h6"></path></svg>
+        <div class="map-control-stack map-control-stack--secondary liquid-glass" aria-label="Масштаб и геолокация">
+            <button class="map-control-button" type="button" data-map-control="zoom-in" aria-label="Приблизить">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+            </button>
+            <button class="map-control-button" type="button" data-map-control="zoom-out" aria-label="Отдалить">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path></svg>
             </button>
             <button class="map-control-button map-location-button" type="button" data-action="locate-me" aria-label="Определить мое местоположение">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="m12 2 7 19-7-4-7 4 7-19Z"></path>
+                <svg viewBox="0 0 28 28" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="geoAuralithGradient" x1="5" y1="23" x2="23" y2="5" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#8B5CF6"></stop>
+                            <stop offset="0.48" stop-color="#21A8FF"></stop>
+                            <stop offset="1" stop-color="#75F7AF"></stop>
+                        </linearGradient>
+                    </defs>
+                    <path class="geo-mark__wing" d="M14 3 24 24 14 19 4 24 14 3Z"></path>
+                    <path class="geo-mark__core" d="M14 8.5 18.5 20 14 17.8 9.5 20 14 8.5Z"></path>
+                    <circle class="geo-mark__dot" cx="14" cy="14.4" r="2.2"></circle>
                 </svg>
             </button>
         </div>

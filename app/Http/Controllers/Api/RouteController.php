@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -28,6 +29,8 @@ class RouteController extends Controller
             } catch (Throwable $exception) {
                 Log::warning('TomTom Routing API request failed', [
                     'message' => $exception->getMessage(),
+                    'status' => $exception instanceof RequestException ? $exception->response?->status() : null,
+                    'body' => $exception instanceof RequestException ? $exception->response?->body() : null,
                 ]);
             }
         }
@@ -98,7 +101,8 @@ class RouteController extends Controller
             'computeTravelTimeFor' => 'all',
             'instructionsType' => 'text',
             'language' => 'ru-RU',
-        ]).'&sectionType=traffic&sectionType=speedLimit';
+            'sectionType' => 'traffic',
+        ]);
 
         $payload = Http::timeout(14)
             ->acceptJson()

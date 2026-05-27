@@ -531,6 +531,29 @@ h2 {
     stroke-width: 2;
 }
 
+.map-location-button svg {
+    width: 26px;
+    height: 26px;
+    fill: none;
+}
+
+.map-location-button .geo-mark__wing {
+    fill: url("#geoAuralithGradient");
+    stroke: rgba(255, 255, 255, 0.74);
+    stroke-width: 1.2;
+}
+
+.map-location-button .geo-mark__core {
+    fill: rgba(6, 16, 24, 0.82);
+    stroke: rgba(255, 255, 255, 0.54);
+    stroke-width: 0.8;
+}
+
+.map-location-button .geo-mark__dot {
+    fill: #fff;
+    stroke: none;
+}
+
 .layer-switcher__panel {
     position: absolute;
     top: 0;
