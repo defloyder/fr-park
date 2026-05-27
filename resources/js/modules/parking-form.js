@@ -11,7 +11,7 @@ import {
     updateParkingSpot,
     uploadParkingPhoto,
 } from './parking-api';
-import { addParkingSpotToMap, clearPendingSelection, focusSpot, focusSpots, focusUserLocation, replaceParkingSpotsOnMap, setMapPickingMode } from './map';
+import { addParkingSpotToMap, buildRouteToSpot, clearPendingSelection, focusSpot, focusSpots, focusUserLocation, replaceParkingSpotsOnMap, setMapPickingMode } from './map';
 
 const STATUS_LABELS = {
     verified: 'Проверено',
@@ -126,6 +126,11 @@ export function initParkingUi() {
             'close-lightbox': closeLightbox,
             'prev-photo': () => moveLightbox(-1),
             'next-photo': () => moveLightbox(1),
+            'open-route-picker': openRoutePicker,
+            'close-route-picker': closeRoutePicker,
+            'route-yandex': () => openExternalRoute('yandex'),
+            'route-2gis': () => openExternalRoute('2gis'),
+            'route-in-app': buildInAppRoute,
             'remove-form-photo': () => removeFormPhoto(Number(event.target.closest('[data-photo-index]')?.dataset.photoIndex)),
             'delete-spot': deleteCurrentSpot,
             'toggle-export-spot': () => isAdmin() && toggleExportSpot(Number(event.target.closest('[data-spot-id]')?.dataset.spotId)),
@@ -342,7 +347,7 @@ export function initParkingUi() {
                     <span aria-hidden="true">♥</span>
                 </button>
                 ${editButton}
-                <a class="route-button" href="${escapeAttribute(spot.route_url)}" target="_blank" rel="noopener">Маршрут</a>
+                <button class="route-button" type="button" data-action="open-route-picker">Маршрут</button>
             </div>
         `;
         card.querySelector('.spot-card__close').addEventListener('click', () => card.classList.add('hidden'));
@@ -801,6 +806,153 @@ export function initParkingUi() {
                 maximumAge: 30000,
             },
         );
+    }
+
+    function openRoutePicker() {
+        if (!state.selectedSpot) return;
+
+        document.querySelector('.route-picker')?.remove();
+        const spot = state.selectedSpot;
+        const modal = document.createElement('section');
+        modal.className = 'route-picker liquid-glass';
+        modal.innerHTML = `
+            <div class="route-picker__header">
+                <div>
+                    <span class="route-picker__eyebrow">Маршрут</span>
+                    <h3>${escapeHtml(spot.title)}</h3>
+                </div>
+                <button class="route-picker__close" type="button" data-action="close-route-picker" aria-label="Закрыть">×</button>
+            </div>
+            <div class="route-picker__grid">
+                <button class="route-option route-option--yandex" type="button" data-action="route-yandex">
+                    <span>Я</span>
+                    <strong>Яндекс Карты</strong>
+                    <small>с учетом их пробок</small>
+                </button>
+                <button class="route-option route-option--2gis" type="button" data-action="route-2gis">
+                    <span>2</span>
+                    <strong>2ГИС</strong>
+                    <small>открыть навигацию</small>
+                </button>
+                <button class="route-option route-option--app" type="button" data-action="route-in-app">
+                    <span>⌁</span>
+                    <strong>Auralith</strong>
+                    <small>показать на карте</small>
+                </button>
+            </div>
+            <p class="route-picker__note">Для пробок используем данные выбранного навигатора. Внутри карты строим дорожный маршрут и показываем расчет времени.</p>
+            <div class="route-picker__summary" data-route-summary></div>
+        `;
+        document.body.append(modal);
+        window.setTimeout(() => modal.classList.add('is-visible'), 20);
+    }
+
+    function closeRoutePicker() {
+        const modal = document.querySelector('.route-picker');
+        if (!modal) return;
+
+        modal.classList.remove('is-visible');
+        window.setTimeout(() => modal.remove(), 180);
+    }
+
+    function openExternalRoute(provider) {
+        if (!state.selectedSpot) return;
+
+        window.open(buildExternalRouteUrl(provider, state.selectedSpot), '_blank', 'noopener');
+        closeRoutePicker();
+    }
+
+    async function buildInAppRoute() {
+        if (!state.selectedSpot) return;
+
+        const summary = document.querySelector('[data-route-summary]');
+        const button = document.querySelector('[data-action="route-in-app"]');
+
+        try {
+            button?.setAttribute('disabled', 'disabled');
+            if (summary) summary.textContent = 'Строю маршрут от вашего местоположения...';
+            const location = await ensureUserLocation();
+            const route = await buildRouteToSpot(location, state.selectedSpot);
+            const trafficNote = route.source === 'road'
+                ? 'Дорожный маршрут построен. Пробки внутри карты появятся после подключения traffic API.'
+                : 'Показал приблизительный маршрут, сервис дорог сейчас недоступен.';
+
+            if (summary) {
+                summary.innerHTML = `
+                    <strong>${formatDuration(route.durationSeconds)}</strong>
+                    <span>${formatDistance(route.distanceMeters)}</span>
+                    <small>${trafficNote}</small>
+                `;
+            }
+
+            showToast(`Маршрут: ${formatDuration(route.durationSeconds)}, ${formatDistance(route.distanceMeters)}.`);
+        } catch {
+            if (summary) summary.textContent = 'Не удалось построить маршрут. Проверьте геолокацию и интернет.';
+            showToast('Не удалось построить маршрут. Проверьте доступ к геолокации.', true);
+        } finally {
+            button?.removeAttribute('disabled');
+        }
+    }
+
+    function ensureUserLocation() {
+        if (state.userLocation) {
+            return Promise.resolve(state.userLocation);
+        }
+
+        if (!navigator.geolocation) {
+            return Promise.reject(new Error('Geolocation is not supported.'));
+        }
+
+        return new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(
+                ({ coords }) => {
+                    state.userLocation = {
+                        latitude: coords.latitude,
+                        longitude: coords.longitude,
+                        accuracy: coords.accuracy,
+                    };
+                    focusUserLocation(state.userLocation);
+                    resolve(state.userLocation);
+                },
+                reject,
+                {
+                    enableHighAccuracy: true,
+                    timeout: 12000,
+                    maximumAge: 30000,
+                },
+            );
+        });
+    }
+
+    function buildExternalRouteUrl(provider, spot) {
+        const destination = `${Number(spot.latitude)},${Number(spot.longitude)}`;
+        const origin = state.userLocation
+            ? `${Number(state.userLocation.latitude)},${Number(state.userLocation.longitude)}`
+            : '';
+
+        if (provider === '2gis') {
+            const to = `${Number(spot.longitude)},${Number(spot.latitude)}`;
+            const from = state.userLocation
+                ? `from/${Number(state.userLocation.longitude)},${Number(state.userLocation.latitude)}/`
+                : '';
+
+            return `https://2gis.ru/routeSearch/rsType/car/${from}to/${to}`;
+        }
+
+        return `https://yandex.ru/maps/?rtext=${encodeURIComponent(origin ? `${origin}~${destination}` : `~${destination}`)}&rtt=auto`;
+    }
+
+    function formatDistance(meters) {
+        if (!Number.isFinite(Number(meters))) return '—';
+        if (meters < 950) return `${Math.round(meters)} м`;
+        return `${(meters / 1000).toFixed(meters < 10000 ? 1 : 0)} км`;
+    }
+
+    function formatDuration(seconds) {
+        if (!Number.isFinite(Number(seconds))) return '—';
+        const minutes = Math.max(1, Math.round(seconds / 60));
+        if (minutes < 60) return `${minutes} мин`;
+        return `${Math.floor(minutes / 60)} ч ${minutes % 60} мин`;
     }
 
     function closePanels() {

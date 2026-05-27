@@ -12,6 +12,9 @@ const MAP_CONTAINER_ID = 'parking-map';
 const SOURCE_ID = 'parking-spots';
 const PENDING_SOURCE_ID = 'pending-parking-spot';
 const USER_LOCATION_SOURCE_ID = 'user-location';
+const ROUTE_SOURCE_ID = 'active-route';
+const ROUTE_CASING_LAYER_ID = 'active-route-casing';
+const ROUTE_LINE_LAYER_ID = 'active-route-line';
 const BASE_LAYER_IDS = ['light', 'dark', 'satellite'];
 const DEFAULT_BASE_LAYER_ID = 'light';
 const BASE_LAYER_STORAGE_KEY = 'auralith:map-layer';
@@ -167,6 +170,7 @@ function initMapLibreMap() {
             addParkingLayers();
             addPendingSourceAndLayer();
             addUserLocationSourceAndLayer();
+            addRouteSourceAndLayer();
             bindMapEvents();
         } catch (error) {
             console.error('Map layers failed', error);
@@ -427,6 +431,43 @@ function addUserLocationSourceAndLayer() {
     });
 }
 
+function addRouteSourceAndLayer() {
+    map.addSource(ROUTE_SOURCE_ID, {
+        type: 'geojson',
+        data: buildFeatureCollection([]),
+    });
+
+    map.addLayer({
+        id: ROUTE_CASING_LAYER_ID,
+        type: 'line',
+        source: ROUTE_SOURCE_ID,
+        layout: {
+            'line-cap': 'round',
+            'line-join': 'round',
+        },
+        paint: {
+            'line-color': 'rgba(255, 255, 255, 0.92)',
+            'line-width': ['interpolate', ['linear'], ['zoom'], 11, 7, 16, 12],
+            'line-opacity': 0.92,
+        },
+    }, 'spots-pin');
+
+    map.addLayer({
+        id: ROUTE_LINE_LAYER_ID,
+        type: 'line',
+        source: ROUTE_SOURCE_ID,
+        layout: {
+            'line-cap': 'round',
+            'line-join': 'round',
+        },
+        paint: {
+            'line-color': '#21A8FF',
+            'line-width': ['interpolate', ['linear'], ['zoom'], 11, 4, 16, 8],
+            'line-opacity': 0.96,
+        },
+    }, 'spots-pin');
+}
+
 function bindMapEvents() {
     map.on('click', 'clusters', async (event) => {
         await expandCluster(event);
@@ -570,6 +611,99 @@ export function focusUserLocation({ latitude, longitude, accuracy = 0 }) {
         zoom: Math.max(map.getZoom(), 15.5),
         duration: 260,
     });
+}
+
+export async function buildRouteToSpot(userLocation, spot) {
+    if (!map || !userLocation || !spot) {
+        throw new Error('Route cannot be built without map, user location and destination.');
+    }
+
+    const start = {
+        latitude: Number(userLocation.latitude),
+        longitude: Number(userLocation.longitude),
+    };
+    const finish = {
+        latitude: Number(spot.latitude),
+        longitude: Number(spot.longitude),
+    };
+
+    const route = await fetchDrivingRoute(start, finish).catch(() => buildFallbackRoute(start, finish));
+    const source = map.getSource(ROUTE_SOURCE_ID);
+
+    source?.setData({
+        type: 'FeatureCollection',
+        features: [{
+            type: 'Feature',
+            properties: {},
+            geometry: route.geometry,
+        }],
+    });
+
+    const bounds = new maplibregl.LngLatBounds();
+    route.geometry.coordinates.forEach((coordinate) => bounds.extend(coordinate));
+    map.fitBounds(bounds, {
+        padding: { top: 112, right: 84, bottom: 132, left: 84 },
+        duration: 360,
+        maxZoom: 16,
+    });
+
+    return route;
+}
+
+async function fetchDrivingRoute(start, finish) {
+    const url = `https://router.project-osrm.org/route/v1/driving/${start.longitude},${start.latitude};${finish.longitude},${finish.latitude}?overview=full&geometries=geojson&steps=false`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+        throw new Error('Route service failed.');
+    }
+
+    const payload = await response.json();
+    const route = payload.routes?.[0];
+
+    if (!route?.geometry?.coordinates?.length) {
+        throw new Error('Route service returned empty route.');
+    }
+
+    return {
+        geometry: route.geometry,
+        distanceMeters: route.distance,
+        durationSeconds: route.duration,
+        source: 'road',
+    };
+}
+
+function buildFallbackRoute(start, finish) {
+    const distanceMeters = getDistanceMeters(start, finish);
+
+    return {
+        geometry: {
+            type: 'LineString',
+            coordinates: [
+                [start.longitude, start.latitude],
+                [finish.longitude, finish.latitude],
+            ],
+        },
+        distanceMeters,
+        durationSeconds: distanceMeters / 9,
+        source: 'approximate',
+    };
+}
+
+function getDistanceMeters(start, finish) {
+    const radius = 6371000;
+    const lat1 = toRadians(start.latitude);
+    const lat2 = toRadians(finish.latitude);
+    const deltaLat = toRadians(finish.latitude - start.latitude);
+    const deltaLon = toRadians(finish.longitude - start.longitude);
+    const a = Math.sin(deltaLat / 2) ** 2
+        + Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLon / 2) ** 2;
+
+    return 2 * radius * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function toRadians(value) {
+    return Number(value) * Math.PI / 180;
 }
 
 export function clearPendingSelection() {
