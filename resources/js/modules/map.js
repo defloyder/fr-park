@@ -341,6 +341,16 @@ function bindPerformanceMode() {
     map.on('moveend', stop);
     map.on('zoomend', stop);
     map.on('click', stop);
+    map.on('dragstart', () => {
+        if (document.body.classList.contains('is-navigation-following')) {
+            window.dispatchEvent(new CustomEvent('navigation:manual-map-move'));
+        }
+    });
+    map.on('rotatestart', () => {
+        if (document.body.classList.contains('is-navigation-following')) {
+            window.dispatchEvent(new CustomEvent('navigation:manual-map-move'));
+        }
+    });
 }
 
 function addParkingSource() {
@@ -743,6 +753,14 @@ export function startRouteNavigation(route) {
     }
 
     focusRouteStart(route.geometry.coordinates);
+}
+
+export function focusNavigationPosition(userLocation, route = null) {
+    const coordinates = route?.geometry?.coordinates?.length
+        ? route.geometry.coordinates
+        : [[Number(userLocation.longitude), Number(userLocation.latitude)]];
+
+    focusRouteStart(coordinates);
 }
 
 async function fetchTrafficRoute(start, finish, directDistanceMeters) {

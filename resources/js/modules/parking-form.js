@@ -11,7 +11,7 @@ import {
     updateParkingSpot,
     uploadParkingPhoto,
 } from './parking-api';
-import { addParkingSpotToMap, buildRouteToSpot, clearActiveRoute, clearPendingSelection, focusSpot, focusSpots, focusUserLocation, replaceParkingSpotsOnMap, setMapPickingMode, startRouteNavigation } from './map';
+import { addParkingSpotToMap, buildRouteToSpot, clearActiveRoute, clearPendingSelection, focusNavigationPosition, focusSpot, focusSpots, focusUserLocation, replaceParkingSpotsOnMap, setMapPickingMode, startRouteNavigation } from './map';
 
 const STATUS_LABELS = {
     verified: 'Проверено',
@@ -135,6 +135,7 @@ export function initParkingUi() {
             'route-2gis': () => openExternalRoute('2gis'),
             'route-in-app': buildInAppRoute,
             'start-navigation': startNavigation,
+            'recenter-navigation': recenterNavigation,
             'stop-navigation': stopNavigationMode,
             'remove-form-photo': () => removeFormPhoto(Number(event.target.closest('[data-photo-index]')?.dataset.photoIndex)),
             'delete-spot': deleteCurrentSpot,
@@ -147,6 +148,10 @@ export function initParkingUi() {
         };
 
         actions[action]?.();
+    });
+
+    window.addEventListener('navigation:manual-map-move', () => {
+        document.body.classList.add('is-navigation-detached');
     });
 
     document.addEventListener('click', (event) => {
@@ -917,6 +922,15 @@ export function initParkingUi() {
 
         startRouteNavigation(state.navigationRoute);
         document.body.classList.add('is-navigation-following');
+        document.body.classList.remove('is-navigation-detached');
+        renderNavigationPanel();
+    }
+
+    function recenterNavigation() {
+        if (!state.userLocation || !state.navigationRoute) return;
+
+        focusNavigationPosition(state.userLocation, state.navigationRoute);
+        document.body.classList.remove('is-navigation-detached');
     }
 
     function assertRouteLocation(location, spot) {
@@ -950,7 +964,27 @@ export function initParkingUi() {
 
     function renderNavigationPanel() {
         document.querySelector('.navigation-panel')?.remove();
+        document.querySelector('.navigation-guidance')?.remove();
+        document.querySelector('.navigation-recenter')?.remove();
         if (!state.navigationSpot || !state.navigationRoute) return;
+
+        if (document.body.classList.contains('is-navigation-following')) {
+            const guidance = document.createElement('section');
+            guidance.className = 'navigation-guidance liquid-glass';
+            guidance.innerHTML = `
+                <strong>${escapeHtml(getNavigationInstruction(state.navigationRoute))}</strong>
+                <span>${escapeHtml(getTrafficLabel(state.navigationRoute))}</span>
+            `;
+            document.body.append(guidance);
+
+            const recenter = document.createElement('button');
+            recenter.className = 'navigation-recenter liquid-glass';
+            recenter.type = 'button';
+            recenter.dataset.action = 'recenter-navigation';
+            recenter.setAttribute('aria-label', 'Вернуться к текущему местоположению');
+            recenter.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 7 19-7-4-7 4 7-19Z"></path></svg>';
+            document.body.append(recenter);
+        }
 
         const panel = document.createElement('section');
         panel.className = 'navigation-panel liquid-glass';
@@ -973,7 +1007,10 @@ export function initParkingUi() {
     function stopNavigationMode() {
         document.body.classList.remove('is-navigation-mode');
         document.body.classList.remove('is-navigation-following');
+        document.body.classList.remove('is-navigation-detached');
         document.querySelector('.navigation-panel')?.remove();
+        document.querySelector('.navigation-guidance')?.remove();
+        document.querySelector('.navigation-recenter')?.remove();
         state.navigationSpot = null;
         state.navigationRoute = null;
         clearActiveRoute();
@@ -1517,6 +1554,42 @@ function getValidationMessage(error) {
     return Object.values(error.errors ?? {})[0]?.[0]
         ?? error.message
         ?? 'Не удалось выполнить действие. Проверьте данные и попробуйте снова.';
+}
+
+function getNavigationInstruction(route) {
+    const firstSegment = route.segments?.[0];
+
+    if (!firstSegment) {
+        return 'Двигайтесь по маршруту';
+    }
+
+    return `Двигайтесь прямо ${formatDistance(getSegmentDistance(firstSegment))}`;
+}
+
+function getTrafficLabel(route) {
+    if (route.source !== 'yandex-traffic') {
+        return 'Пробки недоступны: проверьте ключ Яндекса на сервере';
+    }
+
+    const traffic = route.segments?.some((segment) => ['jam', 'heavy'].includes(segment.traffic))
+        ? 'На маршруте есть плотные участки'
+        : 'Движение по маршруту свободное';
+
+    return traffic;
+}
+
+function getSegmentDistance(segment) {
+    const coordinates = segment.coordinates ?? [];
+    let distance = 0;
+
+    for (let index = 1; index < coordinates.length; index += 1) {
+        distance += getDistanceMeters(
+            { longitude: coordinates[index - 1][0], latitude: coordinates[index - 1][1] },
+            { longitude: coordinates[index][0], latitude: coordinates[index][1] },
+        );
+    }
+
+    return distance;
 }
 
 function escapeHtml(value) {
