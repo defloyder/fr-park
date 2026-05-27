@@ -1501,6 +1501,17 @@ body.is-navigation-following .navigation-panel__drive {
     cursor: pointer;
 }
 
+.map-theme-light .route-picker__close,
+body[data-map-layer="dark"] .route-picker__close,
+body[data-map-layer="satellite"] .route-picker__close {
+    color: #fff;
+    background: linear-gradient(145deg, rgba(255, 78, 114, 0.98), rgba(190, 18, 60, 0.94));
+    border-color: rgba(255, 122, 144, 0.68);
+    box-shadow:
+        0 12px 28px rgba(190, 18, 60, 0.24),
+        inset 0 1px 0 rgba(255, 255, 255, 0.34);
+}
+
 .navigation-guidance {
     position: fixed;
     top: calc(18px + env(safe-area-inset-top));
