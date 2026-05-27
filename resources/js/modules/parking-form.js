@@ -887,7 +887,7 @@ export function initParkingUi() {
         try {
             button?.setAttribute('disabled', 'disabled');
             if (summary) summary.textContent = 'Строю маршрут от вашего местоположения...';
-            const location = await ensureUserLocation(true);
+            const location = await ensureUserLocation({ refresh: true, focus: false, fastFallback: true });
             const route = await buildRouteToSpot(location, state.selectedSpot);
             const trafficNote = route.source === 'road'
                 ? 'Дорожный маршрут построен. Пробки внутри карты появятся после подключения traffic API.'
@@ -917,7 +917,7 @@ export function initParkingUi() {
         const button = document.querySelector('[data-action="refresh-navigation"]');
         try {
             button?.setAttribute('disabled', 'disabled');
-            const location = await ensureUserLocation(true);
+            const location = await ensureUserLocation({ refresh: true, focus: false, fastFallback: true });
             const route = await buildRouteToSpot(location, state.navigationSpot);
             enterNavigationMode(state.navigationSpot, route);
         } catch {
@@ -974,8 +974,8 @@ export function initParkingUi() {
         clearActiveRoute();
     }
 
-    function ensureUserLocation(force = false) {
-        if (state.userLocation && !force) {
+    function ensureUserLocation({ refresh = false, focus = false, fastFallback = false } = {}) {
+        if (state.userLocation && !refresh) {
             return Promise.resolve(state.userLocation);
         }
 
@@ -984,21 +984,54 @@ export function initParkingUi() {
         }
 
         return new Promise((resolve, reject) => {
+            let settled = false;
+            let fallbackTimer = null;
+
+            if (state.userLocation && fastFallback) {
+                fallbackTimer = window.setTimeout(() => {
+                    settled = true;
+                    resolve(state.userLocation);
+                }, 1200);
+            }
+
             navigator.geolocation.getCurrentPosition(
                 ({ coords }) => {
-                    state.userLocation = {
+                    const nextLocation = {
                         latitude: coords.latitude,
                         longitude: coords.longitude,
                         accuracy: coords.accuracy,
                     };
-                    focusUserLocation(state.userLocation);
-                    resolve(state.userLocation);
+
+                    state.userLocation = {
+                        ...nextLocation,
+                        updatedAt: Date.now(),
+                    };
+                    focusUserLocation(state.userLocation, { focus });
+
+                    if (!settled) {
+                        settled = true;
+                        window.clearTimeout(fallbackTimer);
+                        resolve(state.userLocation);
+                    }
                 },
-                reject,
+                (error) => {
+                    if (state.userLocation && fastFallback && !settled) {
+                        settled = true;
+                        window.clearTimeout(fallbackTimer);
+                        resolve(state.userLocation);
+                        return;
+                    }
+
+                    if (!settled) {
+                        settled = true;
+                        window.clearTimeout(fallbackTimer);
+                        reject(error);
+                    }
+                },
                 {
-                    enableHighAccuracy: true,
-                    timeout: 12000,
-                    maximumAge: 30000,
+                    enableHighAccuracy: refresh,
+                    timeout: state.userLocation ? 3500 : 8000,
+                    maximumAge: refresh ? 10000 : 60000,
                 },
             );
         });

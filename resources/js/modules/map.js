@@ -21,7 +21,6 @@ const BASE_LAYER_STORAGE_KEY = 'auralith:map-layer';
 
 const MAP_STYLE = {
     version: 8,
-    glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
     sources: {
         'basemap-light': {
             type: 'raster',
@@ -334,25 +333,6 @@ function addParkingLayers() {
     });
 
     map.addLayer({
-        id: 'cluster-count',
-        type: 'symbol',
-        source: SOURCE_ID,
-        filter: ['has', 'point_count'],
-        layout: {
-            'text-field': ['get', 'point_count_abbreviated'],
-            'text-font': ['Noto Sans Regular'],
-            'text-size': 14,
-            'text-allow-overlap': true,
-            'text-ignore-placement': true,
-        },
-        paint: {
-            'text-color': '#F8FAFC',
-            'text-halo-color': 'rgba(8, 17, 31, 0.55)',
-            'text-halo-width': 1,
-        },
-    });
-
-    map.addLayer({
         id: 'spots-pin',
         type: 'symbol',
         source: SOURCE_ID,
@@ -471,16 +451,11 @@ function bindMapEvents() {
     map.on('click', 'clusters', async (event) => {
         await expandCluster(event);
     });
-    map.on('click', 'cluster-count', async (event) => {
-        await expandCluster(event);
-    });
 
     map.on('click', 'spots-pin', (event) => selectSpotFromFeature(event.features?.[0]));
 
     map.on('mouseenter', 'clusters', () => setMapCursor('pointer'));
     map.on('mouseleave', 'clusters', () => setMapCursor(''));
-    map.on('mouseenter', 'cluster-count', () => setMapCursor('pointer'));
-    map.on('mouseleave', 'cluster-count', () => setMapCursor(''));
     map.on('mouseenter', 'spots-pin', () => setMapCursor('pointer'));
     map.on('mouseleave', 'spots-pin', () => setMapCursor(''));
 
@@ -504,7 +479,7 @@ function bindMapEvents() {
 }
 
 async function expandCluster(event) {
-    const feature = map.queryRenderedFeatures(event.point, { layers: ['clusters', 'cluster-count'] })[0];
+    const feature = map.queryRenderedFeatures(event.point, { layers: ['clusters'] })[0];
     const clusterId = feature?.properties?.cluster_id;
     const source = map.getSource(SOURCE_ID);
 
@@ -519,7 +494,7 @@ async function expandCluster(event) {
 }
 
 function clickedFeature(point) {
-    return map.queryRenderedFeatures(point, { layers: ['clusters', 'cluster-count', 'spots-pin'] }).length > 0;
+    return map.queryRenderedFeatures(point, { layers: ['clusters', 'spots-pin'] }).length > 0;
 }
 
 function setMapCursor(cursor) {
@@ -586,7 +561,7 @@ export function focusSpots(spots) {
     });
 }
 
-export function focusUserLocation({ latitude, longitude, accuracy = 0 }) {
+export function focusUserLocation({ latitude, longitude, accuracy = 0 }, { focus = true } = {}) {
     if (!map) {
         return;
     }
@@ -605,11 +580,13 @@ export function focusUserLocation({ latitude, longitude, accuracy = 0 }) {
         }],
     });
 
-    map.easeTo({
-        center: [Number(longitude), Number(latitude)],
-        zoom: Math.max(map.getZoom(), 15.5),
-        duration: 260,
-    });
+    if (focus) {
+        map.easeTo({
+            center: [Number(longitude), Number(latitude)],
+            zoom: Math.max(map.getZoom(), 15.5),
+            duration: 220,
+        });
+    }
 }
 
 export async function buildRouteToSpot(userLocation, spot) {
@@ -641,9 +618,9 @@ export async function buildRouteToSpot(userLocation, spot) {
     const bounds = new maplibregl.LngLatBounds();
     route.geometry.coordinates.forEach((coordinate) => bounds.extend(coordinate));
     map.fitBounds(bounds, {
-        padding: { top: 112, right: 84, bottom: 132, left: 84 },
-        duration: 360,
-        maxZoom: 16,
+        padding: getRoutePadding(),
+        duration: 320,
+        maxZoom: 16.5,
     });
 
     return route;
@@ -654,8 +631,12 @@ export function clearActiveRoute() {
 }
 
 async function fetchDrivingRoute(start, finish) {
-    const url = `https://router.project-osrm.org/route/v1/driving/${start.longitude},${start.latitude};${finish.longitude},${finish.latitude}?overview=full&geometries=geojson&steps=false`;
-    const response = await fetch(url);
+    const path = `${start.longitude},${start.latitude};${finish.longitude},${finish.latitude}?overview=full&geometries=geojson&steps=false`;
+    const urls = [
+        `https://router.project-osrm.org/route/v1/driving/${path}`,
+        `https://routing.openstreetmap.de/routed-car/route/v1/driving/${path}`,
+    ];
+    const response = await Promise.any(urls.map((url) => fetchWithTimeout(url, 4200)));
 
     if (!response.ok) {
         throw new Error('Route service failed.');
@@ -674,6 +655,31 @@ async function fetchDrivingRoute(start, finish) {
         durationSeconds: route.duration,
         source: 'road',
     };
+}
+
+async function fetchWithTimeout(url, timeout) {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), timeout);
+
+    try {
+        const response = await fetch(url, { signal: controller.signal });
+
+        if (!response.ok) {
+            throw new Error('Route service failed.');
+        }
+
+        return response;
+    } finally {
+        window.clearTimeout(timer);
+    }
+}
+
+function getRoutePadding() {
+    const isCompact = window.matchMedia('(max-width: 520px)').matches;
+
+    return isCompact
+        ? { top: 72, right: 44, bottom: 190, left: 44 }
+        : { top: 84, right: 84, bottom: 138, left: 84 };
 }
 
 function buildFallbackRoute(start, finish) {
