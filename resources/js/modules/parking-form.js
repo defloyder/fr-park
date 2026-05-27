@@ -347,6 +347,7 @@ export function initParkingUi() {
         `;
         card.querySelector('.spot-card__close').addEventListener('click', () => card.classList.add('hidden'));
         card.classList.remove('hidden');
+        bindPhotoCarouselCounter();
     }
 
     function renderPhotoCarousel(photos) {
@@ -360,6 +361,22 @@ export function initParkingUi() {
             </div>
             ${photos.length > 1 ? `<div class="photo-counter">1 / ${photos.length}</div>` : ''}
         `;
+    }
+
+    function bindPhotoCarouselCounter() {
+        const carousel = card.querySelector('.photo-carousel');
+        const counter = card.querySelector('.photo-counter');
+        if (!carousel || !counter) return;
+
+        const total = carousel.children.length;
+        const updateCounter = () => {
+            const width = carousel.clientWidth || 1;
+            const index = Math.min(total, Math.max(1, Math.round(carousel.scrollLeft / width) + 1));
+            counter.textContent = `${index} / ${total}`;
+        };
+
+        carousel.addEventListener('scroll', () => window.requestAnimationFrame(updateCounter), { passive: true });
+        updateCounter();
     }
 
     function renderList() {
@@ -567,6 +584,9 @@ export function initParkingUi() {
             state.favoriteIds = new Set((response.favorite_ids ?? []).map(Number));
             renderFavoriteList();
             rerenderOpenCard();
+            if (response.is_favorite) {
+                card.querySelector(`[data-action="toggle-favorite"][data-spot-id="${id}"]`)?.classList.add('is-pulsing');
+            }
             showToast(response.is_favorite ? 'Добавлено в избранное' : 'Удалено из избранного');
         } catch {
             showToast('Не удалось обновить избранное.', true);
