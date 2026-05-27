@@ -948,6 +948,11 @@ export function initParkingUi() {
     }
 
     function startNavigation() {
+        if (document.body.classList.contains('is-navigation-following')) {
+            stopNavigationMode();
+            return;
+        }
+
         if (!state.navigationRoute) return;
 
         startRouteNavigation(state.navigationRoute);
@@ -1051,7 +1056,6 @@ export function initParkingUi() {
                 <span data-navigation-drive-title></span>
                 <small data-navigation-drive-note></small>
             </button>
-            <button class="navigation-panel__stop" type="button" data-action="stop-navigation" aria-label="Завершить маршрут">×</button>
         `;
             document.body.append(panel);
             window.setTimeout(() => panel.classList.add('is-visible'), 20);
@@ -1081,8 +1085,8 @@ export function initParkingUi() {
         setText('[data-navigation-bottom-duration]', formatDuration(remainingDuration));
         setText('[data-navigation-bottom-distance]', formatDistance(remainingDistance));
         setText('[data-navigation-bottom-note]', `${getTrafficLabel(state.navigationRoute)} · прибытие ${arrival}`);
-        setText('[data-navigation-drive-title]', isFollowing ? 'Веду' : 'Поехать');
-        setText('[data-navigation-drive-note]', isFollowing ? 'маршрут активен' : 'к началу маршрута');
+        setText('[data-navigation-drive-title]', isFollowing ? 'Завершить' : 'Поехать');
+        setText('[data-navigation-drive-note]', isFollowing ? `прибытие ${arrival}` : 'к началу маршрута');
 
         const arrow = document.querySelector('.navigation-guidance__arrow');
         if (arrow) arrow.innerHTML = getManeuverIconSvg(instruction);
@@ -1133,6 +1137,7 @@ export function initParkingUi() {
                     latitude: coords.latitude,
                     longitude: coords.longitude,
                     accuracy: coords.accuracy,
+                    heading: getGpsHeading(coords),
                     updatedAt: Date.now(),
                 };
                 state.currentSpeedKmh = getGpsSpeedKmh(coords);
@@ -1855,6 +1860,12 @@ function getGpsSpeedKmh(coords) {
     const speed = Number(coords?.speed);
 
     return Number.isFinite(speed) && speed > 0 ? speed * 3.6 : 0;
+}
+
+function getGpsHeading(coords) {
+    const heading = Number(coords?.heading);
+
+    return Number.isFinite(heading) && heading >= 0 ? heading : 0;
 }
 
 function estimateSpeedLimitKmh(route, userLocation) {

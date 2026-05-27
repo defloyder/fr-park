@@ -395,10 +395,10 @@ function createUserLocationSvg() {
       <stop offset="1" stop-color="#75F7AF"/>
     </linearGradient>
     <filter id="shadow" x="-35%" y="-35%" width="170%" height="170%">
-      <feDropShadow dx="0" dy="6" stdDeviation="4" flood-color="#061018" flood-opacity="0.32"/>
+      <feDropShadow dx="0" dy="7" stdDeviation="4.4" flood-color="#061018" flood-opacity="0.34"/>
     </filter>
   </defs>
-  <path filter="url(#shadow)" fill="url(#geo)" stroke="#fff" stroke-width="2.2" d="M21 4 34.5 36 21 29.2 7.5 36 21 4Z"/>
+  <path filter="url(#shadow)" fill="url(#geo)" stroke="#fff" stroke-width="2.2" d="M21 2.5 36 38 21 30.5 6 38 21 2.5Z"/>
   <path fill="#061018" opacity="0.78" stroke="rgba(255,255,255,.55)" stroke-width="1" d="M21 13.2 27 29 21 26 15 29 21 13.2Z"/>
   <circle cx="21" cy="21.4" r="3.4" fill="#fff"/>
 </svg>`;
@@ -478,7 +478,9 @@ function addParkingLayers() {
         layout: {
             'icon-image': ['concat', 'parking-marker-', ['get', 'status']],
             'icon-anchor': 'bottom',
-            'icon-size': 1,
+            'icon-size': 1.22,
+            'icon-rotate': ['get', 'heading'],
+            'icon-rotation-alignment': 'map',
             'icon-allow-overlap': true,
             'icon-ignore-placement': true,
         },
@@ -755,7 +757,7 @@ export function focusSpots(spots) {
     });
 }
 
-export function focusUserLocation({ latitude, longitude, accuracy = 0 }, { focus = true } = {}) {
+export function focusUserLocation({ latitude, longitude, accuracy = 0, heading = 0 }, { focus = true } = {}) {
     if (!map) {
         return;
     }
@@ -766,6 +768,7 @@ export function focusUserLocation({ latitude, longitude, accuracy = 0 }, { focus
             type: 'Feature',
             properties: {
                 accuracy: Math.max(Number(accuracy) || 0, 20),
+                heading: Number.isFinite(Number(heading)) ? Number(heading) : 0,
             },
             geometry: {
                 type: 'Point',
