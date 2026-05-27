@@ -11,7 +11,7 @@ import {
     updateParkingSpot,
     uploadParkingPhoto,
 } from './parking-api';
-import { addParkingSpotToMap, buildRouteToSpot, clearActiveRoute, clearPendingSelection, focusSpot, focusSpots, focusUserLocation, replaceParkingSpotsOnMap, setMapPickingMode } from './map';
+import { addParkingSpotToMap, buildRouteToSpot, clearActiveRoute, clearPendingSelection, focusSpot, focusSpots, focusUserLocation, replaceParkingSpotsOnMap, setMapPickingMode, startRouteNavigation } from './map';
 
 const STATUS_LABELS = {
     verified: 'Проверено',
@@ -134,7 +134,7 @@ export function initParkingUi() {
             'route-yandex': () => openExternalRoute('yandex'),
             'route-2gis': () => openExternalRoute('2gis'),
             'route-in-app': buildInAppRoute,
-            'refresh-navigation': refreshNavigation,
+            'start-navigation': startNavigation,
             'stop-navigation': stopNavigationMode,
             'remove-form-photo': () => removeFormPhoto(Number(event.target.closest('[data-photo-index]')?.dataset.photoIndex)),
             'delete-spot': deleteCurrentSpot,
@@ -912,21 +912,11 @@ export function initParkingUi() {
         }
     }
 
-    async function refreshNavigation() {
-        if (!state.navigationSpot) return;
+    function startNavigation() {
+        if (!state.navigationRoute) return;
 
-        const button = document.querySelector('[data-action="refresh-navigation"]');
-        try {
-            button?.setAttribute('disabled', 'disabled');
-            const location = await ensureUserLocation({ refresh: true, focus: false, fastFallback: false });
-            assertRouteLocation(location, state.navigationSpot);
-            const route = await buildRouteToSpot(location, state.navigationSpot, { camera: 'follow' });
-            enterNavigationMode(state.navigationSpot, route);
-        } catch {
-            showToast('Не удалось обновить маршрут от текущей точки.', true);
-        } finally {
-            button?.removeAttribute('disabled');
-        }
+        startRouteNavigation(state.navigationRoute);
+        document.body.classList.add('is-navigation-following');
     }
 
     function assertRouteLocation(location, spot) {
@@ -970,9 +960,9 @@ export function initParkingUi() {
                 <span>${formatDistance(state.navigationRoute.distanceMeters)}</span>
                 <small>${escapeHtml(state.navigationSpot.title)}</small>
             </div>
-            <button class="navigation-panel__drive" type="button" data-action="refresh-navigation">
+            <button class="navigation-panel__drive" type="button" data-action="start-navigation">
                 <span>Поехать</span>
-                <small>обновить от текущей точки</small>
+                <small>к началу маршрута</small>
             </button>
             <button class="navigation-panel__stop" type="button" data-action="stop-navigation" aria-label="Завершить маршрут">×</button>
         `;
@@ -982,6 +972,7 @@ export function initParkingUi() {
 
     function stopNavigationMode() {
         document.body.classList.remove('is-navigation-mode');
+        document.body.classList.remove('is-navigation-following');
         document.querySelector('.navigation-panel')?.remove();
         state.navigationSpot = null;
         state.navigationRoute = null;

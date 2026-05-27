@@ -226,6 +226,27 @@ export async function reverseGeocode(latitude, longitude) {
     return response.json();
 }
 
+export async function fetchDrivingRoute(from, to) {
+    const query = new URLSearchParams({
+        from_latitude: from.latitude,
+        from_longitude: from.longitude,
+        to_latitude: to.latitude,
+        to_longitude: to.longitude,
+    });
+    const response = await fetch(`/api/routes/driving?${query.toString()}`, {
+        credentials: 'same-origin',
+        headers: {
+            Accept: 'application/json',
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to build driving route');
+    }
+
+    return response.json();
+}
+
 export async function fetchAccountSession() {
     const response = await fetch('/account/session', {
         credentials: 'same-origin',

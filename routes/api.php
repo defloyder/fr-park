@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\GeocodeController;
 use App\Http\Controllers\Api\ParkingSpotController;
+use App\Http\Controllers\Api\RouteController;
 use App\Http\Controllers\Api\SessionController;
 use App\Http\Middleware\EncryptApiResponse;
 use App\Http\Middleware\ValidateApiToken;
@@ -14,6 +15,10 @@ Route::post('session/init', [SessionController::class, 'init'])
 
 Route::get('geocode/reverse', [GeocodeController::class, 'reverse'])
     ->name('geocode.reverse');
+
+Route::get('routes/driving', [RouteController::class, 'driving'])
+    ->middleware('throttle:60,1')
+    ->name('routes.driving');
 
 Route::middleware(['web', 'admin'])->group(function (): void {
     Route::post('parking-spots/import', [ParkingSpotController::class, 'import'])

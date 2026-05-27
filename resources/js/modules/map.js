@@ -1,5 +1,5 @@
 import maplibregl from 'maplibre-gl';
-import { fetchParkingSpots, reverseGeocode } from './parking-api';
+import { fetchDrivingRoute as fetchYandexDrivingRoute, fetchParkingSpots, reverseGeocode } from './parking-api';
 
 let map = null;
 let spotsCache = [];
@@ -164,6 +164,7 @@ function initMapLibreMap() {
 
         try {
             await addMarkerImages();
+            addClusterCountImages();
             addParkingSource();
             addParkingLayers();
             addPendingSourceAndLayer();
@@ -257,6 +258,42 @@ async function addMarkerImages() {
     )));
 }
 
+function addClusterCountImages() {
+    for (let count = 2; count <= 999; count += 1) {
+        addClusterCountImage(String(count));
+    }
+
+    for (let count = 1; count <= 9; count += 1) {
+        addClusterCountImage(`${count}k`);
+    }
+}
+
+function addClusterCountImage(label) {
+    const imageId = `cluster-count-${label}`;
+
+    if (map.hasImage(imageId)) {
+        return;
+    }
+
+    const canvas = document.createElement('canvas');
+    const size = 72;
+    canvas.width = size;
+    canvas.height = size;
+    const context = canvas.getContext('2d');
+
+    context.clearRect(0, 0, size, size);
+    context.font = label.length > 2 ? '900 24px Arial, sans-serif' : '900 28px Arial, sans-serif';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.lineWidth = 5;
+    context.strokeStyle = 'rgba(8, 17, 31, 0.48)';
+    context.fillStyle = '#FFFFFF';
+    context.strokeText(label, size / 2, size / 2 + 1);
+    context.fillText(label, size / 2, size / 2 + 1);
+
+    map.addImage(imageId, context.getImageData(0, 0, size, size), { pixelRatio: 2 });
+}
+
 function addSvgImage(name, svg) {
     if (map.hasImage(name)) {
         return Promise.resolve();
@@ -340,6 +377,19 @@ function addParkingLayers() {
         layout: {
             'icon-image': ['concat', 'parking-marker-', ['get', 'status']],
             'icon-anchor': 'bottom',
+            'icon-size': 1,
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true,
+        },
+    });
+
+    map.addLayer({
+        id: 'cluster-count',
+        type: 'symbol',
+        source: SOURCE_ID,
+        filter: ['has', 'point_count'],
+        layout: {
+            'icon-image': ['concat', 'cluster-count-', ['get', 'point_count_abbreviated']],
             'icon-size': 1,
             'icon-allow-overlap': true,
             'icon-ignore-placement': true,
@@ -451,11 +501,16 @@ function bindMapEvents() {
     map.on('click', 'clusters', async (event) => {
         await expandCluster(event);
     });
+    map.on('click', 'cluster-count', async (event) => {
+        await expandCluster(event);
+    });
 
     map.on('click', 'spots-pin', (event) => selectSpotFromFeature(event.features?.[0]));
 
     map.on('mouseenter', 'clusters', () => setMapCursor('pointer'));
     map.on('mouseleave', 'clusters', () => setMapCursor(''));
+    map.on('mouseenter', 'cluster-count', () => setMapCursor('pointer'));
+    map.on('mouseleave', 'cluster-count', () => setMapCursor(''));
     map.on('mouseenter', 'spots-pin', () => setMapCursor('pointer'));
     map.on('mouseleave', 'spots-pin', () => setMapCursor(''));
 
@@ -479,7 +534,7 @@ function bindMapEvents() {
 }
 
 async function expandCluster(event) {
-    const feature = map.queryRenderedFeatures(event.point, { layers: ['clusters'] })[0];
+    const feature = map.queryRenderedFeatures(event.point, { layers: ['clusters', 'cluster-count'] })[0];
     const clusterId = feature?.properties?.cluster_id;
     const source = map.getSource(SOURCE_ID);
 
@@ -494,7 +549,7 @@ async function expandCluster(event) {
 }
 
 function clickedFeature(point) {
-    return map.queryRenderedFeatures(point, { layers: ['clusters', 'spots-pin'] }).length > 0;
+    return map.queryRenderedFeatures(point, { layers: ['clusters', 'cluster-count', 'spots-pin'] }).length > 0;
 }
 
 function setMapCursor(cursor) {
@@ -604,7 +659,7 @@ export async function buildRouteToSpot(userLocation, spot, { camera = 'overview'
     };
 
     const directDistanceMeters = getDistanceMeters(start, finish);
-    const route = await fetchDrivingRoute(start, finish, directDistanceMeters).catch((error) => {
+    const route = await fetchTrafficRoute(start, finish, directDistanceMeters).catch((error) => {
         if (directDistanceMeters > 50000) {
             throw error;
         }
@@ -613,14 +668,22 @@ export async function buildRouteToSpot(userLocation, spot, { camera = 'overview'
     });
     const source = map.getSource(ROUTE_SOURCE_ID);
 
-    source?.setData({
-        type: 'FeatureCollection',
-        features: [{
-            type: 'Feature',
-            properties: {},
-            geometry: route.geometry,
-        }],
-    });
+    source?.setData(buildRouteFeatureCollection(route));
+    if (route.source === 'yandex-traffic') {
+        map.setPaintProperty(ROUTE_LINE_LAYER_ID, 'line-color', [
+            'match',
+            ['get', 'traffic'],
+            'jam',
+            '#EF174A',
+            'heavy',
+            '#FF7A1A',
+            'slow',
+            '#FFD84D',
+            '#21A8FF',
+        ]);
+    } else {
+        map.setPaintProperty(ROUTE_LINE_LAYER_ID, 'line-color', '#21A8FF');
+    }
 
     if (camera === 'follow') {
         focusRouteStart(route.geometry.coordinates);
@@ -637,11 +700,66 @@ export async function buildRouteToSpot(userLocation, spot, { camera = 'overview'
     return route;
 }
 
+function buildRouteFeatureCollection(route) {
+    const segmentFeatures = Array.isArray(route.segments) && route.segments.length > 0
+        ? route.segments.map((segment) => ({
+            type: 'Feature',
+            properties: {
+                traffic: segment.traffic ?? 'free',
+            },
+            geometry: {
+                type: 'LineString',
+                coordinates: segment.coordinates,
+            },
+        }))
+        : [];
+
+    if (segmentFeatures.length > 0) {
+        return {
+            type: 'FeatureCollection',
+            features: segmentFeatures,
+        };
+    }
+
+    return {
+        type: 'FeatureCollection',
+        features: [{
+            type: 'Feature',
+            properties: {
+                traffic: 'free',
+            },
+            geometry: route.geometry,
+        }],
+    };
+}
+
 export function clearActiveRoute() {
     map?.getSource(ROUTE_SOURCE_ID)?.setData(buildFeatureCollection([]));
 }
 
-async function fetchDrivingRoute(start, finish, directDistanceMeters) {
+export function startRouteNavigation(route) {
+    if (!route?.geometry?.coordinates?.length) {
+        return;
+    }
+
+    focusRouteStart(route.geometry.coordinates);
+}
+
+async function fetchTrafficRoute(start, finish, directDistanceMeters) {
+    try {
+        const route = await fetchYandexDrivingRoute(start, finish);
+
+        if (route?.geometry?.coordinates?.length) {
+            return route;
+        }
+    } catch {
+        // Fall through to public OSRM only when Yandex is unavailable or not configured.
+    }
+
+    return fetchOpenStreetMapRoute(start, finish, directDistanceMeters);
+}
+
+async function fetchOpenStreetMapRoute(start, finish, directDistanceMeters) {
     const path = `${start.longitude},${start.latitude};${finish.longitude},${finish.latitude}?overview=full&geometries=geojson&steps=false`;
     const urls = [
         `https://router.project-osrm.org/route/v1/driving/${path}`,
