@@ -13,11 +13,14 @@ const SOURCE_ID = 'parking-spots';
 const PENDING_SOURCE_ID = 'pending-parking-spot';
 const USER_LOCATION_SOURCE_ID = 'user-location';
 const ROUTE_SOURCE_ID = 'active-route';
+const TRAFFIC_FLOW_SOURCE_ID = 'tomtom-traffic-flow';
+const TRAFFIC_FLOW_LAYER_ID = 'tomtom-traffic-flow';
 const ROUTE_CASING_LAYER_ID = 'active-route-casing';
 const ROUTE_LINE_LAYER_ID = 'active-route-line';
 const BASE_LAYER_IDS = ['light', 'dark', 'satellite'];
 const DEFAULT_BASE_LAYER_ID = 'light';
 const BASE_LAYER_STORAGE_KEY = 'auralith:map-layer';
+const ROUTE_CACHE_STORAGE_KEY = 'auralith:last-driving-route';
 
 const MAP_STYLE = {
     version: 8,
@@ -170,6 +173,7 @@ function initMapLibreMap() {
             addPendingSourceAndLayer();
             addUserLocationSourceAndLayer();
             addRouteSourceAndLayer();
+            addTrafficFlowLayer();
             bindMapEvents();
         } catch (error) {
             console.error('Map layers failed', error);
@@ -507,6 +511,39 @@ function addRouteSourceAndLayer() {
     }, 'spots-pin');
 }
 
+function addTrafficFlowLayer() {
+    const apiKey = getTomTomTrafficKey();
+
+    if (!apiKey || map.getSource(TRAFFIC_FLOW_SOURCE_ID)) {
+        return;
+    }
+
+    map.addSource(TRAFFIC_FLOW_SOURCE_ID, {
+        type: 'raster',
+        tiles: [
+            `https://api.tomtom.com/traffic/map/4/tile/flow/relative/{z}/{x}/{y}.png?key=${encodeURIComponent(apiKey)}&tileSize=256&thickness=7`,
+        ],
+        tileSize: 256,
+        minzoom: 5,
+        maxzoom: 19,
+        attribution: 'Traffic © TomTom',
+    });
+
+    map.addLayer({
+        id: TRAFFIC_FLOW_LAYER_ID,
+        type: 'raster',
+        source: TRAFFIC_FLOW_SOURCE_ID,
+        paint: {
+            'raster-opacity': 0.82,
+            'raster-fade-duration': 0,
+        },
+    }, ROUTE_CASING_LAYER_ID);
+}
+
+function getTomTomTrafficKey() {
+    return document.querySelector('.map-screen')?.dataset.tomtomTrafficKey?.trim() || '';
+}
+
 function bindMapEvents() {
     map.on('click', 'clusters', async (event) => {
         await expandCluster(event);
@@ -669,7 +706,15 @@ export async function buildRouteToSpot(userLocation, spot, { camera = 'overview'
     };
 
     const directDistanceMeters = getDistanceMeters(start, finish);
+    const cachedRoute = getCachedRoute(finish);
     const route = await fetchTrafficRoute(start, finish, directDistanceMeters).catch((error) => {
+        if (cachedRoute) {
+            return {
+                ...cachedRoute,
+                source: `${cachedRoute.source}-cached`,
+            };
+        }
+
         if (directDistanceMeters > 50000) {
             throw error;
         }
@@ -678,8 +723,10 @@ export async function buildRouteToSpot(userLocation, spot, { camera = 'overview'
     });
     const source = map.getSource(ROUTE_SOURCE_ID);
 
+    cacheRoute(finish, route);
+
     source?.setData(buildRouteFeatureCollection(route));
-    if (route.source === 'yandex-traffic') {
+    if (['yandex-traffic', 'tomtom-traffic'].includes(route.source)) {
         map.setPaintProperty(ROUTE_LINE_LAYER_ID, 'line-color', [
             'match',
             ['get', 'traffic'],
@@ -807,7 +854,7 @@ async function fetchTrafficRoute(start, finish, directDistanceMeters) {
 }
 
 async function fetchOpenStreetMapRoute(start, finish, directDistanceMeters) {
-    const path = `${start.longitude},${start.latitude};${finish.longitude},${finish.latitude}?overview=full&geometries=geojson&steps=false`;
+    const path = `${start.longitude},${start.latitude};${finish.longitude},${finish.latitude}?overview=full&geometries=geojson&steps=true`;
     const urls = [
         `https://router.project-osrm.org/route/v1/driving/${path}`,
         `https://routing.openstreetmap.de/routed-car/route/v1/driving/${path}`,
@@ -828,10 +875,60 @@ async function fetchOpenStreetMapRoute(start, finish, directDistanceMeters) {
 
     return {
         geometry: route.geometry,
+        instructions: buildOsrmInstructions(route),
         distanceMeters: route.distance,
         durationSeconds: route.duration,
         source: 'road',
     };
+}
+
+function buildOsrmInstructions(route) {
+    let distanceFromStart = 0;
+
+    return (route.legs ?? []).flatMap((leg) => (
+        (leg.steps ?? []).map((step) => {
+            const instruction = {
+                text: formatOsrmInstruction(step),
+                roadName: step.name || '',
+                distanceMeters: Number(step.distance) || 0,
+                durationSeconds: Number(step.duration) || 0,
+                distanceFromStartMeters: distanceFromStart,
+                maneuver: step.maneuver?.type || '',
+                modifier: step.maneuver?.modifier || '',
+            };
+
+            distanceFromStart += instruction.distanceMeters;
+
+            return instruction;
+        })
+    )).filter((instruction) => instruction.text);
+}
+
+function formatOsrmInstruction(step) {
+    const roadName = step.name ? ` на ${step.name}` : '';
+    const modifier = {
+        left: 'налево',
+        right: 'направо',
+        slight_left: 'левее',
+        slight_right: 'правее',
+        sharp_left: 'резко налево',
+        sharp_right: 'резко направо',
+        straight: 'прямо',
+        uturn: 'развернитесь',
+    }[step.maneuver?.modifier] ?? '';
+
+    return {
+        depart: `Начните движение${roadName}`,
+        turn: `Поверните ${modifier || 'по маршруту'}${roadName}`,
+        'new name': `Продолжайте${roadName}`,
+        continue: `Продолжайте ${modifier || 'прямо'}${roadName}`,
+        merge: `Выезжайте ${modifier || 'по маршруту'}${roadName}`,
+        ramp: `Съезд ${modifier || 'по маршруту'}${roadName}`,
+        fork: `Держитесь ${modifier || 'по маршруту'}${roadName}`,
+        roundabout: `На круговом движении продолжайте${roadName}`,
+        rotary: `На круговом движении продолжайте${roadName}`,
+        arrive: 'Вы прибыли',
+    }[step.maneuver?.type] ?? `Двигайтесь по маршруту${roadName}`;
 }
 
 function focusRouteStart(coordinates) {
@@ -897,10 +994,53 @@ function buildFallbackRoute(start, finish) {
                 [finish.longitude, finish.latitude],
             ],
         },
+        instructions: [{
+            text: 'Двигайтесь к точке назначения',
+            distanceMeters,
+            distanceFromStartMeters: 0,
+        }],
         distanceMeters,
         durationSeconds: distanceMeters / 9,
         source: 'approximate',
     };
+}
+
+function cacheRoute(finish, route) {
+    if (!route?.geometry?.coordinates?.length || route.source === 'approximate') {
+        return;
+    }
+
+    window.localStorage?.setItem(ROUTE_CACHE_STORAGE_KEY, JSON.stringify({
+        finish,
+        route,
+        savedAt: Date.now(),
+    }));
+}
+
+function getCachedRoute(finish) {
+    const cached = readCachedRoute();
+
+    if (!cached?.route?.geometry?.coordinates?.length || !cached.finish || Date.now() - Number(cached.savedAt) > 86400000) {
+        return null;
+    }
+
+    const distanceToDestination = getDistanceMeters(
+        {
+            latitude: Number(cached.finish.latitude),
+            longitude: Number(cached.finish.longitude),
+        },
+        finish,
+    );
+
+    return distanceToDestination < 40 ? cached.route : null;
+}
+
+function readCachedRoute() {
+    try {
+        return JSON.parse(window.localStorage?.getItem(ROUTE_CACHE_STORAGE_KEY) || 'null');
+    } catch {
+        return null;
+    }
 }
 
 function getDistanceMeters(start, finish) {

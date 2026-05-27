@@ -24,6 +24,11 @@ return [
 
     'yandex_router' => [
         'key' => env('YANDEX_ROUTER_API_KEY'),
+        'enabled' => env('YANDEX_ROUTER_ENABLED', false),
+    ],
+
+    'tomtom_traffic' => [
+        'key' => env('TOMTOM_API_KEY', env('TOMTOM_TRAFFIC_API_KEY')),
     ],
 
     'ses' => [

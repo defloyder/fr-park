@@ -4,7 +4,7 @@
         <div class="bg-calligraphy bg-calligraphy-right">Maps</div>
     @endunless
 
-    <main class="map-screen {{ $isEmbed ? 'map-screen--embed' : '' }}" data-map-provider="maplibre">
+    <main class="map-screen {{ $isEmbed ? 'map-screen--embed' : '' }}" data-map-provider="maplibre" data-tomtom-traffic-key="{{ $tomtomTrafficKey }}">
         <div id="parking-map" class="map-canvas" aria-label="Карта бесплатных парковок Москвы"></div>
 
         <div id="map-fallback" class="map-fallback liquid-glass hidden">

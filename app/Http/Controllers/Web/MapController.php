@@ -12,6 +12,7 @@ class MapController extends Controller
     {
         return view('pages.map', [
             'isEmbed' => $request->boolean('embed'),
+            'tomtomTrafficKey' => config('services.tomtom_traffic.key'),
         ]);
     }
 }

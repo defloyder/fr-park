@@ -1450,7 +1450,7 @@ body.is-navigation-following .navigation-panel__drive {
     left: 50%;
     z-index: 19;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     min-width: min(620px, calc(100vw - 32px));
     align-items: center;
     gap: 12px;
@@ -1493,24 +1493,6 @@ body.is-navigation-following .navigation-panel__drive {
     color: #0f172a;
     font-size: 1.08rem;
     line-height: 1;
-}
-
-.navigation-guidance__actions {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(72px, 1fr));
-    gap: 6px;
-}
-
-.navigation-guidance__actions button {
-    min-height: 38px;
-    padding: 0 11px;
-    color: #101722;
-    font-size: 0.78rem;
-    font-weight: 900;
-    background: rgba(0, 184, 169, 0.10);
-    border: 1px solid rgba(0, 184, 169, 0.24);
-    border-radius: 12px;
-    cursor: pointer;
 }
 
 .navigation-recenter {
@@ -1618,10 +1600,6 @@ body.is-navigation-mode .map-canvas::after {
         gap: 8px;
         padding: 12px 14px;
         border-radius: 18px;
-    }
-
-    .navigation-guidance__actions {
-        grid-column: 1 / -1;
     }
 
     .navigation-recenter {

@@ -135,8 +135,6 @@ export function initParkingUi() {
             'route-yandex': () => openExternalRoute('yandex'),
             'route-2gis': () => openExternalRoute('2gis'),
             'route-in-app': buildInAppRoute,
-            'navigation-yandex': () => openNavigationExternalRoute('yandex'),
-            'navigation-2gis': () => openNavigationExternalRoute('2gis'),
             'start-navigation': startNavigation,
             'recenter-navigation': recenterNavigation,
             'stop-navigation': stopNavigationMode,
@@ -898,11 +896,7 @@ export function initParkingUi() {
             const location = await ensureUserLocation({ refresh: true, focus: false, fastFallback: false });
             assertRouteLocation(location, state.selectedSpot);
             const route = await buildRouteToSpot(location, state.selectedSpot);
-            const trafficNote = route.source === 'yandex-traffic'
-                ? 'Маршрут построен через Яндекс с учетом дорожной ситуации.'
-                : route.source === 'road'
-                    ? 'Дорожный маршрут построен без пробок Яндекса.'
-                    : 'Показал приблизительный маршрут, сервис дорог сейчас недоступен.';
+            const trafficNote = getRouteBuildNote(route);
 
             if (summary) {
                 summary.innerHTML = `
@@ -937,13 +931,6 @@ export function initParkingUi() {
 
         focusNavigationPosition(state.userLocation, state.navigationRoute);
         document.body.classList.remove('is-navigation-detached');
-    }
-
-    function openNavigationExternalRoute(provider) {
-        const spot = state.navigationSpot || state.selectedSpot;
-        if (!spot) return;
-
-        window.open(buildExternalRouteUrl(provider, spot), '_blank', 'noopener');
     }
 
     function assertRouteLocation(location, spot) {
@@ -988,16 +975,12 @@ export function initParkingUi() {
             guidance.className = 'navigation-guidance liquid-glass';
             guidance.innerHTML = `
                 <div class="navigation-guidance__main">
-                    <strong>${escapeHtml(getNavigationInstruction(state.navigationRoute))}</strong>
+                    <strong>${escapeHtml(getNavigationInstruction(state.navigationRoute, state.userLocation))}</strong>
                     <span>${escapeHtml(getTrafficLabel(state.navigationRoute))}</span>
                 </div>
                 <div class="navigation-guidance__metrics">
                     <b>${formatDuration(remainingDuration)}</b>
                     <span>${formatDistance(remainingDistance)}</span>
-                </div>
-                <div class="navigation-guidance__actions">
-                    <button type="button" data-action="navigation-yandex">Яндекс</button>
-                    <button type="button" data-action="navigation-2gis">2ГИС</button>
                 </div>
             `;
             document.body.append(guidance);
@@ -1066,7 +1049,7 @@ export function initParkingUi() {
             () => {},
             {
                 enableHighAccuracy: true,
-                maximumAge: 5000,
+                maximumAge: 0,
                 timeout: 10000,
             },
         );
@@ -1619,7 +1602,17 @@ function getValidationMessage(error) {
         ?? 'Не удалось выполнить действие. Проверьте данные и попробуйте снова.';
 }
 
-function getNavigationInstruction(route) {
+function getNavigationInstruction(route, userLocation = null) {
+    const nextInstruction = getNextRouteInstruction(route, userLocation);
+
+    if (nextInstruction) {
+        const distance = Number(nextInstruction.remainingMeters ?? nextInstruction.distanceMeters);
+
+        return Number.isFinite(distance) && distance > 20
+            ? `Через ${formatDistance(distance)} ${nextInstruction.text}`
+            : nextInstruction.text;
+    }
+
     const firstSegment = route.segments?.[0];
 
     if (!firstSegment) {
@@ -1629,18 +1622,94 @@ function getNavigationInstruction(route) {
     return `Двигайтесь прямо ${formatDistance(getSegmentDistance(firstSegment))}`;
 }
 
+function getNextRouteInstruction(route, userLocation) {
+    const instructions = route?.instructions ?? [];
+
+    if (!instructions.length) {
+        return null;
+    }
+
+    if (!userLocation || !route?.geometry?.coordinates?.length) {
+        return instructions[0];
+    }
+
+    const progress = getRouteProgressMeters(route.geometry.coordinates, userLocation);
+    const next = instructions.find((instruction) => (
+        Number(instruction.distanceFromStartMeters) + Math.max(Number(instruction.distanceMeters) || 0, 35) >= progress + 20
+    )) ?? instructions.at(-1);
+    const remainingMeters = Math.max(0, Number(next.distanceFromStartMeters) - progress);
+
+    return {
+        ...next,
+        remainingMeters,
+    };
+}
+
+function getRouteProgressMeters(coordinates, userLocation) {
+    const current = [Number(userLocation.longitude), Number(userLocation.latitude)];
+    let progress = 0;
+    let closestProgress = 0;
+    let closestDistance = Number.POSITIVE_INFINITY;
+
+    coordinates.forEach((coordinate, index) => {
+        if (index > 0) {
+            progress += getDistanceMeters(
+                { longitude: coordinates[index - 1][0], latitude: coordinates[index - 1][1] },
+                { longitude: coordinate[0], latitude: coordinate[1] },
+            );
+        }
+
+        const distance = getDistanceMeters(
+            { longitude: current[0], latitude: current[1] },
+            { longitude: coordinate[0], latitude: coordinate[1] },
+        );
+
+        if (distance < closestDistance) {
+            closestDistance = distance;
+            closestProgress = progress;
+        }
+    });
+
+    return closestProgress;
+}
+
 function getRemainingRouteDistance() {
-    return Number(state.navigationRoute?.distanceMeters) || getDistanceMeters(
+    const totalDistance = Number(state.navigationRoute?.distanceMeters) || getDistanceMeters(
         state.userLocation,
         state.navigationSpot,
     );
+
+    if (!state.userLocation || !state.navigationRoute?.geometry?.coordinates?.length) {
+        return totalDistance;
+    }
+
+    return Math.max(0, totalDistance - getRouteProgressMeters(state.navigationRoute.geometry.coordinates, state.userLocation));
 }
 
 function getRemainingRouteDuration(distanceMeters) {
-    return Number(state.navigationRoute?.durationSeconds) || distanceMeters / 9;
+    const totalDistance = Number(state.navigationRoute?.distanceMeters);
+    const totalDuration = Number(state.navigationRoute?.durationSeconds);
+
+    if (totalDistance > 0 && totalDuration > 0) {
+        return Math.max(30, totalDuration * (distanceMeters / totalDistance));
+    }
+
+    return distanceMeters / 9;
 }
 
 function getTrafficLabel(route) {
+    if (route.source?.endsWith('-cached')) {
+        return 'Офлайн: ведение по сохраненному маршруту';
+    }
+
+    if (route.source === 'tomtom-traffic') {
+        const delay = Number(route.trafficDelaySeconds) || 0;
+
+        return delay > 60
+            ? `Трафик учтен, задержка около ${formatDuration(delay)}`
+            : 'Маршрут построен с учетом текущего трафика';
+    }
+
     if (route.source === 'yandex-traffic') {
         return 'Маршрут Яндекса с учетом дорожной ситуации';
     }
@@ -1650,6 +1719,26 @@ function getTrafficLabel(route) {
     }
 
     return 'Приблизительный маршрут без данных о пробках';
+}
+
+function getRouteBuildNote(route) {
+    if (route.source?.endsWith('-cached')) {
+        return 'Показал сохраненный маршрут. Можно продолжать ведение без интернета.';
+    }
+
+    if (route.source === 'tomtom-traffic') {
+        return 'Маршрут построен с учетом текущего трафика.';
+    }
+
+    if (route.source === 'yandex-traffic') {
+        return 'Маршрут построен через Яндекс с учетом дорожной ситуации.';
+    }
+
+    if (route.source === 'road') {
+        return 'Дорожный маршрут построен без пробок Яндекса.';
+    }
+
+    return 'Показал приблизительный маршрут, сервис дорог сейчас недоступен.';
 }
 
 function getSegmentDistance(segment) {

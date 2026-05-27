@@ -20,11 +20,24 @@ class RouteController extends Controller
             'to_longitude' => ['required', 'numeric', 'between:-180,180'],
         ]);
 
-        $apiKey = config('services.yandex_router.key');
+        $tomTomApiKey = config('services.tomtom_traffic.key');
 
-        if (! is_string($apiKey) || trim($apiKey) === '') {
+        if (is_string($tomTomApiKey) && trim($tomTomApiKey) !== '') {
+            try {
+                return response()->json($this->buildTomTomRoute($validated, trim($tomTomApiKey)));
+            } catch (Throwable $exception) {
+                Log::warning('TomTom Routing API request failed', [
+                    'message' => $exception->getMessage(),
+                ]);
+            }
+        }
+
+        $apiKey = config('services.yandex_router.key');
+        $isYandexEnabled = (bool) config('services.yandex_router.enabled');
+
+        if (! $isYandexEnabled || ! is_string($apiKey) || trim($apiKey) === '') {
             return response()->json([
-                'message' => 'Yandex Router API key is not configured.',
+                'message' => 'Traffic routing API key is not configured.',
                 'source' => 'yandex-unavailable',
             ]);
         }
@@ -70,10 +83,111 @@ class RouteController extends Controller
         }
     }
 
+    private function buildTomTomRoute(array $validated, string $apiKey): array
+    {
+        $locations = implode(':', [
+            $validated['from_latitude'].','.$validated['from_longitude'],
+            $validated['to_latitude'].','.$validated['to_longitude'],
+        ]);
+        $payload = Http::timeout(14)
+            ->acceptJson()
+            ->get("https://api.tomtom.com/routing/1/calculateRoute/{$locations}/json", [
+                'key' => $apiKey,
+                'travelMode' => 'car',
+                'traffic' => 'true',
+                'routeType' => 'fastest',
+                'routeRepresentation' => 'polyline',
+                'computeTravelTimeFor' => 'all',
+                'instructionsType' => 'text',
+                'language' => 'ru-RU',
+                'sectionType' => 'traffic',
+            ])
+            ->throw()
+            ->json();
+
+        $route = data_get($payload, 'routes.0');
+
+        if (! is_array($route)) {
+            throw new \RuntimeException('TomTom Routing API returned an empty route.');
+        }
+
+        return $this->normalizeTomTomRoute($route);
+    }
+
+    private function normalizeTomTomRoute(array $route): array
+    {
+        $coordinates = collect((array) data_get($route, 'legs', []))
+            ->flatMap(fn ($leg) => (array) data_get($leg, 'points', []))
+            ->map(fn ($point) => [(float) data_get($point, 'longitude'), (float) data_get($point, 'latitude')])
+            ->filter(fn ($point) => $point[0] !== 0.0 && $point[1] !== 0.0)
+            ->values()
+            ->all();
+        $summary = (array) data_get($route, 'summary', []);
+        $trafficDelay = (float) data_get($summary, 'trafficDelayInSeconds', 0);
+        $distanceMeters = (float) data_get($summary, 'lengthInMeters', 0);
+        $durationSeconds = (float) data_get($summary, 'travelTimeInSeconds', 0);
+
+        return [
+            'geometry' => [
+                'type' => 'LineString',
+                'coordinates' => $coordinates,
+            ],
+            'segments' => [[
+                'traffic' => $this->tomTomTrafficLevel($trafficDelay, $durationSeconds),
+                'coordinates' => $coordinates,
+            ]],
+            'instructions' => $this->normalizeTomTomInstructions((array) data_get($route, 'guidance.instructions', [])),
+            'distanceMeters' => $distanceMeters,
+            'durationSeconds' => $durationSeconds,
+            'trafficDelaySeconds' => $trafficDelay,
+            'source' => 'tomtom-traffic',
+        ];
+    }
+
+    private function normalizeTomTomInstructions(array $instructions): array
+    {
+        return collect($instructions)
+            ->map(function ($instruction): ?array {
+                $text = data_get($instruction, 'message') ?: data_get($instruction, 'street');
+
+                if (! is_string($text) || trim($text) === '') {
+                    return null;
+                }
+
+                return [
+                    'text' => trim($text),
+                    'roadName' => (string) data_get($instruction, 'street', ''),
+                    'distanceMeters' => 0,
+                    'distanceFromStartMeters' => (float) data_get($instruction, 'routeOffsetInMeters', 0),
+                    'maneuver' => (string) data_get($instruction, 'instructionType', ''),
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    private function tomTomTrafficLevel(float $trafficDelaySeconds, float $durationSeconds): string
+    {
+        if ($trafficDelaySeconds <= 0 || $durationSeconds <= 0) {
+            return 'free';
+        }
+
+        $delayRatio = $trafficDelaySeconds / $durationSeconds;
+
+        return match (true) {
+            $delayRatio > 0.35 => 'jam',
+            $delayRatio > 0.18 => 'heavy',
+            $delayRatio > 0.08 => 'slow',
+            default => 'free',
+        };
+    }
+
     private function normalizeRoute(array $route): array
     {
         $segments = [];
         $coordinates = [];
+        $instructions = [];
         $distanceMeters = 0.0;
         $durationSeconds = 0.0;
 
@@ -87,11 +201,16 @@ class RouteController extends Controller
             $length = (float) data_get($step, 'length.value', 0);
             $duration = (float) data_get($step, 'duration.value', 0);
             $traffic = $this->trafficLevel($length, $duration);
+            $instruction = $this->extractInstruction((array) $step, $length, $distanceMeters);
 
             $segments[] = [
                 'traffic' => $traffic,
                 'coordinates' => $points,
             ];
+
+            if ($instruction !== null) {
+                $instructions[] = $instruction;
+            }
 
             array_push($coordinates, ...$points);
             $distanceMeters += $length;
@@ -104,10 +223,32 @@ class RouteController extends Controller
                 'coordinates' => $coordinates,
             ],
             'segments' => $segments,
+            'instructions' => $instructions,
             'distanceMeters' => $distanceMeters,
             'durationSeconds' => $durationSeconds,
             'source' => 'yandex-traffic',
             'trafficType' => data_get($route, 'traffic_type'),
+        ];
+    }
+
+    private function extractInstruction(array $step, float $length, float $distanceFromStart): ?array
+    {
+        $text = collect([
+            data_get($step, 'maneuver.instruction'),
+            data_get($step, 'instruction'),
+            data_get($step, 'action'),
+            data_get($step, 'name'),
+            data_get($step, 'street'),
+        ])->filter(fn ($value) => is_string($value) && trim($value) !== '')->first();
+
+        if (! is_string($text)) {
+            return null;
+        }
+
+        return [
+            'text' => trim($text),
+            'distanceMeters' => $length,
+            'distanceFromStartMeters' => $distanceFromStart,
         ];
     }
 
