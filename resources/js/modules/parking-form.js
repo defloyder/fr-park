@@ -11,7 +11,7 @@ import {
     updateParkingSpot,
     uploadParkingPhoto,
 } from './parking-api';
-import { addParkingSpotToMap, buildRouteToSpot, clearActiveRoute, clearPendingSelection, focusNavigationPosition, focusSpot, focusSpots, focusUserLocation, replaceParkingSpotsOnMap, setMapPickingMode, startRouteNavigation } from './map';
+import { addParkingSpotToMap, buildRouteToSpot, clearActiveRoute, clearPendingSelection, focusNavigationPosition, focusSpot, focusSpots, focusUserLocation, replaceParkingSpotsOnMap, setMapPickingMode, startRouteNavigation, updateActiveRouteProgress } from './map';
 
 const STATUS_LABELS = {
     verified: 'Проверено',
@@ -289,7 +289,7 @@ export function initParkingUi() {
     }
 
     async function uploadPhotoFiles(files) {
-        const images = files.filter((file) => file?.type.startsWith('image/'));
+        const images = files.filter((file) => isUploadableImage(file));
         if (files.length > 0 && images.length === 0) return showFormError('Можно загрузить только изображения.');
         if (getFormPhotos().length + images.length > 12) return showFormError('Можно добавить до 12 фото на одну точку.');
 
@@ -311,6 +311,13 @@ export function initParkingUi() {
             photoDropzone.classList.remove('is-uploading');
             resetDropzoneText();
         }
+    }
+
+    function isUploadableImage(file) {
+        if (!file) return false;
+        if (file.type?.startsWith('image/')) return true;
+
+        return /\.(jpe?g|png|webp|heic|heif)$/i.test(file.name || '');
     }
 
     function renderCard(spot) {
@@ -1045,6 +1052,7 @@ export function initParkingUi() {
                 };
 
                 focusUserLocation(state.userLocation, { focus: false });
+                updateActiveRouteProgress(state.userLocation, state.navigationRoute);
                 if (!document.body.classList.contains('is-navigation-detached')) {
                     focusNavigationPosition(state.userLocation, state.navigationRoute);
                 }
@@ -1723,6 +1731,13 @@ function getTrafficLabel(route) {
     }
 
     return 'Приблизительный маршрут без данных о пробках';
+}
+
+function formatDuration(seconds) {
+    if (!Number.isFinite(Number(seconds))) return '—';
+    const minutes = Math.max(1, Math.round(Number(seconds) / 60));
+    if (minutes < 60) return `${minutes} мин`;
+    return `${Math.floor(minutes / 60)} ч ${minutes % 60} мин`;
 }
 
 function getRouteBuildNote(route) {

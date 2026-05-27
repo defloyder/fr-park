@@ -511,6 +511,12 @@ h2 {
     transform: translateY(-1px);
 }
 
+.map-control-button.is-active {
+    color: #061018;
+    background: linear-gradient(135deg, #A7F3D0, #FDE68A);
+    border-color: rgba(16, 185, 129, 0.42);
+}
+
 .map-control-button svg {
     width: 19px;
     height: 19px;

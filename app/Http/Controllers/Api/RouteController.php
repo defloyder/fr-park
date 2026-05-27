@@ -132,10 +132,7 @@ class RouteController extends Controller
                 'type' => 'LineString',
                 'coordinates' => $coordinates,
             ],
-            'segments' => [[
-                'traffic' => $this->tomTomTrafficLevel($trafficDelay, $durationSeconds),
-                'coordinates' => $coordinates,
-            ]],
+            'segments' => $this->buildTomTomTrafficSegments($coordinates, (array) data_get($route, 'sections', []), $trafficDelay, $durationSeconds),
             'instructions' => $this->normalizeTomTomInstructions((array) data_get($route, 'guidance.instructions', [])),
             'distanceMeters' => $distanceMeters,
             'durationSeconds' => $durationSeconds,
@@ -165,6 +162,76 @@ class RouteController extends Controller
             ->filter()
             ->values()
             ->all();
+    }
+
+    private function buildTomTomTrafficSegments(array $coordinates, array $sections, float $trafficDelay, float $durationSeconds): array
+    {
+        if (count($coordinates) < 2) {
+            return [];
+        }
+
+        $trafficSections = collect($sections)
+            ->filter(fn ($section) => strtoupper((string) data_get($section, 'sectionType')) === 'TRAFFIC')
+            ->values();
+        $boundaries = collect([0, count($coordinates) - 1]);
+
+        foreach ($trafficSections as $section) {
+            $start = max(0, min(count($coordinates) - 1, (int) data_get($section, 'startPointIndex', 0)));
+            $end = max($start, min(count($coordinates) - 1, (int) data_get($section, 'endPointIndex', $start)));
+            $boundaries->push($start, $end);
+        }
+
+        $points = $boundaries->unique()->sort()->values()->all();
+        $segments = [];
+
+        for ($index = 0; $index < count($points) - 1; $index++) {
+            $start = $points[$index];
+            $end = $points[$index + 1];
+
+            if ($end <= $start) {
+                continue;
+            }
+
+            $section = $trafficSections->first(fn ($item) => (
+                (int) data_get($item, 'startPointIndex', 0) <= $start
+                && (int) data_get($item, 'endPointIndex', 0) >= $end
+            ));
+
+            $segments[] = [
+                'traffic' => is_array($section)
+                    ? $this->tomTomSectionTrafficLevel($section)
+                    : ($trafficSections->isEmpty() ? $this->tomTomTrafficLevel($trafficDelay, $durationSeconds) : 'free'),
+                'coordinates' => array_slice($coordinates, $start, $end - $start + 1),
+            ];
+        }
+
+        return $segments ?: [[
+            'traffic' => $this->tomTomTrafficLevel($trafficDelay, $durationSeconds),
+            'coordinates' => $coordinates,
+        ]];
+    }
+
+    private function tomTomSectionTrafficLevel(array $section): string
+    {
+        $category = strtoupper((string) data_get($section, 'simpleCategory', ''));
+
+        if ($category === 'JAM') {
+            return 'jam';
+        }
+
+        if ($category === 'ROAD_CLOSED') {
+            return 'jam';
+        }
+
+        $magnitude = (int) data_get($section, 'magnitudeOfDelay', 0);
+        $delay = (float) data_get($section, 'delayInSeconds', 0);
+
+        return match (true) {
+            $magnitude >= 4 || $delay >= 300 => 'jam',
+            $magnitude >= 3 || $delay >= 120 => 'heavy',
+            $magnitude >= 1 || $delay > 0 => 'slow',
+            default => 'free',
+        };
     }
 
     private function tomTomTrafficLevel(float $trafficDelaySeconds, float $durationSeconds): string

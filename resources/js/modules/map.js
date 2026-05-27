@@ -21,6 +21,7 @@ const BASE_LAYER_IDS = ['light', 'dark', 'satellite'];
 const DEFAULT_BASE_LAYER_ID = 'light';
 const BASE_LAYER_STORAGE_KEY = 'auralith:map-layer';
 const ROUTE_CACHE_STORAGE_KEY = 'auralith:last-driving-route';
+const TRAFFIC_LAYER_STORAGE_KEY = 'auralith:traffic-enabled';
 
 const MAP_STYLE = {
     version: 8,
@@ -159,6 +160,7 @@ function initMapLibreMap() {
     });
 
     bindLayerSwitcher();
+    bindTrafficToggle();
     bindPerformanceMode();
 
     map.once('load', async () => {
@@ -256,6 +258,45 @@ function setBaseMapLayer(layerId = DEFAULT_BASE_LAYER_ID, { persist = false } = 
     });
 }
 
+function bindTrafficToggle() {
+    const button = document.querySelector('[data-traffic-toggle]');
+
+    if (!button) {
+        return;
+    }
+
+    updateTrafficToggleButton(isTrafficLayerEnabled());
+    button.addEventListener('click', () => {
+        const nextValue = !isTrafficLayerEnabled();
+
+        window.localStorage?.setItem(TRAFFIC_LAYER_STORAGE_KEY, nextValue ? '1' : '0');
+        setTrafficLayerVisibility(nextValue);
+        updateTrafficToggleButton(nextValue);
+    });
+}
+
+function isTrafficLayerEnabled() {
+    return window.localStorage?.getItem(TRAFFIC_LAYER_STORAGE_KEY) === '1';
+}
+
+function updateTrafficToggleButton(isEnabled) {
+    const button = document.querySelector('[data-traffic-toggle]');
+
+    if (!button) return;
+
+    button.classList.toggle('is-active', isEnabled);
+    button.setAttribute('aria-pressed', String(isEnabled));
+    button.setAttribute('aria-label', isEnabled ? 'Выключить пробки' : 'Включить пробки');
+}
+
+function setTrafficLayerVisibility(isVisible) {
+    if (!map?.getLayer(TRAFFIC_FLOW_LAYER_ID)) {
+        return;
+    }
+
+    map.setLayoutProperty(TRAFFIC_FLOW_LAYER_ID, 'visibility', isVisible ? 'visible' : 'none');
+}
+
 async function addMarkerImages() {
     await Promise.all(Object.entries(MARKER_IMAGES).map(([status, colors]) => (
         addSvgImage(`parking-marker-${status}`, createMarkerSvg(...colors))
@@ -333,11 +374,15 @@ function bindPerformanceMode() {
     let timer = null;
     const start = () => {
         document.body.classList.add('is-map-interacting');
+        setTrafficInteractionMode(true);
         window.clearTimeout(timer);
     };
     const stop = () => {
         window.clearTimeout(timer);
-        timer = window.setTimeout(() => document.body.classList.remove('is-map-interacting'), 180);
+        timer = window.setTimeout(() => {
+            document.body.classList.remove('is-map-interacting');
+            setTrafficInteractionMode(false);
+        }, 180);
     };
 
     map.on('movestart', start);
@@ -355,6 +400,14 @@ function bindPerformanceMode() {
             window.dispatchEvent(new CustomEvent('navigation:manual-map-move'));
         }
     });
+}
+
+function setTrafficInteractionMode(isInteracting) {
+    if (!map?.getLayer(TRAFFIC_FLOW_LAYER_ID) || !window.matchMedia('(max-width: 720px)').matches) {
+        return;
+    }
+
+    map.setPaintProperty(TRAFFIC_FLOW_LAYER_ID, 'raster-opacity', isInteracting ? 0.28 : 0.70);
 }
 
 function addParkingSource() {
@@ -533,12 +586,16 @@ function addTrafficFlowLayer() {
         id: TRAFFIC_FLOW_LAYER_ID,
         type: 'raster',
         source: TRAFFIC_FLOW_SOURCE_ID,
+        layout: {
+            visibility: isTrafficLayerEnabled() ? 'visible' : 'none',
+        },
         paint: {
             'raster-opacity': 0.70,
             'raster-fade-duration': 0,
         },
     }, ROUTE_CASING_LAYER_ID);
 
+    updateTrafficToggleButton(isTrafficLayerEnabled());
     keepNavigationLayersOrdered();
 }
 
@@ -762,9 +819,9 @@ export async function buildRouteToSpot(userLocation, spot, { camera = 'overview'
 
 function keepNavigationLayersOrdered() {
     const orderedTopLayers = [
-        'clusters',
         ROUTE_CASING_LAYER_ID,
         ROUTE_LINE_LAYER_ID,
+        'clusters',
         'spots-pin',
         'cluster-count',
         'pending-spot',
@@ -818,6 +875,52 @@ function buildRouteFeatureCollection(route) {
 
 export function clearActiveRoute() {
     map?.getSource(ROUTE_SOURCE_ID)?.setData(buildFeatureCollection([]));
+}
+
+export function updateActiveRouteProgress(userLocation, route) {
+    if (!map || !route?.geometry?.coordinates?.length || !userLocation) {
+        return;
+    }
+
+    const closestIndex = findClosestRouteCoordinateIndex(
+        [Number(userLocation.longitude), Number(userLocation.latitude)],
+        route.geometry.coordinates,
+    );
+    const remainingCoordinates = route.geometry.coordinates.slice(Math.max(0, closestIndex));
+
+    if (remainingCoordinates.length < 2) {
+        clearActiveRoute();
+        return;
+    }
+
+    map.getSource(ROUTE_SOURCE_ID)?.setData(buildRouteFeatureCollection({
+        ...route,
+        geometry: {
+            ...route.geometry,
+            coordinates: remainingCoordinates,
+        },
+        segments: trimRouteSegments(route.segments ?? [], closestIndex),
+    }));
+}
+
+function trimRouteSegments(segments, closestIndex) {
+    let pointOffset = 0;
+
+    return segments.map((segment) => {
+        const coordinates = segment.coordinates ?? [];
+        const start = pointOffset;
+        const end = pointOffset + coordinates.length - 1;
+        pointOffset = end;
+
+        if (end < closestIndex) {
+            return null;
+        }
+
+        return {
+            ...segment,
+            coordinates: coordinates.slice(Math.max(0, closestIndex - start)),
+        };
+    }).filter((segment) => segment?.coordinates?.length > 1);
 }
 
 export function startRouteNavigation(route) {

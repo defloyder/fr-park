@@ -51,6 +51,9 @@
             <button class="map-control-button map-fullscreen-button" type="button" data-action="toggle-fullscreen" aria-label="На весь экран">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H4a1 1 0 0 0-1 1v4"></path><path d="M16 3h4a1 1 0 0 1 1 1v4"></path><path d="M21 16v4a1 1 0 0 1-1 1h-4"></path><path d="M8 21H4a1 1 0 0 1-1-1v-4"></path></svg>
             </button>
+            <button class="map-control-button map-traffic-button" type="button" data-traffic-toggle aria-label="Включить пробки" aria-pressed="false">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16"></path><path d="M7 16 11 5"></path><path d="m13 5 4 11"></path><path d="M8.2 12h7.6"></path></svg>
+            </button>
             <div class="layer-switcher" data-layer-switcher>
                 <button class="map-control-button layer-switcher__trigger" type="button" data-map-layer-toggle aria-label="Переключить слой карты" aria-expanded="false">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 4-8 4-8-4 8-4Z"></path><path d="m4 12 8 4 8-4"></path><path d="m4 17 8 4 8-4"></path></svg>

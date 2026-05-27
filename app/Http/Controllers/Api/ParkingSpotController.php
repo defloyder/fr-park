@@ -71,7 +71,7 @@ class ParkingSpotController extends Controller
     public function uploadPhoto(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'photo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'photo' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,heic,heif', 'max:20480'],
         ]);
 
         $path = $validated['photo']->store('parking-spots', 'public');
