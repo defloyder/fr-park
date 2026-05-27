@@ -1595,6 +1595,14 @@ body.is-navigation-following .navigation-panel__drive {
     line-height: 1;
 }
 
+.navigation-guidance__metrics small {
+    color: rgba(16, 23, 34, 0.52);
+    font-size: 0.66rem;
+    font-weight: 900;
+    line-height: 1;
+    white-space: nowrap;
+}
+
 .navigation-recenter {
     position: fixed;
     right: 18px;

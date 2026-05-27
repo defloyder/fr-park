@@ -66,6 +66,7 @@ const state = {
     currentSpeedKmh: 0,
     speedLimitKmh: 60,
     listQuery: '',
+    navigationMetricsTimer: null,
 };
 
 export function initParkingUi() {
@@ -997,64 +998,114 @@ export function initParkingUi() {
     }
 
     function renderNavigationPanel() {
-        document.querySelector('.navigation-panel')?.remove();
-        document.querySelector('.navigation-guidance')?.remove();
-        document.querySelector('.navigation-recenter')?.remove();
         if (!state.navigationSpot || !state.navigationRoute) return;
 
         if (document.body.classList.contains('is-navigation-following')) {
-            const remainingDistance = getRemainingRouteDistance();
-            const remainingDuration = getRemainingRouteDuration(remainingDistance);
-            const instruction = getNextRouteInstruction(state.navigationRoute, state.userLocation);
-            const isSpeeding = state.currentSpeedKmh > state.speedLimitKmh + 15;
-            const guidance = document.createElement('section');
-            guidance.className = 'navigation-guidance liquid-glass';
-            guidance.innerHTML = `
-                <div class="navigation-guidance__arrow" aria-hidden="true">
-                    ${getManeuverIconSvg(instruction)}
-                </div>
+            let guidance = document.querySelector('.navigation-guidance');
+
+            if (!guidance) {
+                guidance = document.createElement('section');
+                guidance.className = 'navigation-guidance liquid-glass';
+                guidance.innerHTML = `
+                <div class="navigation-guidance__arrow" aria-hidden="true"></div>
                 <div class="navigation-guidance__main">
-                    <strong>${escapeHtml(getNavigationInstruction(state.navigationRoute, state.userLocation))}</strong>
-                    <span>${escapeHtml(getTrafficLabel(state.navigationRoute))}</span>
+                    <strong data-navigation-instruction></strong>
+                    <span data-navigation-traffic></span>
                 </div>
                 <div class="navigation-guidance__metrics">
-                    <b>${formatDuration(remainingDuration)}</b>
-                    <span>${formatDistance(remainingDistance)}</span>
+                    <b data-navigation-duration></b>
+                    <span data-navigation-distance></span>
+                    <small data-navigation-arrival></small>
                 </div>
-                <div class="navigation-speedometer ${isSpeeding ? 'is-speeding' : ''}">
-                    <strong>${Math.round(state.currentSpeedKmh)}</strong>
+                <div class="navigation-speedometer">
+                    <strong data-navigation-speed></strong>
                     <span>км/ч</span>
-                    <em>${state.speedLimitKmh}</em>
+                    <em data-navigation-speed-limit></em>
                 </div>
             `;
-            document.body.append(guidance);
+                document.body.append(guidance);
+            }
 
-            const recenter = document.createElement('button');
-            recenter.className = 'navigation-recenter liquid-glass';
-            recenter.type = 'button';
-            recenter.dataset.action = 'recenter-navigation';
-            recenter.setAttribute('aria-label', 'Вернуться к текущему местоположению');
-            recenter.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 7 19-7-4-7 4 7-19Z"></path></svg><span>К геолокации</span>';
-            document.body.append(recenter);
+            if (!document.querySelector('.navigation-recenter')) {
+                const recenter = document.createElement('button');
+                recenter.className = 'navigation-recenter liquid-glass';
+                recenter.type = 'button';
+                recenter.dataset.action = 'recenter-navigation';
+                recenter.setAttribute('aria-label', 'Вернуться к текущему местоположению');
+                recenter.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 7 19-7-4-7 4 7-19Z"></path></svg><span>К геолокации</span>';
+                document.body.append(recenter);
+            }
         }
 
-        const panel = document.createElement('section');
-        panel.className = 'navigation-panel liquid-glass';
-        const isFollowing = document.body.classList.contains('is-navigation-following');
-        panel.innerHTML = `
+        let panel = document.querySelector('.navigation-panel');
+        if (!panel) {
+            panel = document.createElement('section');
+            panel.className = 'navigation-panel liquid-glass';
+            panel.innerHTML = `
             <div class="navigation-panel__summary">
-                <strong>${formatDuration(state.navigationRoute.durationSeconds)}</strong>
-                <span>${formatDistance(state.navigationRoute.distanceMeters)}</span>
-                <small>${escapeHtml(isFollowing ? getTrafficLabel(state.navigationRoute) : state.navigationSpot.title)}</small>
+                <strong data-navigation-bottom-duration></strong>
+                <span data-navigation-bottom-distance></span>
+                <small data-navigation-bottom-note></small>
             </div>
             <button class="navigation-panel__drive" type="button" data-action="start-navigation">
-                <span>${isFollowing ? 'Веду' : 'Поехать'}</span>
-                <small>${isFollowing ? 'маршрут активен' : 'к началу маршрута'}</small>
+                <span data-navigation-drive-title></span>
+                <small data-navigation-drive-note></small>
             </button>
             <button class="navigation-panel__stop" type="button" data-action="stop-navigation" aria-label="Завершить маршрут">×</button>
         `;
-        document.body.append(panel);
-        window.setTimeout(() => panel.classList.add('is-visible'), 20);
+            document.body.append(panel);
+            window.setTimeout(() => panel.classList.add('is-visible'), 20);
+        }
+
+        updateNavigationMetrics();
+        startNavigationMetricsTimer();
+    }
+
+    function updateNavigationMetrics() {
+        if (!state.navigationRoute) return;
+
+        const remainingDistance = getRemainingRouteDistance();
+        const remainingDuration = getRemainingRouteDuration(remainingDistance);
+        const instruction = getNextRouteInstruction(state.navigationRoute, state.userLocation);
+        const arrival = getArrivalTime(remainingDuration);
+        const isFollowing = document.body.classList.contains('is-navigation-following');
+        const isSpeeding = state.currentSpeedKmh > state.speedLimitKmh + 15;
+
+        setText('[data-navigation-instruction]', getNavigationInstruction(state.navigationRoute, state.userLocation));
+        setText('[data-navigation-traffic]', getTrafficLabel(state.navigationRoute));
+        setText('[data-navigation-duration]', formatDuration(remainingDuration));
+        setText('[data-navigation-distance]', formatDistance(remainingDistance));
+        setText('[data-navigation-arrival]', `Прибытие ${arrival}`);
+        setText('[data-navigation-speed]', String(Math.round(state.currentSpeedKmh)));
+        setText('[data-navigation-speed-limit]', String(state.speedLimitKmh));
+        setText('[data-navigation-bottom-duration]', formatDuration(remainingDuration));
+        setText('[data-navigation-bottom-distance]', formatDistance(remainingDistance));
+        setText('[data-navigation-bottom-note]', `${getTrafficLabel(state.navigationRoute)} · прибытие ${arrival}`);
+        setText('[data-navigation-drive-title]', isFollowing ? 'Веду' : 'Поехать');
+        setText('[data-navigation-drive-note]', isFollowing ? 'маршрут активен' : 'к началу маршрута');
+
+        const arrow = document.querySelector('.navigation-guidance__arrow');
+        if (arrow) arrow.innerHTML = getManeuverIconSvg(instruction);
+
+        document.querySelector('.navigation-speedometer')?.classList.toggle('is-speeding', isSpeeding);
+    }
+
+    function startNavigationMetricsTimer() {
+        if (state.navigationMetricsTimer) return;
+
+        state.navigationMetricsTimer = window.setInterval(updateNavigationMetrics, 5000);
+    }
+
+    function stopNavigationMetricsTimer() {
+        window.clearInterval(state.navigationMetricsTimer);
+        state.navigationMetricsTimer = null;
+    }
+
+    function setText(selector, value) {
+        const element = document.querySelector(selector);
+        if (element && element.textContent !== String(value)) {
+            element.textContent = value;
+        }
     }
 
     function stopNavigationMode() {
@@ -1067,6 +1118,7 @@ export function initParkingUi() {
         document.querySelector('.navigation-recenter')?.remove();
         state.navigationSpot = null;
         state.navigationRoute = null;
+        stopNavigationMetricsTimer();
         clearActiveRoute();
     }
 
@@ -1091,7 +1143,7 @@ export function initParkingUi() {
                 if (!document.body.classList.contains('is-navigation-detached')) {
                     focusNavigationPosition(state.userLocation, state.navigationRoute);
                 }
-                renderNavigationPanel();
+                updateNavigationMetrics();
             },
             () => {},
             {
@@ -1764,6 +1816,15 @@ function getRemainingRouteDuration(distanceMeters) {
     }
 
     return distanceMeters / 9;
+}
+
+function getArrivalTime(durationSeconds) {
+    const arrival = new Date(Date.now() + (Math.max(0, Number(durationSeconds) || 0) * 1000));
+
+    return arrival.toLocaleTimeString('ru-RU', {
+        hour: '2-digit',
+        minute: '2-digit',
+    });
 }
 
 function getTrafficLabel(route) {

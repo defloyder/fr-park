@@ -105,6 +105,7 @@ const MARKER_IMAGES = {
     outdated: ['#FF6D82', '#DC2626'],
     new: ['#8DEEFF', '#00E5FF'],
 };
+const USER_LOCATION_MARKER_ID = 'user-location-auralith';
 
 export async function initParkingMap() {
     if (!document.getElementById(MAP_CONTAINER_ID)) {
@@ -314,6 +315,7 @@ async function addMarkerImages() {
     await Promise.all(Object.entries(MARKER_IMAGES).map(([status, colors]) => (
         addSvgImage(`parking-marker-${status}`, createMarkerSvg(...colors))
     )));
+    await addSvgImage(USER_LOCATION_MARKER_ID, createUserLocationSvg());
 }
 
 function addClusterCountImages() {
@@ -380,6 +382,25 @@ function createMarkerSvg(fill, accent) {
   <path fill="${accent}" opacity="0.94" d="M20 6C12.8 6 7 11.8 7 19c0 8.2 8.2 18.1 13 23.1C24.8 37.1 33 27.2 33 19 33 11.8 27.2 6 20 6Z"/>
   <circle cx="20" cy="19" r="8.2" fill="#08111F" opacity="0.24"/>
   <text x="20" y="24" text-anchor="middle" fill="#08111F" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="900">P</text>
+</svg>`;
+}
+
+function createUserLocationSvg() {
+    return `
+<svg xmlns="http://www.w3.org/2000/svg" width="42" height="42" viewBox="0 0 42 42">
+  <defs>
+    <linearGradient id="geo" x1="8" y1="34" x2="34" y2="8" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8B5CF6"/>
+      <stop offset="0.48" stop-color="#21A8FF"/>
+      <stop offset="1" stop-color="#75F7AF"/>
+    </linearGradient>
+    <filter id="shadow" x="-35%" y="-35%" width="170%" height="170%">
+      <feDropShadow dx="0" dy="6" stdDeviation="4" flood-color="#061018" flood-opacity="0.32"/>
+    </filter>
+  </defs>
+  <path filter="url(#shadow)" fill="url(#geo)" stroke="#fff" stroke-width="2.2" d="M21 4 34.5 36 21 29.2 7.5 36 21 4Z"/>
+  <path fill="#061018" opacity="0.78" stroke="rgba(255,255,255,.55)" stroke-width="1" d="M21 13.2 27 29 21 26 15 29 21 13.2Z"/>
+  <circle cx="21" cy="21.4" r="3.4" fill="#fff"/>
 </svg>`;
 }
 
@@ -528,14 +549,13 @@ function addUserLocationSourceAndLayer() {
 
     map.addLayer({
         id: 'user-location-dot',
-        type: 'circle',
+        type: 'symbol',
         source: USER_LOCATION_SOURCE_ID,
-        paint: {
-            'circle-radius': 8,
-            'circle-color': '#21A8FF',
-            'circle-stroke-color': '#FFFFFF',
-            'circle-stroke-width': 3,
-            'circle-stroke-opacity': 0.96,
+        layout: {
+            'icon-image': USER_LOCATION_MARKER_ID,
+            'icon-size': 1,
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true,
         },
     });
 }
