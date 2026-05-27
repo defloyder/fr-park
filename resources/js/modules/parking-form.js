@@ -11,7 +11,7 @@ import {
     updateParkingSpot,
     uploadParkingPhoto,
 } from './parking-api';
-import { addParkingSpotToMap, buildRouteToSpot, clearPendingSelection, focusSpot, focusSpots, focusUserLocation, replaceParkingSpotsOnMap, setMapPickingMode } from './map';
+import { addParkingSpotToMap, buildRouteToSpot, clearActiveRoute, clearPendingSelection, focusSpot, focusSpots, focusUserLocation, replaceParkingSpotsOnMap, setMapPickingMode } from './map';
 
 const STATUS_LABELS = {
     verified: 'Проверено',
@@ -60,6 +60,8 @@ const state = {
     selectedSpot: null,
     exportSelectedIds: new Set(),
     userLocation: null,
+    navigationSpot: null,
+    navigationRoute: null,
 };
 
 export function initParkingUi() {
@@ -108,6 +110,7 @@ export function initParkingUi() {
             'show-map': closePanels,
             'open-search': openSearch,
             'locate-me': locateMe,
+            'toggle-fullscreen': toggleFullscreen,
             'close-search': closeSearch,
             'open-list': openList,
             'close-list': () => list.classList.add('hidden'),
@@ -131,6 +134,8 @@ export function initParkingUi() {
             'route-yandex': () => openExternalRoute('yandex'),
             'route-2gis': () => openExternalRoute('2gis'),
             'route-in-app': buildInAppRoute,
+            'refresh-navigation': refreshNavigation,
+            'stop-navigation': stopNavigationMode,
             'remove-form-photo': () => removeFormPhoto(Number(event.target.closest('[data-photo-index]')?.dataset.photoIndex)),
             'delete-spot': deleteCurrentSpot,
             'toggle-export-spot': () => isAdmin() && toggleExportSpot(Number(event.target.closest('[data-spot-id]')?.dataset.spotId)),
@@ -808,6 +813,17 @@ export function initParkingUi() {
         );
     }
 
+    function toggleFullscreen() {
+        const target = document.querySelector('.map-screen') ?? document.documentElement;
+
+        if (!document.fullscreenElement) {
+            target.requestFullscreen?.();
+            return;
+        }
+
+        document.exitFullscreen?.();
+    }
+
     function openRoutePicker() {
         if (!state.selectedSpot) return;
 
@@ -871,7 +887,7 @@ export function initParkingUi() {
         try {
             button?.setAttribute('disabled', 'disabled');
             if (summary) summary.textContent = 'Строю маршрут от вашего местоположения...';
-            const location = await ensureUserLocation();
+            const location = await ensureUserLocation(true);
             const route = await buildRouteToSpot(location, state.selectedSpot);
             const trafficNote = route.source === 'road'
                 ? 'Дорожный маршрут построен. Пробки внутри карты появятся после подключения traffic API.'
@@ -885,6 +901,7 @@ export function initParkingUi() {
                 `;
             }
 
+            enterNavigationMode(state.selectedSpot, route);
             showToast(`Маршрут: ${formatDuration(route.durationSeconds)}, ${formatDistance(route.distanceMeters)}.`);
         } catch {
             if (summary) summary.textContent = 'Не удалось построить маршрут. Проверьте геолокацию и интернет.';
@@ -894,8 +911,71 @@ export function initParkingUi() {
         }
     }
 
-    function ensureUserLocation() {
-        if (state.userLocation) {
+    async function refreshNavigation() {
+        if (!state.navigationSpot) return;
+
+        const button = document.querySelector('[data-action="refresh-navigation"]');
+        try {
+            button?.setAttribute('disabled', 'disabled');
+            const location = await ensureUserLocation(true);
+            const route = await buildRouteToSpot(location, state.navigationSpot);
+            enterNavigationMode(state.navigationSpot, route);
+        } catch {
+            showToast('Не удалось обновить маршрут от текущей точки.', true);
+        } finally {
+            button?.removeAttribute('disabled');
+        }
+    }
+
+    function enterNavigationMode(spot, route) {
+        state.navigationSpot = spot;
+        state.navigationRoute = route;
+
+        closeRoutePicker();
+        list.classList.add('hidden');
+        searchPanel?.classList.add('hidden');
+        profilePanel?.classList.add('hidden');
+        sheet.classList.add('hidden');
+        card.classList.add('hidden');
+        pickPanel?.classList.add('hidden');
+        document.body.classList.remove('is-sheet-open');
+        document.body.classList.add('is-navigation-mode');
+        setActiveNav('show-map');
+        renderNavigationPanel();
+    }
+
+    function renderNavigationPanel() {
+        document.querySelector('.navigation-panel')?.remove();
+        if (!state.navigationSpot || !state.navigationRoute) return;
+
+        const panel = document.createElement('section');
+        panel.className = 'navigation-panel liquid-glass';
+        panel.innerHTML = `
+            <div class="navigation-panel__summary">
+                <strong>${formatDuration(state.navigationRoute.durationSeconds)}</strong>
+                <span>${formatDistance(state.navigationRoute.distanceMeters)}</span>
+                <small>${escapeHtml(state.navigationSpot.title)}</small>
+            </div>
+            <button class="navigation-panel__drive" type="button" data-action="refresh-navigation">
+                <span>Поехать</span>
+                <small>обновить от текущей точки</small>
+            </button>
+            <button class="navigation-panel__stop" type="button" data-action="stop-navigation" aria-label="Завершить маршрут">×</button>
+        `;
+        document.body.append(panel);
+        window.setTimeout(() => panel.classList.add('is-visible'), 20);
+    }
+
+    function stopNavigationMode() {
+        document.body.classList.remove('is-navigation-mode');
+        document.querySelector('.navigation-panel')?.remove();
+        state.navigationSpot = null;
+        state.navigationRoute = null;
+        clearActiveRoute();
+    }
+
+    function ensureUserLocation(force = false) {
+        if (state.userLocation && !force) {
             return Promise.resolve(state.userLocation);
         }
 

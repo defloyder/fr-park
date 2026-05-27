@@ -150,7 +150,6 @@ function initMapLibreMap() {
     });
 
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), 'top-left');
-    map.addControl(new maplibregl.FullscreenControl(), 'top-right');
     map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
 
     map.on('error', (event) => {
@@ -648,6 +647,10 @@ export async function buildRouteToSpot(userLocation, spot) {
     });
 
     return route;
+}
+
+export function clearActiveRoute() {
+    map?.getSource(ROUTE_SOURCE_ID)?.setData(buildFeatureCollection([]));
 }
 
 async function fetchDrivingRoute(start, finish) {

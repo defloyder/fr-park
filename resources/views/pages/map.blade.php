@@ -47,31 +47,34 @@
         </section>
         <section id="selected-spot-card" class="spot-card liquid-glass hidden" aria-live="polite"></section>
 
-        <button class="map-location-button liquid-glass" type="button" data-action="locate-me" aria-label="Определить мое местоположение">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path class="map-location-button__arrow" d="M12.8 3.8 20 20l-7.1-3-4.8 4.3 4.7-17.5Z"></path>
-                <path d="M12.8 3.8 20 20l-7.1-3-4.8 4.3 4.7-17.5Z"></path>
-            </svg>
-        </button>
-
-        <div class="layer-switcher" data-layer-switcher>
-            <button class="layer-switcher__trigger liquid-glass" type="button" data-map-layer-toggle aria-label="Переключить слой карты" aria-expanded="false">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 4-8 4-8-4 8-4Z"></path><path d="m4 12 8 4 8-4"></path><path d="m4 17 8 4 8-4"></path></svg>
+        <div class="map-control-stack liquid-glass" aria-label="Инструменты карты">
+            <button class="map-control-button map-fullscreen-button" type="button" data-action="toggle-fullscreen" aria-label="На весь экран">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H4a1 1 0 0 0-1 1v4"></path><path d="M16 3h4a1 1 0 0 1 1 1v4"></path><path d="M21 16v4a1 1 0 0 1-1 1h-4"></path><path d="M8 21H4a1 1 0 0 1-1-1v-4"></path></svg>
             </button>
-            <div class="layer-switcher__panel liquid-glass" data-map-layer-panel>
-                <button class="layer-switcher__option is-active" type="button" data-map-layer="light">
-                    <span class="layer-switcher__swatch layer-switcher__swatch--light"></span>
-                    <span>Светлая</span>
+            <div class="layer-switcher" data-layer-switcher>
+                <button class="map-control-button layer-switcher__trigger" type="button" data-map-layer-toggle aria-label="Переключить слой карты" aria-expanded="false">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 4-8 4-8-4 8-4Z"></path><path d="m4 12 8 4 8-4"></path><path d="m4 17 8 4 8-4"></path></svg>
                 </button>
-                <button class="layer-switcher__option" type="button" data-map-layer="dark">
-                    <span class="layer-switcher__swatch layer-switcher__swatch--dark"></span>
-                    <span>Тёмная</span>
-                </button>
-                <button class="layer-switcher__option" type="button" data-map-layer="satellite">
-                    <span class="layer-switcher__swatch layer-switcher__swatch--satellite"></span>
-                    <span>Спутник</span>
-                </button>
+                <div class="layer-switcher__panel liquid-glass" data-map-layer-panel>
+                    <button class="layer-switcher__option is-active" type="button" data-map-layer="light">
+                        <span class="layer-switcher__swatch layer-switcher__swatch--light"></span>
+                        <span>Светлая</span>
+                    </button>
+                    <button class="layer-switcher__option" type="button" data-map-layer="dark">
+                        <span class="layer-switcher__swatch layer-switcher__swatch--dark"></span>
+                        <span>Тёмная</span>
+                    </button>
+                    <button class="layer-switcher__option" type="button" data-map-layer="satellite">
+                        <span class="layer-switcher__swatch layer-switcher__swatch--satellite"></span>
+                        <span>Спутник</span>
+                    </button>
+                </div>
             </div>
+            <button class="map-control-button map-location-button" type="button" data-action="locate-me" aria-label="Определить мое местоположение">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m12 2 7 19-7-4-7 4 7-19Z"></path>
+                </svg>
+            </button>
         </div>
 
         <section id="search-panel" class="search-panel liquid-glass hidden" aria-label="Поиск парковок">
