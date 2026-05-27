@@ -654,6 +654,11 @@ body[data-map-layer="satellite"] .layer-switcher__option:hover {
     stroke-width: 2;
 }
 
+.map-location-button__dot {
+    fill: currentColor;
+    stroke: none;
+}
+
 body[data-map-layer="dark"] .map-location-button,
 body[data-map-layer="satellite"] .map-location-button {
     color: #101722;
@@ -2050,6 +2055,28 @@ body[data-map-layer="satellite"] .nav-button:not(.is-active):hover {
 .photo-lightbox__close {
     padding: 0;
     line-height: 1;
+}
+
+.spot-card__close,
+.panel-header .icon-button,
+.photo-preview button,
+.admin-photo-preview button,
+.photo-lightbox__close {
+    color: #69707c;
+    border-radius: 13px;
+}
+
+.spot-card__close:hover,
+.panel-header .icon-button:hover,
+.photo-preview button:hover,
+.admin-photo-preview button:hover,
+.photo-lightbox__close:hover {
+    color: #101722;
+    background: rgba(0, 184, 169, 0.15);
+    border-color: rgba(0, 184, 169, 0.36);
+    box-shadow:
+        0 10px 24px rgba(0, 184, 169, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.58);
 }
 
 .photo-lightbox {

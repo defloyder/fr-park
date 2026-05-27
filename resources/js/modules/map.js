@@ -55,9 +55,9 @@ const MAP_STYLE = {
             type: 'raster',
             source: 'basemap-light',
             paint: {
-                'raster-opacity': 0.96,
-                'raster-saturation': -0.12,
-                'raster-contrast': 0.04,
+                'raster-opacity': 1,
+                'raster-saturation': 0.08,
+                'raster-contrast': 0.14,
             },
         },
         {
@@ -68,10 +68,11 @@ const MAP_STYLE = {
                 visibility: 'none',
             },
             paint: {
-                'raster-opacity': 0.9,
-                'raster-brightness-min': 0.12,
-                'raster-brightness-max': 0.86,
-                'raster-contrast': -0.06,
+                'raster-opacity': 0.98,
+                'raster-brightness-min': 0.08,
+                'raster-brightness-max': 0.94,
+                'raster-saturation': 0.12,
+                'raster-contrast': 0.12,
             },
         },
         {
@@ -83,8 +84,8 @@ const MAP_STYLE = {
             },
             paint: {
                 'raster-opacity': 0.96,
-                'raster-saturation': -0.08,
-                'raster-contrast': -0.02,
+                'raster-saturation': 0.02,
+                'raster-contrast': 0.06,
             },
         },
     ],

@@ -49,13 +49,12 @@
 
         <button class="map-location-button liquid-glass" type="button" data-action="locate-me" aria-label="Определить мое местоположение">
             <svg viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="12" cy="12" r="3"></circle>
-                <path d="M12 2v3"></path>
-                <path d="M12 19v3"></path>
-                <path d="M2 12h3"></path>
-                <path d="M19 12h3"></path>
-                <path d="M5.6 5.6 7.8 7.8"></path>
-                <path d="M16.2 16.2 18.4 18.4"></path>
+                <circle cx="12" cy="12" r="6.5"></circle>
+                <circle class="map-location-button__dot" cx="12" cy="12" r="2.3"></circle>
+                <path d="M12 2.5v3"></path>
+                <path d="M12 18.5v3"></path>
+                <path d="M2.5 12h3"></path>
+                <path d="M18.5 12h3"></path>
             </svg>
         </button>
 
