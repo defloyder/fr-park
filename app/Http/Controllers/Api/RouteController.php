@@ -38,7 +38,7 @@ class RouteController extends Controller
                         $validated['to_latitude'].','.$validated['to_longitude'],
                     ]),
                     'mode' => 'driving',
-                    'traffic' => 'realtime',
+                    'traffic' => 'disabled',
                 ])
                 ->throw()
                 ->json();

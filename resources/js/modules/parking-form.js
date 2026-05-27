@@ -62,6 +62,7 @@ const state = {
     userLocation: null,
     navigationSpot: null,
     navigationRoute: null,
+    navigationWatchId: null,
 };
 
 export function initParkingUi() {
@@ -134,6 +135,8 @@ export function initParkingUi() {
             'route-yandex': () => openExternalRoute('yandex'),
             'route-2gis': () => openExternalRoute('2gis'),
             'route-in-app': buildInAppRoute,
+            'navigation-yandex': () => openNavigationExternalRoute('yandex'),
+            'navigation-2gis': () => openNavigationExternalRoute('2gis'),
             'start-navigation': startNavigation,
             'recenter-navigation': recenterNavigation,
             'stop-navigation': stopNavigationMode,
@@ -895,9 +898,11 @@ export function initParkingUi() {
             const location = await ensureUserLocation({ refresh: true, focus: false, fastFallback: false });
             assertRouteLocation(location, state.selectedSpot);
             const route = await buildRouteToSpot(location, state.selectedSpot);
-            const trafficNote = route.source === 'road'
-                ? 'Дорожный маршрут построен. Пробки внутри карты появятся после подключения traffic API.'
-                : 'Показал приблизительный маршрут, сервис дорог сейчас недоступен.';
+            const trafficNote = route.source === 'yandex-traffic'
+                ? 'Маршрут построен через Яндекс. Live-пробки отключены, чтобы API не отдавал 400.'
+                : route.source === 'road'
+                    ? 'Дорожный маршрут построен. Пробки внутри карты появятся после подключения traffic API.'
+                    : 'Показал приблизительный маршрут, сервис дорог сейчас недоступен.';
 
             if (summary) {
                 summary.innerHTML = `
@@ -923,6 +928,7 @@ export function initParkingUi() {
         startRouteNavigation(state.navigationRoute);
         document.body.classList.add('is-navigation-following');
         document.body.classList.remove('is-navigation-detached');
+        startNavigationLocationWatch();
         renderNavigationPanel();
     }
 
@@ -931,6 +937,13 @@ export function initParkingUi() {
 
         focusNavigationPosition(state.userLocation, state.navigationRoute);
         document.body.classList.remove('is-navigation-detached');
+    }
+
+    function openNavigationExternalRoute(provider) {
+        const spot = state.navigationSpot || state.selectedSpot;
+        if (!spot) return;
+
+        window.open(buildExternalRouteUrl(provider, spot), '_blank', 'noopener');
     }
 
     function assertRouteLocation(location, spot) {
@@ -969,11 +982,23 @@ export function initParkingUi() {
         if (!state.navigationSpot || !state.navigationRoute) return;
 
         if (document.body.classList.contains('is-navigation-following')) {
+            const remainingDistance = getRemainingRouteDistance();
+            const remainingDuration = getRemainingRouteDuration(remainingDistance);
             const guidance = document.createElement('section');
             guidance.className = 'navigation-guidance liquid-glass';
             guidance.innerHTML = `
-                <strong>${escapeHtml(getNavigationInstruction(state.navigationRoute))}</strong>
-                <span>${escapeHtml(getTrafficLabel(state.navigationRoute))}</span>
+                <div class="navigation-guidance__main">
+                    <strong>${escapeHtml(getNavigationInstruction(state.navigationRoute))}</strong>
+                    <span>${escapeHtml(getTrafficLabel(state.navigationRoute))}</span>
+                </div>
+                <div class="navigation-guidance__metrics">
+                    <b>${formatDuration(remainingDuration)}</b>
+                    <span>${formatDistance(remainingDistance)}</span>
+                </div>
+                <div class="navigation-guidance__actions">
+                    <button type="button" data-action="navigation-yandex">Яндекс</button>
+                    <button type="button" data-action="navigation-2gis">2ГИС</button>
+                </div>
             `;
             document.body.append(guidance);
 
@@ -982,7 +1007,7 @@ export function initParkingUi() {
             recenter.type = 'button';
             recenter.dataset.action = 'recenter-navigation';
             recenter.setAttribute('aria-label', 'Вернуться к текущему местоположению');
-            recenter.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 7 19-7-4-7 4 7-19Z"></path></svg>';
+            recenter.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 7 19-7-4-7 4 7-19Z"></path></svg><span>К геолокации</span>';
             document.body.append(recenter);
         }
 
@@ -1009,12 +1034,49 @@ export function initParkingUi() {
         document.body.classList.remove('is-navigation-mode');
         document.body.classList.remove('is-navigation-following');
         document.body.classList.remove('is-navigation-detached');
+        stopNavigationLocationWatch();
         document.querySelector('.navigation-panel')?.remove();
         document.querySelector('.navigation-guidance')?.remove();
         document.querySelector('.navigation-recenter')?.remove();
         state.navigationSpot = null;
         state.navigationRoute = null;
         clearActiveRoute();
+    }
+
+    function startNavigationLocationWatch() {
+        stopNavigationLocationWatch();
+
+        if (!navigator.geolocation) return;
+
+        state.navigationWatchId = navigator.geolocation.watchPosition(
+            ({ coords }) => {
+                state.userLocation = {
+                    latitude: coords.latitude,
+                    longitude: coords.longitude,
+                    accuracy: coords.accuracy,
+                    updatedAt: Date.now(),
+                };
+
+                focusUserLocation(state.userLocation, { focus: false });
+                if (!document.body.classList.contains('is-navigation-detached')) {
+                    focusNavigationPosition(state.userLocation, state.navigationRoute);
+                }
+                renderNavigationPanel();
+            },
+            () => {},
+            {
+                enableHighAccuracy: true,
+                maximumAge: 5000,
+                timeout: 10000,
+            },
+        );
+    }
+
+    function stopNavigationLocationWatch() {
+        if (state.navigationWatchId === null || !navigator.geolocation) return;
+
+        navigator.geolocation.clearWatch(state.navigationWatchId);
+        state.navigationWatchId = null;
     }
 
     function ensureUserLocation({ refresh = false, focus = false, fastFallback = false } = {}) {
@@ -1567,16 +1629,23 @@ function getNavigationInstruction(route) {
     return `Двигайтесь прямо ${formatDistance(getSegmentDistance(firstSegment))}`;
 }
 
+function getRemainingRouteDistance() {
+    return Number(state.navigationRoute?.distanceMeters) || getDistanceMeters(
+        state.userLocation,
+        state.navigationSpot,
+    );
+}
+
+function getRemainingRouteDuration(distanceMeters) {
+    return Number(state.navigationRoute?.durationSeconds) || distanceMeters / 9;
+}
+
 function getTrafficLabel(route) {
-    if (route.source !== 'yandex-traffic') {
-        return 'Пробки недоступны: проверьте ключ Яндекса на сервере';
+    if (route.source === 'yandex-traffic') {
+        return 'Маршрут Яндекса. Live-пробки отключены на сервере';
     }
 
-    const traffic = route.segments?.some((segment) => ['jam', 'heavy'].includes(segment.traffic))
-        ? 'На маршруте есть плотные участки'
-        : 'Движение по маршруту свободное';
-
-    return traffic;
+    return 'Пробки недоступны: проверьте ключ Яндекса на сервере';
 }
 
 function getSegmentDistance(segment) {

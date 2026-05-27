@@ -756,11 +756,40 @@ export function startRouteNavigation(route) {
 }
 
 export function focusNavigationPosition(userLocation, route = null) {
-    const coordinates = route?.geometry?.coordinates?.length
-        ? route.geometry.coordinates
-        : [[Number(userLocation.longitude), Number(userLocation.latitude)]];
+    if (!map || !userLocation) {
+        return;
+    }
 
-    focusRouteStart(coordinates);
+    const current = [Number(userLocation.longitude), Number(userLocation.latitude)];
+    const routeCoordinates = route?.geometry?.coordinates ?? [];
+    const nextIndex = routeCoordinates.length > 1
+        ? Math.min(findClosestRouteCoordinateIndex(current, routeCoordinates) + 1, routeCoordinates.length - 1)
+        : -1;
+    const next = routeCoordinates[nextIndex];
+
+    map.easeTo({
+        center: current,
+        zoom: 16.6,
+        pitch: 52,
+        bearing: next ? getBearing(current, next) : map.getBearing(),
+        duration: 420,
+    });
+}
+
+function findClosestRouteCoordinateIndex(current, coordinates) {
+    let bestIndex = 0;
+    let bestDistance = Number.POSITIVE_INFINITY;
+
+    coordinates.forEach((coordinate, index) => {
+        const distance = ((coordinate[0] - current[0]) ** 2) + ((coordinate[1] - current[1]) ** 2);
+
+        if (distance < bestDistance) {
+            bestDistance = distance;
+            bestIndex = index;
+        }
+    });
+
+    return bestIndex;
 }
 
 async function fetchTrafficRoute(start, finish, directDistanceMeters) {
