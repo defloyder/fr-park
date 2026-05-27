@@ -988,15 +988,16 @@ export function initParkingUi() {
 
         const panel = document.createElement('section');
         panel.className = 'navigation-panel liquid-glass';
+        const isFollowing = document.body.classList.contains('is-navigation-following');
         panel.innerHTML = `
             <div class="navigation-panel__summary">
                 <strong>${formatDuration(state.navigationRoute.durationSeconds)}</strong>
                 <span>${formatDistance(state.navigationRoute.distanceMeters)}</span>
-                <small>${escapeHtml(state.navigationSpot.title)}</small>
+                <small>${escapeHtml(isFollowing ? getTrafficLabel(state.navigationRoute) : state.navigationSpot.title)}</small>
             </div>
             <button class="navigation-panel__drive" type="button" data-action="start-navigation">
-                <span>Поехать</span>
-                <small>к началу маршрута</small>
+                <span>${isFollowing ? 'Веду' : 'Поехать'}</span>
+                <small>${isFollowing ? 'маршрут активен' : 'к началу маршрута'}</small>
             </button>
             <button class="navigation-panel__stop" type="button" data-action="stop-navigation" aria-label="Завершить маршрут">×</button>
         `;

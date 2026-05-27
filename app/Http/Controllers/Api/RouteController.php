@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class RouteController extends Controller
@@ -33,8 +34,8 @@ class RouteController extends Controller
                 ->get('https://api.routing.yandex.net/v2/route', [
                     'apikey' => $apiKey,
                     'waypoints' => implode('|', [
-                        $validated['from_longitude'].','.$validated['from_latitude'],
-                        $validated['to_longitude'].','.$validated['to_latitude'],
+                        $validated['from_latitude'].','.$validated['from_longitude'],
+                        $validated['to_latitude'].','.$validated['to_longitude'],
                     ]),
                     'mode' => 'driving',
                     'traffic' => 'realtime',
@@ -43,6 +44,10 @@ class RouteController extends Controller
                 ->json();
 
             $route = data_get($response, 'route') ?: data_get($response, 'routes.0');
+            Log::debug('Yandex Router API response received', [
+                'has_route' => is_array($route),
+                'keys' => array_keys(is_array($response) ? $response : []),
+            ]);
 
             if (! is_array($route)) {
                 return response()->json([
@@ -51,9 +56,14 @@ class RouteController extends Controller
             }
 
             return response()->json($this->normalizeRoute($route));
-        } catch (Throwable) {
+        } catch (Throwable $exception) {
+            Log::warning('Yandex Router API request failed', [
+                'message' => $exception->getMessage(),
+            ]);
+
             return response()->json([
                 'message' => 'Failed to build Yandex traffic route.',
+                'detail' => app()->hasDebugModeEnabled() ? $exception->getMessage() : null,
             ], 502);
         }
     }

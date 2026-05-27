@@ -1425,6 +1425,10 @@ body[data-map-layer="satellite"] .route-picker__summary small {
     opacity: 0.72;
 }
 
+body.is-navigation-following .navigation-panel__drive {
+    background: linear-gradient(135deg, #0F172A, #21A8FF);
+}
+
 .navigation-panel__stop {
     display: grid;
     width: 44px;
