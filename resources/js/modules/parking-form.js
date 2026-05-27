@@ -1784,10 +1784,10 @@ function getTrafficLabel(route) {
     }
 
     if (route.source === 'road') {
-        return 'Маршрут построен без данных о пробках';
+        return 'Нет ответа TomTom: проверьте ключ traffic routing';
     }
 
-    return 'Приблизительный маршрут без данных о пробках';
+    return 'Нет данных о пробках для этого маршрута';
 }
 
 function getGpsSpeedKmh(coords) {
@@ -1869,10 +1869,10 @@ function getRouteBuildNote(route) {
     }
 
     if (route.source === 'road') {
-        return 'Дорожный маршрут построен без пробок Яндекса.';
+        return 'Построил резервный маршрут OSRM: TomTom traffic routing не ответил.';
     }
 
-    return 'Показал приблизительный маршрут, сервис дорог сейчас недоступен.';
+    return 'Показал приблизительный маршрут: traffic routing сейчас недоступен.';
 }
 
 function getSegmentDistance(segment) {

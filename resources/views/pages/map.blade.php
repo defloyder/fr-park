@@ -40,14 +40,8 @@
             <button class="map-control-button" type="button" data-map-control="zoom-out" aria-label="Отдалить">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path></svg>
             </button>
-            <button class="map-control-button" type="button" data-map-control="reset-bearing" aria-label="Север сверху">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 5 18-5-4-5 4 5-18Z"></path></svg>
-            </button>
             <button class="map-control-button map-fullscreen-button" type="button" data-action="toggle-fullscreen" aria-label="На весь экран">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H4a1 1 0 0 0-1 1v4"></path><path d="M16 3h4a1 1 0 0 1 1 1v4"></path><path d="M21 16v4a1 1 0 0 1-1 1h-4"></path><path d="M8 21H4a1 1 0 0 1-1-1v-4"></path></svg>
-            </button>
-            <button class="map-control-button map-traffic-button" type="button" data-traffic-toggle aria-label="Включить пробки" aria-pressed="false">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="3" width="8" height="18" rx="4"></rect><circle cx="12" cy="8" r="1.4"></circle><circle cx="12" cy="12" r="1.4"></circle><circle cx="12" cy="16" r="1.4"></circle></svg>
             </button>
             <div class="layer-switcher" data-layer-switcher>
                 <button class="map-control-button layer-switcher__trigger" type="button" data-map-layer-toggle aria-label="Переключить слой карты" aria-expanded="false">
@@ -68,13 +62,19 @@
                     </button>
                 </div>
             </div>
+            <button class="map-control-button" type="button" data-action="open-profile" aria-label="Открыть профиль">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg>
+            </button>
+        </div>
+
+        <div class="map-control-stack map-control-stack--secondary liquid-glass" aria-label="Пробки и геолокация">
+            <button class="map-control-button map-traffic-button" type="button" data-traffic-toggle aria-label="Включить пробки" aria-pressed="false">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 20 10 4"></path><path d="M14 20 17 4"></path><path d="M4 8h4"></path><path d="M16 8h4"></path><path d="M3 16h4"></path><path d="M15 16h6"></path></svg>
+            </button>
             <button class="map-control-button map-location-button" type="button" data-action="locate-me" aria-label="Определить мое местоположение">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="m12 2 7 19-7-4-7 4 7-19Z"></path>
                 </svg>
-            </button>
-            <button class="map-control-button" type="button" data-action="open-profile" aria-label="Открыть профиль">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg>
             </button>
         </div>
 

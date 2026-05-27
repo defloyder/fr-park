@@ -89,19 +89,20 @@ class RouteController extends Controller
             $validated['from_latitude'].','.$validated['from_longitude'],
             $validated['to_latitude'].','.$validated['to_longitude'],
         ]);
+        $url = "https://api.tomtom.com/routing/1/calculateRoute/{$locations}/json?".http_build_query([
+            'key' => $apiKey,
+            'travelMode' => 'car',
+            'traffic' => 'true',
+            'routeType' => 'fastest',
+            'routeRepresentation' => 'polyline',
+            'computeTravelTimeFor' => 'all',
+            'instructionsType' => 'text',
+            'language' => 'ru-RU',
+        ]).'&sectionType=traffic&sectionType=speedLimit';
+
         $payload = Http::timeout(14)
             ->acceptJson()
-            ->get("https://api.tomtom.com/routing/1/calculateRoute/{$locations}/json", [
-                'key' => $apiKey,
-                'travelMode' => 'car',
-                'traffic' => 'true',
-                'routeType' => 'fastest',
-                'routeRepresentation' => 'polyline',
-                'computeTravelTimeFor' => 'all',
-                'instructionsType' => 'text',
-                'language' => 'ru-RU',
-                'sectionType' => 'traffic,speedLimit',
-            ])
+            ->get($url)
             ->throw()
             ->json();
 

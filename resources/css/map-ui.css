@@ -484,6 +484,10 @@ h2 {
         inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 
+.map-control-stack--secondary {
+    top: 342px;
+}
+
 .layer-switcher {
     position: relative;
 }
@@ -3383,6 +3387,88 @@ body[data-map-layer="satellite"] .export-check.is-checked {
         gap: 6px;
         padding: 6px;
         border-radius: 18px;
+    }
+
+    .map-control-stack--secondary {
+        top: calc(324px + env(safe-area-inset-top));
+    }
+
+    .spot-list {
+        top: calc(88px + env(safe-area-inset-top));
+        right: 8px;
+        bottom: calc(86px + env(safe-area-inset-bottom));
+        left: 8px;
+        width: auto;
+        gap: 10px;
+        padding: 12px;
+        overflow: hidden;
+    }
+
+    .spot-list .panel-header {
+        min-height: 46px;
+    }
+
+    .spot-list .panel-header h2 {
+        font-size: 0.98rem;
+    }
+
+    .spot-list-search {
+        margin-bottom: 0;
+    }
+
+    .spot-list-search input {
+        min-height: 42px;
+    }
+
+    .export-toolbar {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+    }
+
+    .export-toolbar .ghost-button {
+        min-height: 42px;
+        padding: 7px;
+        border-radius: 12px;
+    }
+
+    .export-toolbar .ghost-button svg {
+        width: 15px;
+        height: 15px;
+    }
+
+    .export-toolbar .ghost-button span {
+        font-size: 0.62rem;
+    }
+
+    .spot-list__items {
+        min-height: 0;
+        overflow-y: auto;
+        padding-right: 2px;
+    }
+
+    .spot-list__item {
+        min-height: 54px;
+        padding: 9px 10px;
+        border-radius: 14px;
+    }
+
+    .spot-list__content {
+        gap: 8px;
+    }
+
+    .spot-list__content strong {
+        font-size: 0.82rem;
+    }
+
+    .spot-list__content small {
+        font-size: 0.68rem;
+    }
+
+    .spot-list__status {
+        min-height: 22px;
+        padding: 3px 7px;
+        font-size: 0.6rem;
     }
 
     .map-control-button {
