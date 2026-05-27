@@ -25,7 +25,8 @@ class RouteController extends Controller
         if (! is_string($apiKey) || trim($apiKey) === '') {
             return response()->json([
                 'message' => 'Yandex Router API key is not configured.',
-            ], 503);
+                'source' => 'yandex-unavailable',
+            ]);
         }
 
         try {
@@ -38,7 +39,6 @@ class RouteController extends Controller
                         $validated['to_latitude'].','.$validated['to_longitude'],
                     ]),
                     'mode' => 'driving',
-                    'traffic' => 'disabled',
                 ])
                 ->throw()
                 ->json();
@@ -52,7 +52,8 @@ class RouteController extends Controller
             if (! is_array($route)) {
                 return response()->json([
                     'message' => 'Yandex Router API returned an empty route.',
-                ], 502);
+                    'source' => 'yandex-unavailable',
+                ]);
             }
 
             return response()->json($this->normalizeRoute($route));
@@ -64,7 +65,8 @@ class RouteController extends Controller
             return response()->json([
                 'message' => 'Failed to build Yandex traffic route.',
                 'detail' => app()->hasDebugModeEnabled() ? $exception->getMessage() : null,
-            ], 502);
+                'source' => 'yandex-unavailable',
+            ]);
         }
     }
 

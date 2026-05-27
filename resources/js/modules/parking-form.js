@@ -899,9 +899,9 @@ export function initParkingUi() {
             assertRouteLocation(location, state.selectedSpot);
             const route = await buildRouteToSpot(location, state.selectedSpot);
             const trafficNote = route.source === 'yandex-traffic'
-                ? 'Маршрут построен через Яндекс. Live-пробки отключены, чтобы API не отдавал 400.'
+                ? 'Маршрут построен через Яндекс с учетом дорожной ситуации.'
                 : route.source === 'road'
-                    ? 'Дорожный маршрут построен. Пробки внутри карты появятся после подключения traffic API.'
+                    ? 'Дорожный маршрут построен без пробок Яндекса.'
                     : 'Показал приблизительный маршрут, сервис дорог сейчас недоступен.';
 
             if (summary) {
@@ -1642,10 +1642,14 @@ function getRemainingRouteDuration(distanceMeters) {
 
 function getTrafficLabel(route) {
     if (route.source === 'yandex-traffic') {
-        return 'Маршрут Яндекса. Live-пробки отключены на сервере';
+        return 'Маршрут Яндекса с учетом дорожной ситуации';
     }
 
-    return 'Пробки недоступны: проверьте ключ Яндекса на сервере';
+    if (route.source === 'road') {
+        return 'Маршрут построен без данных о пробках';
+    }
+
+    return 'Приблизительный маршрут без данных о пробках';
 }
 
 function getSegmentDistance(segment) {
