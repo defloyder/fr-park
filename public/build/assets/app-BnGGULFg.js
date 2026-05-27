@@ -869,17 +869,19 @@ in vec3 view_direction;uniform vec3 u_sun_pos;uniform vec3 u_globe_position;unif
             </div>
             <div class="route-picker__grid">
                 <button class="route-option route-option--yandex" type="button" data-action="route-yandex">
-                    <span>Я</span>
+                    <span class="route-option__logo route-option__logo--yandex" aria-hidden="true">Я</span>
                     <strong>Яндекс Карты</strong>
                     <small>с учетом их пробок</small>
                 </button>
                 <button class="route-option route-option--2gis" type="button" data-action="route-2gis">
-                    <span>2</span>
+                    <span class="route-option__logo route-option__logo--2gis" aria-hidden="true">2</span>
                     <strong>2ГИС</strong>
                     <small>открыть навигацию</small>
                 </button>
                 <button class="route-option route-option--app" type="button" data-action="route-in-app">
-                    <span>⌁</span>
+                    <span class="route-option__logo route-option__logo--auralith" aria-hidden="true">
+                        <svg viewBox="0 0 32 32"><path d="M6 25 15 5l11 22h-7l-4-8-3 6H6Z"></path><circle cx="24" cy="23" r="4"></circle></svg>
+                    </span>
                     <strong>Auralith</strong>
                     <small>показать на карте</small>
                 </button>

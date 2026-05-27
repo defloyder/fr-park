@@ -1262,15 +1262,39 @@ body[data-map-layer="satellite"] .bottom-sheet,
     line-height: 1.2;
 }
 
-.route-option--yandex span {
+.route-option__logo {
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 950;
+}
+
+.route-option__logo--yandex {
     background: #fc3f1d;
 }
 
-.route-option--2gis span {
+.route-option__logo--2gis {
     background: #19aa1e;
 }
 
-.route-option--app span {
+.route-option__logo--auralith {
+    background: linear-gradient(135deg, #8B5CF6, #21A8FF 52%, #75F7AF);
+}
+
+.route-option__logo svg {
+    width: 23px;
+    height: 23px;
+    fill: currentColor;
+}
+
+.route-option--yandex > span {
+    background: #fc3f1d;
+}
+
+.route-option--2gis > span {
+    background: #19aa1e;
+}
+
+.route-option--app > span {
     background: linear-gradient(135deg, #21A8FF, #8B5CF6);
 }
 
@@ -1677,7 +1701,7 @@ body.is-navigation-mode .map-canvas::after {
         right: 8px;
         bottom: calc(8px + env(safe-area-inset-bottom));
         left: 8px;
-        grid-template-columns: minmax(0, 1fr) minmax(118px, 148px) 42px;
+        grid-template-columns: minmax(0, 1fr) minmax(118px, 148px);
         gap: 8px;
         padding: 8px;
         border-radius: 20px;
@@ -1693,12 +1717,8 @@ body.is-navigation-mode .map-canvas::after {
     }
 
     .navigation-panel__drive small {
-        display: none;
-    }
-
-    .navigation-panel__stop {
-        width: 42px;
-        height: 42px;
+        display: block;
+        font-size: 0.58rem;
     }
 
     .navigation-guidance {
