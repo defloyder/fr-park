@@ -589,7 +589,7 @@ export function focusUserLocation({ latitude, longitude, accuracy = 0 }, { focus
     }
 }
 
-export async function buildRouteToSpot(userLocation, spot) {
+export async function buildRouteToSpot(userLocation, spot, { camera = 'overview' } = {}) {
     if (!map || !userLocation || !spot) {
         throw new Error('Route cannot be built without map, user location and destination.');
     }
@@ -603,7 +603,14 @@ export async function buildRouteToSpot(userLocation, spot) {
         longitude: Number(spot.longitude),
     };
 
-    const route = await fetchDrivingRoute(start, finish).catch(() => buildFallbackRoute(start, finish));
+    const directDistanceMeters = getDistanceMeters(start, finish);
+    const route = await fetchDrivingRoute(start, finish, directDistanceMeters).catch((error) => {
+        if (directDistanceMeters > 50000) {
+            throw error;
+        }
+
+        return buildFallbackRoute(start, finish);
+    });
     const source = map.getSource(ROUTE_SOURCE_ID);
 
     source?.setData({
@@ -615,13 +622,17 @@ export async function buildRouteToSpot(userLocation, spot) {
         }],
     });
 
-    const bounds = new maplibregl.LngLatBounds();
-    route.geometry.coordinates.forEach((coordinate) => bounds.extend(coordinate));
-    map.fitBounds(bounds, {
-        padding: getRoutePadding(),
-        duration: 320,
-        maxZoom: 16.5,
-    });
+    if (camera === 'follow') {
+        focusRouteStart(route.geometry.coordinates);
+    } else {
+        const bounds = new maplibregl.LngLatBounds();
+        route.geometry.coordinates.forEach((coordinate) => bounds.extend(coordinate));
+        map.fitBounds(bounds, {
+            padding: getRoutePadding(),
+            duration: 320,
+            maxZoom: 16.5,
+        });
+    }
 
     return route;
 }
@@ -630,13 +641,14 @@ export function clearActiveRoute() {
     map?.getSource(ROUTE_SOURCE_ID)?.setData(buildFeatureCollection([]));
 }
 
-async function fetchDrivingRoute(start, finish) {
+async function fetchDrivingRoute(start, finish, directDistanceMeters) {
     const path = `${start.longitude},${start.latitude};${finish.longitude},${finish.latitude}?overview=full&geometries=geojson&steps=false`;
     const urls = [
         `https://router.project-osrm.org/route/v1/driving/${path}`,
         `https://routing.openstreetmap.de/routed-car/route/v1/driving/${path}`,
     ];
-    const response = await Promise.any(urls.map((url) => fetchWithTimeout(url, 4200)));
+    const timeout = directDistanceMeters > 100000 ? 14000 : 8000;
+    const response = await Promise.any(urls.map((url) => fetchWithTimeout(url, timeout)));
 
     if (!response.ok) {
         throw new Error('Route service failed.');
@@ -655,6 +667,33 @@ async function fetchDrivingRoute(start, finish) {
         durationSeconds: route.duration,
         source: 'road',
     };
+}
+
+function focusRouteStart(coordinates) {
+    const start = coordinates?.[0];
+    const next = coordinates?.[Math.min(8, Math.max(1, (coordinates?.length ?? 1) - 1))];
+
+    if (!start) return;
+
+    map.easeTo({
+        center: start,
+        zoom: 16.4,
+        pitch: 52,
+        bearing: next ? getBearing(start, next) : map.getBearing(),
+        duration: 420,
+    });
+}
+
+function getBearing(start, finish) {
+    const lon1 = toRadians(start[0]);
+    const lat1 = toRadians(start[1]);
+    const lon2 = toRadians(finish[0]);
+    const lat2 = toRadians(finish[1]);
+    const y = Math.sin(lon2 - lon1) * Math.cos(lat2);
+    const x = Math.cos(lat1) * Math.sin(lat2)
+        - Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1);
+
+    return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
 }
 
 async function fetchWithTimeout(url, timeout) {

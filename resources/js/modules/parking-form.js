@@ -887,7 +887,8 @@ export function initParkingUi() {
         try {
             button?.setAttribute('disabled', 'disabled');
             if (summary) summary.textContent = 'Строю маршрут от вашего местоположения...';
-            const location = await ensureUserLocation({ refresh: true, focus: false, fastFallback: true });
+            const location = await ensureUserLocation({ refresh: true, focus: false, fastFallback: false });
+            assertRouteLocation(location, state.selectedSpot);
             const route = await buildRouteToSpot(location, state.selectedSpot);
             const trafficNote = route.source === 'road'
                 ? 'Дорожный маршрут построен. Пробки внутри карты появятся после подключения traffic API.'
@@ -917,13 +918,26 @@ export function initParkingUi() {
         const button = document.querySelector('[data-action="refresh-navigation"]');
         try {
             button?.setAttribute('disabled', 'disabled');
-            const location = await ensureUserLocation({ refresh: true, focus: false, fastFallback: true });
-            const route = await buildRouteToSpot(location, state.navigationSpot);
+            const location = await ensureUserLocation({ refresh: true, focus: false, fastFallback: false });
+            assertRouteLocation(location, state.navigationSpot);
+            const route = await buildRouteToSpot(location, state.navigationSpot, { camera: 'follow' });
             enterNavigationMode(state.navigationSpot, route);
         } catch {
             showToast('Не удалось обновить маршрут от текущей точки.', true);
         } finally {
             button?.removeAttribute('disabled');
+        }
+    }
+
+    function assertRouteLocation(location, spot) {
+        const accuracy = Number(location?.accuracy) || 0;
+        const distance = getDistanceMeters(
+            { latitude: Number(location.latitude), longitude: Number(location.longitude) },
+            { latitude: Number(spot.latitude), longitude: Number(spot.longitude) },
+        );
+
+        if (accuracy > 25000 && distance > 100000) {
+            throw new Error('Location is too inaccurate for navigation.');
         }
     }
 
