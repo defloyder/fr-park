@@ -313,8 +313,14 @@ function bindMapControlButtons() {
         button.addEventListener('click', () => {
             const control = button.dataset.mapControl;
 
-            if (control === 'zoom-in') map?.zoomIn({ duration: 180 });
-            if (control === 'zoom-out') map?.zoomOut({ duration: 180 });
+            if (control === 'zoom-in') {
+                dispatchNavigationZoomChange();
+                map?.zoomIn({ duration: 180 });
+            }
+            if (control === 'zoom-out') {
+                dispatchNavigationZoomChange();
+                map?.zoomOut({ duration: 180 });
+            }
             if (control === 'reset-bearing') map?.easeTo({ bearing: 0, pitch: 0, duration: 260 });
         });
     });
@@ -433,6 +439,11 @@ function bindPerformanceMode() {
     map.on('moveend', stop);
     map.on('zoomend', stop);
     map.on('click', stop);
+    map.on('zoomstart', (event) => {
+        if (event.originalEvent) {
+            dispatchNavigationZoomChange();
+        }
+    });
     map.on('dragstart', () => {
         if (document.body.classList.contains('is-navigation-following')) {
             window.dispatchEvent(new CustomEvent('navigation:manual-map-move'));
@@ -443,6 +454,12 @@ function bindPerformanceMode() {
             window.dispatchEvent(new CustomEvent('navigation:manual-map-move'));
         }
     });
+}
+
+function dispatchNavigationZoomChange() {
+    if (document.body.classList.contains('is-navigation-following')) {
+        window.dispatchEvent(new CustomEvent('navigation:manual-map-zoom'));
+    }
 }
 
 function setTrafficInteractionMode(isInteracting) {
@@ -989,7 +1006,7 @@ export function startRouteNavigation(route) {
     focusRouteStart(route.geometry.coordinates);
 }
 
-export function focusNavigationPosition(userLocation, route = null) {
+export function focusNavigationPosition(userLocation, route = null, { preserveZoom = false } = {}) {
     if (!map || !userLocation) {
         return;
     }
@@ -1003,7 +1020,7 @@ export function focusNavigationPosition(userLocation, route = null) {
 
     map.easeTo({
         center: current,
-        zoom: 16.6,
+        zoom: preserveZoom ? map.getZoom() : 16.6,
         pitch: 52,
         bearing: next ? getBearing(current, next) : map.getBearing(),
         duration: 420,

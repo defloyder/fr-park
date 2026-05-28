@@ -70,6 +70,7 @@ const state = {
     navigationRouteRefreshTimer: null,
     navigationRouteRefreshInFlight: false,
     navigationLastRerouteAt: 0,
+    navigationPreserveZoom: false,
 };
 
 export function initParkingUi() {
@@ -160,8 +161,17 @@ export function initParkingUi() {
     });
 
     window.addEventListener('navigation:manual-map-move', () => {
-        if (!document.body.classList.contains('is-navigation-mode')) {
+        if (document.body.classList.contains('is-navigation-mode')) {
             document.body.classList.add('is-navigation-detached');
+            return;
+        }
+
+        document.body.classList.add('is-navigation-detached');
+    });
+
+    window.addEventListener('navigation:manual-map-zoom', () => {
+        if (document.body.classList.contains('is-navigation-mode')) {
+            state.navigationPreserveZoom = true;
         }
     });
 
@@ -824,6 +834,7 @@ export function initParkingUi() {
 
     function locateMe() {
         if (document.body.classList.contains('is-navigation-mode') && state.userLocation && state.navigationRoute) {
+            state.navigationPreserveZoom = false;
             document.body.classList.remove('is-navigation-detached');
             focusNavigationPosition(state.userLocation, state.navigationRoute);
             updateNavigationMetrics();
@@ -972,6 +983,7 @@ export function initParkingUi() {
         startRouteNavigation(state.navigationRoute);
         document.body.classList.add('is-navigation-following');
         document.body.classList.remove('is-navigation-detached');
+        state.navigationPreserveZoom = false;
         startNavigationLocationWatch();
         renderNavigationPanel();
         startNavigationRouteRefreshTimer();
@@ -980,6 +992,7 @@ export function initParkingUi() {
     function recenterNavigation() {
         if (!state.userLocation || !state.navigationRoute) return;
 
+        state.navigationPreserveZoom = false;
         focusNavigationPosition(state.userLocation, state.navigationRoute);
         document.body.classList.remove('is-navigation-detached');
     }
@@ -1011,6 +1024,7 @@ export function initParkingUi() {
         document.body.classList.add('is-navigation-mode');
         document.body.classList.add('is-navigation-following');
         document.body.classList.remove('is-navigation-detached');
+        state.navigationPreserveZoom = false;
         setActiveNav('show-map');
         startRouteNavigation(route);
         startNavigationLocationWatch();
@@ -1143,6 +1157,7 @@ export function initParkingUi() {
         state.navigationRoute = null;
         state.navigationRouteRefreshInFlight = false;
         state.navigationLastRerouteAt = 0;
+        state.navigationPreserveZoom = false;
         stopNavigationMetricsTimer();
         clearActiveRoute();
     }
@@ -1166,8 +1181,9 @@ export function initParkingUi() {
 
                 focusUserLocation(state.userLocation, { focus: false });
                 updateActiveRouteProgress(state.userLocation, state.navigationRoute);
-                document.body.classList.remove('is-navigation-detached');
-                focusNavigationPosition(state.userLocation, state.navigationRoute);
+                if (!document.body.classList.contains('is-navigation-detached')) {
+                    focusNavigationPosition(state.userLocation, state.navigationRoute, { preserveZoom: state.navigationPreserveZoom });
+                }
                 maybeRefreshNavigationRouteFromGps();
                 updateNavigationMetrics();
             },
@@ -1209,7 +1225,9 @@ export function initParkingUi() {
             state.speedLimitKmh = estimateSpeedLimitKmh(route, state.userLocation);
             state.navigationLastRerouteAt = Date.now();
             updateActiveRouteProgress(state.userLocation, route);
-            focusNavigationPosition(state.userLocation, route);
+            if (!document.body.classList.contains('is-navigation-detached')) {
+                focusNavigationPosition(state.userLocation, route, { preserveZoom: state.navigationPreserveZoom });
+            }
             updateNavigationMetrics();
         } catch {
             // Keep the current route if a background traffic refresh fails.
@@ -1801,7 +1819,10 @@ function formatNavigationInstructionText(value) {
     text = text
         .replace(/\bДержитесь\s+левой\s+стороны\b/giu, 'Держитесь левее')
         .replace(/\bДержитесь\s+правой\s+стороны\b/giu, 'Держитесь правее')
+        .replace(/\b(на|в)\s+([А-ЯЁа-яё-]+)ая\s+улица\b/giu, 'на $2ую улицу')
+        .replace(/\b(на|в)\s+([А-ЯЁа-яё-]+)яя\s+улица\b/giu, 'на $2юю улицу')
         .replace(/\bв\s+([^,.]+?)\s+улица\b/giu, 'на улице $1')
+        .replace(/\bна\s+([^,.]+?)\s+улица\b/giu, 'на улицу $1')
         .replace(/\bв\s+([^,.]+?)\s+проспект\b/giu, 'на проспекте $1')
         .replace(/\bв\s+([^,.]+?)\s+шоссе\b/giu, 'на $1 шоссе')
         .replace(/\bв\s+([^,.]+?)\s+переулок\b/giu, 'в переулке $1')
