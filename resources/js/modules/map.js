@@ -480,7 +480,8 @@ function addParkingLayers() {
             'icon-anchor': 'bottom',
             'icon-size': 1.22,
             'icon-rotate': ['get', 'heading'],
-            'icon-rotation-alignment': 'map',
+            'icon-pitch-alignment': 'viewport',
+            'icon-rotation-alignment': 'viewport',
             'icon-allow-overlap': true,
             'icon-ignore-placement': true,
         },
@@ -514,6 +515,8 @@ function addPendingSourceAndLayer() {
             'icon-image': 'parking-marker-new',
             'icon-anchor': 'bottom',
             'icon-size': 1,
+            'icon-pitch-alignment': 'viewport',
+            'icon-rotation-alignment': 'viewport',
             'icon-allow-overlap': true,
             'icon-ignore-placement': true,
         },
@@ -841,7 +844,7 @@ export async function buildRouteToSpot(userLocation, spot, { camera = 'overview'
 
     if (camera === 'follow') {
         focusRouteStart(route.geometry.coordinates);
-    } else {
+    } else if (camera !== 'none') {
         const bounds = new maplibregl.LngLatBounds();
         route.geometry.coordinates.forEach((coordinate) => bounds.extend(coordinate));
         map.fitBounds(bounds, {

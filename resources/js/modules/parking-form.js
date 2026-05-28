@@ -67,6 +67,7 @@ const state = {
     speedLimitKmh: 60,
     listQuery: '',
     navigationMetricsTimer: null,
+    navigationRouteRefreshTimer: null,
 };
 
 export function initParkingUi() {
@@ -157,7 +158,9 @@ export function initParkingUi() {
     });
 
     window.addEventListener('navigation:manual-map-move', () => {
-        document.body.classList.add('is-navigation-detached');
+        if (!document.body.classList.contains('is-navigation-mode')) {
+            document.body.classList.add('is-navigation-detached');
+        }
     });
 
     document.addEventListener('click', (event) => {
@@ -962,6 +965,7 @@ export function initParkingUi() {
         document.body.classList.remove('is-navigation-detached');
         startNavigationLocationWatch();
         renderNavigationPanel();
+        startNavigationRouteRefreshTimer();
     }
 
     function recenterNavigation() {
@@ -1002,6 +1006,7 @@ export function initParkingUi() {
         startRouteNavigation(route);
         startNavigationLocationWatch();
         renderNavigationPanel();
+        startNavigationRouteRefreshTimer();
     }
 
     function renderNavigationPanel() {
@@ -1119,6 +1124,7 @@ export function initParkingUi() {
         document.body.classList.remove('is-navigation-following');
         document.body.classList.remove('is-navigation-detached');
         stopNavigationLocationWatch();
+        stopNavigationRouteRefreshTimer();
         document.querySelector('.navigation-panel')?.remove();
         document.querySelector('.navigation-guidance')?.remove();
         document.querySelector('.navigation-recenter')?.remove();
@@ -1147,9 +1153,8 @@ export function initParkingUi() {
 
                 focusUserLocation(state.userLocation, { focus: false });
                 updateActiveRouteProgress(state.userLocation, state.navigationRoute);
-                if (!document.body.classList.contains('is-navigation-detached')) {
-                    focusNavigationPosition(state.userLocation, state.navigationRoute);
-                }
+                document.body.classList.remove('is-navigation-detached');
+                focusNavigationPosition(state.userLocation, state.navigationRoute);
                 updateNavigationMetrics();
             },
             () => {},
@@ -1166,6 +1171,31 @@ export function initParkingUi() {
 
         navigator.geolocation.clearWatch(state.navigationWatchId);
         state.navigationWatchId = null;
+    }
+
+    function startNavigationRouteRefreshTimer() {
+        if (state.navigationRouteRefreshTimer) return;
+
+        state.navigationRouteRefreshTimer = window.setInterval(refreshNavigationRoute, 90000);
+    }
+
+    function stopNavigationRouteRefreshTimer() {
+        window.clearInterval(state.navigationRouteRefreshTimer);
+        state.navigationRouteRefreshTimer = null;
+    }
+
+    async function refreshNavigationRoute() {
+        if (!state.navigationSpot || !state.userLocation || !document.body.classList.contains('is-navigation-mode')) return;
+
+        try {
+            const route = await buildRouteToSpot(state.userLocation, state.navigationSpot, { camera: 'none' });
+            state.navigationRoute = route;
+            state.speedLimitKmh = estimateSpeedLimitKmh(route, state.userLocation);
+            updateActiveRouteProgress(state.userLocation, route);
+            updateNavigationMetrics();
+        } catch {
+            // Keep the current route if a background traffic refresh fails.
+        }
     }
 
     function ensureUserLocation({ refresh = false, focus = false, fastFallback = false } = {}) {
@@ -1713,10 +1743,11 @@ function getNavigationInstruction(route, userLocation = null) {
 
     if (nextInstruction) {
         const distance = Number(nextInstruction.remainingMeters ?? nextInstruction.distanceMeters);
+        const text = formatNavigationInstructionText(nextInstruction.text);
 
         return Number.isFinite(distance) && distance > 20
-            ? `Через ${formatDistance(distance)} ${nextInstruction.text}`
-            : nextInstruction.text;
+            ? `Через ${formatDistance(distance)} ${text}`
+            : text;
     }
 
     const firstSegment = route.segments?.[0];
@@ -1726,6 +1757,25 @@ function getNavigationInstruction(route, userLocation = null) {
     }
 
     return `Двигайтесь прямо ${formatDistance(getSegmentDistance(firstSegment))}`;
+}
+
+function formatNavigationInstructionText(value) {
+    let text = String(value || '').trim();
+
+    if (!text) return 'Двигайтесь по маршруту';
+
+    text = text
+        .replace(/\bДержитесь\s+левой\s+стороны\b/giu, 'Держитесь левее')
+        .replace(/\bДержитесь\s+правой\s+стороны\b/giu, 'Держитесь правее')
+        .replace(/\bв\s+([^,.]+?)\s+улица\b/giu, 'на улице $1')
+        .replace(/\bв\s+([^,.]+?)\s+проспект\b/giu, 'на проспекте $1')
+        .replace(/\bв\s+([^,.]+?)\s+шоссе\b/giu, 'на $1 шоссе')
+        .replace(/\bв\s+([^,.]+?)\s+переулок\b/giu, 'в переулке $1')
+        .replace(/\bв\s+([^,.]+?)\s+проезд\b/giu, 'в проезде $1')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    return text ? `${text[0].toUpperCase()}${text.slice(1)}` : 'Двигайтесь по маршруту';
 }
 
 function getNextRouteInstruction(route, userLocation) {
@@ -1754,8 +1804,8 @@ function getNextRouteInstruction(route, userLocation) {
 function getManeuverIconSvg(instruction) {
     const type = String(instruction?.maneuver || '').toLowerCase();
     const modifier = String(instruction?.modifier || instruction?.text || '').toLowerCase();
-    const turnLeft = modifier.includes('left') || modifier.includes('налево') || modifier.includes('левее');
-    const turnRight = modifier.includes('right') || modifier.includes('направо') || modifier.includes('правее') || type.includes('exit') || type.includes('ramp');
+    const turnLeft = modifier.includes('left') || modifier.includes('налево') || modifier.includes('левее') || modifier.includes('левой');
+    const turnRight = modifier.includes('right') || modifier.includes('направо') || modifier.includes('правее') || modifier.includes('правой') || type.includes('exit') || type.includes('ramp');
     const arrive = type.includes('arrive') || modifier.includes('прибы');
 
     if (arrive) {
@@ -1883,7 +1933,8 @@ function estimateSpeedLimitKmh(route, userLocation) {
     if (/(мкад|кад|автобан|autobahn|motorway|highway)/i.test(text)) return 100;
     if (/(шоссе|проспект|allee|ring|tunnel|bridge|мост)/i.test(text)) return 80;
     if (/(двор|парков|проезд|residential|living)/i.test(text)) return 20;
-    if (/(straße|strasse|street|улица|переулок|lane|road)/i.test(text)) return 50;
+    if (/(straße|strasse|street|lane|road)/i.test(text)) return 50;
+    if (/(улица|переулок)/i.test(text)) return 60;
 
     return 60;
 }

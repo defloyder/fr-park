@@ -1690,7 +1690,6 @@ body.is-navigation-detached .navigation-recenter {
 
 body.is-navigation-mode .top-panel,
 body.is-navigation-mode .floating-nav,
-body.is-navigation-mode .map-control-stack,
 body.is-navigation-mode .spot-card,
 body.is-navigation-mode .spot-list,
 body.is-navigation-mode .search-panel,
@@ -1701,6 +1700,20 @@ body.is-navigation-mode .maplibregl-ctrl-top-left,
 body.is-navigation-mode .maplibregl-ctrl-top-right {
     opacity: 0;
     pointer-events: none;
+}
+
+body.is-navigation-mode .map-control-stack {
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 62;
+}
+
+body.is-navigation-mode .map-control-stack:not(.map-control-stack--secondary) {
+    top: calc(120px + env(safe-area-inset-top));
+}
+
+body.is-navigation-mode .map-control-stack--secondary {
+    top: calc(280px + env(safe-area-inset-top));
 }
 
 body.is-navigation-mode .map-canvas::after {
@@ -1757,13 +1770,36 @@ body.is-navigation-mode .map-canvas::after {
     }
 
     .navigation-speedometer {
-        width: 58px;
-        height: 58px;
+        width: 72px;
+        height: 72px;
+        border-width: 3px;
+    }
+
+    .navigation-speedometer strong {
+        font-size: 1.38rem;
+    }
+
+    .navigation-speedometer span {
+        font-size: 0.68rem;
+    }
+
+    .navigation-speedometer em {
+        width: 34px;
+        height: 22px;
+        font-size: 0.74rem;
     }
 
     .navigation-recenter {
         right: 12px;
         bottom: calc(98px + env(safe-area-inset-bottom));
+    }
+
+    body.is-navigation-mode .map-control-stack:not(.map-control-stack--secondary) {
+        top: calc(230px + env(safe-area-inset-top));
+    }
+
+    body.is-navigation-mode .map-control-stack--secondary {
+        top: calc(386px + env(safe-area-inset-top));
     }
 }
 
@@ -3453,6 +3489,14 @@ body[data-map-layer="satellite"] .export-check.is-checked {
 
     .map-control-stack--secondary {
         top: calc(324px + env(safe-area-inset-top));
+    }
+
+    body.is-navigation-mode .map-control-stack:not(.map-control-stack--secondary) {
+        top: calc(230px + env(safe-area-inset-top));
+    }
+
+    body.is-navigation-mode .map-control-stack--secondary {
+        top: calc(386px + env(safe-area-inset-top));
     }
 
     .spot-list {

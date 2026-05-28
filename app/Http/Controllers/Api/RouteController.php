@@ -92,23 +92,17 @@ class RouteController extends Controller
             $validated['from_latitude'].','.$validated['from_longitude'],
             $validated['to_latitude'].','.$validated['to_longitude'],
         ]);
-        $url = "https://api.tomtom.com/routing/1/calculateRoute/{$locations}/json?".http_build_query([
-            'key' => $apiKey,
-            'travelMode' => 'car',
-            'traffic' => 'true',
-            'routeType' => 'fastest',
-            'routeRepresentation' => 'polyline',
-            'computeTravelTimeFor' => 'all',
-            'instructionsType' => 'text',
-            'language' => 'ru-RU',
-            'sectionType' => 'traffic',
-        ]);
 
-        $payload = Http::timeout(14)
-            ->acceptJson()
-            ->get($url)
-            ->throw()
-            ->json();
+        try {
+            $payload = $this->requestTomTomRoute($locations, $apiKey, true);
+        } catch (RequestException $exception) {
+            Log::warning('TomTom Routing API speed limit section failed, retrying traffic route only', [
+                'status' => $exception->response?->status(),
+                'body' => $exception->response?->body(),
+            ]);
+
+            $payload = $this->requestTomTomRoute($locations, $apiKey, false);
+        }
 
         $route = data_get($payload, 'routes.0');
 
@@ -117,6 +111,34 @@ class RouteController extends Controller
         }
 
         return $this->normalizeTomTomRoute($route);
+    }
+
+    private function requestTomTomRoute(string $locations, string $apiKey, bool $includeSpeedLimits): array
+    {
+        $query = http_build_query([
+            'key' => $apiKey,
+            'travelMode' => 'car',
+            'traffic' => 'true',
+            'routeType' => 'fastest',
+            'routeRepresentation' => 'polyline',
+            'computeTravelTimeFor' => 'all',
+            'instructionsType' => 'text',
+            'language' => 'ru-RU',
+        ]);
+        $query .= '&sectionType=traffic';
+
+        if ($includeSpeedLimits) {
+            $query .= '&sectionType=speedLimit';
+        }
+
+        /** @var array<string, mixed> $payload */
+        $payload = Http::timeout(14)
+            ->acceptJson()
+            ->get("https://api.tomtom.com/routing/1/calculateRoute/{$locations}/json?{$query}")
+            ->throw()
+            ->json();
+
+        return $payload;
     }
 
     private function normalizeTomTomRoute(array $route): array
