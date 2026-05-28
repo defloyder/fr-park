@@ -1038,9 +1038,11 @@ export function initParkingUi() {
                     <span data-navigation-distance></span>
                     <small data-navigation-arrival></small>
                 </div>
-                <div class="navigation-speedometer">
-                    <strong data-navigation-speed></strong>
-                    <span>км/ч</span>
+                <div class="navigation-speedometer" aria-label="Скорость и ограничение">
+                    <div class="navigation-speedometer__current">
+                        <strong data-navigation-speed></strong>
+                        <span>км/ч</span>
+                    </div>
                     <em data-navigation-speed-limit></em>
                 </div>
             `;

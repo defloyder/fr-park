@@ -903,9 +903,11 @@ in vec3 view_direction;uniform vec3 u_sun_pos;uniform vec3 u_globe_position;unif
                     <span data-navigation-distance></span>
                     <small data-navigation-arrival></small>
                 </div>
-                <div class="navigation-speedometer">
-                    <strong data-navigation-speed></strong>
-                    <span>км/ч</span>
+                <div class="navigation-speedometer" aria-label="Скорость и ограничение">
+                    <div class="navigation-speedometer__current">
+                        <strong data-navigation-speed></strong>
+                        <span>км/ч</span>
+                    </div>
                     <em data-navigation-speed-limit></em>
                 </div>
             `,document.body.append(e)),!document.querySelector(`.navigation-recenter`)){let e=document.createElement(`button`);e.className=`navigation-recenter liquid-glass`,e.type=`button`,e.dataset.action=`recenter-navigation`,e.setAttribute(`aria-label`,`Вернуться к текущему местоположению`),e.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 7 19-7-4-7 4 7-19Z"></path></svg><span>К геолокации</span>`,document.body.append(e)}}let e=document.querySelector(`.navigation-panel`);e||(e=document.createElement(`section`),e.className=`navigation-panel liquid-glass`,e.innerHTML=`

@@ -1565,45 +1565,75 @@ body[data-map-layer="satellite"] .route-picker__close {
 
 .navigation-speedometer {
     display: grid;
-    width: 68px;
-    height: 68px;
-    place-items: center;
+    grid-template-columns: minmax(0, 1fr) 38px;
+    width: 118px;
+    min-height: 70px;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 8px 7px 12px;
     color: #101722;
-    background: rgba(255, 255, 255, 0.62);
-    border: 2px solid rgba(16, 23, 34, 0.22);
-    border-radius: 50%;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76);
+    background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.88), rgba(232, 250, 255, 0.68)),
+        rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(15, 23, 42, 0.16);
+    border-radius: 22px;
+    box-shadow:
+        0 12px 32px rgba(3, 8, 20, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.86);
+}
+
+.navigation-speedometer__current {
+    display: grid;
+    justify-items: center;
+    gap: 1px;
+    min-width: 0;
 }
 
 .navigation-speedometer strong {
-    font-size: 1.15rem;
-    line-height: 0.9;
+    font-size: 1.72rem;
+    font-weight: 950;
+    line-height: 0.92;
+    letter-spacing: 0;
 }
 
 .navigation-speedometer span {
     color: rgba(16, 23, 34, 0.60);
-    font-size: 0.58rem;
+    font-size: 0.68rem;
+    font-weight: 900;
     line-height: 1;
+    text-transform: uppercase;
 }
 
 .navigation-speedometer em {
     display: grid;
-    width: 28px;
-    height: 18px;
+    width: 38px;
+    height: 38px;
     place-items: center;
     color: #101722;
-    font-size: 0.66rem;
+    font-size: 1rem;
     font-style: normal;
-    font-weight: 900;
+    font-weight: 950;
     background: #fff;
-    border: 2px solid #EF174A;
-    border-radius: 999px;
+    border: 4px solid #EF174A;
+    border-radius: 50%;
+    box-shadow:
+        0 4px 10px rgba(239, 23, 74, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.86);
 }
 
 .navigation-speedometer.is-speeding {
     color: #fff;
-    background: linear-gradient(145deg, #EF174A, #B91C1C);
-    border-color: rgba(255, 255, 255, 0.70);
+    background:
+        linear-gradient(145deg, rgba(239, 23, 74, 0.96), rgba(185, 28, 28, 0.92)),
+        #EF174A;
+    border-color: rgba(255, 255, 255, 0.72);
+    box-shadow:
+        0 16px 38px rgba(239, 23, 74, 0.34),
+        inset 0 1px 0 rgba(255, 255, 255, 0.26);
+}
+
+.navigation-speedometer.is-speeding span {
+    color: rgba(255, 255, 255, 0.78);
 }
 
 .navigation-guidance strong {
@@ -1774,23 +1804,27 @@ body.is-navigation-mode .map-canvas::after {
     }
 
     .navigation-speedometer {
-        width: 72px;
-        height: 72px;
-        border-width: 3px;
+        grid-template-columns: minmax(0, 1fr) 34px;
+        width: 106px;
+        min-height: 66px;
+        gap: 6px;
+        padding: 6px 7px 6px 10px;
+        border-radius: 20px;
     }
 
     .navigation-speedometer strong {
-        font-size: 1.38rem;
+        font-size: 1.58rem;
     }
 
     .navigation-speedometer span {
-        font-size: 0.68rem;
+        font-size: 0.62rem;
     }
 
     .navigation-speedometer em {
         width: 34px;
-        height: 22px;
-        font-size: 0.74rem;
+        height: 34px;
+        font-size: 0.88rem;
+        border-width: 4px;
     }
 
     .navigation-recenter {
