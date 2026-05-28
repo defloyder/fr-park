@@ -7,6 +7,7 @@ let pendingMarker = null;
 let addressRequestId = 0;
 let isPickingMode = false;
 let isTrafficSuppressedByRoute = false;
+let isTrafficForcedVisibleByUser = false;
 
 const MOSCOW_CENTER = [37.6173, 55.7558];
 const MAP_CONTAINER_ID = 'parking-map';
@@ -269,11 +270,16 @@ function bindTrafficToggle() {
 
     updateTrafficToggleButton(isTrafficLayerEnabled());
     button.addEventListener('click', () => {
-        const nextValue = !isTrafficLayerEnabled();
+        const isStoredEnabled = isTrafficLayerEnabled();
+        const nextValue = isTrafficSuppressedByRoute && isStoredEnabled && !isTrafficForcedVisibleByUser
+            ? true
+            : !isStoredEnabled;
 
-        window.localStorage?.setItem(TRAFFIC_LAYER_STORAGE_KEY, nextValue ? '1' : '0');
+        if (nextValue !== isStoredEnabled) {
+            window.localStorage?.setItem(TRAFFIC_LAYER_STORAGE_KEY, nextValue ? '1' : '0');
+        }
+        isTrafficForcedVisibleByUser = nextValue;
         setTrafficLayerVisibility(nextValue);
-        updateTrafficToggleButton(nextValue);
     });
 }
 
@@ -296,7 +302,10 @@ function setTrafficLayerVisibility(isVisible) {
         return;
     }
 
-    map.setLayoutProperty(TRAFFIC_FLOW_LAYER_ID, 'visibility', isVisible && !isTrafficSuppressedByRoute ? 'visible' : 'none');
+    const isActuallyVisible = isVisible && (!isTrafficSuppressedByRoute || isTrafficForcedVisibleByUser);
+
+    map.setLayoutProperty(TRAFFIC_FLOW_LAYER_ID, 'visibility', isActuallyVisible ? 'visible' : 'none');
+    updateTrafficToggleButton(isActuallyVisible);
 }
 
 function bindMapControlButtons() {
@@ -920,6 +929,9 @@ export function clearActiveRoute() {
 
 function setRouteTrafficMode(isActive) {
     isTrafficSuppressedByRoute = isActive;
+    if (isActive) {
+        isTrafficForcedVisibleByUser = false;
+    }
     setTrafficLayerVisibility(isTrafficLayerEnabled());
 }
 

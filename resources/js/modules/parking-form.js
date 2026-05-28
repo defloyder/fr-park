@@ -68,6 +68,8 @@ const state = {
     listQuery: '',
     navigationMetricsTimer: null,
     navigationRouteRefreshTimer: null,
+    navigationRouteRefreshInFlight: false,
+    navigationLastRerouteAt: 0,
 };
 
 export function initParkingUi() {
@@ -821,6 +823,13 @@ export function initParkingUi() {
     }
 
     function locateMe() {
+        if (document.body.classList.contains('is-navigation-mode') && state.userLocation && state.navigationRoute) {
+            document.body.classList.remove('is-navigation-detached');
+            focusNavigationPosition(state.userLocation, state.navigationRoute);
+            updateNavigationMetrics();
+            return;
+        }
+
         if (!navigator.geolocation) {
             showToast('Браузер не поддерживает определение местоположения.', true);
             return;
@@ -1130,6 +1139,8 @@ export function initParkingUi() {
         document.querySelector('.navigation-recenter')?.remove();
         state.navigationSpot = null;
         state.navigationRoute = null;
+        state.navigationRouteRefreshInFlight = false;
+        state.navigationLastRerouteAt = 0;
         stopNavigationMetricsTimer();
         clearActiveRoute();
     }
@@ -1155,6 +1166,7 @@ export function initParkingUi() {
                 updateActiveRouteProgress(state.userLocation, state.navigationRoute);
                 document.body.classList.remove('is-navigation-detached');
                 focusNavigationPosition(state.userLocation, state.navigationRoute);
+                maybeRefreshNavigationRouteFromGps();
                 updateNavigationMetrics();
             },
             () => {},
@@ -1186,15 +1198,35 @@ export function initParkingUi() {
 
     async function refreshNavigationRoute() {
         if (!state.navigationSpot || !state.userLocation || !document.body.classList.contains('is-navigation-mode')) return;
+        if (state.navigationRouteRefreshInFlight) return;
 
         try {
+            state.navigationRouteRefreshInFlight = true;
             const route = await buildRouteToSpot(state.userLocation, state.navigationSpot, { camera: 'none' });
             state.navigationRoute = route;
             state.speedLimitKmh = estimateSpeedLimitKmh(route, state.userLocation);
+            state.navigationLastRerouteAt = Date.now();
             updateActiveRouteProgress(state.userLocation, route);
+            focusNavigationPosition(state.userLocation, route);
             updateNavigationMetrics();
         } catch {
             // Keep the current route if a background traffic refresh fails.
+        } finally {
+            state.navigationRouteRefreshInFlight = false;
+        }
+    }
+
+    function maybeRefreshNavigationRouteFromGps() {
+        if (!state.navigationRoute || !state.userLocation || state.navigationRouteRefreshInFlight) return;
+
+        const now = Date.now();
+        if (now - state.navigationLastRerouteAt < 25000) return;
+
+        const distanceFromRoute = getDistanceToRouteMeters(state.navigationRoute, state.userLocation);
+        const isDrivingAgainstRoute = isGpsHeadingAgainstRoute(state.navigationRoute, state.userLocation);
+
+        if (distanceFromRoute > 80 || isDrivingAgainstRoute) {
+            refreshNavigationRoute();
         }
     }
 
@@ -1917,7 +1949,7 @@ function getGpsSpeedKmh(coords) {
 function getGpsHeading(coords) {
     const heading = Number(coords?.heading);
 
-    return Number.isFinite(heading) && heading >= 0 ? heading : 0;
+    return Number.isFinite(heading) && heading >= 0 ? heading : null;
 }
 
 function estimateSpeedLimitKmh(route, userLocation) {
@@ -1971,6 +2003,60 @@ function getClosestRouteCoordinateIndex(coordinates, userLocation) {
     });
 
     return closestIndex;
+}
+
+function getDistanceToRouteMeters(route, userLocation) {
+    const coordinates = route?.geometry?.coordinates ?? [];
+
+    if (!coordinates.length || !userLocation) {
+        return Number.POSITIVE_INFINITY;
+    }
+
+    return coordinates.reduce((closest, coordinate) => Math.min(
+        closest,
+        getDistanceMeters(userLocation, { latitude: coordinate[1], longitude: coordinate[0] }),
+    ), Number.POSITIVE_INFINITY);
+}
+
+function isGpsHeadingAgainstRoute(route, userLocation) {
+    if (userLocation?.heading === null || userLocation?.heading === undefined) {
+        return false;
+    }
+
+    const heading = Number(userLocation?.heading);
+    const speed = Number(state.currentSpeedKmh) || 0;
+    const coordinates = route?.geometry?.coordinates ?? [];
+
+    if (!Number.isFinite(heading) || speed < 12 || coordinates.length < 2) {
+        return false;
+    }
+
+    const closestIndex = getClosestRouteCoordinateIndex(coordinates, userLocation);
+    const current = coordinates[closestIndex];
+    const next = coordinates[Math.min(closestIndex + 1, coordinates.length - 1)];
+
+    if (!current || !next || current === next) {
+        return false;
+    }
+
+    return getAngleDifference(heading, getBearingDegrees(current, next)) > 130;
+}
+
+function getBearingDegrees(start, finish) {
+    const toRadians = (value) => value * Math.PI / 180;
+    const toDegrees = (value) => value * 180 / Math.PI;
+    const startLat = toRadians(start[1]);
+    const finishLat = toRadians(finish[1]);
+    const deltaLng = toRadians(finish[0] - start[0]);
+    const y = Math.sin(deltaLng) * Math.cos(finishLat);
+    const x = Math.cos(startLat) * Math.sin(finishLat)
+        - Math.sin(startLat) * Math.cos(finishLat) * Math.cos(deltaLng);
+
+    return (toDegrees(Math.atan2(y, x)) + 360) % 360;
+}
+
+function getAngleDifference(first, second) {
+    return Math.abs(((first - second + 540) % 360) - 180);
 }
 
 function formatDuration(seconds) {

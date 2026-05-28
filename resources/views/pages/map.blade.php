@@ -56,7 +56,7 @@
                     </button>
                 </div>
             </div>
-            <button class="map-control-button" type="button" data-action="open-profile" aria-label="Открыть профиль">
+            <button class="map-control-button map-profile-control" type="button" data-action="open-profile" aria-label="Открыть профиль">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg>
             </button>
         </div>

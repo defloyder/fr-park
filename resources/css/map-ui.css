@@ -1708,6 +1708,10 @@ body.is-navigation-mode .map-control-stack {
     z-index: 62;
 }
 
+body.is-navigation-mode .map-profile-control {
+    display: none;
+}
+
 body.is-navigation-mode .map-control-stack:not(.map-control-stack--secondary) {
     top: calc(120px + env(safe-area-inset-top));
 }
