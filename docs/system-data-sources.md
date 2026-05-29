@@ -61,15 +61,17 @@
 - Запрос находится в `fetchOpenStreetMapSpeedCameras()` в `resources/js/modules/parking-form.js`.
 - Используемые OSM-теги:
   - `highway=speed_camera`;
-  - `enforcement=maxspeed`;
-  - `camera:type=speed`.
+  - `enforcement=maxspeed`, `enforcement=speed`, `enforcement=average_speed`, `enforcement=traffic_signals`, `enforcement=bus_lane`;
+  - `camera:type=speed`, `camera:type=redlight`, `camera:type=traffic`, `camera:type=bus_lane`;
+  - часть traffic-surveillance объектов: `man_made=surveillance` + `surveillance=traffic/public`.
+- Запрос забирает `node`, `way` и `relation` объекты; для линий и отношений используется `center` из Overpass.
 - Для каждой камеры сохраняются:
   - координаты;
   - `maxspeed`;
   - `direction`, `camera:direction`, `surveillance:direction`;
   - тип камеры;
   - признак муляжа.
-- Камеры фильтруются по близости к активному маршруту.
+- Камеры дедуплицируются по координатам и фильтруются по близости к активному маршруту.
 - Направление камеры вычисляется сравнением bearing камеры с bearing ближайшего участка маршрута:
   - `в спину`;
   - `навстречу`;

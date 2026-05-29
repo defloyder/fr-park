@@ -21,6 +21,7 @@ const STATUS_LABELS = {
 };
 
 const NAVIGATION_STATE_STORAGE_KEY = 'auralith:navigation-state';
+const SPEED_CAMERA_ROUTE_DISTANCE_METERS = 160;
 
 const MOSCOW_DISTRICT_ALIASES = {
     'патриарших прудов': 'Пресненский',
@@ -1335,38 +1336,62 @@ export function initParkingUi() {
             .filter((camera) => (
                 Number.isFinite(camera.distanceMeters)
                 && camera.distanceMeters >= 0
-                && camera.routeDistanceMeters < 90
+                && camera.routeDistanceMeters < SPEED_CAMERA_ROUTE_DISTANCE_METERS
             ))
             .sort((first, second) => first.distanceMeters - second.distanceMeters)[0] ?? null;
     }
 
     async function refreshSpeedCameras(route) {
-        if (!route?.geometry?.coordinates?.length) return;
+        if (!route?.geometry?.coordinates?.length || !document.body.classList.contains('is-navigation-mode')) {
+            state.speedCameras = [];
+            renderSpeedCameras([]);
+            return;
+        }
+
+        const sessionId = state.navigationSessionId;
 
         try {
             const cameras = await fetchOpenStreetMapSpeedCameras(route.geometry.coordinates);
-            state.speedCameras = cameras
+
+            if (sessionId !== state.navigationSessionId || !document.body.classList.contains('is-navigation-mode')) {
+                state.speedCameras = [];
+                renderSpeedCameras([]);
+                return;
+            }
+
+            state.speedCameras = dedupeSpeedCameras(cameras)
                 .map((camera) => normalizeCameraForRoute(camera, route))
-                .filter((camera) => camera.routeDistanceMeters < 90)
+                .filter((camera) => camera.routeDistanceMeters < SPEED_CAMERA_ROUTE_DISTANCE_METERS)
                 .sort((first, second) => first.routeOffsetMeters - second.routeOffsetMeters);
             renderSpeedCameras(state.speedCameras);
             updateNavigationMetrics();
         } catch {
-            state.speedCameras = [];
-            renderSpeedCameras([]);
+            if (sessionId === state.navigationSessionId && document.body.classList.contains('is-navigation-mode')) {
+                state.speedCameras = [];
+                renderSpeedCameras([]);
+            }
         }
     }
 
     async function fetchOpenStreetMapSpeedCameras(coordinates) {
-        const bounds = getRouteBounds(coordinates, 0.006);
+        const bounds = getRouteBounds(coordinates, 0.012);
+        const bbox = `(${bounds.south},${bounds.west},${bounds.north},${bounds.east})`;
         const query = `
-            [out:json][timeout:12];
+            [out:json][timeout:18];
             (
-              node["highway"="speed_camera"](${bounds.south},${bounds.west},${bounds.north},${bounds.east});
-              node["enforcement"="maxspeed"](${bounds.south},${bounds.west},${bounds.north},${bounds.east});
-              node["camera:type"="speed"](${bounds.south},${bounds.west},${bounds.north},${bounds.east});
+              node["highway"="speed_camera"]${bbox};
+              way["highway"="speed_camera"]${bbox};
+              relation["highway"="speed_camera"]${bbox};
+              node["enforcement"~"maxspeed|speed|average_speed|traffic_signals|bus_lane"]${bbox};
+              way["enforcement"~"maxspeed|speed|average_speed|traffic_signals|bus_lane"]${bbox};
+              relation["enforcement"~"maxspeed|speed|average_speed|traffic_signals|bus_lane"]${bbox};
+              node["camera:type"~"speed|redlight|traffic|bus_lane"]${bbox};
+              way["camera:type"~"speed|redlight|traffic|bus_lane"]${bbox};
+              relation["camera:type"~"speed|redlight|traffic|bus_lane"]${bbox};
+              node["man_made"="surveillance"]["surveillance"~"traffic|public"]${bbox};
+              way["man_made"="surveillance"]["surveillance"~"traffic|public"]${bbox};
             );
-            out center 80;
+            out center 240;
         `;
         const response = await fetch('https://overpass-api.de/api/interpreter', {
             method: 'POST',
@@ -1382,6 +1407,7 @@ export function initParkingUi() {
 
             return {
                 id: item.id,
+                osmType: item.type,
                 latitude: Number(item.lat ?? item.center?.lat),
                 longitude: Number(item.lon ?? item.center?.lon),
                 title: tags.name || 'Камера контроля скорости',
@@ -1391,6 +1417,23 @@ export function initParkingUi() {
                 isDummy: isDummyCamera(tags),
             };
         }).filter((camera) => Number.isFinite(camera.latitude) && Number.isFinite(camera.longitude));
+    }
+
+    function dedupeSpeedCameras(cameras) {
+        const seen = new Set();
+
+        return cameras.filter((camera) => {
+            const key = [
+                Number(camera.latitude).toFixed(5),
+                Number(camera.longitude).toFixed(5),
+                camera.maxspeed || '',
+                camera.cameraType || '',
+            ].join(':');
+
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
     }
 
     function normalizeCameraForRoute(camera, route) {
@@ -1501,15 +1544,16 @@ export function initParkingUi() {
                 { longitude: start[0], latitude: start[1] },
                 { longitude: finish[0], latitude: finish[1] },
             );
-            const distanceToFinish = getDistanceMeters(
+            const closest = getClosestPointOnSegment(current, start, finish);
+            const distanceToSegment = getDistanceMeters(
                 { longitude: current[0], latitude: current[1] },
-                { longitude: finish[0], latitude: finish[1] },
+                { longitude: closest.coordinate[0], latitude: closest.coordinate[1] },
             );
 
-            if (distanceToFinish < best.distanceMeters) {
+            if (distanceToSegment < best.distanceMeters) {
                 best = {
-                    distanceMeters: distanceToFinish,
-                    progressMeters: progress + segmentDistance,
+                    distanceMeters: distanceToSegment,
+                    progressMeters: progress + (segmentDistance * closest.ratio),
                     bearing: getBearingDegrees(start, finish),
                 };
             }
@@ -1518,6 +1562,26 @@ export function initParkingUi() {
         }
 
         return best;
+    }
+
+    function getClosestPointOnSegment(point, start, finish) {
+        const dx = finish[0] - start[0];
+        const dy = finish[1] - start[1];
+        const lengthSquared = (dx * dx) + (dy * dy);
+
+        if (!lengthSquared) {
+            return { coordinate: start, ratio: 0 };
+        }
+
+        const ratio = Math.max(0, Math.min(1, (((point[0] - start[0]) * dx) + ((point[1] - start[1]) * dy)) / lengthSquared));
+
+        return {
+            coordinate: [
+                start[0] + (dx * ratio),
+                start[1] + (dy * ratio),
+            ],
+            ratio,
+        };
     }
 
     function getRouteBounds(coordinates, paddingDegrees = 0) {
@@ -1573,8 +1637,13 @@ export function initParkingUi() {
         stopNavigationMetricsTimer();
         clearActiveRoute();
         clearNavigationState();
-        window.setTimeout(clearActiveRoute, 0);
-        window.setTimeout(clearActiveRoute, 250);
+        window.setTimeout(clearNavigationMapOverlays, 0);
+        window.setTimeout(clearNavigationMapOverlays, 250);
+    }
+
+    function clearNavigationMapOverlays() {
+        clearActiveRoute();
+        renderSpeedCameras([]);
     }
 
     async function requestNavigationWakeLock() {
