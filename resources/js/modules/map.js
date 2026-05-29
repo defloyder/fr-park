@@ -64,7 +64,7 @@ const MAP_STYLE = {
         [ROAD_SOURCE_ID]: {
             type: 'vector',
             tiles: [
-                'https://tiles.basemaps.cartocdn.com/vector/carto.streets/v1/{z}/{x}/{y}.mvt',
+                '/tiles/carto-streets/{z}/{x}/{y}.mvt',
             ],
             minzoom: 0,
             maxzoom: 15,
@@ -413,7 +413,7 @@ function addSpeedCameraSourceAndLayer() {
         layout: {
             'text-field': '▲',
             'text-size': ['interpolate', ['linear'], ['zoom'], 10, 12, 16, 18],
-            'text-rotate': ['get', 'bearing'],
+            'text-rotate': ['coalesce', ['to-number', ['get', 'bearing']], 0],
             'text-rotation-alignment': 'map',
             'text-allow-overlap': true,
             'text-ignore-placement': true,
