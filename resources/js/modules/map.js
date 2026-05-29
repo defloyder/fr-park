@@ -209,6 +209,42 @@ const MAP_STYLE = {
             },
         },
         {
+            id: 'road-lane-major',
+            type: 'line',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'transportation',
+            minzoom: 14,
+            filter: ['in', ['get', 'class'], ['literal', ['motorway', 'trunk', 'primary', 'secondary', 'tertiary']]],
+            layout: {
+                'line-cap': 'butt',
+                'line-join': 'round',
+            },
+            paint: {
+                'line-color': 'rgba(71, 85, 105, 0.42)',
+                'line-width': ['interpolate', ['linear'], ['zoom'], 14, 0, 15, 0.8, 17, 1.2, 19, 1.6],
+                'line-dasharray': [1.1, 1.25],
+                'line-opacity': ['interpolate', ['linear'], ['zoom'], 14, 0, 15, 0.38, 17, 0.62],
+            },
+        },
+        {
+            id: 'road-lane-minor',
+            type: 'line',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'transportation',
+            minzoom: 16,
+            filter: ['in', ['get', 'class'], ['literal', ['minor', 'service']]],
+            layout: {
+                'line-cap': 'butt',
+                'line-join': 'round',
+            },
+            paint: {
+                'line-color': 'rgba(71, 85, 105, 0.28)',
+                'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.45, 18, 0.8],
+                'line-dasharray': [0.8, 1.4],
+                'line-opacity': ['interpolate', ['linear'], ['zoom'], 16, 0.18, 18, 0.36],
+            },
+        },
+        {
             id: 'place-label',
             type: 'symbol',
             source: ROAD_SOURCE_ID,
@@ -688,6 +724,14 @@ function updateVectorRoadLayerTheme(layerId) {
         'road-major': {
             'line-color': isDark ? '#0B1220' : '#FFF8DF',
             'line-opacity': isSatellite ? 0 : 0.96,
+        },
+        'road-lane-major': {
+            'line-color': isDark ? 'rgba(226, 232, 240, 0.48)' : 'rgba(71, 85, 105, 0.42)',
+            'line-opacity': isSatellite ? 0 : ['interpolate', ['linear'], ['zoom'], 14, 0, 15, 0.38, 17, 0.62],
+        },
+        'road-lane-minor': {
+            'line-color': isDark ? 'rgba(226, 232, 240, 0.32)' : 'rgba(71, 85, 105, 0.28)',
+            'line-opacity': isSatellite ? 0 : ['interpolate', ['linear'], ['zoom'], 16, 0.18, 18, 0.36],
         },
         'road-name': {
             'text-color': isDark ? '#F8FAFC' : '#111827',
