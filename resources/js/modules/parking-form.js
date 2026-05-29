@@ -75,6 +75,7 @@ const state = {
     navigationPreserveZoom: false,
     navigationSessionId: 0,
     wakeLock: null,
+    deferredInstallPrompt: null,
     speedCameras: [],
 };
 
@@ -159,6 +160,7 @@ export function initParkingUi() {
             'export-selected': () => isAdmin() && exportSelectedSpots(),
             'clear-export-selection': () => isAdmin() && clearExportSelection(),
             'toggle-favorite': () => toggleFavorite(Number(event.target.closest('[data-spot-id]')?.dataset.spotId)),
+            'install-web-app': installWebApp,
             'logout': logout,
         };
 
@@ -186,6 +188,18 @@ export function initParkingUi() {
         if (document.visibilityState === 'visible' && document.body.classList.contains('is-navigation-following')) {
             requestNavigationWakeLock();
         }
+    });
+
+    window.addEventListener('beforeinstallprompt', (event) => {
+        event.preventDefault();
+        state.deferredInstallPrompt = event;
+        renderInstallAppPanel();
+    });
+
+    window.addEventListener('appinstalled', () => {
+        state.deferredInstallPrompt = null;
+        renderInstallAppPanel();
+        showToast('Auralith Maps установлен');
     });
 
     document.addEventListener('click', (event) => {
@@ -516,6 +530,7 @@ export function initParkingUi() {
         updateAdminControls();
         renderList();
         renderProfile();
+        renderInstallAppPanel();
         rerenderOpenCard();
     }
 
@@ -554,6 +569,72 @@ export function initParkingUi() {
             `;
             renderFavoriteList();
         }
+
+        renderInstallAppPanel();
+    }
+
+    function renderInstallAppPanel() {
+        const panel = document.getElementById('install-app-panel');
+        if (!panel) return;
+
+        const note = panel.querySelector('[data-install-app-note]');
+        const label = panel.querySelector('[data-install-app-label]');
+        const button = panel.querySelector('[data-action="install-web-app"]');
+        const isStandalone = isWebAppInstalled();
+        const canInstall = Boolean(state.deferredInstallPrompt);
+        const isIos = isIosDevice();
+
+        panel.classList.toggle('is-installed', isStandalone);
+        button?.toggleAttribute('disabled', isStandalone);
+
+        if (isStandalone) {
+            if (note) note.textContent = 'Auralith Maps уже открыт как веб-приложение.';
+            if (label) label.textContent = 'Установлено';
+            return;
+        }
+
+        if (isIos) {
+            if (note) note.textContent = 'На iPhone: Поделиться → На экран «Домой».';
+            if (label) label.textContent = 'Как добавить';
+            return;
+        }
+
+        if (canInstall) {
+            if (note) note.textContent = 'Установите Auralith Maps как отдельное приложение.';
+            if (label) label.textContent = 'Установить';
+            return;
+        }
+
+        if (note) note.textContent = 'Если установка не открылась, используйте меню браузера.';
+        if (label) label.textContent = 'Подсказка';
+    }
+
+    async function installWebApp() {
+        if (isWebAppInstalled()) {
+            showToast('Auralith Maps уже установлен');
+            return;
+        }
+
+        if (state.deferredInstallPrompt) {
+            const promptEvent = state.deferredInstallPrompt;
+            state.deferredInstallPrompt = null;
+            promptEvent.prompt();
+
+            try {
+                const choice = await promptEvent.userChoice;
+                showToast(choice?.outcome === 'accepted' ? 'Установка началась' : 'Установку отменили');
+            } catch {
+                showToast('Откройте установку через меню браузера.');
+            } finally {
+                renderInstallAppPanel();
+            }
+
+            return;
+        }
+
+        showToast(isIosDevice()
+            ? 'На iPhone нажмите «Поделиться», затем «На экран Домой».'
+            : 'Откройте меню браузера и выберите «Установить приложение».');
     }
 
     function renderFavoriteList() {
@@ -1382,11 +1463,11 @@ export function initParkingUi() {
     function getCameraDirectionLabel(cameraBearing, routeBearing) {
         const diff = getAngleDifference(cameraBearing, routeBearing);
 
-        if (diff <= 45) return { short: 'в спину', text: 'камера в спину' };
-        if (diff >= 135) return { short: 'встречная', text: 'камера навстречу' };
+        if (diff <= 45) return { short: 'в спину', text: 'в спину' };
+        if (diff >= 135) return { short: 'навстречу', text: 'навстречу' };
         return cameraBearing > routeBearing
-            ? { short: 'справа', text: 'контроль справа' }
-            : { short: 'слева', text: 'контроль слева' };
+            ? { short: 'справа', text: 'справа' }
+            : { short: 'слева', text: 'слева' };
     }
 
     function getCameraTitle(camera) {
@@ -1397,7 +1478,6 @@ export function initParkingUi() {
 
     function formatCameraDetails(camera) {
         const parts = [
-            getCameraTitle(camera).toLowerCase(),
             camera.directionLabel?.text,
             camera.maxspeed ? `лимит ${parseInt(camera.maxspeed, 10) || camera.maxspeed}` : '',
         ].filter(Boolean);
@@ -2102,6 +2182,16 @@ function getInitials(name) {
         .slice(0, 2)
         .map((part) => part[0]?.toUpperCase())
         .join('') || 'PF';
+}
+
+function isWebAppInstalled() {
+    return window.matchMedia('(display-mode: standalone)').matches
+        || window.navigator.standalone === true;
+}
+
+function isIosDevice() {
+    return /iphone|ipad|ipod/i.test(window.navigator.userAgent)
+        || (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
 }
 
 function getSpotArea(spot) {

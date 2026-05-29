@@ -3378,6 +3378,70 @@ body[data-map-layer="satellite"] .nav-button:not(.is-active):hover {
     font-size: 0.84rem;
 }
 
+.install-app-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.065);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 18px;
+}
+
+.install-app-panel div {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+}
+
+.install-app-panel strong,
+.install-app-panel span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.install-app-panel strong {
+    color: var(--text-primary);
+    font-size: 0.92rem;
+}
+
+.install-app-panel span {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    line-height: 1.25;
+}
+
+.install-app-panel .ghost-button {
+    min-height: 40px;
+    padding: 0 12px;
+    gap: 7px;
+    border-radius: 15px;
+}
+
+.install-app-panel .ghost-button svg {
+    width: 17px;
+    height: 17px;
+    flex: 0 0 17px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2.2;
+}
+
+.install-app-panel.is-installed .ghost-button {
+    opacity: 0.62;
+}
+
+.map-theme-light .install-app-panel {
+    background:
+        linear-gradient(145deg, rgba(226, 255, 250, 0.66), rgba(219, 244, 255, 0.48)),
+        rgba(0, 184, 169, 0.10);
+    border-color: rgba(0, 184, 169, 0.34);
+}
+
 .auth-form {
     display: grid;
     gap: 12px;

@@ -1,0 +1,25 @@
+{
+    "name": "Auralith Maps",
+    "short_name": "Auralith",
+    "description": "Навигатор и карта парковок Auralith Maps.",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "background_color": "#061018",
+    "theme_color": "#061018",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "/images/auralith-logo.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/images/auralith-logo.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

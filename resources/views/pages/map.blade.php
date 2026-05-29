@@ -149,6 +149,17 @@
 
             <div id="profile-user" class="profile-user hidden"></div>
 
+            <section id="install-app-panel" class="install-app-panel">
+                <div>
+                    <strong>Навигатор на главный экран</strong>
+                    <span data-install-app-note>Откройте Auralith Maps как отдельное приложение.</span>
+                </div>
+                <button class="ghost-button" type="button" data-action="install-web-app">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4"></path><path d="M5 19h14"></path></svg>
+                    <span data-install-app-label>Установить</span>
+                </button>
+            </section>
+
             <form id="auth-form" class="auth-form">
                 <div class="auth-tabs">
                     <button class="auth-tab is-active" type="button" data-auth-mode="login">Вход</button>
