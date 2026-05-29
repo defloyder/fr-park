@@ -28,6 +28,7 @@ const ROUTE_CACHE_STORAGE_KEY = 'auralith:last-driving-route';
 const TRAFFIC_LAYER_STORAGE_KEY = 'auralith:traffic-enabled';
 const FOLLOW_ZOOM = 15.4;
 const FOLLOW_PITCH = 50;
+const TILE_ORIGIN = window.location.origin;
 
 const MAP_STYLE = {
     version: 8,
@@ -64,7 +65,7 @@ const MAP_STYLE = {
         [ROAD_SOURCE_ID]: {
             type: 'vector',
             tiles: [
-                '/tiles/carto-streets/{z}/{x}/{y}.mvt',
+                `${TILE_ORIGIN}/tiles/carto-streets/{z}/{x}/{y}.mvt`,
             ],
             minzoom: 0,
             maxzoom: 15,
