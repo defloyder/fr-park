@@ -1367,10 +1367,8 @@ export function initParkingUi() {
             renderSpeedCameras(state.speedCameras);
             updateNavigationMetrics();
         } catch {
-            if (sessionId === state.navigationSessionId && document.body.classList.contains('is-navigation-mode')) {
-                state.speedCameras = [];
-                renderSpeedCameras([]);
-            }
+            // Overpass is a public service and can timeout. Keep the last known
+            // camera layer instead of making cameras blink out during navigation.
         }
     }
 
@@ -1389,11 +1387,24 @@ export function initParkingUi() {
               node["camera:type"~"speed|redlight|traffic|bus_lane"]${bbox};
               way["camera:type"~"speed|redlight|traffic|bus_lane"]${bbox};
               relation["camera:type"~"speed|redlight|traffic|bus_lane"]${bbox};
-              node["man_made"="surveillance"]["surveillance"~"traffic|public"]${bbox};
-              way["man_made"="surveillance"]["surveillance"~"traffic|public"]${bbox};
             );
             out center 240;
         `;
+        const fallbackQuery = `
+            [out:json][timeout:12];
+            (
+              node["highway"="speed_camera"]${bbox};
+              node["enforcement"~"maxspeed|speed|average_speed|traffic_signals|bus_lane"]${bbox};
+              node["camera:type"~"speed|redlight|traffic|bus_lane"]${bbox};
+            );
+            out center 180;
+        `;
+        const payload = await fetchOverpassPayload(query).catch(() => fetchOverpassPayload(fallbackQuery));
+
+        return parseSpeedCameraPayload(payload);
+    }
+
+    async function fetchOverpassPayload(query) {
         const response = await fetch('https://overpass-api.de/api/interpreter', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
@@ -1402,7 +1413,10 @@ export function initParkingUi() {
 
         if (!response.ok) throw new Error('Speed cameras are unavailable.');
 
-        const payload = await response.json();
+        return response.json();
+    }
+
+    function parseSpeedCameraPayload(payload) {
         return (payload.elements ?? []).map((item) => {
             const tags = item.tags ?? {};
 

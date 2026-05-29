@@ -63,9 +63,9 @@
 - Используемые OSM-теги:
   - `highway=speed_camera`;
   - `enforcement=maxspeed`, `enforcement=speed`, `enforcement=average_speed`, `enforcement=traffic_signals`, `enforcement=bus_lane`;
-  - `camera:type=speed`, `camera:type=redlight`, `camera:type=traffic`, `camera:type=bus_lane`;
-  - часть traffic-surveillance объектов: `man_made=surveillance` + `surveillance=traffic/public`.
+  - `camera:type=speed`, `camera:type=redlight`, `camera:type=traffic`, `camera:type=bus_lane`.
 - Запрос забирает `node`, `way` и `relation` объекты; для линий и отношений используется `center` из Overpass.
+- Если расширенный запрос к Overpass не проходит, frontend повторяет легкий `node`-only запрос.
 - Для каждой камеры сохраняются:
   - координаты;
   - `maxspeed`;
