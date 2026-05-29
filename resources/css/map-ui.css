@@ -1549,12 +1549,12 @@ body.is-navigation-following .navigation-panel__summary {
 }
 
 body.is-navigation-following .navigation-panel__drive {
-    order: 1;
+    order: 2;
 }
 
 body.is-navigation-following .navigation-panel__trip {
     display: grid;
-    order: 2;
+    order: 1;
     align-self: center;
     padding: 0 10px 0 6px;
 }
@@ -1804,6 +1804,7 @@ body[data-map-layer="satellite"] .navigation-speedometer,
 body[data-map-layer="light"] .navigation-speedometer,
 .map-theme-light .navigation-guidance,
 .map-theme-light .navigation-speedometer {
+    color: #101722;
     background:
         linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(233, 252, 255, 0.76)),
         rgba(255, 255, 255, 0.80);
@@ -1833,6 +1834,22 @@ body[data-map-layer="light"] .navigation-speedometer span,
 .map-theme-light .navigation-guidance span,
 .map-theme-light .navigation-speedometer span {
     color: rgba(16, 23, 34, 0.60);
+}
+
+body[data-map-layer="light"] .navigation-speedometer {
+    color: #F8FAFC;
+    background:
+        linear-gradient(145deg, rgba(15, 23, 42, 0.94), rgba(3, 7, 18, 0.84)),
+        rgba(3, 7, 18, 0.86);
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
+body[data-map-layer="light"] .navigation-speedometer__current strong {
+    color: #F8FAFC;
+}
+
+body[data-map-layer="light"] .navigation-speedometer span {
+    color: rgba(248, 250, 252, 0.68);
 }
 
 .navigation-guidance__metrics {
@@ -1971,7 +1988,7 @@ body.is-navigation-mode .map-canvas::after {
         right: 8px;
         bottom: calc(8px + env(safe-area-inset-bottom));
         left: 8px;
-        grid-template-columns: minmax(106px, 0.92fr) minmax(0, 1fr);
+        grid-template-columns: minmax(0, 1fr) minmax(92px, 116px);
         width: auto;
         padding: 6px;
         transform: translateY(14px);
@@ -1983,27 +2000,34 @@ body.is-navigation-mode .map-canvas::after {
 
     body.is-navigation-following .navigation-panel__trip {
         justify-items: start;
-        padding: 0 4px;
+        gap: 2px;
+        padding: 0 8px 0 10px;
     }
 
     body.is-navigation-following .navigation-panel__trip strong {
-        font-size: 1.02rem;
+        font-size: 1.24rem;
+        line-height: 1;
     }
 
     body.is-navigation-following .navigation-panel__trip span,
-    body.is-navigation-following .navigation-panel__trip small,
+    body.is-navigation-following .navigation-panel__trip small {
+        font-size: 0.78rem;
+        line-height: 1.08;
+    }
+
     body.is-navigation-following .navigation-panel__trip em {
-        font-size: 0.62rem;
+        font-size: 0.72rem;
         line-height: 1.05;
     }
 
     body.is-navigation-following .navigation-panel__drive {
-        min-height: 48px;
+        min-height: 44px;
+        align-self: center;
         padding: 6px 8px;
     }
 
     body.is-navigation-following .navigation-panel__drive span {
-        font-size: 0.78rem;
+        font-size: 0.76rem;
     }
 
     body.is-navigation-following .navigation-panel__drive small {

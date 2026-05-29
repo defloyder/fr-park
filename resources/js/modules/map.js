@@ -670,8 +670,8 @@ function updateVectorRoadLayerTheme(layerId) {
             'line-opacity': isSatellite ? 0 : 1,
         },
         'building-3d': {
-            'fill-extrusion-color': isDark ? 'rgba(116, 139, 163, 0.58)' : 'rgba(70, 86, 104, 0.58)',
-            'fill-extrusion-opacity': isSatellite ? 0 : 0.82,
+            'fill-extrusion-color': isDark ? 'rgba(116, 139, 163, 0.58)' : 'rgba(178, 201, 214, 0.46)',
+            'fill-extrusion-opacity': isSatellite ? 0 : (isDark ? 0.82 : 0.56),
         },
         'road-casing-minor': {
             'line-color': isDark ? 'rgba(255, 255, 255, 0.34)' : 'rgba(15, 23, 42, 0.32)',
