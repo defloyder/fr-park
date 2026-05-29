@@ -73,6 +73,8 @@ const state = {
     navigationRouteRefreshInFlight: false,
     navigationLastRerouteAt: 0,
     navigationPreserveZoom: false,
+    navigationSessionId: 0,
+    wakeLock: null,
     speedCameras: [],
 };
 
@@ -177,6 +179,12 @@ export function initParkingUi() {
             document.body.classList.add('is-navigation-detached');
             state.navigationPreserveZoom = true;
             saveNavigationState();
+        }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && document.body.classList.contains('is-navigation-following')) {
+            requestNavigationWakeLock();
         }
     });
 
@@ -990,10 +998,12 @@ export function initParkingUi() {
         document.body.classList.add('is-navigation-following');
         document.body.classList.remove('is-navigation-detached');
         state.navigationPreserveZoom = false;
+        state.navigationSessionId += 1;
         startNavigationLocationWatch();
         renderNavigationPanel();
         startNavigationRouteRefreshTimer();
         refreshSpeedCameras(state.navigationRoute);
+        requestNavigationWakeLock();
         saveNavigationState();
     }
 
@@ -1021,6 +1031,7 @@ export function initParkingUi() {
     function enterNavigationMode(spot, route) {
         state.navigationSpot = spot;
         state.navigationRoute = route;
+        state.navigationSessionId += 1;
 
         closeRoutePicker();
         list.classList.add('hidden');
@@ -1040,6 +1051,7 @@ export function initParkingUi() {
         renderNavigationPanel();
         startNavigationRouteRefreshTimer();
         refreshSpeedCameras(route);
+        requestNavigationWakeLock();
         saveNavigationState();
     }
 
@@ -1142,6 +1154,7 @@ export function initParkingUi() {
         state.navigationRoute = saved.route;
         state.userLocation = saved.userLocation ?? state.userLocation;
         state.navigationPreserveZoom = Boolean(saved.preserveZoom);
+        state.navigationSessionId += 1;
         document.body.classList.add('is-navigation-mode', 'is-navigation-following');
         document.body.classList.remove('is-navigation-detached');
         restoreActiveRoute(saved.route);
@@ -1155,6 +1168,7 @@ export function initParkingUi() {
         renderNavigationPanel();
         startNavigationRouteRefreshTimer();
         refreshSpeedCameras(saved.route);
+        requestNavigationWakeLock();
     }
 
     function readNavigationState() {
@@ -1457,9 +1471,11 @@ export function initParkingUi() {
     }
 
     function stopNavigationMode() {
+        state.navigationSessionId += 1;
         document.body.classList.remove('is-navigation-mode');
         document.body.classList.remove('is-navigation-following');
         document.body.classList.remove('is-navigation-detached');
+        releaseNavigationWakeLock();
         stopNavigationLocationWatch();
         stopNavigationRouteRefreshTimer();
         document.querySelector('.navigation-panel')?.remove();
@@ -1477,6 +1493,34 @@ export function initParkingUi() {
         stopNavigationMetricsTimer();
         clearActiveRoute();
         clearNavigationState();
+        window.setTimeout(clearActiveRoute, 0);
+        window.setTimeout(clearActiveRoute, 250);
+    }
+
+    async function requestNavigationWakeLock() {
+        if (!('wakeLock' in navigator) || state.wakeLock || document.visibilityState !== 'visible') {
+            return;
+        }
+
+        const sessionId = state.navigationSessionId;
+
+        try {
+            state.wakeLock = await navigator.wakeLock.request('screen');
+            if (sessionId !== state.navigationSessionId || !document.body.classList.contains('is-navigation-following')) {
+                releaseNavigationWakeLock();
+                return;
+            }
+            state.wakeLock.addEventListener('release', () => {
+                state.wakeLock = null;
+            }, { once: true });
+        } catch {
+            state.wakeLock = null;
+        }
+    }
+
+    function releaseNavigationWakeLock() {
+        state.wakeLock?.release?.().catch(() => {});
+        state.wakeLock = null;
     }
 
     function startNavigationLocationWatch() {
@@ -1536,9 +1580,17 @@ export function initParkingUi() {
         if (!state.navigationSpot || !state.userLocation || !document.body.classList.contains('is-navigation-mode')) return;
         if (state.navigationRouteRefreshInFlight) return;
 
+        const sessionId = state.navigationSessionId;
+
         try {
             state.navigationRouteRefreshInFlight = true;
             const route = await buildRouteToSpot(state.userLocation, state.navigationSpot, { camera: 'none' });
+
+            if (sessionId !== state.navigationSessionId || !document.body.classList.contains('is-navigation-mode')) {
+                clearActiveRoute();
+                return;
+            }
+
             state.navigationRoute = route;
             state.speedLimitKmh = estimateSpeedLimitKmh(route, state.userLocation);
             state.navigationLastRerouteAt = Date.now();

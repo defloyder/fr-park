@@ -289,21 +289,29 @@ const MAP_STYLE = {
                     POI_ICON_IMAGE_IDS.landmark,
                 ],
                 'text-field': [
-                    'case',
+                    'coalesce',
+                    ['get', 'name:ru'],
+                    ['get', 'name'],
                     [
                         'match',
                         ['coalesce', ['get', 'class'], ['get', 'subclass']],
                         ['subway', 'railway', 'station'],
-                        true,
-                        false,
+                        'Метро',
+                        ['hospital'],
+                        'Больница',
+                        ['fuel'],
+                        'АЗС',
+                        ['attraction', 'monument', 'museum'],
+                        'Ориентир',
+                        '',
                     ],
-                    ['coalesce', ['get', 'name:ru'], ['get', 'name']],
-                    '',
                 ],
                 'text-font': ['Noto Sans Regular'],
-                'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 17, 12],
-                'text-offset': [0, 1.05],
-                'text-anchor': 'top',
+                'text-size': ['interpolate', ['linear'], ['zoom'], 14, 9.5, 16, 11, 18, 12],
+                'text-radial-offset': ['interpolate', ['linear'], ['zoom'], 14, 0.62, 17, 0.82],
+                'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
+                'text-justify': 'auto',
+                'text-max-width': 9,
                 'icon-size': ['interpolate', ['linear'], ['zoom'], 14, 0.72, 17, 1],
                 'icon-allow-overlap': false,
                 'icon-ignore-placement': false,
@@ -464,28 +472,9 @@ function addSpeedCameraSourceAndLayer() {
         source: SPEED_CAMERA_SOURCE_ID,
         layout: {
             'icon-image': SPEED_CAMERA_MARKER_ID,
-            'icon-size': ['interpolate', ['linear'], ['zoom'], 10, 0.62, 16, 0.92],
+            'icon-size': ['interpolate', ['linear'], ['zoom'], 10, 0.72, 16, 1],
             'icon-allow-overlap': true,
             'icon-ignore-placement': true,
-        },
-    });
-
-    map.addLayer({
-        id: 'speed-camera-direction',
-        type: 'symbol',
-        source: SPEED_CAMERA_SOURCE_ID,
-        layout: {
-            'text-field': '›',
-            'text-size': ['interpolate', ['linear'], ['zoom'], 10, 18, 16, 25],
-            'text-rotate': ['coalesce', ['to-number', ['get', 'bearing']], 0],
-            'text-rotation-alignment': 'map',
-            'text-allow-overlap': true,
-            'text-ignore-placement': true,
-        },
-        paint: {
-            'text-color': '#EF174A',
-            'text-halo-color': 'rgba(255, 255, 255, 0.96)',
-            'text-halo-width': 2.2,
         },
     });
 
@@ -515,31 +504,55 @@ function addSpeedCameraSourceAndLayer() {
 function addSpeedCameraImage() {
     if (map.hasImage(SPEED_CAMERA_MARKER_ID)) return;
 
-    const size = 64;
+    const size = 80;
+    const center = size / 2;
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
     const context = canvas.getContext('2d');
 
     context.clearRect(0, 0, size, size);
+
+    context.shadowColor = 'rgba(15, 23, 42, 0.26)';
+    context.shadowBlur = 8;
+    context.shadowOffsetY = 3;
     context.beginPath();
-    context.arc(32, 32, 22, 0, Math.PI * 2);
+    context.arc(center, center, 26, 0, Math.PI * 2);
     context.fillStyle = '#FFFFFF';
     context.fill();
-    context.lineWidth = 7;
+    context.shadowColor = 'transparent';
+    context.lineWidth = 8;
     context.strokeStyle = '#EF174A';
     context.stroke();
-    context.lineWidth = 3;
+
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
+    context.lineWidth = 3.2;
     context.strokeStyle = '#111827';
-    context.strokeRect(22, 25, 20, 15);
+    context.strokeRect(26, 31, 28, 17);
     context.beginPath();
-    context.arc(32, 32.5, 4.5, 0, Math.PI * 2);
+    context.moveTo(30, 31);
+    context.lineTo(34, 25);
+    context.lineTo(46, 25);
+    context.lineTo(50, 31);
     context.stroke();
     context.beginPath();
-    context.moveTo(27, 25);
-    context.lineTo(30, 20);
-    context.lineTo(36, 20);
-    context.lineTo(39, 25);
+    context.arc(center, 39.5, 5.2, 0, Math.PI * 2);
+    context.stroke();
+
+    context.beginPath();
+    context.moveTo(21, 34);
+    context.lineTo(18, 34);
+    context.moveTo(21, 40);
+    context.lineTo(17, 40);
+    context.moveTo(21, 46);
+    context.lineTo(18, 46);
+    context.moveTo(59, 34);
+    context.lineTo(62, 34);
+    context.moveTo(59, 40);
+    context.lineTo(63, 40);
+    context.moveTo(59, 46);
+    context.lineTo(62, 46);
     context.stroke();
 
     map.addImage(SPEED_CAMERA_MARKER_ID, context.getImageData(0, 0, size, size), { pixelRatio: 2 });
