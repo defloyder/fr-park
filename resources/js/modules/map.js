@@ -20,7 +20,7 @@ const TRAFFIC_FLOW_SOURCE_ID = 'tomtom-traffic-flow';
 const TRAFFIC_FLOW_LAYER_ID = 'tomtom-traffic-flow';
 const ROUTE_CASING_LAYER_ID = 'active-route-casing';
 const ROUTE_LINE_LAYER_ID = 'active-route-line';
-const ROAD_SOURCE_ID = 'carto-streets-vector';
+const ROAD_SOURCE_ID = 'openfreemap-vector';
 const BASE_LAYER_IDS = ['light', 'dark', 'satellite'];
 const DEFAULT_BASE_LAYER_ID = 'light';
 const BASE_LAYER_STORAGE_KEY = 'auralith:map-layer';
@@ -28,31 +28,11 @@ const ROUTE_CACHE_STORAGE_KEY = 'auralith:last-driving-route';
 const TRAFFIC_LAYER_STORAGE_KEY = 'auralith:traffic-enabled';
 const FOLLOW_ZOOM = 15.4;
 const FOLLOW_PITCH = 50;
-const TILE_ORIGIN = window.location.origin;
 
 const MAP_STYLE = {
     version: 8,
-    glyphs: 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf',
+    glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
     sources: {
-        'basemap-light': {
-            type: 'raster',
-            tiles: [
-                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-            ],
-            tileSize: 256,
-            attribution: '© OpenStreetMap contributors',
-        },
-        'basemap-dark': {
-            type: 'raster',
-            tiles: [
-                'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
-                'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
-                'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
-                'https://d.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
-            ],
-            tileSize: 256,
-            attribution: '© OpenStreetMap © CARTO',
-        },
         'basemap-satellite': {
             type: 'raster',
             tiles: [
@@ -60,44 +40,15 @@ const MAP_STYLE = {
             ],
             tileSize: 256,
             maxzoom: 17,
-            attribution: 'Tiles © Esri',
+            attribution: 'Tiles (c) Esri',
         },
         [ROAD_SOURCE_ID]: {
             type: 'vector',
-            tiles: [
-                `${TILE_ORIGIN}/tiles/carto-streets/{z}/{x}/{y}.mvt`,
-            ],
-            minzoom: 0,
-            maxzoom: 15,
-            attribution: '© OpenStreetMap © CARTO',
+            url: 'https://tiles.openfreemap.org/planet',
+            attribution: '(c) OpenFreeMap (c) OpenMapTiles (c) OpenStreetMap contributors',
         },
     },
     layers: [
-        {
-            id: 'basemap-light',
-            type: 'raster',
-            source: 'basemap-light',
-            paint: {
-                'raster-opacity': 0,
-                'raster-saturation': 0.08,
-                'raster-contrast': 0.14,
-            },
-        },
-        {
-            id: 'basemap-dark',
-            type: 'raster',
-            source: 'basemap-dark',
-            layout: {
-                visibility: 'none',
-            },
-            paint: {
-                'raster-opacity': 0,
-                'raster-brightness-min': 0.08,
-                'raster-brightness-max': 0.94,
-                'raster-saturation': 0.12,
-                'raster-contrast': 0.12,
-            },
-        },
         {
             id: 'basemap-satellite',
             type: 'raster',
@@ -249,7 +200,7 @@ const MAP_STYLE = {
             minzoom: 5,
             layout: {
                 'text-field': ['coalesce', ['get', 'name:ru'], ['get', 'name']],
-                'text-font': ['Open Sans Regular'],
+                'text-font': ['Noto Sans Regular'],
                 'text-size': ['interpolate', ['linear'], ['zoom'], 5, 11, 12, 16],
                 'text-rotation-alignment': 'viewport',
                 'text-pitch-alignment': 'viewport',
@@ -271,7 +222,7 @@ const MAP_STYLE = {
             layout: {
                 'symbol-placement': 'line',
                 'text-field': ['coalesce', ['get', 'name:ru'], ['get', 'name']],
-                'text-font': ['Open Sans Regular'],
+                'text-font': ['Noto Sans Regular'],
                 'text-size': ['interpolate', ['linear'], ['zoom'], 12, 10, 16, 13],
                 'text-rotation-alignment': 'viewport',
                 'text-pitch-alignment': 'viewport',

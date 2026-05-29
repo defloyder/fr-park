@@ -1,4 +1,4 @@
-const CACHE_NAME = 'auralith-navigation-v2';
+const CACHE_NAME = 'auralith-navigation-v3';
 const SHELL_URLS = [
     '/',
 ];
