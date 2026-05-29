@@ -20,6 +20,7 @@ const STATUS_LABELS = {
     outdated: 'Неактуально',
 };
 
+
 const NAVIGATION_STATE_STORAGE_KEY = 'auralith:navigation-state';
 const SPEED_CAMERA_ROUTE_DISTANCE_METERS = 160;
 

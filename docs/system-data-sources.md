@@ -57,6 +57,7 @@
 
 ## Камеры и антирадар
 
+
 - Камеры скорости подтягиваются на frontend из OpenStreetMap через Overpass API.
 - Запрос находится в `fetchOpenStreetMapSpeedCameras()` в `resources/js/modules/parking-form.js`.
 - Используемые OSM-теги:

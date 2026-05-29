@@ -61,6 +61,7 @@ class ParkingSpotController extends Controller
         return ParkingSpotResource::make($parkingSpot->refresh());
     }
 
+    
     public function destroy(ParkingSpot $parkingSpot): Response
     {
         $parkingSpot->delete();
