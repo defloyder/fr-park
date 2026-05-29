@@ -15,18 +15,23 @@ const SOURCE_ID = 'parking-spots';
 const PENDING_SOURCE_ID = 'pending-parking-spot';
 const USER_LOCATION_SOURCE_ID = 'user-location';
 const ROUTE_SOURCE_ID = 'active-route';
+const SPEED_CAMERA_SOURCE_ID = 'speed-cameras';
 const TRAFFIC_FLOW_SOURCE_ID = 'tomtom-traffic-flow';
 const TRAFFIC_FLOW_LAYER_ID = 'tomtom-traffic-flow';
 const ROUTE_CASING_LAYER_ID = 'active-route-casing';
 const ROUTE_LINE_LAYER_ID = 'active-route-line';
+const ROAD_SOURCE_ID = 'carto-streets-vector';
 const BASE_LAYER_IDS = ['light', 'dark', 'satellite'];
 const DEFAULT_BASE_LAYER_ID = 'light';
 const BASE_LAYER_STORAGE_KEY = 'auralith:map-layer';
 const ROUTE_CACHE_STORAGE_KEY = 'auralith:last-driving-route';
 const TRAFFIC_LAYER_STORAGE_KEY = 'auralith:traffic-enabled';
+const FOLLOW_ZOOM = 15.4;
+const FOLLOW_PITCH = 50;
 
 const MAP_STYLE = {
     version: 8,
+    glyphs: 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf',
     sources: {
         'basemap-light': {
             type: 'raster',
@@ -56,6 +61,15 @@ const MAP_STYLE = {
             maxzoom: 17,
             attribution: 'Tiles © Esri',
         },
+        [ROAD_SOURCE_ID]: {
+            type: 'vector',
+            tiles: [
+                'https://tiles.basemaps.cartocdn.com/vector/carto.streets/v1/{z}/{x}/{y}.mvt',
+            ],
+            minzoom: 0,
+            maxzoom: 15,
+            attribution: '© OpenStreetMap © CARTO',
+        },
     },
     layers: [
         {
@@ -63,7 +77,7 @@ const MAP_STYLE = {
             type: 'raster',
             source: 'basemap-light',
             paint: {
-                'raster-opacity': 1,
+                'raster-opacity': 0,
                 'raster-saturation': 0.08,
                 'raster-contrast': 0.14,
             },
@@ -76,7 +90,7 @@ const MAP_STYLE = {
                 visibility: 'none',
             },
             paint: {
-                'raster-opacity': 0.98,
+                'raster-opacity': 0,
                 'raster-brightness-min': 0.08,
                 'raster-brightness-max': 0.94,
                 'raster-saturation': 0.12,
@@ -94,6 +108,180 @@ const MAP_STYLE = {
                 'raster-opacity': 0.96,
                 'raster-saturation': 0.02,
                 'raster-contrast': 0.06,
+            },
+        },
+        {
+            id: 'vector-background',
+            type: 'background',
+            paint: {
+                'background-color': '#EEF4F1',
+            },
+        },
+        {
+            id: 'water-fill',
+            type: 'fill',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'water',
+            paint: {
+                'fill-color': '#B9E4F2',
+                'fill-opacity': 1,
+            },
+        },
+        {
+            id: 'park-fill',
+            type: 'fill',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'park',
+            paint: {
+                'fill-color': '#CFE9CE',
+                'fill-opacity': 0.78,
+            },
+        },
+        {
+            id: 'landuse-fill',
+            type: 'fill',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'landuse',
+            minzoom: 10,
+            paint: {
+                'fill-color': '#E2EBDF',
+                'fill-opacity': 0.48,
+            },
+        },
+        {
+            id: 'boundary-line',
+            type: 'line',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'boundary',
+            minzoom: 8,
+            paint: {
+                'line-color': 'rgba(71, 85, 105, 0.26)',
+                'line-width': ['interpolate', ['linear'], ['zoom'], 8, 0.7, 14, 1.4],
+                'line-dasharray': [3, 2],
+            },
+        },
+        {
+            id: 'building-2d',
+            type: 'fill',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'building',
+            minzoom: 14,
+            paint: {
+                'fill-color': 'rgba(30, 41, 59, 0.18)',
+                'fill-outline-color': 'rgba(15, 23, 42, 0.24)',
+                'fill-opacity': 1,
+            },
+        },
+        {
+            id: 'road-casing-minor',
+            type: 'line',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'transportation',
+            minzoom: 11,
+            filter: ['in', ['get', 'class'], ['literal', ['minor', 'service', 'track', 'path']]],
+            layout: {
+                'line-cap': 'round',
+                'line-join': 'round',
+            },
+            paint: {
+                'line-color': 'rgba(15, 23, 42, 0.32)',
+                'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.4, 15, 5, 18, 12],
+                'line-opacity': 0.72,
+            },
+        },
+        {
+            id: 'road-casing-major',
+            type: 'line',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'transportation',
+            minzoom: 8,
+            filter: ['in', ['get', 'class'], ['literal', ['motorway', 'trunk', 'primary', 'secondary', 'tertiary']]],
+            layout: {
+                'line-cap': 'round',
+                'line-join': 'round',
+            },
+            paint: {
+                'line-color': 'rgba(2, 6, 23, 0.42)',
+                'line-width': ['interpolate', ['linear'], ['zoom'], 8, 2, 13, 7, 17, 22],
+                'line-opacity': 0.82,
+            },
+        },
+        {
+            id: 'road-minor',
+            type: 'line',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'transportation',
+            minzoom: 11,
+            filter: ['in', ['get', 'class'], ['literal', ['minor', 'service', 'track', 'path']]],
+            layout: {
+                'line-cap': 'round',
+                'line-join': 'round',
+            },
+            paint: {
+                'line-color': '#FFFFFF',
+                'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.8, 15, 3.8, 18, 9],
+                'line-opacity': 0.94,
+            },
+        },
+        {
+            id: 'road-major',
+            type: 'line',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'transportation',
+            minzoom: 8,
+            filter: ['in', ['get', 'class'], ['literal', ['motorway', 'trunk', 'primary', 'secondary', 'tertiary']]],
+            layout: {
+                'line-cap': 'round',
+                'line-join': 'round',
+            },
+            paint: {
+                'line-color': '#FFF8DF',
+                'line-width': ['interpolate', ['linear'], ['zoom'], 8, 1.2, 13, 5, 17, 17],
+                'line-opacity': 0.96,
+            },
+        },
+        {
+            id: 'place-label',
+            type: 'symbol',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'place',
+            minzoom: 5,
+            layout: {
+                'text-field': ['coalesce', ['get', 'name:ru'], ['get', 'name']],
+                'text-font': ['Open Sans Regular'],
+                'text-size': ['interpolate', ['linear'], ['zoom'], 5, 11, 12, 16],
+                'text-rotation-alignment': 'viewport',
+                'text-pitch-alignment': 'viewport',
+                'text-allow-overlap': false,
+            },
+            paint: {
+                'text-color': '#334155',
+                'text-halo-color': 'rgba(255, 255, 255, 0.88)',
+                'text-halo-width': 1.6,
+                'text-opacity': 0.9,
+            },
+        },
+        {
+            id: 'road-name',
+            type: 'symbol',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'transportation_name',
+            minzoom: 12,
+            layout: {
+                'symbol-placement': 'line',
+                'text-field': ['coalesce', ['get', 'name:ru'], ['get', 'name']],
+                'text-font': ['Open Sans Regular'],
+                'text-size': ['interpolate', ['linear'], ['zoom'], 12, 10, 16, 13],
+                'text-rotation-alignment': 'viewport',
+                'text-pitch-alignment': 'viewport',
+                'text-keep-upright': true,
+                'text-allow-overlap': false,
+            },
+            paint: {
+                'text-color': '#111827',
+                'text-halo-color': 'rgba(255, 255, 255, 0.92)',
+                'text-halo-width': 2,
+                'text-opacity': 1,
             },
         },
     ],
@@ -178,6 +366,7 @@ function initMapLibreMap() {
             addPendingSourceAndLayer();
             addUserLocationSourceAndLayer();
             addRouteSourceAndLayer();
+            addSpeedCameraSourceAndLayer();
             addTrafficFlowLayer();
             bindMapEvents();
         } catch (error) {
@@ -196,6 +385,87 @@ function initMapLibreMap() {
     });
 
     window.addEventListener('resize', () => map?.resize());
+}
+
+function addSpeedCameraSourceAndLayer() {
+    map.addSource(SPEED_CAMERA_SOURCE_ID, {
+        type: 'geojson',
+        data: buildFeatureCollection([]),
+    });
+
+    map.addLayer({
+        id: 'speed-cameras',
+        type: 'circle',
+        source: SPEED_CAMERA_SOURCE_ID,
+        paint: {
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4, 16, 8],
+            'circle-color': '#EF174A',
+            'circle-stroke-color': '#FFFFFF',
+            'circle-stroke-width': 2,
+            'circle-opacity': 0.92,
+        },
+    });
+
+    map.addLayer({
+        id: 'speed-camera-direction',
+        type: 'symbol',
+        source: SPEED_CAMERA_SOURCE_ID,
+        layout: {
+            'text-field': '▲',
+            'text-size': ['interpolate', ['linear'], ['zoom'], 10, 12, 16, 18],
+            'text-rotate': ['get', 'bearing'],
+            'text-rotation-alignment': 'map',
+            'text-allow-overlap': true,
+            'text-ignore-placement': true,
+        },
+        paint: {
+            'text-color': '#FFFFFF',
+            'text-halo-color': 'rgba(127, 29, 29, 0.88)',
+            'text-halo-width': 2,
+        },
+    });
+
+    map.addLayer({
+        id: 'speed-camera-label',
+        type: 'symbol',
+        source: SPEED_CAMERA_SOURCE_ID,
+        minzoom: 13,
+        layout: {
+            'text-field': ['get', 'label'],
+            'text-font': ['Open Sans Regular'],
+            'text-size': ['interpolate', ['linear'], ['zoom'], 13, 10, 16, 12],
+            'text-offset': [0, 1.55],
+            'text-anchor': 'top',
+            'text-rotation-alignment': 'viewport',
+            'text-pitch-alignment': 'viewport',
+            'text-allow-overlap': false,
+        },
+        paint: {
+            'text-color': '#7F1D1D',
+            'text-halo-color': 'rgba(255, 255, 255, 0.92)',
+            'text-halo-width': 2,
+        },
+    });
+}
+
+export function renderSpeedCameras(cameras = []) {
+    map?.getSource(SPEED_CAMERA_SOURCE_ID)?.setData({
+        type: 'FeatureCollection',
+        features: cameras.map((camera) => ({
+            type: 'Feature',
+            properties: {
+                id: camera.id,
+                title: camera.title ?? 'Камера',
+                label: camera.label ?? 'Камера',
+                bearing: Number(camera.bearing) || 0,
+                isDummy: Boolean(camera.isDummy),
+            },
+            geometry: {
+                type: 'Point',
+                coordinates: [Number(camera.longitude), Number(camera.latitude)],
+            },
+        })),
+    });
 }
 
 function bindLayerSwitcher() {
@@ -250,6 +520,7 @@ function setBaseMapLayer(layerId = DEFAULT_BASE_LAYER_ID, { persist = false } = 
             map.setLayoutProperty(mapLayerId, 'visibility', id === layerId ? 'visible' : 'none');
         }
     });
+    updateVectorRoadLayerTheme(layerId);
 
     document.body.dataset.mapLayer = layerId;
     if (persist) {
@@ -258,6 +529,75 @@ function setBaseMapLayer(layerId = DEFAULT_BASE_LAYER_ID, { persist = false } = 
 
     document.querySelectorAll('[data-map-layer]').forEach((button) => {
         button.classList.toggle('is-active', button.dataset.mapLayer === layerId);
+    });
+}
+
+function updateVectorRoadLayerTheme(layerId) {
+    if (!map) return;
+
+    const isSatellite = layerId === 'satellite';
+    const isDark = layerId === 'dark';
+    const opacity = isSatellite ? 0 : 1;
+    const paint = {
+        'vector-background': {
+            'background-color': isSatellite ? 'rgba(0, 0, 0, 0)' : (isDark ? '#111827' : '#EEF4F1'),
+            'background-opacity': isSatellite ? 0 : 1,
+        },
+        'water-fill': {
+            'fill-color': isDark ? '#0F2A3A' : '#B9E4F2',
+            'fill-opacity': isSatellite ? 0 : 1,
+        },
+        'park-fill': {
+            'fill-color': isDark ? '#173525' : '#CFE9CE',
+            'fill-opacity': isSatellite ? 0 : 0.78,
+        },
+        'landuse-fill': {
+            'fill-color': isDark ? '#182235' : '#E2EBDF',
+            'fill-opacity': isSatellite ? 0 : 0.48,
+        },
+        'boundary-line': {
+            'line-color': isDark ? 'rgba(226, 232, 240, 0.18)' : 'rgba(71, 85, 105, 0.26)',
+            'line-opacity': isSatellite ? 0 : 1,
+        },
+        'building-2d': {
+            'fill-color': isDark ? 'rgba(255, 255, 255, 0.18)' : 'rgba(30, 41, 59, 0.18)',
+            'fill-outline-color': isDark ? 'rgba(255, 255, 255, 0.30)' : 'rgba(15, 23, 42, 0.24)',
+            'fill-opacity': opacity,
+        },
+        'road-casing-minor': {
+            'line-color': isDark ? 'rgba(255, 255, 255, 0.34)' : 'rgba(15, 23, 42, 0.32)',
+            'line-opacity': isSatellite ? 0 : 0.72,
+        },
+        'road-casing-major': {
+            'line-color': isDark ? 'rgba(255, 255, 255, 0.58)' : 'rgba(2, 6, 23, 0.42)',
+            'line-opacity': isSatellite ? 0 : 0.82,
+        },
+        'road-minor': {
+            'line-color': isDark ? '#1F2937' : '#FFFFFF',
+            'line-opacity': isSatellite ? 0 : 0.94,
+        },
+        'road-major': {
+            'line-color': isDark ? '#0B1220' : '#FFF8DF',
+            'line-opacity': isSatellite ? 0 : 0.96,
+        },
+        'road-name': {
+            'text-color': isDark ? '#F8FAFC' : '#111827',
+            'text-halo-color': isDark ? 'rgba(8, 13, 24, 0.92)' : 'rgba(255, 255, 255, 0.92)',
+            'text-opacity': isSatellite ? 0 : 1,
+        },
+        'place-label': {
+            'text-color': isDark ? '#DDE8F7' : '#334155',
+            'text-halo-color': isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.88)',
+            'text-opacity': isSatellite ? 0 : 0.9,
+        },
+    };
+
+    Object.entries(paint).forEach(([layerIdToUpdate, properties]) => {
+        if (!map.getLayer(layerIdToUpdate)) return;
+
+        Object.entries(properties).forEach(([property, value]) => {
+            map.setPaintProperty(layerIdToUpdate, property, value);
+        });
     });
 }
 
@@ -302,10 +642,8 @@ function setTrafficLayerVisibility(isVisible) {
         return;
     }
 
-    const isActuallyVisible = isVisible && (!isTrafficSuppressedByRoute || isTrafficForcedVisibleByUser);
-
-    map.setLayoutProperty(TRAFFIC_FLOW_LAYER_ID, 'visibility', isActuallyVisible ? 'visible' : 'none');
-    updateTrafficToggleButton(isActuallyVisible);
+    map.setLayoutProperty(TRAFFIC_FLOW_LAYER_ID, 'visibility', isVisible ? 'visible' : 'none');
+    updateTrafficToggleButton(isVisible);
 }
 
 function bindMapControlButtons() {
@@ -809,7 +1147,7 @@ export function focusUserLocation({ latitude, longitude, accuracy = 0, heading =
     if (focus) {
         map.easeTo({
             center: [Number(longitude), Number(latitude)],
-            zoom: Math.max(map.getZoom(), 15.5),
+            zoom: Math.min(Math.max(map.getZoom(), 13.8), 14.8),
             duration: 220,
         });
     }
@@ -893,6 +1231,9 @@ function keepNavigationLayersOrdered() {
         'pending-spot',
         'user-location-accuracy',
         'user-location-dot',
+        'speed-cameras',
+        'speed-camera-direction',
+        'speed-camera-label',
     ];
 
     if (map.getLayer(TRAFFIC_FLOW_LAYER_ID) && map.getLayer(ROUTE_CASING_LAYER_ID)) {
@@ -944,11 +1285,18 @@ export function clearActiveRoute() {
     setRouteTrafficMode(false);
 }
 
+export function restoreActiveRoute(route) {
+    if (!map || !route?.geometry?.coordinates?.length) {
+        return;
+    }
+
+    map.getSource(ROUTE_SOURCE_ID)?.setData(buildRouteFeatureCollection(route));
+    setRouteTrafficMode(true);
+    keepNavigationLayersOrdered();
+}
+
 function setRouteTrafficMode(isActive) {
     isTrafficSuppressedByRoute = isActive;
-    if (isActive) {
-        isTrafficForcedVisibleByUser = false;
-    }
     setTrafficLayerVisibility(isTrafficLayerEnabled());
 }
 
@@ -1020,9 +1368,10 @@ export function focusNavigationPosition(userLocation, route = null, { preserveZo
 
     map.easeTo({
         center: current,
-        zoom: preserveZoom ? map.getZoom() : 16.6,
-        pitch: 52,
+        zoom: preserveZoom ? map.getZoom() : FOLLOW_ZOOM,
+        pitch: FOLLOW_PITCH,
         bearing: next ? getBearing(current, next) : map.getBearing(),
+        offset: [0, Math.round(window.innerHeight * 0.18)],
         duration: 420,
     });
 }
@@ -1143,9 +1492,10 @@ function focusRouteStart(coordinates) {
 
     map.easeTo({
         center: start,
-        zoom: 16.4,
-        pitch: 52,
+        zoom: FOLLOW_ZOOM,
+        pitch: FOLLOW_PITCH,
         bearing: next ? getBearing(start, next) : map.getBearing(),
+        offset: [0, Math.round(window.innerHeight * 0.18)],
         duration: 420,
     });
 }

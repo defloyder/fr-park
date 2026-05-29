@@ -11,7 +11,7 @@ import {
     updateParkingSpot,
     uploadParkingPhoto,
 } from './parking-api';
-import { addParkingSpotToMap, buildRouteToSpot, clearActiveRoute, clearPendingSelection, focusNavigationPosition, focusSpot, focusSpots, focusUserLocation, replaceParkingSpotsOnMap, setMapPickingMode, startRouteNavigation, updateActiveRouteProgress } from './map';
+import { addParkingSpotToMap, buildRouteToSpot, clearActiveRoute, clearPendingSelection, focusNavigationPosition, focusSpot, focusSpots, focusUserLocation, renderSpeedCameras, replaceParkingSpotsOnMap, restoreActiveRoute, setMapPickingMode, startRouteNavigation, updateActiveRouteProgress } from './map';
 
 const STATUS_LABELS = {
     verified: 'Проверено',
@@ -19,6 +19,8 @@ const STATUS_LABELS = {
     temporary: 'Временная',
     outdated: 'Неактуально',
 };
+
+const NAVIGATION_STATE_STORAGE_KEY = 'auralith:navigation-state';
 
 const MOSCOW_DISTRICT_ALIASES = {
     'патриарших прудов': 'Пресненский',
@@ -71,6 +73,7 @@ const state = {
     navigationRouteRefreshInFlight: false,
     navigationLastRerouteAt: 0,
     navigationPreserveZoom: false,
+    speedCameras: [],
 };
 
 export function initParkingUi() {
@@ -172,6 +175,7 @@ export function initParkingUi() {
     window.addEventListener('navigation:manual-map-zoom', () => {
         if (document.body.classList.contains('is-navigation-mode')) {
             state.navigationPreserveZoom = true;
+            saveNavigationState();
         }
     });
 
@@ -195,6 +199,7 @@ export function initParkingUi() {
         renderSearchControls();
         renderSearchResults();
         renderFavoriteList();
+        restoreNavigationState();
         hideStatus();
         if (state.spots.length === 0) showStatus('Пока нет добавленных парковок. Добавьте первую точку на карту.');
     });
@@ -987,6 +992,8 @@ export function initParkingUi() {
         startNavigationLocationWatch();
         renderNavigationPanel();
         startNavigationRouteRefreshTimer();
+        refreshSpeedCameras(route);
+        saveNavigationState();
     }
 
     function recenterNavigation() {
@@ -995,6 +1002,7 @@ export function initParkingUi() {
         state.navigationPreserveZoom = false;
         focusNavigationPosition(state.userLocation, state.navigationRoute);
         document.body.classList.remove('is-navigation-detached');
+        saveNavigationState();
     }
 
     function assertRouteLocation(location, spot) {
@@ -1030,6 +1038,8 @@ export function initParkingUi() {
         startNavigationLocationWatch();
         renderNavigationPanel();
         startNavigationRouteRefreshTimer();
+        refreshSpeedCameras(route);
+        saveNavigationState();
     }
 
     function renderNavigationPanel() {
@@ -1044,14 +1054,19 @@ export function initParkingUi() {
                 guidance.innerHTML = `
                 <div class="navigation-guidance__arrow" aria-hidden="true"></div>
                 <div class="navigation-guidance__main">
-                    <strong data-navigation-instruction></strong>
-                    <span data-navigation-traffic></span>
+                    <strong data-navigation-maneuver-distance></strong>
+                    <span data-navigation-instruction></span>
                 </div>
-                <div class="navigation-guidance__metrics">
-                    <b data-navigation-duration></b>
-                    <span data-navigation-distance></span>
-                    <small data-navigation-arrival></small>
-                </div>
+            `;
+                document.body.append(guidance);
+            }
+
+            let speedHud = document.querySelector('.navigation-speed-hud');
+
+            if (!speedHud) {
+                speedHud = document.createElement('section');
+                speedHud.className = 'navigation-speed-hud liquid-glass';
+                speedHud.innerHTML = `
                 <div class="navigation-speedometer" aria-label="Скорость и ограничение">
                     <div class="navigation-speedometer__current">
                         <strong data-navigation-speed></strong>
@@ -1060,7 +1075,7 @@ export function initParkingUi() {
                     <em data-navigation-speed-limit></em>
                 </div>
             `;
-                document.body.append(guidance);
+                document.body.append(speedHud);
             }
 
             if (!document.querySelector('.navigation-recenter')) {
@@ -1097,17 +1112,74 @@ export function initParkingUi() {
         startNavigationMetricsTimer();
     }
 
+    function saveNavigationState() {
+        if (!state.navigationSpot || !state.navigationRoute?.geometry?.coordinates?.length) return;
+
+        window.localStorage?.setItem(NAVIGATION_STATE_STORAGE_KEY, JSON.stringify({
+            spotId: state.navigationSpot.id,
+            spot: state.navigationSpot,
+            route: state.navigationRoute,
+            userLocation: state.userLocation,
+            preserveZoom: state.navigationPreserveZoom,
+            savedAt: Date.now(),
+        }));
+    }
+
+    function clearNavigationState() {
+        window.localStorage?.removeItem(NAVIGATION_STATE_STORAGE_KEY);
+    }
+
+    function restoreNavigationState() {
+        const saved = readNavigationState();
+
+        if (!saved?.route?.geometry?.coordinates?.length || Date.now() - Number(saved.savedAt) > 6 * 60 * 60 * 1000) {
+            clearNavigationState();
+            return;
+        }
+
+        const spot = state.spots.find((item) => Number(item.id) === Number(saved.spotId)) ?? saved.spot;
+        if (!spot) return;
+
+        state.navigationSpot = spot;
+        state.navigationRoute = saved.route;
+        state.userLocation = saved.userLocation ?? state.userLocation;
+        state.navigationPreserveZoom = Boolean(saved.preserveZoom);
+        document.body.classList.add('is-navigation-mode', 'is-navigation-following');
+        document.body.classList.remove('is-navigation-detached');
+        restoreActiveRoute(saved.route);
+        if (state.userLocation) {
+            focusUserLocation(state.userLocation, { focus: false });
+            focusNavigationPosition(state.userLocation, saved.route, { preserveZoom: state.navigationPreserveZoom });
+        } else {
+            startRouteNavigation(saved.route);
+        }
+        startNavigationLocationWatch();
+        renderNavigationPanel();
+        startNavigationRouteRefreshTimer();
+        refreshSpeedCameras(saved.route);
+    }
+
+    function readNavigationState() {
+        try {
+            return JSON.parse(window.localStorage?.getItem(NAVIGATION_STATE_STORAGE_KEY) || 'null');
+        } catch {
+            return null;
+        }
+    }
+
     function updateNavigationMetrics() {
         if (!state.navigationRoute) return;
 
         const remainingDistance = getRemainingRouteDistance();
         const remainingDuration = getRemainingRouteDuration(remainingDistance);
         const instruction = getNextRouteInstruction(state.navigationRoute, state.userLocation);
+        const maneuverDistance = Number(instruction?.remainingMeters ?? instruction?.distanceMeters);
         const arrival = getArrivalTime(remainingDuration);
         const isFollowing = document.body.classList.contains('is-navigation-following');
         const isSpeeding = state.currentSpeedKmh > state.speedLimitKmh + 15;
 
-        setText('[data-navigation-instruction]', getNavigationInstruction(state.navigationRoute, state.userLocation));
+        setText('[data-navigation-maneuver-distance]', Number.isFinite(maneuverDistance) ? formatDistance(maneuverDistance) : formatDistance(remainingDistance));
+        setText('[data-navigation-instruction]', formatNavigationInstructionText(instruction?.text || 'Двигайтесь по маршруту'));
         setText('[data-navigation-traffic]', getTrafficLabel(state.navigationRoute));
         setText('[data-navigation-duration]', formatDuration(remainingDuration));
         setText('[data-navigation-distance]', formatDistance(remainingDistance));
@@ -1124,6 +1196,235 @@ export function initParkingUi() {
         if (arrow) arrow.innerHTML = getManeuverIconSvg(instruction);
 
         document.querySelector('.navigation-speedometer')?.classList.toggle('is-speeding', isSpeeding);
+        renderCameraAlert();
+    }
+
+    function renderCameraAlert() {
+        const camera = getNearestUpcomingCamera();
+        let alert = document.querySelector('.navigation-camera-alert');
+
+        if (!camera || camera.distanceMeters > 400) {
+            alert?.remove();
+            return;
+        }
+
+        if (!alert) {
+            alert = document.createElement('section');
+            alert.className = 'navigation-camera-alert liquid-glass';
+            alert.innerHTML = '<strong data-camera-title></strong><span data-camera-distance></span><small data-camera-details></small>';
+            document.body.append(alert);
+        }
+
+        setText('[data-camera-title]', camera.isDummy ? 'Муляж' : 'Камера');
+        setText('[data-camera-distance]', `${formatDistance(camera.distanceMeters)}`);
+        setText('[data-camera-details]', formatCameraDetails(camera));
+    }
+
+    function getNearestUpcomingCamera() {
+        if (!state.speedCameras.length || !state.userLocation || !state.navigationRoute?.geometry?.coordinates?.length) return null;
+
+        const currentProgress = getRouteProgressMeters(state.navigationRoute.geometry.coordinates, state.userLocation);
+
+        return state.speedCameras
+            .map((camera) => ({
+                ...camera,
+                routeOffsetMeters: getRouteProgressMeters(state.navigationRoute.geometry.coordinates, camera),
+                routeDistanceMeters: getDistanceToRouteMeters(state.navigationRoute, camera),
+            }))
+            .map((camera) => ({
+                ...camera,
+                distanceMeters: Math.max(0, camera.routeOffsetMeters - currentProgress),
+            }))
+            .filter((camera) => (
+                Number.isFinite(camera.distanceMeters)
+                && camera.distanceMeters >= 0
+                && camera.routeDistanceMeters < 90
+            ))
+            .sort((first, second) => first.distanceMeters - second.distanceMeters)[0] ?? null;
+    }
+
+    async function refreshSpeedCameras(route) {
+        if (!route?.geometry?.coordinates?.length) return;
+
+        try {
+            const cameras = await fetchOpenStreetMapSpeedCameras(route.geometry.coordinates);
+            state.speedCameras = cameras
+                .map((camera) => normalizeCameraForRoute(camera, route))
+                .filter((camera) => camera.routeDistanceMeters < 90)
+                .sort((first, second) => first.routeOffsetMeters - second.routeOffsetMeters);
+            renderSpeedCameras(state.speedCameras);
+            updateNavigationMetrics();
+        } catch {
+            state.speedCameras = [];
+            renderSpeedCameras([]);
+        }
+    }
+
+    async function fetchOpenStreetMapSpeedCameras(coordinates) {
+        const bounds = getRouteBounds(coordinates, 0.006);
+        const query = `
+            [out:json][timeout:12];
+            (
+              node["highway"="speed_camera"](${bounds.south},${bounds.west},${bounds.north},${bounds.east});
+              node["enforcement"="maxspeed"](${bounds.south},${bounds.west},${bounds.north},${bounds.east});
+              node["camera:type"="speed"](${bounds.south},${bounds.west},${bounds.north},${bounds.east});
+            );
+            out center 80;
+        `;
+        const response = await fetch('https://overpass-api.de/api/interpreter', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+            body: new URLSearchParams({ data: query }),
+        });
+
+        if (!response.ok) throw new Error('Speed cameras are unavailable.');
+
+        const payload = await response.json();
+        return (payload.elements ?? []).map((item) => {
+            const tags = item.tags ?? {};
+
+            return {
+                id: item.id,
+                latitude: Number(item.lat ?? item.center?.lat),
+                longitude: Number(item.lon ?? item.center?.lon),
+                title: tags.name || 'Камера контроля скорости',
+                maxspeed: tags.maxspeed || tags['maxspeed:forward'] || tags['maxspeed:backward'] || '',
+                direction: tags.direction || tags['camera:direction'] || tags['surveillance:direction'] || '',
+                cameraType: tags['camera:type'] || tags.enforcement || '',
+                isDummy: isDummyCamera(tags),
+            };
+        }).filter((camera) => Number.isFinite(camera.latitude) && Number.isFinite(camera.longitude));
+    }
+
+    function normalizeCameraForRoute(camera, route) {
+        const routePoint = getClosestRoutePoint(route.geometry.coordinates, camera);
+        const bearing = resolveCameraBearing(camera.direction, routePoint.bearing);
+        const directionLabel = getCameraDirectionLabel(bearing, routePoint.bearing);
+        const labelParts = [
+            camera.isDummy ? 'Муляж' : 'Камера',
+            camera.maxspeed ? `${parseInt(camera.maxspeed, 10) || camera.maxspeed}` : '',
+            directionLabel.short,
+        ].filter(Boolean);
+
+        return {
+            ...camera,
+            bearing,
+            routeOffsetMeters: routePoint.progressMeters,
+            routeDistanceMeters: routePoint.distanceMeters,
+            directionLabel,
+            label: labelParts.join(' · '),
+        };
+    }
+
+    function isDummyCamera(tags) {
+        const text = Object.entries(tags)
+            .map(([key, value]) => `${key}=${value}`)
+            .join(' ')
+            .toLowerCase();
+
+        return /\bdummy\b|муляж|fake|decoy|имитац/.test(text);
+    }
+
+    function resolveCameraBearing(direction, routeBearing) {
+        const normalized = String(direction || '').trim().toLowerCase();
+        const numeric = Number(normalized);
+
+        if (Number.isFinite(numeric)) {
+            return (numeric + 360) % 360;
+        }
+
+        if (['forward', 'forwards', 'по ходу'].includes(normalized)) {
+            return routeBearing;
+        }
+
+        if (['backward', 'backwards', 'against', 'против'].includes(normalized)) {
+            return (routeBearing + 180) % 360;
+        }
+
+        const cardinal = {
+            n: 0,
+            north: 0,
+            ne: 45,
+            northeast: 45,
+            e: 90,
+            east: 90,
+            se: 135,
+            southeast: 135,
+            s: 180,
+            south: 180,
+            sw: 225,
+            southwest: 225,
+            w: 270,
+            west: 270,
+            nw: 315,
+            northwest: 315,
+        }[normalized];
+
+        return Number.isFinite(cardinal) ? cardinal : routeBearing;
+    }
+
+    function getCameraDirectionLabel(cameraBearing, routeBearing) {
+        const diff = getAngleDifference(cameraBearing, routeBearing);
+
+        if (diff <= 45) return { short: 'по ходу', text: 'смотрит по ходу движения' };
+        if (diff >= 135) return { short: 'навстречу', text: 'смотрит навстречу' };
+        return { short: cameraBearing > routeBearing ? 'справа/сбоку' : 'слева/сбоку', text: 'смотрит сбоку' };
+    }
+
+    function formatCameraDetails(camera) {
+        const parts = [
+            camera.directionLabel?.text,
+            camera.maxspeed ? `лимит ${parseInt(camera.maxspeed, 10) || camera.maxspeed}` : '',
+        ].filter(Boolean);
+
+        return parts.join(' · ') || 'на маршруте';
+    }
+
+    function getClosestRoutePoint(coordinates, point) {
+        const current = [Number(point.longitude), Number(point.latitude)];
+        let progress = 0;
+        let best = {
+            distanceMeters: Number.POSITIVE_INFINITY,
+            progressMeters: 0,
+            bearing: 0,
+        };
+
+        for (let index = 1; index < coordinates.length; index += 1) {
+            const start = coordinates[index - 1];
+            const finish = coordinates[index];
+            const segmentDistance = getDistanceMeters(
+                { longitude: start[0], latitude: start[1] },
+                { longitude: finish[0], latitude: finish[1] },
+            );
+            const distanceToFinish = getDistanceMeters(
+                { longitude: current[0], latitude: current[1] },
+                { longitude: finish[0], latitude: finish[1] },
+            );
+
+            if (distanceToFinish < best.distanceMeters) {
+                best = {
+                    distanceMeters: distanceToFinish,
+                    progressMeters: progress + segmentDistance,
+                    bearing: getBearingDegrees(start, finish),
+                };
+            }
+
+            progress += segmentDistance;
+        }
+
+        return best;
+    }
+
+    function getRouteBounds(coordinates, paddingDegrees = 0) {
+        const lngs = coordinates.map((coordinate) => Number(coordinate[0])).filter(Number.isFinite);
+        const lats = coordinates.map((coordinate) => Number(coordinate[1])).filter(Number.isFinite);
+
+        return {
+            west: Math.min(...lngs) - paddingDegrees,
+            east: Math.max(...lngs) + paddingDegrees,
+            south: Math.min(...lats) - paddingDegrees,
+            north: Math.max(...lats) + paddingDegrees,
+        };
     }
 
     function startNavigationMetricsTimer() {
@@ -1152,7 +1453,11 @@ export function initParkingUi() {
         stopNavigationRouteRefreshTimer();
         document.querySelector('.navigation-panel')?.remove();
         document.querySelector('.navigation-guidance')?.remove();
+        document.querySelector('.navigation-speed-hud')?.remove();
+        document.querySelector('.navigation-camera-alert')?.remove();
         document.querySelector('.navigation-recenter')?.remove();
+        state.speedCameras = [];
+        renderSpeedCameras([]);
         state.navigationSpot = null;
         state.navigationRoute = null;
         state.navigationRouteRefreshInFlight = false;
@@ -1160,6 +1465,7 @@ export function initParkingUi() {
         state.navigationPreserveZoom = false;
         stopNavigationMetricsTimer();
         clearActiveRoute();
+        clearNavigationState();
     }
 
     function startNavigationLocationWatch() {
@@ -1181,11 +1487,11 @@ export function initParkingUi() {
 
                 focusUserLocation(state.userLocation, { focus: false });
                 updateActiveRouteProgress(state.userLocation, state.navigationRoute);
-                if (!document.body.classList.contains('is-navigation-detached')) {
-                    focusNavigationPosition(state.userLocation, state.navigationRoute, { preserveZoom: state.navigationPreserveZoom });
-                }
+                focusNavigationPosition(state.userLocation, state.navigationRoute, { preserveZoom: state.navigationPreserveZoom });
+                document.body.classList.remove('is-navigation-detached');
                 maybeRefreshNavigationRouteFromGps();
                 updateNavigationMetrics();
+                saveNavigationState();
             },
             () => {},
             {
@@ -1225,10 +1531,11 @@ export function initParkingUi() {
             state.speedLimitKmh = estimateSpeedLimitKmh(route, state.userLocation);
             state.navigationLastRerouteAt = Date.now();
             updateActiveRouteProgress(state.userLocation, route);
-            if (!document.body.classList.contains('is-navigation-detached')) {
-                focusNavigationPosition(state.userLocation, route, { preserveZoom: state.navigationPreserveZoom });
-            }
+            focusNavigationPosition(state.userLocation, route, { preserveZoom: state.navigationPreserveZoom });
+            document.body.classList.remove('is-navigation-detached');
             updateNavigationMetrics();
+            refreshSpeedCameras(route);
+            saveNavigationState();
         } catch {
             // Keep the current route if a background traffic refresh fails.
         } finally {

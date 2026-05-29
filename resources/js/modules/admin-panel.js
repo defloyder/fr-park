@@ -1,4 +1,4 @@
-import { importParkingSpots, updateParkingSpot, uploadParkingPhoto } from './parking-api';
+import { deleteParkingSpot, importParkingSpots, updateParkingSpot, uploadParkingPhoto } from './parking-api';
 
 const STATUS_LABELS = {
     verified: 'Проверено',
@@ -35,11 +35,13 @@ export function initAdminPanel() {
 
     root.addEventListener('click', async (event) => {
         const editButton = event.target.closest('[data-admin-edit]');
+        const deleteButton = event.target.closest('[data-admin-delete]');
         const checkButton = event.target.closest('[data-admin-row-check]');
         const bulkStatus = event.target.closest('[data-admin-bulk]')?.dataset.adminBulk;
         const userAdminButton = event.target.closest('[data-admin-user]');
 
         if (editButton) fillEditor(findSpot(editButton.dataset.adminEdit));
+        if (deleteButton) await deleteSingleSpot(Number(deleteButton.dataset.adminDelete));
         if (checkButton) toggleSelected(Number(checkButton.dataset.adminRowCheck));
         if (event.target.closest('[data-admin-refresh]')) await loadSpots();
         if (event.target.closest('[data-admin-users-refresh]')) await loadUsers();
@@ -168,7 +170,12 @@ export function initAdminPanel() {
                 </td>
                 <td><em class="spot-list__status spot-list__status--${getStatus(spot)}">${STATUS_LABELS[getStatus(spot)]}</em></td>
                 <td>${getPhotos(spot).length}</td>
-                <td><button class="ghost-button admin-row-action" type="button" data-admin-edit="${spot.id}">Редактировать</button></td>
+                <td>
+                    <div class="admin-row-actions">
+                        <button class="ghost-button admin-row-action" type="button" data-admin-edit="${spot.id}">Редактировать</button>
+                        <button class="danger-button admin-row-action" type="button" data-admin-delete="${spot.id}">Удалить</button>
+                    </div>
+                </td>
             </tr>
         `).join('');
 
@@ -313,6 +320,25 @@ export function initAdminPanel() {
 
         users = users.map((user) => (Number(user.id) === Number(id) ? data.data : user));
         renderUsers();
+    }
+
+    async function deleteSingleSpot(id) {
+        if (!id || !window.confirm('Удалить эту точку с карты?')) return;
+
+        try {
+            await deleteParkingSpot(id);
+            spots = spots.filter((spot) => Number(spot.id) !== Number(id));
+            selectedIds.delete(id);
+            if (Number(editor?.elements.id?.value) === Number(id)) {
+                editor?.classList.add('hidden');
+                emptyEditor?.classList.remove('hidden');
+                editorPhotos = [];
+            }
+            render();
+            setMessage('Точка удалена.', false);
+        } catch (error) {
+            setMessage(error.message || 'Не удалось удалить точку.', true);
+        }
     }
 
     function openMapModal() {
