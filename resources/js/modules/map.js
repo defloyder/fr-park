@@ -22,11 +22,10 @@ const ROUTE_CASING_LAYER_ID = 'active-route-casing';
 const ROUTE_LINE_LAYER_ID = 'active-route-line';
 const ROAD_SOURCE_ID = 'openfreemap-vector';
 const POI_ICON_IMAGE_IDS = {
-    food: 'poi-food',
     metro: 'poi-metro',
     landmark: 'poi-landmark',
-    service: 'poi-service',
-    parking: 'poi-parking',
+    hospital: 'poi-hospital',
+    fuel: 'poi-fuel',
 };
 const BASE_LAYER_IDS = ['light', 'dark', 'satellite'];
 const DEFAULT_BASE_LAYER_ID = 'light';
@@ -263,29 +262,14 @@ const MAP_STYLE = {
                 'match',
                 ['coalesce', ['get', 'class'], ['get', 'subclass']],
                 [
-                    'restaurant',
-                    'cafe',
-                    'fast_food',
-                    'bar',
-                    'pub',
-                    'food',
                     'subway',
                     'railway',
                     'station',
-                    'bus',
                     'attraction',
                     'monument',
                     'museum',
-                    'theatre',
-                    'cinema',
-                    'hotel',
-                    'bank',
                     'hospital',
-                    'pharmacy',
                     'fuel',
-                    'parking',
-                    'shop',
-                    'supermarket',
                 ],
                 true,
                 false,
@@ -294,23 +278,72 @@ const MAP_STYLE = {
                 'icon-image': [
                     'match',
                     ['coalesce', ['get', 'class'], ['get', 'subclass']],
-                    ['subway', 'railway', 'station', 'bus'],
+                    ['subway', 'railway', 'station'],
                     POI_ICON_IMAGE_IDS.metro,
-                    ['restaurant', 'cafe', 'fast_food', 'bar', 'pub', 'food'],
-                    POI_ICON_IMAGE_IDS.food,
-                    ['attraction', 'monument', 'museum', 'theatre', 'cinema', 'hotel'],
+                    ['hospital'],
+                    POI_ICON_IMAGE_IDS.hospital,
+                    ['fuel'],
+                    POI_ICON_IMAGE_IDS.fuel,
+                    ['attraction', 'monument', 'museum'],
                     POI_ICON_IMAGE_IDS.landmark,
-                    ['parking'],
-                    POI_ICON_IMAGE_IDS.parking,
-                    POI_ICON_IMAGE_IDS.service,
+                    POI_ICON_IMAGE_IDS.landmark,
                 ],
+                'text-field': [
+                    'case',
+                    [
+                        'match',
+                        ['coalesce', ['get', 'class'], ['get', 'subclass']],
+                        ['subway', 'railway', 'station'],
+                        true,
+                        false,
+                    ],
+                    ['coalesce', ['get', 'name:ru'], ['get', 'name']],
+                    '',
+                ],
+                'text-font': ['Noto Sans Regular'],
+                'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 17, 12],
+                'text-offset': [0, 1.05],
+                'text-anchor': 'top',
                 'icon-size': ['interpolate', ['linear'], ['zoom'], 14, 0.72, 17, 1],
                 'icon-allow-overlap': false,
                 'icon-ignore-placement': false,
-                'symbol-sort-key': ['case', ['==', ['coalesce', ['get', 'class'], ['get', 'subclass']], 'subway'], 0, 1],
+                'text-allow-overlap': false,
+                'text-ignore-placement': false,
+                'symbol-sort-key': [
+                    'case',
+                    ['match', ['coalesce', ['get', 'class'], ['get', 'subclass']], ['subway', 'railway', 'station'], true, false],
+                    0,
+                    1,
+                ],
             },
             paint: {
                 'icon-opacity': 0.92,
+                'text-color': '#EAF2FF',
+                'text-halo-color': 'rgba(9, 15, 27, 0.92)',
+                'text-halo-width': 1.6,
+                'text-opacity': 0.94,
+            },
+        },
+        {
+            id: 'house-number',
+            type: 'symbol',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'housenumber',
+            minzoom: 17,
+            layout: {
+                'text-field': ['coalesce', ['get', 'housenumber'], ['get', 'addr:housenumber']],
+                'text-font': ['Noto Sans Regular'],
+                'text-size': ['interpolate', ['linear'], ['zoom'], 17, 9, 19, 11],
+                'text-rotation-alignment': 'viewport',
+                'text-pitch-alignment': 'viewport',
+                'text-allow-overlap': false,
+                'text-ignore-placement': false,
+            },
+            paint: {
+                'text-color': '#DDE8F7',
+                'text-halo-color': 'rgba(9, 15, 27, 0.92)',
+                'text-halo-width': 1.4,
+                'text-opacity': 0.82,
             },
         },
     ],
@@ -324,6 +357,7 @@ const MARKER_IMAGES = {
     new: ['#8DEEFF', '#00E5FF'],
 };
 const USER_LOCATION_MARKER_ID = 'user-location-auralith';
+const SPEED_CAMERA_MARKER_ID = 'speed-camera-marker';
 
 export async function initParkingMap() {
     if (!document.getElementById(MAP_CONTAINER_ID)) {
@@ -390,6 +424,7 @@ function initMapLibreMap() {
         try {
             await addMarkerImages();
             addPoiIconImages();
+            addSpeedCameraImage();
             addClusterCountImages();
             addParkingSource();
             addParkingLayers();
@@ -425,14 +460,13 @@ function addSpeedCameraSourceAndLayer() {
 
     map.addLayer({
         id: 'speed-cameras',
-        type: 'circle',
+        type: 'symbol',
         source: SPEED_CAMERA_SOURCE_ID,
-        paint: {
-            'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 6, 16, 11],
-            'circle-color': '#EF174A',
-            'circle-stroke-color': '#FFFFFF',
-            'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 10, 2.5, 16, 4],
-            'circle-opacity': 0.98,
+        layout: {
+            'icon-image': SPEED_CAMERA_MARKER_ID,
+            'icon-size': ['interpolate', ['linear'], ['zoom'], 10, 0.62, 16, 0.92],
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true,
         },
     });
 
@@ -441,17 +475,17 @@ function addSpeedCameraSourceAndLayer() {
         type: 'symbol',
         source: SPEED_CAMERA_SOURCE_ID,
         layout: {
-            'text-field': '!',
-            'text-size': ['interpolate', ['linear'], ['zoom'], 10, 11, 16, 17],
+            'text-field': '›',
+            'text-size': ['interpolate', ['linear'], ['zoom'], 10, 18, 16, 25],
             'text-rotate': ['coalesce', ['to-number', ['get', 'bearing']], 0],
             'text-rotation-alignment': 'map',
             'text-allow-overlap': true,
             'text-ignore-placement': true,
         },
         paint: {
-            'text-color': '#FFFFFF',
-            'text-halo-color': 'rgba(127, 29, 29, 0.96)',
-            'text-halo-width': 2.5,
+            'text-color': '#EF174A',
+            'text-halo-color': 'rgba(255, 255, 255, 0.96)',
+            'text-halo-width': 2.2,
         },
     });
 
@@ -476,6 +510,39 @@ function addSpeedCameraSourceAndLayer() {
             'text-halo-width': 2,
         },
     });
+}
+
+function addSpeedCameraImage() {
+    if (map.hasImage(SPEED_CAMERA_MARKER_ID)) return;
+
+    const size = 64;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const context = canvas.getContext('2d');
+
+    context.clearRect(0, 0, size, size);
+    context.beginPath();
+    context.arc(32, 32, 22, 0, Math.PI * 2);
+    context.fillStyle = '#FFFFFF';
+    context.fill();
+    context.lineWidth = 7;
+    context.strokeStyle = '#EF174A';
+    context.stroke();
+    context.lineWidth = 3;
+    context.strokeStyle = '#111827';
+    context.strokeRect(22, 25, 20, 15);
+    context.beginPath();
+    context.arc(32, 32.5, 4.5, 0, Math.PI * 2);
+    context.stroke();
+    context.beginPath();
+    context.moveTo(27, 25);
+    context.lineTo(30, 20);
+    context.lineTo(36, 20);
+    context.lineTo(39, 25);
+    context.stroke();
+
+    map.addImage(SPEED_CAMERA_MARKER_ID, context.getImageData(0, 0, size, size), { pixelRatio: 2 });
 }
 
 export function renderSpeedCameras(cameras = []) {
@@ -621,6 +688,14 @@ function updateVectorRoadLayerTheme(layerId) {
         },
         'poi-icons': {
             'icon-opacity': isSatellite ? 0 : 0.92,
+            'text-color': isDark ? '#EAF2FF' : '#0F172A',
+            'text-halo-color': isDark ? 'rgba(9, 15, 27, 0.92)' : 'rgba(255, 255, 255, 0.94)',
+            'text-opacity': isSatellite ? 0 : 0.94,
+        },
+        'house-number': {
+            'text-color': isDark ? '#DDE8F7' : '#334155',
+            'text-halo-color': isDark ? 'rgba(9, 15, 27, 0.92)' : 'rgba(255, 255, 255, 0.90)',
+            'text-opacity': isSatellite ? 0 : 0.82,
         },
     };
 
@@ -635,11 +710,10 @@ function updateVectorRoadLayerTheme(layerId) {
 
 function addPoiIconImages() {
     const icons = {
-        [POI_ICON_IMAGE_IDS.food]: ['F', '#FFB84D', '#7C2D12'],
         [POI_ICON_IMAGE_IDS.metro]: ['M', '#3B82F6', '#FFFFFF'],
         [POI_ICON_IMAGE_IDS.landmark]: ['L', '#A78BFA', '#FFFFFF'],
-        [POI_ICON_IMAGE_IDS.service]: ['S', '#14B8A6', '#FFFFFF'],
-        [POI_ICON_IMAGE_IDS.parking]: ['P', '#22C55E', '#06351B'],
+        [POI_ICON_IMAGE_IDS.hospital]: ['H', '#EF4444', '#FFFFFF'],
+        [POI_ICON_IMAGE_IDS.fuel]: ['F', '#F59E0B', '#1F1300'],
     };
 
     Object.entries(icons).forEach(([imageId, [label, fill, text]]) => {
@@ -852,6 +926,7 @@ function bindPerformanceMode() {
     map.on('click', stop);
     map.on('zoomstart', (event) => {
         if (event.originalEvent) {
+            window.dispatchEvent(new CustomEvent('navigation:manual-map-move'));
             dispatchNavigationZoomChange();
         }
     });

@@ -174,6 +174,7 @@ export function initParkingUi() {
 
     window.addEventListener('navigation:manual-map-zoom', () => {
         if (document.body.classList.contains('is-navigation-mode')) {
+            document.body.classList.add('is-navigation-detached');
             state.navigationPreserveZoom = true;
             saveNavigationState();
         }
@@ -1078,15 +1079,6 @@ export function initParkingUi() {
                 document.body.append(speedHud);
             }
 
-            if (!document.querySelector('.navigation-recenter')) {
-                const recenter = document.createElement('button');
-                recenter.className = 'navigation-recenter liquid-glass';
-                recenter.type = 'button';
-                recenter.dataset.action = 'recenter-navigation';
-                recenter.setAttribute('aria-label', 'Вернуться к текущему местоположению');
-                recenter.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 7 19-7-4-7 4 7-19Z"></path></svg><span>К геолокации</span>';
-                document.body.append(recenter);
-            }
         }
 
         let panel = document.querySelector('.navigation-panel');
@@ -1100,9 +1092,10 @@ export function initParkingUi() {
                 <small data-navigation-bottom-note></small>
             </div>
             <div class="navigation-panel__trip">
-                <strong data-navigation-arrival-time></strong>
-                <span data-navigation-trip-duration></span>
+                <strong data-navigation-trip-duration></strong>
+                <span data-navigation-arrival-time></span>
                 <small data-navigation-trip-distance></small>
+                <em data-navigation-trip-delay></em>
             </div>
             <button class="navigation-panel__drive" type="button" data-action="start-navigation">
                 <span data-navigation-drive-title></span>
@@ -1194,9 +1187,10 @@ export function initParkingUi() {
         setText('[data-navigation-bottom-duration]', formatDuration(remainingDuration));
         setText('[data-navigation-bottom-distance]', formatDistance(remainingDistance));
         setText('[data-navigation-bottom-note]', `${getTrafficLabel(state.navigationRoute)} · прибытие ${arrival}`);
-        setText('[data-navigation-arrival-time]', arrival);
+        setText('[data-navigation-arrival-time]', `прибытие ${arrival}`);
         setText('[data-navigation-trip-duration]', formatDuration(remainingDuration));
         setText('[data-navigation-trip-distance]', formatDistance(remainingDistance));
+        setText('[data-navigation-trip-delay]', getTrafficDelayLabel(state.navigationRoute));
         setText('[data-navigation-drive-title]', isFollowing ? 'Завершить' : 'Поехать');
         setText('[data-navigation-drive-note]', isFollowing ? `прибытие ${arrival}` : 'к началу маршрута');
 
@@ -1223,7 +1217,7 @@ export function initParkingUi() {
             document.body.append(alert);
         }
 
-        setText('[data-camera-title]', camera.isDummy ? 'Муляж' : 'Камера');
+        setText('[data-camera-title]', getCameraTitle(camera));
         setText('[data-camera-distance]', `${formatDistance(camera.distanceMeters)}`);
         setText('[data-camera-details]', formatCameraDetails(camera));
     }
@@ -1374,13 +1368,22 @@ export function initParkingUi() {
     function getCameraDirectionLabel(cameraBearing, routeBearing) {
         const diff = getAngleDifference(cameraBearing, routeBearing);
 
-        if (diff <= 45) return { short: 'по ходу', text: 'смотрит по ходу движения' };
-        if (diff >= 135) return { short: 'навстречу', text: 'смотрит навстречу' };
-        return { short: cameraBearing > routeBearing ? 'справа/сбоку' : 'слева/сбоку', text: 'смотрит сбоку' };
+        if (diff <= 45) return { short: 'в спину', text: 'камера в спину' };
+        if (diff >= 135) return { short: 'встречная', text: 'камера навстречу' };
+        return cameraBearing > routeBearing
+            ? { short: 'справа', text: 'контроль справа' }
+            : { short: 'слева', text: 'контроль слева' };
+    }
+
+    function getCameraTitle(camera) {
+        if (camera.isDummy) return 'Муляж';
+        if (/lane|bus|redlight|traffic_signals|signal/i.test(camera.cameraType || '')) return 'Камера полосы';
+        return 'Камера скорости';
     }
 
     function formatCameraDetails(camera) {
         const parts = [
+            getCameraTitle(camera).toLowerCase(),
             camera.directionLabel?.text,
             camera.maxspeed ? `лимит ${parseInt(camera.maxspeed, 10) || camera.maxspeed}` : '',
         ].filter(Boolean);
@@ -1495,8 +1498,9 @@ export function initParkingUi() {
 
                 focusUserLocation(state.userLocation, { focus: false });
                 updateActiveRouteProgress(state.userLocation, state.navigationRoute);
-                focusNavigationPosition(state.userLocation, state.navigationRoute, { preserveZoom: state.navigationPreserveZoom });
-                document.body.classList.remove('is-navigation-detached');
+                if (!document.body.classList.contains('is-navigation-detached')) {
+                    focusNavigationPosition(state.userLocation, state.navigationRoute, { preserveZoom: state.navigationPreserveZoom });
+                }
                 maybeRefreshNavigationRouteFromGps();
                 updateNavigationMetrics();
                 saveNavigationState();
@@ -1539,8 +1543,9 @@ export function initParkingUi() {
             state.speedLimitKmh = estimateSpeedLimitKmh(route, state.userLocation);
             state.navigationLastRerouteAt = Date.now();
             updateActiveRouteProgress(state.userLocation, route);
-            focusNavigationPosition(state.userLocation, route, { preserveZoom: state.navigationPreserveZoom });
-            document.body.classList.remove('is-navigation-detached');
+            if (!document.body.classList.contains('is-navigation-detached')) {
+                focusNavigationPosition(state.userLocation, route, { preserveZoom: state.navigationPreserveZoom });
+            }
             updateNavigationMetrics();
             refreshSpeedCameras(route);
             saveNavigationState();
@@ -2276,6 +2281,12 @@ function getTrafficLabel(route) {
     }
 
     return 'Нет данных о пробках для этого маршрута';
+}
+
+function getTrafficDelayLabel(route) {
+    const delay = Number(route?.trafficDelaySeconds) || 0;
+
+    return delay > 60 ? `задержка ${formatDuration(delay)}` : '';
 }
 
 function getGpsSpeedKmh(coords) {
