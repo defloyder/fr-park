@@ -63,7 +63,7 @@ class ParkingSpotController extends Controller
 
     public function destroy(ParkingSpot $parkingSpot): Response
     {
-        $parkingSpot->update(['status' => 'hidden']);
+        $parkingSpot->delete();
 
         return response()->noContent();
     }
