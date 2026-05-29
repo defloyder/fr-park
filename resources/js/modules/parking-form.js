@@ -992,7 +992,7 @@ export function initParkingUi() {
         startNavigationLocationWatch();
         renderNavigationPanel();
         startNavigationRouteRefreshTimer();
-        refreshSpeedCameras(route);
+        refreshSpeedCameras(state.navigationRoute);
         saveNavigationState();
     }
 
@@ -1099,6 +1099,11 @@ export function initParkingUi() {
                 <span data-navigation-bottom-distance></span>
                 <small data-navigation-bottom-note></small>
             </div>
+            <div class="navigation-panel__trip">
+                <strong data-navigation-arrival-time></strong>
+                <span data-navigation-trip-duration></span>
+                <small data-navigation-trip-distance></small>
+            </div>
             <button class="navigation-panel__drive" type="button" data-action="start-navigation">
                 <span data-navigation-drive-title></span>
                 <small data-navigation-drive-note></small>
@@ -1189,6 +1194,9 @@ export function initParkingUi() {
         setText('[data-navigation-bottom-duration]', formatDuration(remainingDuration));
         setText('[data-navigation-bottom-distance]', formatDistance(remainingDistance));
         setText('[data-navigation-bottom-note]', `${getTrafficLabel(state.navigationRoute)} · прибытие ${arrival}`);
+        setText('[data-navigation-arrival-time]', arrival);
+        setText('[data-navigation-trip-duration]', formatDuration(remainingDuration));
+        setText('[data-navigation-trip-distance]', formatDistance(remainingDistance));
         setText('[data-navigation-drive-title]', isFollowing ? 'Завершить' : 'Поехать');
         setText('[data-navigation-drive-note]', isFollowing ? `прибытие ${arrival}` : 'к началу маршрута');
 

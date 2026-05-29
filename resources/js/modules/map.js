@@ -21,6 +21,13 @@ const TRAFFIC_FLOW_LAYER_ID = 'tomtom-traffic-flow';
 const ROUTE_CASING_LAYER_ID = 'active-route-casing';
 const ROUTE_LINE_LAYER_ID = 'active-route-line';
 const ROAD_SOURCE_ID = 'openfreemap-vector';
+const POI_ICON_IMAGE_IDS = {
+    food: 'poi-food',
+    metro: 'poi-metro',
+    landmark: 'poi-landmark',
+    service: 'poi-service',
+    parking: 'poi-parking',
+};
 const BASE_LAYER_IDS = ['light', 'dark', 'satellite'];
 const DEFAULT_BASE_LAYER_ID = 'light';
 const BASE_LAYER_STORAGE_KEY = 'auralith:map-layer';
@@ -113,15 +120,25 @@ const MAP_STYLE = {
             },
         },
         {
-            id: 'building-2d',
-            type: 'fill',
+            id: 'building-3d',
+            type: 'fill-extrusion',
             source: ROAD_SOURCE_ID,
             'source-layer': 'building',
             minzoom: 14,
             paint: {
-                'fill-color': 'rgba(30, 41, 59, 0.18)',
-                'fill-outline-color': 'rgba(15, 23, 42, 0.24)',
-                'fill-opacity': 1,
+                'fill-extrusion-color': 'rgba(70, 86, 104, 0.58)',
+                'fill-extrusion-height': [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    14,
+                    0,
+                    15,
+                    ['to-number', ['get', 'render_height'], ['get', 'height'], 14],
+                ],
+                'fill-extrusion-base': ['to-number', ['get', 'render_min_height'], ['get', 'min_height'], 0],
+                'fill-extrusion-opacity': 0.82,
+                'fill-extrusion-vertical-gradient': true,
             },
         },
         {
@@ -236,6 +253,66 @@ const MAP_STYLE = {
                 'text-opacity': 1,
             },
         },
+        {
+            id: 'poi-icons',
+            type: 'symbol',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'poi',
+            minzoom: 14,
+            filter: [
+                'match',
+                ['coalesce', ['get', 'class'], ['get', 'subclass']],
+                [
+                    'restaurant',
+                    'cafe',
+                    'fast_food',
+                    'bar',
+                    'pub',
+                    'food',
+                    'subway',
+                    'railway',
+                    'station',
+                    'bus',
+                    'attraction',
+                    'monument',
+                    'museum',
+                    'theatre',
+                    'cinema',
+                    'hotel',
+                    'bank',
+                    'hospital',
+                    'pharmacy',
+                    'fuel',
+                    'parking',
+                    'shop',
+                    'supermarket',
+                ],
+                true,
+                false,
+            ],
+            layout: {
+                'icon-image': [
+                    'match',
+                    ['coalesce', ['get', 'class'], ['get', 'subclass']],
+                    ['subway', 'railway', 'station', 'bus'],
+                    POI_ICON_IMAGE_IDS.metro,
+                    ['restaurant', 'cafe', 'fast_food', 'bar', 'pub', 'food'],
+                    POI_ICON_IMAGE_IDS.food,
+                    ['attraction', 'monument', 'museum', 'theatre', 'cinema', 'hotel'],
+                    POI_ICON_IMAGE_IDS.landmark,
+                    ['parking'],
+                    POI_ICON_IMAGE_IDS.parking,
+                    POI_ICON_IMAGE_IDS.service,
+                ],
+                'icon-size': ['interpolate', ['linear'], ['zoom'], 14, 0.72, 17, 1],
+                'icon-allow-overlap': false,
+                'icon-ignore-placement': false,
+                'symbol-sort-key': ['case', ['==', ['coalesce', ['get', 'class'], ['get', 'subclass']], 'subway'], 0, 1],
+            },
+            paint: {
+                'icon-opacity': 0.92,
+            },
+        },
     ],
 };
 
@@ -312,6 +389,7 @@ function initMapLibreMap() {
 
         try {
             await addMarkerImages();
+            addPoiIconImages();
             addClusterCountImages();
             addParkingSource();
             addParkingLayers();
@@ -350,11 +428,11 @@ function addSpeedCameraSourceAndLayer() {
         type: 'circle',
         source: SPEED_CAMERA_SOURCE_ID,
         paint: {
-            'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4, 16, 8],
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 6, 16, 11],
             'circle-color': '#EF174A',
             'circle-stroke-color': '#FFFFFF',
-            'circle-stroke-width': 2,
-            'circle-opacity': 0.92,
+            'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 10, 2.5, 16, 4],
+            'circle-opacity': 0.98,
         },
     });
 
@@ -363,8 +441,8 @@ function addSpeedCameraSourceAndLayer() {
         type: 'symbol',
         source: SPEED_CAMERA_SOURCE_ID,
         layout: {
-            'text-field': '▲',
-            'text-size': ['interpolate', ['linear'], ['zoom'], 10, 12, 16, 18],
+            'text-field': '!',
+            'text-size': ['interpolate', ['linear'], ['zoom'], 10, 11, 16, 17],
             'text-rotate': ['coalesce', ['to-number', ['get', 'bearing']], 0],
             'text-rotation-alignment': 'map',
             'text-allow-overlap': true,
@@ -372,8 +450,8 @@ function addSpeedCameraSourceAndLayer() {
         },
         paint: {
             'text-color': '#FFFFFF',
-            'text-halo-color': 'rgba(127, 29, 29, 0.88)',
-            'text-halo-width': 2,
+            'text-halo-color': 'rgba(127, 29, 29, 0.96)',
+            'text-halo-width': 2.5,
         },
     });
 
@@ -511,10 +589,9 @@ function updateVectorRoadLayerTheme(layerId) {
             'line-color': isDark ? 'rgba(226, 232, 240, 0.18)' : 'rgba(71, 85, 105, 0.26)',
             'line-opacity': isSatellite ? 0 : 1,
         },
-        'building-2d': {
-            'fill-color': isDark ? 'rgba(255, 255, 255, 0.18)' : 'rgba(30, 41, 59, 0.18)',
-            'fill-outline-color': isDark ? 'rgba(255, 255, 255, 0.30)' : 'rgba(15, 23, 42, 0.24)',
-            'fill-opacity': opacity,
+        'building-3d': {
+            'fill-extrusion-color': isDark ? 'rgba(116, 139, 163, 0.58)' : 'rgba(70, 86, 104, 0.58)',
+            'fill-extrusion-opacity': isSatellite ? 0 : 0.82,
         },
         'road-casing-minor': {
             'line-color': isDark ? 'rgba(255, 255, 255, 0.34)' : 'rgba(15, 23, 42, 0.32)',
@@ -542,6 +619,9 @@ function updateVectorRoadLayerTheme(layerId) {
             'text-halo-color': isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.88)',
             'text-opacity': isSatellite ? 0 : 0.9,
         },
+        'poi-icons': {
+            'icon-opacity': isSatellite ? 0 : 0.92,
+        },
     };
 
     Object.entries(paint).forEach(([layerIdToUpdate, properties]) => {
@@ -551,6 +631,47 @@ function updateVectorRoadLayerTheme(layerId) {
             map.setPaintProperty(layerIdToUpdate, property, value);
         });
     });
+}
+
+function addPoiIconImages() {
+    const icons = {
+        [POI_ICON_IMAGE_IDS.food]: ['F', '#FFB84D', '#7C2D12'],
+        [POI_ICON_IMAGE_IDS.metro]: ['M', '#3B82F6', '#FFFFFF'],
+        [POI_ICON_IMAGE_IDS.landmark]: ['L', '#A78BFA', '#FFFFFF'],
+        [POI_ICON_IMAGE_IDS.service]: ['S', '#14B8A6', '#FFFFFF'],
+        [POI_ICON_IMAGE_IDS.parking]: ['P', '#22C55E', '#06351B'],
+    };
+
+    Object.entries(icons).forEach(([imageId, [label, fill, text]]) => {
+        if (map.hasImage(imageId)) return;
+        map.addImage(imageId, createPoiIconImage(label, fill, text), { pixelRatio: 2 });
+    });
+}
+
+function createPoiIconImage(label, fill, textColor) {
+    const size = 48;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const context = canvas.getContext('2d');
+
+    context.clearRect(0, 0, size, size);
+    context.beginPath();
+    context.arc(size / 2, size / 2, 17, 0, Math.PI * 2);
+    context.fillStyle = fill;
+    context.fill();
+    context.lineWidth = 5;
+    context.strokeStyle = 'rgba(255, 255, 255, 0.94)';
+    context.stroke();
+    context.shadowColor = 'rgba(15, 23, 42, 0.35)';
+    context.shadowBlur = 8;
+    context.fillStyle = textColor;
+    context.font = '900 21px Arial, sans-serif';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillText(label, size / 2, size / 2 + 1);
+
+    return context.getImageData(0, 0, size, size);
 }
 
 function bindTrafficToggle() {
