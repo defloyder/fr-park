@@ -880,7 +880,7 @@ in vec3 view_direction;uniform vec3 u_sun_pos;uniform vec3 u_globe_position;unif
                 </button>
                 <button class="route-option route-option--app" type="button" data-action="route-in-app">
                     <span class="route-option__logo route-option__logo--auralith" aria-hidden="true">
-                        <svg viewBox="0 0 32 32"><path d="M6 25 15 5l11 22h-7l-4-8-3 6H6Z"></path><circle cx="24" cy="23" r="4"></circle></svg>
+                        <img src="/images/logo_transient.png?v=20260529" alt="" loading="lazy">
                     </span>
                     <strong>Auralith</strong>
                     <small>показать на карте</small>

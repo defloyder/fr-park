@@ -1262,7 +1262,11 @@ body[data-map-layer="satellite"] .bottom-sheet,
     line-height: 1.2;
 }
 
-.route-option__logo {
+.route-option .route-option__logo {
+    display: grid;
+    width: 46px;
+    height: 46px;
+    place-items: center;
     color: #fff;
     font-size: 1rem;
     font-weight: 950;
@@ -1277,13 +1281,20 @@ body[data-map-layer="satellite"] .bottom-sheet,
 }
 
 .route-option__logo--auralith {
-    background: linear-gradient(135deg, #8B5CF6, #21A8FF 52%, #75F7AF);
+    background: rgba(255, 255, 255, 0.08);
 }
 
 .route-option__logo svg {
     width: 23px;
     height: 23px;
     fill: currentColor;
+}
+
+.route-option__logo img {
+    display: block;
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
 }
 
 .route-option--yandex > span {
@@ -2418,10 +2429,10 @@ body[data-map-layer="satellite"] .nav-button:not(.is-active):hover {
 
 .brand-mark {
     display: grid;
-    width: 52px;
-    height: 52px;
+    width: 58px;
+    height: 58px;
     place-items: center;
-    flex: 0 0 52px;
+    flex: 0 0 58px;
     overflow: hidden;
     background: transparent;
     border: none;
@@ -2430,10 +2441,10 @@ body[data-map-layer="satellite"] .nav-button:not(.is-active):hover {
 }
 
 .brand-lockup--map .brand-mark {
-    width: 86px;
-    height: 58px;
-    flex-basis: 86px;
-    margin: -7px -4px -7px -9px;
+    width: 62px;
+    height: 62px;
+    flex-basis: 62px;
+    margin: -8px -2px -8px -9px;
     border-radius: 0;
     overflow: visible;
 }
@@ -2441,15 +2452,16 @@ body[data-map-layer="satellite"] .nav-button:not(.is-active):hover {
 .auralith-mark img {
     display: block;
     width: 52px;
-    height: auto;
-    max-height: 42px;
+    height: 52px;
+    max-height: 52px;
     object-fit: contain;
     object-position: center;
 }
 
 .brand-lockup--map .auralith-mark img {
-    width: 80px;
-    max-height: 56px;
+    width: 58px;
+    height: 58px;
+    max-height: 58px;
 }
 
 .admin-stats {
