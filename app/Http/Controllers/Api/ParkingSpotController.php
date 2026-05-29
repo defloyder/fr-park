@@ -71,10 +71,22 @@ class ParkingSpotController extends Controller
     public function uploadPhoto(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'photo' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,heic,heif', 'max:20480'],
+            'photo' => ['required', 'file', 'max:20480'],
         ]);
 
-        $path = $validated['photo']->store('parking-spots', 'public');
+        $photo = $validated['photo'];
+        $extension = Str::lower($photo->getClientOriginalExtension());
+        $mimeType = Str::lower((string) $photo->getMimeType());
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'];
+        $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'application/octet-stream'];
+
+        if (! in_array($extension, $allowedExtensions, true) && ! in_array($mimeType, $allowedMimeTypes, true)) {
+            throw ValidationException::withMessages([
+                'photo' => 'Загрузите фото в формате JPG, PNG, WEBP или HEIC.',
+            ]);
+        }
+
+        $path = $photo->store('parking-spots', 'public');
 
         return response()->json([
             'url' => url('/storage/'.$path),
