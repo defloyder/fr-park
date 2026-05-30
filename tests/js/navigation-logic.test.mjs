@@ -63,6 +63,25 @@ test('passed speed camera is skipped instead of sticking at zero meters', () => 
     assert.equal(camera.distanceMeters, 40);
 });
 
+test('speed camera at zero meters is hidden and next server-projected camera is selected', () => {
+    const camera = pickUpcomingSpeedCamera(
+        [
+            { id: 'current', routeOffsetMeters: 110, routeDistanceMeters: 0 },
+            { id: 'next', routeOffsetMeters: 190, routeDistanceMeters: 0 },
+        ],
+        { progressMeters: 110 },
+        route,
+        {
+            getRouteProgressMeters: makeProgressByOffset(110),
+            getDistanceToRouteMeters: () => 0,
+            routeDistanceThresholdMeters: 160,
+        },
+    );
+
+    assert.equal(camera.id, 'next');
+    assert.equal(camera.distanceMeters, 80);
+});
+
 test('camera alert resets when no upcoming camera remains', () => {
     const camera = pickUpcomingSpeedCamera(
         [{ id: 'passed', progressMeters: 95 }],

@@ -1578,7 +1578,9 @@ export function focusNavigationPosition(userLocation, route = null, { preserveZo
         zoom: preserveZoom ? map.getZoom() : FOLLOW_ZOOM,
         pitch: FOLLOW_PITCH,
         bearing: compassHeading ?? (next ? getBearing(current, next) : map.getBearing()),
-        offset: [0, Math.round(window.innerHeight * 0.18)],
+        padding: { top: 0, right: 0, bottom: 0, left: 0 },
+        retainPadding: false,
+        offset: [0, Math.round(window.innerHeight * 0.26)],
         duration: 420,
     });
 }

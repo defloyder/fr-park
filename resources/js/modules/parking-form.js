@@ -69,11 +69,13 @@ const state = {
     navigationSpot: null,
     navigationRoute: null,
     navigationWatchId: null,
+    userLocationWatchId: null,
     currentSpeedKmh: 0,
     speedLimitKmh: 60,
     listQuery: '',
     navigationMetricsTimer: null,
     navigationLocationPollTimer: null,
+    userLocationPollTimer: null,
     navigationRouteRefreshTimer: null,
     navigationRouteRefreshInFlight: false,
     navigationLastRerouteAt: 0,
@@ -970,16 +972,10 @@ export function initParkingUi() {
         }
 
         showStatus('Определяю местоположение...');
+        startUserLocationTracking();
         navigator.geolocation.getCurrentPosition(
             ({ coords }) => {
-                state.userLocation = {
-                    latitude: coords.latitude,
-                    longitude: coords.longitude,
-                    accuracy: coords.accuracy,
-                    ...getDeviceHeadingLocationPatch(),
-                };
-
-                focusUserLocation(state.userLocation);
+                applyUserLocationCoords(coords, { focus: true });
                 renderList();
                 openList();
                 hideStatus();
@@ -1615,6 +1611,49 @@ export function initParkingUi() {
     function stopNavigationLocationPolling() {
         window.clearInterval(state.navigationLocationPollTimer);
         state.navigationLocationPollTimer = null;
+    }
+
+    function startUserLocationTracking() {
+        if (!navigator.geolocation || state.userLocationWatchId !== null) return;
+
+        state.userLocationWatchId = navigator.geolocation.watchPosition(
+            ({ coords }) => applyUserLocationCoords(coords, { focus: !document.body.classList.contains('is-navigation-mode') }),
+            () => {},
+            {
+                enableHighAccuracy: true,
+                maximumAge: 1000,
+                timeout: 10000,
+            },
+        );
+
+        state.userLocationPollTimer = window.setInterval(() => {
+            if (document.body.classList.contains('is-navigation-mode')) return;
+
+            navigator.geolocation.getCurrentPosition(
+                ({ coords }) => applyUserLocationCoords(coords, { focus: true }),
+                () => {},
+                {
+                    enableHighAccuracy: true,
+                    maximumAge: 1000,
+                    timeout: 3500,
+                },
+            );
+        }, 3000);
+    }
+
+    function applyUserLocationCoords(coords, { focus = false } = {}) {
+        const gpsHeading = getGpsHeading(coords);
+        state.userLocation = {
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            accuracy: coords.accuracy,
+            gpsHeading,
+            heading: getNavigationHeading(gpsHeading),
+            ...getDeviceHeadingLocationPatch(),
+            updatedAt: Date.now(),
+        };
+
+        focusUserLocation(state.userLocation, { focus });
     }
 
     function applyNavigationLocationCoords(coords) {

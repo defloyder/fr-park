@@ -1,4 +1,4 @@
-export const DEFAULT_PASSED_CAMERA_DISTANCE_METERS = 8;
+export const DEFAULT_PASSED_CAMERA_DISTANCE_METERS = 25;
 export const COMPASS_HEADING_MAX_AGE_MS = 2500;
 
 export function shouldRecenterNavigationFromLocate({ isNavigationMode = false, hasRoute = false } = {}) {
@@ -76,8 +76,12 @@ export function pickUpcomingSpeedCamera(
     return speedCameras
         .map((camera) => ({
             ...camera,
-            routeOffsetMeters: getRouteProgressMeters(route.geometry.coordinates, camera),
-            routeDistanceMeters: getDistanceToRouteMeters(route, camera),
+            routeOffsetMeters: Number.isFinite(Number(camera.routeOffsetMeters))
+                ? Number(camera.routeOffsetMeters)
+                : getRouteProgressMeters(route.geometry.coordinates, camera),
+            routeDistanceMeters: Number.isFinite(Number(camera.routeDistanceMeters))
+                ? Number(camera.routeDistanceMeters)
+                : getDistanceToRouteMeters(route, camera),
         }))
         .map((camera) => ({
             ...camera,
