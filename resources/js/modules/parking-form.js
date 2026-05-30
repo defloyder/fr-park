@@ -13,7 +13,7 @@ import {
     uploadParkingPhoto,
 } from './parking-api';
 import { addParkingSpotToMap, buildRouteToSpot, clearActiveRoute, clearPendingSelection, focusNavigationPosition, focusSpot, focusSpots, focusUserLocation, renderSpeedCameras, replaceParkingSpotsOnMap, restoreActiveRoute, setMapPickingMode, startRouteNavigation, updateActiveRouteProgress } from './map';
-import { isGpsDemoEnabled, normalizeCompassHeading, pickUpcomingSpeedCamera, shouldFollowNavigationPosition, shouldFollowUserLocation, shouldRecenterNavigationFromLocate } from './navigation-logic';
+import { normalizeCompassHeading, pickUpcomingSpeedCamera, shouldFollowNavigationPosition, shouldFollowUserLocation, shouldRecenterNavigationFromLocate } from './navigation-logic';
 
 const STATUS_LABELS = {
     verified: 'Проверено',
@@ -81,8 +81,6 @@ const state = {
     navigationRouteRefreshInFlight: false,
     navigationLastRerouteAt: 0,
     navigationPreserveZoom: false,
-    navigationDebugPlaybackTimer: null,
-    navigationDebugPlaybackIndex: 0,
     navigationSessionId: 0,
     deviceHeading: null,
     deviceHeadingUpdatedAt: 0,
@@ -1121,7 +1119,6 @@ export function initParkingUi() {
         refreshSpeedCameras(state.navigationRoute);
         requestNavigationWakeLock();
         saveNavigationState();
-        startNavigationDebugPlaybackIfRequested();
     }
 
     function recenterNavigation() {
@@ -1172,7 +1169,6 @@ export function initParkingUi() {
         refreshSpeedCameras(route);
         requestNavigationWakeLock();
         saveNavigationState();
-        startNavigationDebugPlaybackIfRequested();
     }
 
     function renderNavigationPanel() {
@@ -1290,7 +1286,6 @@ export function initParkingUi() {
         startNavigationRouteRefreshTimer();
         refreshSpeedCameras(saved.route);
         requestNavigationWakeLock();
-        startNavigationDebugPlaybackIfRequested();
     }
 
     function readNavigationState() {
@@ -1434,7 +1429,6 @@ export function initParkingUi() {
         releaseNavigationWakeLock();
         stopNavigationLocationWatch();
         stopNavigationLocationPolling();
-        stopNavigationDebugPlayback();
         stopDeviceHeadingWatch();
         stopNavigationRouteRefreshTimer();
         document.querySelector('.navigation-panel')?.remove();
@@ -1525,7 +1519,10 @@ export function initParkingUi() {
                 && !document.body.classList.contains('is-navigation-detached')
             ) {
                 state.deviceHeadingCameraUpdatedAt = now;
-                focusNavigationPosition(state.userLocation, state.navigationRoute, { preserveZoom: state.navigationPreserveZoom });
+                focusNavigationPosition(state.userLocation, state.navigationRoute, {
+                    preserveZoom: state.navigationPreserveZoom,
+                    duration: 220,
+                });
             }
         };
 
@@ -1581,11 +1578,6 @@ export function initParkingUi() {
     function startNavigationLocationWatch() {
         stopNavigationLocationWatch();
 
-        if (isGpsDemoEnabled(window.location.search)) {
-            stopNavigationLocationPolling();
-            return;
-        }
-
         startNavigationLocationPolling();
 
         if (!navigator.geolocation) return;
@@ -1609,7 +1601,6 @@ export function initParkingUi() {
     }
 
     function startNavigationLocationPolling() {
-        if (isGpsDemoEnabled(window.location.search)) return;
         if (state.navigationLocationPollTimer || !navigator.geolocation) return;
 
         state.navigationLocationPollTimer = window.setInterval(() => {
@@ -1709,43 +1700,6 @@ export function initParkingUi() {
         maybeRefreshNavigationRouteFromGps();
         updateNavigationMetrics();
         saveNavigationState();
-    }
-
-    function startNavigationDebugPlaybackIfRequested() {
-        if (!isGpsDemoEnabled(window.location.search)) return;
-        if (!state.navigationRoute?.geometry?.coordinates?.length || state.navigationDebugPlaybackTimer) return;
-
-        state.navigationDebugPlaybackIndex = 0;
-        const tick = () => {
-            const coordinates = state.navigationRoute?.geometry?.coordinates ?? [];
-            if (!coordinates.length || !document.body.classList.contains('is-navigation-following')) return;
-
-            const index = Math.min(state.navigationDebugPlaybackIndex, coordinates.length - 1);
-            const current = coordinates[index];
-            const next = coordinates[Math.min(index + 1, coordinates.length - 1)];
-
-            applyNavigationLocationCoords({
-                latitude: current[1],
-                longitude: current[0],
-                accuracy: 8,
-                heading: getBearingDegrees(current, next),
-                speed: 10,
-            });
-
-            state.navigationDebugPlaybackIndex = (index + 1) % coordinates.length;
-        };
-
-        tick();
-        state.navigationDebugPlaybackTimer = window.setInterval(tick, 1200);
-        document.body.dataset.gpsDemo = 'on';
-        showToast('GPS demo: имитирую движение по маршруту.');
-    }
-
-    function stopNavigationDebugPlayback() {
-        window.clearInterval(state.navigationDebugPlaybackTimer);
-        state.navigationDebugPlaybackTimer = null;
-        state.navigationDebugPlaybackIndex = 0;
-        delete document.body.dataset.gpsDemo;
     }
 
     function startNavigationRouteRefreshTimer() {

@@ -1133,7 +1133,7 @@ function addUserLocationSourceAndLayer() {
             'icon-image': USER_LOCATION_MARKER_ID,
             'icon-size': 1,
             'icon-rotate': ['get', 'heading'],
-            'icon-rotation-alignment': 'map',
+            'icon-rotation-alignment': 'viewport',
             'icon-allow-overlap': true,
             'icon-ignore-placement': true,
         },
@@ -1625,7 +1625,7 @@ export function startRouteNavigation(route) {
     focusRouteStart(route.geometry.coordinates);
 }
 
-export function focusNavigationPosition(userLocation, route = null, { preserveZoom = false } = {}) {
+export function focusNavigationPosition(userLocation, route = null, { preserveZoom = false, duration = 850 } = {}) {
     if (!map || !userLocation) {
         return;
     }
@@ -1645,8 +1645,8 @@ export function focusNavigationPosition(userLocation, route = null, { preserveZo
         bearing: compassHeading ?? (next ? getBearing(current, next) : map.getBearing()),
         padding: { top: 0, right: 0, bottom: 0, left: 0 },
         retainPadding: false,
-        offset: [0, Math.round(window.innerHeight * 0.26)],
-        duration: 420,
+        offset: [0, Math.round(window.innerHeight * 0.30)],
+        duration,
     });
 }
 

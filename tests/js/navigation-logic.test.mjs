@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import {
-    isGpsDemoEnabled,
     isManualMapInteraction,
     normalizeCompassHeading,
     pickUpcomingSpeedCamera,
@@ -66,9 +66,11 @@ test('programmatic map rotation during follow must not detach navigation', () =>
     assert.equal(isManualMapInteraction({ originalEvent: { type: 'touchmove' } }, false), false);
 });
 
-test('GPS demo mode is enabled by query parameter only', () => {
-    assert.equal(isGpsDemoEnabled('?gps_demo=1'), true);
-    assert.equal(isGpsDemoEnabled('?foo=1'), false);
+test('GPS cursor heading is not coupled to manual map rotation', () => {
+    const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
+    const userLocationLayer = mapSource.match(/id: 'user-location-dot'[\s\S]*?layout: \{[\s\S]*?\},\n    \}\);/)?.[0] ?? '';
+
+    assert.match(userLocationLayer, /'icon-rotation-alignment': 'viewport'/);
 });
 
 test('passed speed camera is skipped instead of sticking at zero meters', () => {
