@@ -17,10 +17,7 @@ ENV NODE_OPTIONS="--max-old-space-size=4096"
 COPY package.json package-lock.json .npmrc ./
 COPY resources ./resources
 COPY vite.config.js ./
-COPY public/build ./public/build
-RUN if [ ! -f public/build/manifest.json ]; then \
-        npm ci --ignore-scripts && npm run build; \
-    fi
+RUN npm ci --ignore-scripts && npm run build
 
 FROM dunglas/frankenphp:1-php8.4-alpine AS app
 WORKDIR /app
