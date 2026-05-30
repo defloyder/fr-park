@@ -1,6 +1,6 @@
 import maplibregl from 'maplibre-gl';
 import { fetchDrivingRoute as fetchYandexDrivingRoute, fetchParkingSpots, reverseGeocode } from './parking-api';
-import { getFreshCompassHeading } from './navigation-logic';
+import { getFreshCompassHeading, isManualMapInteraction } from './navigation-logic';
 
 let map = null;
 let spotsCache = [];
@@ -991,13 +991,13 @@ function bindPerformanceMode() {
             dispatchNavigationZoomChange();
         }
     });
-    map.on('dragstart', () => {
-        if (document.body.classList.contains('is-navigation-following')) {
+    map.on('dragstart', (event) => {
+        if (isManualMapInteraction(event, document.body.classList.contains('is-navigation-following'))) {
             window.dispatchEvent(new CustomEvent('navigation:manual-map-move'));
         }
     });
-    map.on('rotatestart', () => {
-        if (document.body.classList.contains('is-navigation-following')) {
+    map.on('rotatestart', (event) => {
+        if (isManualMapInteraction(event, document.body.classList.contains('is-navigation-following'))) {
             window.dispatchEvent(new CustomEvent('navigation:manual-map-move'));
         }
     });

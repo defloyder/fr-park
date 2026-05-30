@@ -18,6 +18,18 @@ export function shouldFollowNavigationPosition({
     return Boolean(isNavigationFollowing && !isNavigationDetached && hasRoute && hasLocation);
 }
 
+export function shouldFollowUserLocation({
+    isUserLocationFollowing = false,
+    isNavigationMode = false,
+    hasLocation = false,
+} = {}) {
+    return Boolean(isUserLocationFollowing && !isNavigationMode && hasLocation);
+}
+
+export function isManualMapInteraction(event, isNavigationFollowing = false) {
+    return Boolean(isNavigationFollowing && event?.originalEvent);
+}
+
 export function normalizeCompassHeading(event, screenAngle = 0) {
     const webkitHeading = Number(event?.webkitCompassHeading);
 

@@ -13,7 +13,7 @@ import {
     uploadParkingPhoto,
 } from './parking-api';
 import { addParkingSpotToMap, buildRouteToSpot, clearActiveRoute, clearPendingSelection, focusNavigationPosition, focusSpot, focusSpots, focusUserLocation, renderSpeedCameras, replaceParkingSpotsOnMap, restoreActiveRoute, setMapPickingMode, startRouteNavigation, updateActiveRouteProgress } from './map';
-import { isGpsDemoEnabled, normalizeCompassHeading, pickUpcomingSpeedCamera, shouldFollowNavigationPosition, shouldRecenterNavigationFromLocate } from './navigation-logic';
+import { isGpsDemoEnabled, normalizeCompassHeading, pickUpcomingSpeedCamera, shouldFollowNavigationPosition, shouldFollowUserLocation, shouldRecenterNavigationFromLocate } from './navigation-logic';
 
 const STATUS_LABELS = {
     verified: 'Проверено',
@@ -66,6 +66,7 @@ const state = {
     selectedSpot: null,
     exportSelectedIds: new Set(),
     userLocation: null,
+    isUserLocationFollowing: false,
     navigationSpot: null,
     navigationRoute: null,
     navigationWatchId: null,
@@ -182,6 +183,8 @@ export function initParkingUi() {
     });
 
     window.addEventListener('navigation:manual-map-move', () => {
+        state.isUserLocationFollowing = false;
+
         if (document.body.classList.contains('is-navigation-mode')) {
             document.body.classList.add('is-navigation-detached');
             return;
@@ -191,6 +194,8 @@ export function initParkingUi() {
     });
 
     window.addEventListener('navigation:manual-map-zoom', () => {
+        state.isUserLocationFollowing = false;
+
         if (document.body.classList.contains('is-navigation-mode')) {
             document.body.classList.add('is-navigation-detached');
             state.navigationPreserveZoom = true;
@@ -975,6 +980,7 @@ export function initParkingUi() {
 
         showStatus('Определяю местоположение...');
         startUserLocationTracking();
+        state.isUserLocationFollowing = true;
         navigator.geolocation.getCurrentPosition(
             ({ coords }) => {
                 applyUserLocationCoords(coords, { focus: true });
@@ -1666,7 +1672,13 @@ export function initParkingUi() {
             updatedAt: Date.now(),
         };
 
-        focusUserLocation(state.userLocation, { focus });
+        focusUserLocation(state.userLocation, {
+            focus: focus || shouldFollowUserLocation({
+                isUserLocationFollowing: state.isUserLocationFollowing,
+                isNavigationMode: document.body.classList.contains('is-navigation-mode'),
+                hasLocation: Boolean(state.userLocation),
+            }),
+        });
     }
 
     function applyNavigationLocationCoords(coords) {

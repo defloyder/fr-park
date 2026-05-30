@@ -3,9 +3,11 @@ import assert from 'node:assert/strict';
 
 import {
     isGpsDemoEnabled,
+    isManualMapInteraction,
     normalizeCompassHeading,
     pickUpcomingSpeedCamera,
     shouldFollowNavigationPosition,
+    shouldFollowUserLocation,
     shouldRecenterNavigationFromLocate,
 } from '../../resources/js/modules/navigation-logic.js';
 
@@ -43,6 +45,25 @@ test('navigation GPS update should not steal map after manual detach', () => {
         hasRoute: true,
         hasLocation: true,
     }), false);
+});
+
+test('GPS button should keep following user location outside navigation', () => {
+    assert.equal(shouldFollowUserLocation({
+        isUserLocationFollowing: true,
+        isNavigationMode: false,
+        hasLocation: true,
+    }), true);
+    assert.equal(shouldFollowUserLocation({
+        isUserLocationFollowing: true,
+        isNavigationMode: true,
+        hasLocation: true,
+    }), false);
+});
+
+test('programmatic map rotation during follow must not detach navigation', () => {
+    assert.equal(isManualMapInteraction({}, true), false);
+    assert.equal(isManualMapInteraction({ originalEvent: { type: 'touchmove' } }, true), true);
+    assert.equal(isManualMapInteraction({ originalEvent: { type: 'touchmove' } }, false), false);
 });
 
 test('GPS demo mode is enabled by query parameter only', () => {
