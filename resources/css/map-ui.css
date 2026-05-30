@@ -1928,6 +1928,24 @@ body[data-map-layer="light"] .navigation-speedometer span {
     stroke-width: 2;
 }
 
+body[data-gps-demo="on"]::before {
+    content: "GPS demo";
+    position: fixed;
+    z-index: 80;
+    left: 50%;
+    bottom: 108px;
+    transform: translateX(-50%);
+    padding: 8px 12px;
+    color: #fff;
+    background: rgba(10, 132, 255, 0.88);
+    border-radius: 999px;
+    box-shadow: 0 10px 28px rgba(10, 132, 255, 0.32);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0;
+    pointer-events: none;
+}
+
 body.is-navigation-detached .navigation-recenter {
     opacity: 1;
     pointer-events: auto;

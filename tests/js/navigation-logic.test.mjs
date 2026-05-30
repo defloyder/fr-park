@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+    isGpsDemoEnabled,
     normalizeCompassHeading,
     pickUpcomingSpeedCamera,
     shouldFollowNavigationPosition,
@@ -42,6 +43,11 @@ test('navigation GPS update should not steal map after manual detach', () => {
         hasRoute: true,
         hasLocation: true,
     }), false);
+});
+
+test('GPS demo mode is enabled by query parameter only', () => {
+    assert.equal(isGpsDemoEnabled('?gps_demo=1'), true);
+    assert.equal(isGpsDemoEnabled('?foo=1'), false);
 });
 
 test('passed speed camera is skipped instead of sticking at zero meters', () => {

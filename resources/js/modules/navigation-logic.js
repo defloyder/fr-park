@@ -5,6 +5,10 @@ export function shouldRecenterNavigationFromLocate({ isNavigationMode = false, h
     return Boolean(isNavigationMode && hasRoute);
 }
 
+export function isGpsDemoEnabled(search = '') {
+    return new URLSearchParams(search).has('gps_demo');
+}
+
 export function shouldFollowNavigationPosition({
     isNavigationFollowing = false,
     isNavigationDetached = false,
