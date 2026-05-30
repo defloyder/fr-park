@@ -46,6 +46,49 @@ export function normalizeCompassHeading(event, screenAngle = 0) {
         : null;
 }
 
+export function getCompassEventPriority(event) {
+    if (Number.isFinite(Number(event?.webkitCompassHeading))) {
+        return 2;
+    }
+
+    return event?.absolute === true ? 2 : 1;
+}
+
+export function smoothCompassHeading(
+    previousHeading,
+    nextHeading,
+    { smoothing = 0.22, deadzoneDegrees = 1.2, maxStepDegrees = 24 } = {},
+) {
+    const next = Number(nextHeading);
+
+    if (!Number.isFinite(next)) {
+        return Number.isFinite(Number(previousHeading)) ? normalizeDegrees(previousHeading) : null;
+    }
+
+    if (previousHeading === null || previousHeading === undefined || previousHeading === '') {
+        return normalizeDegrees(next);
+    }
+
+    const previous = Number(previousHeading);
+
+    if (!Number.isFinite(previous)) {
+        return normalizeDegrees(next);
+    }
+
+    const delta = getShortestHeadingDelta(previous, next);
+
+    if (Math.abs(delta) <= deadzoneDegrees) {
+        return normalizeDegrees(previous);
+    }
+
+    const smoothedDelta = Math.max(
+        -maxStepDegrees,
+        Math.min(maxStepDegrees, delta * smoothing),
+    );
+
+    return normalizeDegrees(previous + smoothedDelta);
+}
+
 export function getFreshCompassHeading(userLocation, now = Date.now(), maxAgeMs = COMPASS_HEADING_MAX_AGE_MS) {
     const heading = Number(userLocation?.compassHeading);
     const updatedAt = Number(userLocation?.compassHeadingUpdatedAt);
@@ -59,6 +102,10 @@ export function getFreshCompassHeading(userLocation, now = Date.now(), maxAgeMs 
 
 function normalizeDegrees(value) {
     return ((Number(value) % 360) + 360) % 360;
+}
+
+function getShortestHeadingDelta(from, to) {
+    return ((((Number(to) - Number(from)) % 360) + 540) % 360) - 180;
 }
 
 export function pickUpcomingSpeedCamera(

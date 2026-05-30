@@ -1647,6 +1647,81 @@ body[data-map-layer="satellite"] .route-picker__close {
     box-shadow: 0 18px 58px rgba(3, 8, 20, 0.24);
 }
 
+.navigation-compass {
+    --heading: 0deg;
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: 34px minmax(0, 1fr);
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+    padding: 7px 8px;
+    color: #F8FAFC;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+}
+
+.navigation-compass__dial {
+    position: relative;
+    display: grid;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    color: rgba(248, 250, 252, 0.66);
+    font-size: 0.58rem;
+    font-weight: 950;
+    background: rgba(3, 7, 18, 0.28);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 50%;
+}
+
+.navigation-compass__dial i {
+    position: absolute;
+    inset: 5px;
+    transform: rotate(var(--heading));
+    transition: transform 180ms ease-out;
+}
+
+.navigation-compass__dial i::before {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 6px;
+    height: 13px;
+    background: linear-gradient(180deg, #38BDF8, #A7F3D0);
+    border-radius: 999px 999px 3px 3px;
+    box-shadow: 0 4px 12px rgba(56, 189, 248, 0.28);
+    content: "";
+    transform: translateX(-50%);
+}
+
+.navigation-compass__readout {
+    display: grid;
+    min-width: 0;
+    gap: 1px;
+}
+
+.navigation-compass__readout strong {
+    color: currentColor;
+    font-size: 0.9rem;
+    font-weight: 950;
+    line-height: 1;
+}
+
+.navigation-compass__readout span {
+    color: rgba(248, 250, 252, 0.58);
+    font-size: 0.64rem;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    text-transform: uppercase;
+}
+
+.navigation-compass.is-muted {
+    opacity: 0.62;
+}
+
 .navigation-guidance__arrow {
     display: grid;
     width: 58px;
@@ -1866,6 +1941,28 @@ body[data-map-layer="light"] .navigation-speedometer span,
 .map-theme-light .navigation-guidance span,
 .map-theme-light .navigation-speedometer span {
     color: rgba(16, 23, 34, 0.60);
+}
+
+body[data-map-layer="dark"] .navigation-compass,
+body[data-map-layer="satellite"] .navigation-compass,
+.map-theme-light .navigation-compass {
+    color: #101722;
+    background: rgba(255, 255, 255, 0.46);
+    border-color: rgba(0, 184, 169, 0.20);
+}
+
+body[data-map-layer="dark"] .navigation-compass__dial,
+body[data-map-layer="satellite"] .navigation-compass__dial,
+.map-theme-light .navigation-compass__dial {
+    color: rgba(16, 23, 34, 0.62);
+    background: rgba(255, 255, 255, 0.62);
+    border-color: rgba(16, 23, 34, 0.10);
+}
+
+body[data-map-layer="dark"] .navigation-compass__readout span,
+body[data-map-layer="satellite"] .navigation-compass__readout span,
+.map-theme-light .navigation-compass__readout span {
+    color: rgba(16, 23, 34, 0.58);
 }
 
 body[data-map-layer="light"] .navigation-speedometer {
@@ -2106,6 +2203,26 @@ body.is-navigation-mode .map-canvas::after {
         gap: 8px;
         padding: 10px;
         border-radius: 18px;
+    }
+
+    .navigation-compass {
+        grid-template-columns: 30px minmax(0, 1fr);
+        gap: 7px;
+        padding: 6px 7px;
+        border-radius: 12px;
+    }
+
+    .navigation-compass__dial {
+        width: 30px;
+        height: 30px;
+    }
+
+    .navigation-compass__readout strong {
+        font-size: 0.8rem;
+    }
+
+    .navigation-compass__readout span {
+        font-size: 0.58rem;
     }
 
     .navigation-speed-hud {

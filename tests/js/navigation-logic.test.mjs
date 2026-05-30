@@ -3,12 +3,14 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import {
+    getCompassEventPriority,
     isManualMapInteraction,
     normalizeCompassHeading,
     pickUpcomingSpeedCamera,
     shouldFollowNavigationPosition,
     shouldFollowUserLocation,
     shouldRecenterNavigationFromLocate,
+    smoothCompassHeading,
 } from '../../resources/js/modules/navigation-logic.js';
 
 const route = {
@@ -139,4 +141,17 @@ test('device orientation heading is normalized for iOS and absolute sensors', ()
     assert.equal(normalizeCompassHeading({ absolute: true, alpha: 90 }, 90), 0);
     assert.equal(normalizeCompassHeading({ alpha: 90 }, 0), 270);
     assert.equal(normalizeCompassHeading({ alpha: 90 }, 90), 0);
+});
+
+test('compass heading is smoothed across jitter and wraparound', () => {
+    assert.equal(smoothCompassHeading(null, 725), 5);
+    assert.equal(smoothCompassHeading(10, 11), 10);
+    assert.equal(smoothCompassHeading(350, 10, { smoothing: 0.5, deadzoneDegrees: 0, maxStepDegrees: 30 }), 0);
+    assert.equal(smoothCompassHeading(0, 180), 336);
+});
+
+test('absolute compass events outrank fallback orientation events', () => {
+    assert.equal(getCompassEventPriority({ webkitCompassHeading: 12 }), 2);
+    assert.equal(getCompassEventPriority({ absolute: true, alpha: 12 }), 2);
+    assert.equal(getCompassEventPriority({ alpha: 12 }), 1);
 });

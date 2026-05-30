@@ -13,7 +13,7 @@ import {
     uploadParkingPhoto,
 } from './parking-api';
 import { addParkingSpotToMap, buildRouteToSpot, clearActiveRoute, clearPendingSelection, focusNavigationPosition, focusSpot, focusSpots, focusUserLocation, renderSpeedCameras, replaceParkingSpotsOnMap, restoreActiveRoute, setMapPickingMode, startRouteNavigation, updateActiveRouteProgress } from './map';
-import { normalizeCompassHeading, pickUpcomingSpeedCamera, shouldFollowNavigationPosition, shouldFollowUserLocation, shouldRecenterNavigationFromLocate } from './navigation-logic';
+import { getCompassEventPriority, normalizeCompassHeading, pickUpcomingSpeedCamera, shouldFollowNavigationPosition, shouldFollowUserLocation, shouldRecenterNavigationFromLocate, smoothCompassHeading } from './navigation-logic';
 
 const STATUS_LABELS = {
     verified: 'Проверено',
@@ -84,6 +84,8 @@ const state = {
     navigationSessionId: 0,
     deviceHeading: null,
     deviceHeadingUpdatedAt: 0,
+    deviceHeadingSourcePriority: 0,
+    deviceHeadingSourceUpdatedAt: 0,
     deviceHeadingListener: null,
     deviceHeadingPermissionRequested: false,
     wakeLock: null,
@@ -1185,6 +1187,16 @@ export function initParkingUi() {
                     <strong data-navigation-maneuver-distance></strong>
                     <span data-navigation-instruction></span>
                 </div>
+                <div class="navigation-compass" aria-label="Компас направления">
+                    <div class="navigation-compass__dial" aria-hidden="true">
+                        <span>С</span>
+                        <i data-navigation-compass-needle></i>
+                    </div>
+                    <div class="navigation-compass__readout">
+                        <strong data-navigation-compass-heading></strong>
+                        <span data-navigation-compass-direction></span>
+                    </div>
+                </div>
             `;
                 document.body.append(guidance);
             }
@@ -1327,6 +1339,7 @@ export function initParkingUi() {
         const arrow = document.querySelector('.navigation-guidance__arrow');
         if (arrow) arrow.innerHTML = getManeuverIconSvg(instruction);
 
+        updateNavigationCompass();
         document.querySelector('.navigation-speedometer')?.classList.toggle('is-speeding', isSpeeding);
         renderCameraAlert();
     }
@@ -1500,13 +1513,30 @@ export function initParkingUi() {
 
         const listener = (event) => {
             const screenAngle = Number(window.screen?.orientation?.angle ?? window.orientation ?? 0);
-            const heading = normalizeCompassHeading(event, screenAngle);
+            const rawHeading = normalizeCompassHeading(event, screenAngle);
+
+            if (!Number.isFinite(rawHeading)) return;
+
+            const now = Date.now();
+            const sourcePriority = getCompassEventPriority(event);
+
+            if (
+                sourcePriority < state.deviceHeadingSourcePriority
+                && now - state.deviceHeadingSourceUpdatedAt < 1500
+            ) {
+                return;
+            }
+
+            const heading = smoothCompassHeading(state.deviceHeading, rawHeading);
 
             if (!Number.isFinite(heading)) return;
 
             state.deviceHeading = heading;
-            state.deviceHeadingUpdatedAt = Date.now();
+            state.deviceHeadingUpdatedAt = now;
+            state.deviceHeadingSourcePriority = sourcePriority;
+            state.deviceHeadingSourceUpdatedAt = now;
             applyDeviceHeadingToUserLocation();
+            updateNavigationCompass();
 
             if (!state.userLocation) return;
 
@@ -1524,6 +1554,21 @@ export function initParkingUi() {
         window.removeEventListener('deviceorientationabsolute', state.deviceHeadingListener, true);
         window.removeEventListener('deviceorientation', state.deviceHeadingListener, true);
         state.deviceHeadingListener = null;
+        state.deviceHeadingSourcePriority = 0;
+        state.deviceHeadingSourceUpdatedAt = 0;
+    }
+
+    function updateNavigationCompass() {
+        const compass = document.querySelector('.navigation-compass');
+        if (!compass) return;
+
+        const heading = getFreshDeviceHeading(5000);
+        const hasHeading = Number.isFinite(heading);
+
+        compass.classList.toggle('is-muted', !hasHeading);
+        compass.style.setProperty('--heading', `${hasHeading ? heading : 0}deg`);
+        setText('[data-navigation-compass-heading]', hasHeading ? `${Math.round(heading)}°` : '—');
+        setText('[data-navigation-compass-direction]', hasHeading ? formatCompassDirection(heading) : 'ожидание');
     }
 
     function applyDeviceHeadingToUserLocation() {
@@ -1560,6 +1605,13 @@ export function initParkingUi() {
 
     function getNavigationHeading(gpsHeading = null) {
         return getFreshDeviceHeading() ?? gpsHeading;
+    }
+
+    function formatCompassDirection(heading) {
+        const directions = ['С', 'СВ', 'В', 'ЮВ', 'Ю', 'ЮЗ', 'З', 'СЗ'];
+        const index = Math.round((((Number(heading) % 360) + 360) % 360) / 45) % directions.length;
+
+        return directions[index];
     }
 
     function startNavigationLocationWatch() {
