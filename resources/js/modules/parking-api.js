@@ -247,6 +247,25 @@ export async function fetchDrivingRoute(from, to) {
     return response.json();
 }
 
+export async function fetchRouteSpeedCameras(coordinates) {
+    const response = await fetch('/api/navigation/speed-cameras', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+        },
+        body: JSON.stringify({ coordinates }),
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to load speed cameras');
+    }
+
+    return response.json();
+}
+
 export async function fetchAccountSession() {
     const response = await fetch('/account/session', {
         credentials: 'same-origin',

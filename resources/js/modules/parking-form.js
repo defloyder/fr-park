@@ -3,6 +3,7 @@ import {
     deleteParkingSpot,
     fetchAccountSession,
     fetchFavorites,
+    fetchRouteSpeedCameras,
     getParkingSpotsExportUrl,
     logoutAccount,
     importParkingSpots,
@@ -12,6 +13,7 @@ import {
     uploadParkingPhoto,
 } from './parking-api';
 import { addParkingSpotToMap, buildRouteToSpot, clearActiveRoute, clearPendingSelection, focusNavigationPosition, focusSpot, focusSpots, focusUserLocation, renderSpeedCameras, replaceParkingSpotsOnMap, restoreActiveRoute, setMapPickingMode, startRouteNavigation, updateActiveRouteProgress } from './map';
+import { pickUpcomingSpeedCamera, shouldRecenterNavigationFromLocate } from './navigation-logic';
 
 const STATUS_LABELS = {
     verified: 'Проверено',
@@ -929,12 +931,28 @@ export function initParkingUi() {
         document.body.classList.remove('is-sheet-open');
     }
 
-    function locateMe() {
-        if (document.body.classList.contains('is-navigation-mode') && state.userLocation && state.navigationRoute) {
-            state.navigationPreserveZoom = false;
-            document.body.classList.remove('is-navigation-detached');
-            focusNavigationPosition(state.userLocation, state.navigationRoute);
-            updateNavigationMetrics();
+    async function locateMe() {
+        if (shouldRecenterNavigationFromLocate({
+            isNavigationMode: document.body.classList.contains('is-navigation-mode'),
+            hasRoute: Boolean(state.navigationRoute),
+        })) {
+            try {
+                const location = await ensureUserLocation({ refresh: true, focus: false, fastFallback: true });
+
+                state.navigationPreserveZoom = false;
+                document.body.classList.remove('is-navigation-detached');
+                document.body.classList.add('is-navigation-following');
+                focusNavigationPosition(location, state.navigationRoute);
+                if (state.navigationWatchId === null) {
+                    startNavigationLocationWatch();
+                    requestNavigationWakeLock();
+                }
+                updateNavigationMetrics();
+                saveNavigationState();
+            } catch {
+                showToast('Не удалось вернуться к GPS. Проверьте разрешение геолокации.', true);
+            }
+
             return;
         }
 
@@ -1320,26 +1338,11 @@ export function initParkingUi() {
     }
 
     function getNearestUpcomingCamera() {
-        if (!state.speedCameras.length || !state.userLocation || !state.navigationRoute?.geometry?.coordinates?.length) return null;
-
-        const currentProgress = getRouteProgressMeters(state.navigationRoute.geometry.coordinates, state.userLocation);
-
-        return state.speedCameras
-            .map((camera) => ({
-                ...camera,
-                routeOffsetMeters: getRouteProgressMeters(state.navigationRoute.geometry.coordinates, camera),
-                routeDistanceMeters: getDistanceToRouteMeters(state.navigationRoute, camera),
-            }))
-            .map((camera) => ({
-                ...camera,
-                distanceMeters: Math.max(0, camera.routeOffsetMeters - currentProgress),
-            }))
-            .filter((camera) => (
-                Number.isFinite(camera.distanceMeters)
-                && camera.distanceMeters >= 0
-                && camera.routeDistanceMeters < SPEED_CAMERA_ROUTE_DISTANCE_METERS
-            ))
-            .sort((first, second) => first.distanceMeters - second.distanceMeters)[0] ?? null;
+        return pickUpcomingSpeedCamera(state.speedCameras, state.userLocation, state.navigationRoute, {
+            getRouteProgressMeters,
+            getDistanceToRouteMeters,
+            routeDistanceThresholdMeters: SPEED_CAMERA_ROUTE_DISTANCE_METERS,
+        });
     }
 
     async function refreshSpeedCameras(route) {
@@ -1352,7 +1355,7 @@ export function initParkingUi() {
         const sessionId = state.navigationSessionId;
 
         try {
-            const cameras = await fetchOpenStreetMapSpeedCameras(route.geometry.coordinates);
+            const payload = await fetchRouteSpeedCameras(route.geometry.coordinates);
 
             if (sessionId !== state.navigationSessionId || !document.body.classList.contains('is-navigation-mode')) {
                 state.speedCameras = [];
@@ -1360,172 +1363,13 @@ export function initParkingUi() {
                 return;
             }
 
-            state.speedCameras = dedupeSpeedCameras(cameras)
-                .map((camera) => normalizeCameraForRoute(camera, route))
-                .filter((camera) => camera.routeDistanceMeters < SPEED_CAMERA_ROUTE_DISTANCE_METERS)
-                .sort((first, second) => first.routeOffsetMeters - second.routeOffsetMeters);
+            state.speedCameras = Array.isArray(payload.data) ? payload.data : [];
             renderSpeedCameras(state.speedCameras);
             updateNavigationMetrics();
         } catch {
-            // Overpass is a public service and can timeout. Keep the last known
-            // camera layer instead of making cameras blink out during navigation.
+            // The backend keeps Overpass details away from the client. Keep the
+            // last known camera layer instead of making alerts blink out.
         }
-    }
-
-    async function fetchOpenStreetMapSpeedCameras(coordinates) {
-        const bounds = getRouteBounds(coordinates, 0.012);
-        const bbox = `(${bounds.south},${bounds.west},${bounds.north},${bounds.east})`;
-        const query = `
-            [out:json][timeout:18];
-            (
-              node["highway"="speed_camera"]${bbox};
-              way["highway"="speed_camera"]${bbox};
-              relation["highway"="speed_camera"]${bbox};
-              node["enforcement"~"maxspeed|speed|average_speed|traffic_signals|bus_lane"]${bbox};
-              way["enforcement"~"maxspeed|speed|average_speed|traffic_signals|bus_lane"]${bbox};
-              relation["enforcement"~"maxspeed|speed|average_speed|traffic_signals|bus_lane"]${bbox};
-              node["camera:type"~"speed|redlight|traffic|bus_lane"]${bbox};
-              way["camera:type"~"speed|redlight|traffic|bus_lane"]${bbox};
-              relation["camera:type"~"speed|redlight|traffic|bus_lane"]${bbox};
-            );
-            out center 240;
-        `;
-        const fallbackQuery = `
-            [out:json][timeout:12];
-            (
-              node["highway"="speed_camera"]${bbox};
-              node["enforcement"~"maxspeed|speed|average_speed|traffic_signals|bus_lane"]${bbox};
-              node["camera:type"~"speed|redlight|traffic|bus_lane"]${bbox};
-            );
-            out center 180;
-        `;
-        const payload = await fetchOverpassPayload(query).catch(() => fetchOverpassPayload(fallbackQuery));
-
-        return parseSpeedCameraPayload(payload);
-    }
-
-    async function fetchOverpassPayload(query) {
-        const response = await fetch('https://overpass-api.de/api/interpreter', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-            body: new URLSearchParams({ data: query }),
-        });
-
-        if (!response.ok) throw new Error('Speed cameras are unavailable.');
-
-        return response.json();
-    }
-
-    function parseSpeedCameraPayload(payload) {
-        return (payload.elements ?? []).map((item) => {
-            const tags = item.tags ?? {};
-
-            return {
-                id: item.id,
-                osmType: item.type,
-                latitude: Number(item.lat ?? item.center?.lat),
-                longitude: Number(item.lon ?? item.center?.lon),
-                title: tags.name || 'Камера контроля скорости',
-                maxspeed: tags.maxspeed || tags['maxspeed:forward'] || tags['maxspeed:backward'] || '',
-                direction: tags.direction || tags['camera:direction'] || tags['surveillance:direction'] || '',
-                cameraType: tags['camera:type'] || tags.enforcement || '',
-                isDummy: isDummyCamera(tags),
-            };
-        }).filter((camera) => Number.isFinite(camera.latitude) && Number.isFinite(camera.longitude));
-    }
-
-    function dedupeSpeedCameras(cameras) {
-        const seen = new Set();
-
-        return cameras.filter((camera) => {
-            const key = [
-                Number(camera.latitude).toFixed(5),
-                Number(camera.longitude).toFixed(5),
-                camera.maxspeed || '',
-                camera.cameraType || '',
-            ].join(':');
-
-            if (seen.has(key)) return false;
-            seen.add(key);
-            return true;
-        });
-    }
-
-    function normalizeCameraForRoute(camera, route) {
-        const routePoint = getClosestRoutePoint(route.geometry.coordinates, camera);
-        const bearing = resolveCameraBearing(camera.direction, routePoint.bearing);
-        const directionLabel = getCameraDirectionLabel(bearing, routePoint.bearing);
-        const labelParts = [
-            camera.isDummy ? 'Муляж' : 'Камера',
-            camera.maxspeed ? `${parseInt(camera.maxspeed, 10) || camera.maxspeed}` : '',
-            directionLabel.short,
-        ].filter(Boolean);
-
-        return {
-            ...camera,
-            bearing,
-            routeOffsetMeters: routePoint.progressMeters,
-            routeDistanceMeters: routePoint.distanceMeters,
-            directionLabel,
-            label: labelParts.join(' · '),
-        };
-    }
-
-    function isDummyCamera(tags) {
-        const text = Object.entries(tags)
-            .map(([key, value]) => `${key}=${value}`)
-            .join(' ')
-            .toLowerCase();
-
-        return /\bdummy\b|муляж|fake|decoy|имитац/.test(text);
-    }
-
-    function resolveCameraBearing(direction, routeBearing) {
-        const normalized = String(direction || '').trim().toLowerCase();
-        const numeric = Number(normalized);
-
-        if (Number.isFinite(numeric)) {
-            return (numeric + 360) % 360;
-        }
-
-        if (['forward', 'forwards', 'по ходу'].includes(normalized)) {
-            return routeBearing;
-        }
-
-        if (['backward', 'backwards', 'against', 'против'].includes(normalized)) {
-            return (routeBearing + 180) % 360;
-        }
-
-        const cardinal = {
-            n: 0,
-            north: 0,
-            ne: 45,
-            northeast: 45,
-            e: 90,
-            east: 90,
-            se: 135,
-            southeast: 135,
-            s: 180,
-            south: 180,
-            sw: 225,
-            southwest: 225,
-            w: 270,
-            west: 270,
-            nw: 315,
-            northwest: 315,
-        }[normalized];
-
-        return Number.isFinite(cardinal) ? cardinal : routeBearing;
-    }
-
-    function getCameraDirectionLabel(cameraBearing, routeBearing) {
-        const diff = getAngleDifference(cameraBearing, routeBearing);
-
-        if (diff <= 45) return { short: 'в спину', text: 'в спину' };
-        if (diff >= 135) return { short: 'навстречу', text: 'навстречу' };
-        return cameraBearing > routeBearing
-            ? { short: 'справа', text: 'справа' }
-            : { short: 'слева', text: 'слева' };
     }
 
     function getCameraTitle(camera) {
@@ -1541,74 +1385,6 @@ export function initParkingUi() {
         ].filter(Boolean);
 
         return parts.join(' · ') || 'на маршруте';
-    }
-
-    function getClosestRoutePoint(coordinates, point) {
-        const current = [Number(point.longitude), Number(point.latitude)];
-        let progress = 0;
-        let best = {
-            distanceMeters: Number.POSITIVE_INFINITY,
-            progressMeters: 0,
-            bearing: 0,
-        };
-
-        for (let index = 1; index < coordinates.length; index += 1) {
-            const start = coordinates[index - 1];
-            const finish = coordinates[index];
-            const segmentDistance = getDistanceMeters(
-                { longitude: start[0], latitude: start[1] },
-                { longitude: finish[0], latitude: finish[1] },
-            );
-            const closest = getClosestPointOnSegment(current, start, finish);
-            const distanceToSegment = getDistanceMeters(
-                { longitude: current[0], latitude: current[1] },
-                { longitude: closest.coordinate[0], latitude: closest.coordinate[1] },
-            );
-
-            if (distanceToSegment < best.distanceMeters) {
-                best = {
-                    distanceMeters: distanceToSegment,
-                    progressMeters: progress + (segmentDistance * closest.ratio),
-                    bearing: getBearingDegrees(start, finish),
-                };
-            }
-
-            progress += segmentDistance;
-        }
-
-        return best;
-    }
-
-    function getClosestPointOnSegment(point, start, finish) {
-        const dx = finish[0] - start[0];
-        const dy = finish[1] - start[1];
-        const lengthSquared = (dx * dx) + (dy * dy);
-
-        if (!lengthSquared) {
-            return { coordinate: start, ratio: 0 };
-        }
-
-        const ratio = Math.max(0, Math.min(1, (((point[0] - start[0]) * dx) + ((point[1] - start[1]) * dy)) / lengthSquared));
-
-        return {
-            coordinate: [
-                start[0] + (dx * ratio),
-                start[1] + (dy * ratio),
-            ],
-            ratio,
-        };
-    }
-
-    function getRouteBounds(coordinates, paddingDegrees = 0) {
-        const lngs = coordinates.map((coordinate) => Number(coordinate[0])).filter(Number.isFinite);
-        const lats = coordinates.map((coordinate) => Number(coordinate[1])).filter(Number.isFinite);
-
-        return {
-            west: Math.min(...lngs) - paddingDegrees,
-            east: Math.max(...lngs) + paddingDegrees,
-            south: Math.min(...lats) - paddingDegrees,
-            north: Math.max(...lats) + paddingDegrees,
-        };
     }
 
     function startNavigationMetricsTimer() {

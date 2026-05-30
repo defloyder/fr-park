@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\GeocodeController;
 use App\Http\Controllers\Api\ParkingSpotController;
 use App\Http\Controllers\Api\RouteController;
 use App\Http\Controllers\Api\SessionController;
+use App\Http\Controllers\Api\SpeedCameraController;
 use App\Http\Middleware\EncryptApiResponse;
 use App\Http\Middleware\ValidateApiToken;
 use Illuminate\Support\Facades\Route;
@@ -19,6 +20,10 @@ Route::get('geocode/reverse', [GeocodeController::class, 'reverse'])
 Route::get('routes/driving', [RouteController::class, 'driving'])
     ->middleware('throttle:60,1')
     ->name('routes.driving');
+
+Route::post('navigation/speed-cameras', SpeedCameraController::class)
+    ->middleware('throttle:30,1')
+    ->name('navigation.speed-cameras');
 
 Route::middleware(['web', 'admin'])->group(function (): void {
     Route::post('parking-spots/import', [ParkingSpotController::class, 'import'])
