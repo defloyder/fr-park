@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
     normalizeCompassHeading,
     pickUpcomingSpeedCamera,
+    shouldFollowNavigationPosition,
     shouldRecenterNavigationFromLocate,
 } from '../../resources/js/modules/navigation-logic.js';
 
@@ -23,6 +24,24 @@ function makeProgressByOffset(currentProgress) {
 test('GPS button recenters navigation even before a cached user location exists', () => {
     assert.equal(shouldRecenterNavigationFromLocate({ isNavigationMode: true, hasRoute: true }), true);
     assert.equal(shouldRecenterNavigationFromLocate({ isNavigationMode: true, hasRoute: false }), false);
+});
+
+test('navigation GPS update should auto-follow map during an active route', () => {
+    assert.equal(shouldFollowNavigationPosition({
+        isNavigationFollowing: true,
+        isNavigationDetached: false,
+        hasRoute: true,
+        hasLocation: true,
+    }), true);
+});
+
+test('navigation GPS update should not steal map after manual detach', () => {
+    assert.equal(shouldFollowNavigationPosition({
+        isNavigationFollowing: true,
+        isNavigationDetached: true,
+        hasRoute: true,
+        hasLocation: true,
+    }), false);
 });
 
 test('passed speed camera is skipped instead of sticking at zero meters', () => {
@@ -63,5 +82,6 @@ test('device orientation heading is normalized for iOS and absolute sensors', ()
     assert.equal(normalizeCompassHeading({ webkitCompassHeading: 725 }), 5);
     assert.equal(normalizeCompassHeading({ absolute: true, alpha: 90 }, 0), 270);
     assert.equal(normalizeCompassHeading({ absolute: true, alpha: 90 }, 90), 0);
-    assert.equal(normalizeCompassHeading({ alpha: 90 }, 0), null);
+    assert.equal(normalizeCompassHeading({ alpha: 90 }, 0), 270);
+    assert.equal(normalizeCompassHeading({ alpha: 90 }, 90), 0);
 });

@@ -13,7 +13,7 @@ import {
     uploadParkingPhoto,
 } from './parking-api';
 import { addParkingSpotToMap, buildRouteToSpot, clearActiveRoute, clearPendingSelection, focusNavigationPosition, focusSpot, focusSpots, focusUserLocation, renderSpeedCameras, replaceParkingSpotsOnMap, restoreActiveRoute, setMapPickingMode, startRouteNavigation, updateActiveRouteProgress } from './map';
-import { normalizeCompassHeading, pickUpcomingSpeedCamera, shouldRecenterNavigationFromLocate } from './navigation-logic';
+import { normalizeCompassHeading, pickUpcomingSpeedCamera, shouldFollowNavigationPosition, shouldRecenterNavigationFromLocate } from './navigation-logic';
 
 const STATUS_LABELS = {
     verified: 'Проверено',
@@ -73,6 +73,7 @@ const state = {
     speedLimitKmh: 60,
     listQuery: '',
     navigationMetricsTimer: null,
+    navigationLocationPollTimer: null,
     navigationRouteRefreshTimer: null,
     navigationRouteRefreshInFlight: false,
     navigationLastRerouteAt: 0,
@@ -937,12 +938,13 @@ export function initParkingUi() {
     }
 
     async function locateMe() {
+        startDeviceHeadingWatch();
+
         if (shouldRecenterNavigationFromLocate({
             isNavigationMode: document.body.classList.contains('is-navigation-mode'),
             hasRoute: Boolean(state.navigationRoute),
         })) {
             try {
-                startDeviceHeadingWatch();
                 const location = await ensureUserLocation({ refresh: true, focus: false, fastFallback: true });
 
                 state.navigationPreserveZoom = false;
@@ -1424,6 +1426,7 @@ export function initParkingUi() {
         document.body.classList.remove('is-navigation-detached');
         releaseNavigationWakeLock();
         stopNavigationLocationWatch();
+        stopNavigationLocationPolling();
         stopDeviceHeadingWatch();
         stopNavigationRouteRefreshTimer();
         document.querySelector('.navigation-panel')?.remove();
@@ -1569,34 +1572,12 @@ export function initParkingUi() {
 
     function startNavigationLocationWatch() {
         stopNavigationLocationWatch();
+        startNavigationLocationPolling();
 
         if (!navigator.geolocation) return;
 
         state.navigationWatchId = navigator.geolocation.watchPosition(
-            ({ coords }) => {
-                const gpsHeading = getGpsHeading(coords);
-                state.userLocation = {
-                    latitude: coords.latitude,
-                    longitude: coords.longitude,
-                    accuracy: coords.accuracy,
-                    gpsHeading,
-                    heading: getNavigationHeading(gpsHeading),
-                    compassHeading: getFreshDeviceHeading(),
-                    compassHeadingUpdatedAt: state.deviceHeadingUpdatedAt,
-                    updatedAt: Date.now(),
-                };
-                state.currentSpeedKmh = getGpsSpeedKmh(coords);
-                state.speedLimitKmh = estimateSpeedLimitKmh(state.navigationRoute, state.userLocation);
-
-                focusUserLocation(state.userLocation, { focus: false });
-                updateActiveRouteProgress(state.userLocation, state.navigationRoute);
-                if (!document.body.classList.contains('is-navigation-detached')) {
-                    focusNavigationPosition(state.userLocation, state.navigationRoute, { preserveZoom: state.navigationPreserveZoom });
-                }
-                maybeRefreshNavigationRouteFromGps();
-                updateNavigationMetrics();
-                saveNavigationState();
-            },
+            ({ coords }) => applyNavigationLocationCoords(coords),
             () => {},
             {
                 enableHighAccuracy: true,
@@ -1611,6 +1592,59 @@ export function initParkingUi() {
 
         navigator.geolocation.clearWatch(state.navigationWatchId);
         state.navigationWatchId = null;
+    }
+
+    function startNavigationLocationPolling() {
+        if (state.navigationLocationPollTimer || !navigator.geolocation) return;
+
+        state.navigationLocationPollTimer = window.setInterval(() => {
+            if (!document.body.classList.contains('is-navigation-following')) return;
+
+            navigator.geolocation.getCurrentPosition(
+                ({ coords }) => applyNavigationLocationCoords(coords),
+                () => {},
+                {
+                    enableHighAccuracy: true,
+                    maximumAge: 1000,
+                    timeout: 3500,
+                },
+            );
+        }, 2500);
+    }
+
+    function stopNavigationLocationPolling() {
+        window.clearInterval(state.navigationLocationPollTimer);
+        state.navigationLocationPollTimer = null;
+    }
+
+    function applyNavigationLocationCoords(coords) {
+        const gpsHeading = getGpsHeading(coords);
+        state.userLocation = {
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            accuracy: coords.accuracy,
+            gpsHeading,
+            heading: getNavigationHeading(gpsHeading),
+            compassHeading: getFreshDeviceHeading(),
+            compassHeadingUpdatedAt: state.deviceHeadingUpdatedAt,
+            updatedAt: Date.now(),
+        };
+        state.currentSpeedKmh = getGpsSpeedKmh(coords);
+        state.speedLimitKmh = estimateSpeedLimitKmh(state.navigationRoute, state.userLocation);
+
+        focusUserLocation(state.userLocation, { focus: false });
+        updateActiveRouteProgress(state.userLocation, state.navigationRoute);
+        if (shouldFollowNavigationPosition({
+            isNavigationFollowing: document.body.classList.contains('is-navigation-following'),
+            isNavigationDetached: document.body.classList.contains('is-navigation-detached'),
+            hasRoute: Boolean(state.navigationRoute),
+            hasLocation: Boolean(state.userLocation),
+        })) {
+            focusNavigationPosition(state.userLocation, state.navigationRoute, { preserveZoom: state.navigationPreserveZoom });
+        }
+        maybeRefreshNavigationRouteFromGps();
+        updateNavigationMetrics();
+        saveNavigationState();
     }
 
     function startNavigationRouteRefreshTimer() {

@@ -5,6 +5,15 @@ export function shouldRecenterNavigationFromLocate({ isNavigationMode = false, h
     return Boolean(isNavigationMode && hasRoute);
 }
 
+export function shouldFollowNavigationPosition({
+    isNavigationFollowing = false,
+    isNavigationDetached = false,
+    hasRoute = false,
+    hasLocation = false,
+} = {}) {
+    return Boolean(isNavigationFollowing && !isNavigationDetached && hasRoute && hasLocation);
+}
+
 export function normalizeCompassHeading(event, screenAngle = 0) {
     const webkitHeading = Number(event?.webkitCompassHeading);
 
@@ -18,7 +27,11 @@ export function normalizeCompassHeading(event, screenAngle = 0) {
         return normalizeDegrees(360 - absoluteHeading + Number(screenAngle || 0));
     }
 
-    return null;
+    const fallbackAlpha = Number(event?.alpha);
+
+    return Number.isFinite(fallbackAlpha)
+        ? normalizeDegrees(360 - fallbackAlpha + Number(screenAngle || 0))
+        : null;
 }
 
 export function getFreshCompassHeading(userLocation, now = Date.now(), maxAgeMs = COMPASS_HEADING_MAX_AGE_MS) {
