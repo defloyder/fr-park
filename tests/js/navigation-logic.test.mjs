@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+    normalizeCompassHeading,
     pickUpcomingSpeedCamera,
     shouldRecenterNavigationFromLocate,
 } from '../../resources/js/modules/navigation-logic.js';
@@ -56,4 +57,11 @@ test('camera alert resets when no upcoming camera remains', () => {
     );
 
     assert.equal(camera, null);
+});
+
+test('device orientation heading is normalized for iOS and absolute sensors', () => {
+    assert.equal(normalizeCompassHeading({ webkitCompassHeading: 725 }), 5);
+    assert.equal(normalizeCompassHeading({ absolute: true, alpha: 90 }, 0), 270);
+    assert.equal(normalizeCompassHeading({ absolute: true, alpha: 90 }, 90), 0);
+    assert.equal(normalizeCompassHeading({ alpha: 90 }, 0), null);
 });

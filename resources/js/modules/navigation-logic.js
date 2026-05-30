@@ -1,7 +1,39 @@
 export const DEFAULT_PASSED_CAMERA_DISTANCE_METERS = 8;
+export const COMPASS_HEADING_MAX_AGE_MS = 2500;
 
 export function shouldRecenterNavigationFromLocate({ isNavigationMode = false, hasRoute = false } = {}) {
     return Boolean(isNavigationMode && hasRoute);
+}
+
+export function normalizeCompassHeading(event, screenAngle = 0) {
+    const webkitHeading = Number(event?.webkitCompassHeading);
+
+    if (Number.isFinite(webkitHeading) && webkitHeading >= 0) {
+        return normalizeDegrees(webkitHeading);
+    }
+
+    const absoluteHeading = Number(event?.absolute === true ? event?.alpha : Number.NaN);
+
+    if (Number.isFinite(absoluteHeading)) {
+        return normalizeDegrees(360 - absoluteHeading + Number(screenAngle || 0));
+    }
+
+    return null;
+}
+
+export function getFreshCompassHeading(userLocation, now = Date.now(), maxAgeMs = COMPASS_HEADING_MAX_AGE_MS) {
+    const heading = Number(userLocation?.compassHeading);
+    const updatedAt = Number(userLocation?.compassHeadingUpdatedAt);
+
+    if (!Number.isFinite(heading) || !Number.isFinite(updatedAt)) {
+        return null;
+    }
+
+    return now - updatedAt <= maxAgeMs ? normalizeDegrees(heading) : null;
+}
+
+function normalizeDegrees(value) {
+    return ((Number(value) % 360) + 360) % 360;
 }
 
 export function pickUpcomingSpeedCamera(

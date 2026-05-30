@@ -13,7 +13,7 @@ import {
     uploadParkingPhoto,
 } from './parking-api';
 import { addParkingSpotToMap, buildRouteToSpot, clearActiveRoute, clearPendingSelection, focusNavigationPosition, focusSpot, focusSpots, focusUserLocation, renderSpeedCameras, replaceParkingSpotsOnMap, restoreActiveRoute, setMapPickingMode, startRouteNavigation, updateActiveRouteProgress } from './map';
-import { pickUpcomingSpeedCamera, shouldRecenterNavigationFromLocate } from './navigation-logic';
+import { normalizeCompassHeading, pickUpcomingSpeedCamera, shouldRecenterNavigationFromLocate } from './navigation-logic';
 
 const STATUS_LABELS = {
     verified: 'Проверено',
@@ -78,6 +78,11 @@ const state = {
     navigationLastRerouteAt: 0,
     navigationPreserveZoom: false,
     navigationSessionId: 0,
+    deviceHeading: null,
+    deviceHeadingUpdatedAt: 0,
+    deviceHeadingCameraUpdatedAt: 0,
+    deviceHeadingListener: null,
+    deviceHeadingPermissionRequested: false,
     wakeLock: null,
     deferredInstallPrompt: null,
     speedCameras: [],
@@ -937,6 +942,7 @@ export function initParkingUi() {
             hasRoute: Boolean(state.navigationRoute),
         })) {
             try {
+                startDeviceHeadingWatch();
                 const location = await ensureUserLocation({ refresh: true, focus: false, fastFallback: true });
 
                 state.navigationPreserveZoom = false;
@@ -968,6 +974,7 @@ export function initParkingUi() {
                     latitude: coords.latitude,
                     longitude: coords.longitude,
                     accuracy: coords.accuracy,
+                    ...getDeviceHeadingLocationPatch(),
                 };
 
                 focusUserLocation(state.userLocation);
@@ -1062,6 +1069,7 @@ export function initParkingUi() {
         const button = document.querySelector('[data-action="route-in-app"]');
 
         try {
+            startDeviceHeadingWatch();
             button?.setAttribute('disabled', 'disabled');
             if (summary) summary.textContent = 'Строю маршрут от вашего местоположения...';
             const location = await ensureUserLocation({ refresh: true, focus: false, fastFallback: false });
@@ -1100,6 +1108,7 @@ export function initParkingUi() {
         document.body.classList.remove('is-navigation-detached');
         state.navigationPreserveZoom = false;
         state.navigationSessionId += 1;
+        startDeviceHeadingWatch();
         startNavigationLocationWatch();
         renderNavigationPanel();
         startNavigationRouteRefreshTimer();
@@ -1112,6 +1121,7 @@ export function initParkingUi() {
         if (!state.userLocation || !state.navigationRoute) return;
 
         state.navigationPreserveZoom = false;
+        applyDeviceHeadingToUserLocation();
         focusNavigationPosition(state.userLocation, state.navigationRoute);
         document.body.classList.remove('is-navigation-detached');
         saveNavigationState();
@@ -1148,6 +1158,7 @@ export function initParkingUi() {
         state.navigationPreserveZoom = false;
         setActiveNav('show-map');
         startRouteNavigation(route);
+        startDeviceHeadingWatch();
         startNavigationLocationWatch();
         renderNavigationPanel();
         startNavigationRouteRefreshTimer();
@@ -1259,6 +1270,7 @@ export function initParkingUi() {
         document.body.classList.add('is-navigation-mode', 'is-navigation-following');
         document.body.classList.remove('is-navigation-detached');
         restoreActiveRoute(saved.route);
+        startDeviceHeadingWatch();
         if (state.userLocation) {
             focusUserLocation(state.userLocation, { focus: false });
             focusNavigationPosition(state.userLocation, saved.route, { preserveZoom: state.navigationPreserveZoom });
@@ -1412,6 +1424,7 @@ export function initParkingUi() {
         document.body.classList.remove('is-navigation-detached');
         releaseNavigationWakeLock();
         stopNavigationLocationWatch();
+        stopDeviceHeadingWatch();
         stopNavigationRouteRefreshTimer();
         document.querySelector('.navigation-panel')?.remove();
         document.querySelector('.navigation-guidance')?.remove();
@@ -1463,6 +1476,97 @@ export function initParkingUi() {
         state.wakeLock = null;
     }
 
+    async function startDeviceHeadingWatch() {
+        if (state.deviceHeadingListener || !('DeviceOrientationEvent' in window)) {
+            return;
+        }
+
+        const orientationEvent = window.DeviceOrientationEvent;
+
+        if (typeof orientationEvent.requestPermission === 'function' && !state.deviceHeadingPermissionRequested) {
+            state.deviceHeadingPermissionRequested = true;
+
+            try {
+                const permission = await orientationEvent.requestPermission();
+                if (permission !== 'granted') return;
+            } catch {
+                return;
+            }
+        }
+
+        const listener = (event) => {
+            const screenAngle = Number(window.screen?.orientation?.angle ?? window.orientation ?? 0);
+            const heading = normalizeCompassHeading(event, screenAngle);
+
+            if (!Number.isFinite(heading)) return;
+
+            state.deviceHeading = heading;
+            state.deviceHeadingUpdatedAt = Date.now();
+            applyDeviceHeadingToUserLocation();
+
+            if (!state.userLocation) return;
+
+            focusUserLocation(state.userLocation, { focus: false });
+            const now = Date.now();
+            if (
+                now - state.deviceHeadingCameraUpdatedAt > 120
+                && document.body.classList.contains('is-navigation-following')
+                && !document.body.classList.contains('is-navigation-detached')
+            ) {
+                state.deviceHeadingCameraUpdatedAt = now;
+                focusNavigationPosition(state.userLocation, state.navigationRoute, { preserveZoom: state.navigationPreserveZoom });
+            }
+        };
+
+        state.deviceHeadingListener = listener;
+        window.addEventListener('deviceorientationabsolute', listener, true);
+        window.addEventListener('deviceorientation', listener, true);
+    }
+
+    function stopDeviceHeadingWatch() {
+        if (!state.deviceHeadingListener) return;
+
+        window.removeEventListener('deviceorientationabsolute', state.deviceHeadingListener, true);
+        window.removeEventListener('deviceorientation', state.deviceHeadingListener, true);
+        state.deviceHeadingListener = null;
+    }
+
+    function applyDeviceHeadingToUserLocation() {
+        if (!state.userLocation) return;
+
+        state.userLocation = {
+            ...state.userLocation,
+            ...getDeviceHeadingLocationPatch(),
+            heading: getNavigationHeading(state.userLocation.gpsHeading ?? state.userLocation.heading),
+        };
+    }
+
+    function getDeviceHeadingLocationPatch() {
+        const compassHeading = getFreshDeviceHeading();
+
+        if (!Number.isFinite(compassHeading)) {
+            return {};
+        }
+
+        return {
+            compassHeading,
+            compassHeadingUpdatedAt: state.deviceHeadingUpdatedAt,
+            heading: compassHeading,
+        };
+    }
+
+    function getFreshDeviceHeading(maxAgeMs = 2500) {
+        if (!Number.isFinite(state.deviceHeading) || Date.now() - state.deviceHeadingUpdatedAt > maxAgeMs) {
+            return null;
+        }
+
+        return state.deviceHeading;
+    }
+
+    function getNavigationHeading(gpsHeading = null) {
+        return getFreshDeviceHeading() ?? gpsHeading;
+    }
+
     function startNavigationLocationWatch() {
         stopNavigationLocationWatch();
 
@@ -1470,11 +1574,15 @@ export function initParkingUi() {
 
         state.navigationWatchId = navigator.geolocation.watchPosition(
             ({ coords }) => {
+                const gpsHeading = getGpsHeading(coords);
                 state.userLocation = {
                     latitude: coords.latitude,
                     longitude: coords.longitude,
                     accuracy: coords.accuracy,
-                    heading: getGpsHeading(coords),
+                    gpsHeading,
+                    heading: getNavigationHeading(gpsHeading),
+                    compassHeading: getFreshDeviceHeading(),
+                    compassHeadingUpdatedAt: state.deviceHeadingUpdatedAt,
                     updatedAt: Date.now(),
                 };
                 state.currentSpeedKmh = getGpsSpeedKmh(coords);
@@ -1575,7 +1683,7 @@ export function initParkingUi() {
             let settled = false;
             let fallbackTimer = null;
 
-            if (state.userLocation && fastFallback) {
+                if (state.userLocation && fastFallback) {
                 fallbackTimer = window.setTimeout(() => {
                     settled = true;
                     resolve(state.userLocation);
@@ -1592,6 +1700,7 @@ export function initParkingUi() {
 
                     state.userLocation = {
                         ...nextLocation,
+                        ...getDeviceHeadingLocationPatch(),
                         updatedAt: Date.now(),
                     };
                     focusUserLocation(state.userLocation, { focus });
@@ -2370,11 +2479,11 @@ function getDistanceToRouteMeters(route, userLocation) {
 }
 
 function isGpsHeadingAgainstRoute(route, userLocation) {
-    if (userLocation?.heading === null || userLocation?.heading === undefined) {
+    if (userLocation?.gpsHeading === null || userLocation?.gpsHeading === undefined) {
         return false;
     }
 
-    const heading = Number(userLocation?.heading);
+    const heading = Number(userLocation?.gpsHeading);
     const speed = Number(state.currentSpeedKmh) || 0;
     const coordinates = route?.geometry?.coordinates ?? [];
 
