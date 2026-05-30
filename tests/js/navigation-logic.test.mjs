@@ -69,6 +69,13 @@ test('programmatic map rotation during follow must not detach navigation', () =>
     assert.equal(isManualMapInteraction({ originalEvent: { type: 'touchmove' } }, false), false);
 });
 
+test('manual map move events detach navigation follow', () => {
+    const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
+
+    assert.match(mapSource, /map\.on\('movestart'[\s\S]*detachNavigationOnManualInteraction\(event\)/);
+    assert.match(mapSource, /map\.on\('pitchstart', detachNavigationOnManualInteraction\)/);
+});
+
 test('GPS cursor heading is not coupled to manual map rotation', () => {
     const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
     const userLocationLayer = mapSource.match(/id: 'user-location-dot'[\s\S]*?layout: \{[\s\S]*?\},\n    \}\);/)?.[0] ?? '';

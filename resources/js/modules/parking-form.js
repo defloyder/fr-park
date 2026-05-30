@@ -189,6 +189,11 @@ export function initParkingUi() {
 
         if (document.body.classList.contains('is-navigation-mode')) {
             document.body.classList.add('is-navigation-detached');
+            applyDeviceHeadingToUserLocation();
+            if (state.userLocation) {
+                focusUserLocation(state.userLocation, { focus: false });
+            }
+            saveNavigationState();
             return;
         }
 

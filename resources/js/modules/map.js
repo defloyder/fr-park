@@ -980,27 +980,29 @@ function bindPerformanceMode() {
         }, 180);
     };
 
-    map.on('movestart', start);
-    map.on('zoomstart', start);
-    map.on('moveend', stop);
-    map.on('zoomend', stop);
-    map.on('click', stop);
-    map.on('zoomstart', (event) => {
-        if (event.originalEvent) {
+    const detachNavigationOnManualInteraction = (event) => {
+        if (isManualMapInteraction(event, document.body.classList.contains('is-navigation-following'))) {
             window.dispatchEvent(new CustomEvent('navigation:manual-map-move'));
+        }
+    };
+
+    map.on('movestart', (event) => {
+        start();
+        detachNavigationOnManualInteraction(event);
+    });
+    map.on('zoomstart', (event) => {
+        start();
+        if (event.originalEvent) {
+            detachNavigationOnManualInteraction(event);
             dispatchNavigationZoomChange();
         }
     });
-    map.on('dragstart', (event) => {
-        if (isManualMapInteraction(event, document.body.classList.contains('is-navigation-following'))) {
-            window.dispatchEvent(new CustomEvent('navigation:manual-map-move'));
-        }
-    });
-    map.on('rotatestart', (event) => {
-        if (isManualMapInteraction(event, document.body.classList.contains('is-navigation-following'))) {
-            window.dispatchEvent(new CustomEvent('navigation:manual-map-move'));
-        }
-    });
+    map.on('moveend', stop);
+    map.on('zoomend', stop);
+    map.on('click', stop);
+    map.on('dragstart', detachNavigationOnManualInteraction);
+    map.on('rotatestart', detachNavigationOnManualInteraction);
+    map.on('pitchstart', detachNavigationOnManualInteraction);
 }
 
 function dispatchNavigationZoomChange() {
