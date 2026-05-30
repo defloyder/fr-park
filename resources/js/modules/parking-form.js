@@ -58,6 +58,7 @@ const state = {
     picking: false,
     editingSpotId: null,
     formPhotos: [],
+    isPhotoUploading: false,
     lightboxPhotos: [],
     lightboxIndex: 0,
     user: null,
@@ -301,6 +302,11 @@ export function initParkingUi() {
             return;
         }
 
+        if (state.isPhotoUploading) {
+            showFormError('Дождитесь загрузки фото и попробуйте снова.');
+            return;
+        }
+
         setSaving(true);
         try {
             const response = state.editingSpotId
@@ -362,16 +368,19 @@ export function initParkingUi() {
 
     async function uploadPhotoFiles(files) {
         const images = files.filter((file) => isUploadableImage(file));
+        if (images.some((file) => file.size > 50 * 1024 * 1024)) return showFormError('Фото слишком большое. Сделайте снимок меньше 50 МБ.');
         if (files.length > 0 && images.length === 0) return showFormError('Можно загрузить только изображения.');
         if (getFormPhotos().length + images.length > 12) return showFormError('Можно добавить до 12 фото на одну точку.');
 
+        state.isPhotoUploading = true;
         photoDropzone.classList.add('is-uploading');
         try {
             for (const [index, file] of images.entries()) {
                 photoDropzone.querySelector('strong').textContent = images.length > 1
                     ? `Загружаю фото: ${index + 1}/${images.length}`
                     : 'Загружаю фото...';
-                const response = await uploadParkingPhoto(file);
+                const uploadFile = await preparePhotoForUpload(file);
+                const response = await uploadParkingPhoto(uploadFile);
                 state.formPhotos.push(response.url);
             }
             form.elements.photo_url.value = state.formPhotos[0] ?? '';
@@ -380,6 +389,7 @@ export function initParkingUi() {
         } catch (error) {
             showFormError(getValidationMessage(error));
         } finally {
+            state.isPhotoUploading = false;
             photoDropzone.classList.remove('is-uploading');
             resetDropzoneText();
         }
@@ -391,6 +401,60 @@ export function initParkingUi() {
         if (!file.type && file.size > 0) return true;
 
         return /\.(jpe?g|png|webp|heic|heif|avif)$/i.test(file.name || '');
+    }
+
+    async function preparePhotoForUpload(file) {
+        if (!shouldCompressPhoto(file)) return file;
+
+        try {
+            return await compressPhotoFile(file);
+        } catch {
+            return file;
+        }
+    }
+
+    function shouldCompressPhoto(file) {
+        const type = String(file?.type || '').toLowerCase();
+        const name = String(file?.name || '').toLowerCase();
+
+        if (!file || file.size < 1600 * 1024) return false;
+        if (/\.(heic|heif|avif)$/i.test(name)) return false;
+
+        return ['image/jpeg', 'image/jpg', 'image/pjpeg', 'image/png', 'image/x-png', 'image/webp', ''].includes(type)
+            || /\.(jpe?g|png|webp)$/i.test(name);
+    }
+
+    async function compressPhotoFile(file) {
+        const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+        const maxSide = 1600;
+        const ratio = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+        const width = Math.max(1, Math.round(bitmap.width * ratio));
+        const height = Math.max(1, Math.round(bitmap.height * ratio));
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext('2d', { alpha: false });
+
+        context.drawImage(bitmap, 0, 0, width, height);
+        bitmap.close?.();
+
+        const blob = await new Promise((resolve, reject) => {
+            canvas.toBlob((result) => {
+                result ? resolve(result) : reject(new Error('Photo compression failed'));
+            }, 'image/jpeg', 0.72);
+        });
+
+        if (!blob || blob.size >= file.size) return file;
+
+        return new File([blob], getCompressedPhotoName(file), {
+            type: 'image/jpeg',
+            lastModified: Date.now(),
+        });
+    }
+
+    function getCompressedPhotoName(file) {
+        const name = String(file?.name || '').trim().replace(/\.[^.]+$/, '');
+        return `${name || 'phone-photo'}.jpg`;
     }
 
     function renderCard(spot) {
