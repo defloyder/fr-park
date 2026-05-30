@@ -6,6 +6,9 @@ let map = null;
 let spotsCache = [];
 let pendingMarker = null;
 let addressRequestId = 0;
+let userLocationRenderFrame = null;
+let renderedUserLocation = null;
+let targetUserLocation = null;
 let isPickingMode = false;
 let isTrafficSuppressedByRoute = false;
 let isTrafficForcedVisibleByUser = false;
@@ -1129,6 +1132,8 @@ function addUserLocationSourceAndLayer() {
         layout: {
             'icon-image': USER_LOCATION_MARKER_ID,
             'icon-size': 1,
+            'icon-rotate': ['get', 'heading'],
+            'icon-rotation-alignment': 'map',
             'icon-allow-overlap': true,
             'icon-ignore-placement': true,
         },
@@ -1335,28 +1340,88 @@ export function focusUserLocation({ latitude, longitude, accuracy = 0, heading =
         return;
     }
 
+    const nextLocation = {
+        latitude: Number(latitude),
+        longitude: Number(longitude),
+        accuracy: Math.max(Number(accuracy) || 0, 20),
+        heading: Number.isFinite(Number(heading)) ? Number(heading) : 0,
+        updatedAt: performance.now(),
+    };
+
+    if (!renderedUserLocation) {
+        renderedUserLocation = { ...nextLocation };
+        targetUserLocation = { ...nextLocation };
+        renderUserLocationFeature(renderedUserLocation);
+    } else {
+        targetUserLocation = { ...nextLocation };
+        startUserLocationAnimation();
+    }
+
+    if (focus) {
+        map.easeTo({
+            center: [nextLocation.longitude, nextLocation.latitude],
+            zoom: Math.min(Math.max(map.getZoom(), 13.8), 14.8),
+            duration: 260,
+        });
+    }
+}
+
+function renderUserLocationFeature(location) {
     map.getSource(USER_LOCATION_SOURCE_ID)?.setData({
         type: 'FeatureCollection',
         features: [{
             type: 'Feature',
             properties: {
-                accuracy: Math.max(Number(accuracy) || 0, 20),
-                heading: Number.isFinite(Number(heading)) ? Number(heading) : 0,
+                accuracy: location.accuracy,
+                heading: location.heading,
             },
             geometry: {
                 type: 'Point',
-                coordinates: [Number(longitude), Number(latitude)],
+                coordinates: [location.longitude, location.latitude],
             },
         }],
     });
+}
 
-    if (focus) {
-        map.easeTo({
-            center: [Number(longitude), Number(latitude)],
-            zoom: Math.min(Math.max(map.getZoom(), 13.8), 14.8),
-            duration: 220,
-        });
-    }
+function startUserLocationAnimation() {
+    if (userLocationRenderFrame) return;
+
+    const step = () => {
+        if (!renderedUserLocation || !targetUserLocation) {
+            userLocationRenderFrame = null;
+            return;
+        }
+
+        const factor = 0.22;
+        renderedUserLocation.latitude += (targetUserLocation.latitude - renderedUserLocation.latitude) * factor;
+        renderedUserLocation.longitude += (targetUserLocation.longitude - renderedUserLocation.longitude) * factor;
+        renderedUserLocation.accuracy += (targetUserLocation.accuracy - renderedUserLocation.accuracy) * factor;
+        renderedUserLocation.heading = interpolateBearing(renderedUserLocation.heading, targetUserLocation.heading, factor);
+
+        renderUserLocationFeature(renderedUserLocation);
+
+        const distance = Math.hypot(
+            targetUserLocation.latitude - renderedUserLocation.latitude,
+            targetUserLocation.longitude - renderedUserLocation.longitude,
+        );
+        const headingDelta = Math.abs(((targetUserLocation.heading - renderedUserLocation.heading + 540) % 360) - 180);
+
+        if (distance < 0.000002 && headingDelta < 0.8) {
+            renderedUserLocation = { ...targetUserLocation };
+            renderUserLocationFeature(renderedUserLocation);
+            userLocationRenderFrame = null;
+            return;
+        }
+
+        userLocationRenderFrame = window.requestAnimationFrame(step);
+    };
+
+    userLocationRenderFrame = window.requestAnimationFrame(step);
+}
+
+function interpolateBearing(current, target, factor) {
+    const delta = ((target - current + 540) % 360) - 180;
+    return (current + (delta * factor) + 360) % 360;
 }
 
 export async function buildRouteToSpot(userLocation, spot, { camera = 'overview' } = {}) {
