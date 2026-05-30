@@ -1,6 +1,6 @@
 import maplibregl from 'maplibre-gl';
 import { fetchDrivingRoute as fetchYandexDrivingRoute, fetchParkingSpots, reverseGeocode } from './parking-api';
-import { getFreshCompassHeading, isManualMapInteraction } from './navigation-logic';
+import { isManualMapInteraction } from './navigation-logic';
 
 let map = null;
 let spotsCache = [];
@@ -1636,13 +1636,12 @@ export function focusNavigationPosition(userLocation, route = null, { preserveZo
         ? Math.min(findClosestRouteCoordinateIndex(current, routeCoordinates) + 1, routeCoordinates.length - 1)
         : -1;
     const next = routeCoordinates[nextIndex];
-    const compassHeading = getFreshCompassHeading(userLocation);
 
     map.easeTo({
         center: current,
         zoom: preserveZoom ? map.getZoom() : FOLLOW_ZOOM,
         pitch: FOLLOW_PITCH,
-        bearing: compassHeading ?? (next ? getBearing(current, next) : map.getBearing()),
+        bearing: next ? getBearing(current, next) : map.getBearing(),
         padding: { top: 0, right: 0, bottom: 0, left: 0 },
         retainPadding: false,
         offset: [0, Math.round(window.innerHeight * 0.30)],

@@ -84,7 +84,6 @@ const state = {
     navigationSessionId: 0,
     deviceHeading: null,
     deviceHeadingUpdatedAt: 0,
-    deviceHeadingCameraUpdatedAt: 0,
     deviceHeadingListener: null,
     deviceHeadingPermissionRequested: false,
     wakeLock: null,
@@ -1512,18 +1511,6 @@ export function initParkingUi() {
             if (!state.userLocation) return;
 
             focusUserLocation(state.userLocation, { focus: false });
-            const now = Date.now();
-            if (
-                now - state.deviceHeadingCameraUpdatedAt > 120
-                && document.body.classList.contains('is-navigation-following')
-                && !document.body.classList.contains('is-navigation-detached')
-            ) {
-                state.deviceHeadingCameraUpdatedAt = now;
-                focusNavigationPosition(state.userLocation, state.navigationRoute, {
-                    preserveZoom: state.navigationPreserveZoom,
-                    duration: 220,
-                });
-            }
         };
 
         state.deviceHeadingListener = listener;

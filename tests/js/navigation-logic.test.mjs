@@ -73,6 +73,13 @@ test('GPS cursor heading is not coupled to manual map rotation', () => {
     assert.match(userLocationLayer, /'icon-rotation-alignment': 'viewport'/);
 });
 
+test('device compass rotates only the GPS cursor and not the map camera', () => {
+    const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
+    const focusNavigationPosition = mapSource.match(/export function focusNavigationPosition[\s\S]*?\n\}/)?.[0] ?? '';
+
+    assert.doesNotMatch(focusNavigationPosition, /getFreshCompassHeading|compassHeading/);
+});
+
 test('passed speed camera is skipped instead of sticking at zero meters', () => {
     const camera = pickUpcomingSpeedCamera(
         [
