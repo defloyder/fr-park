@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 
 import {
     getCompassEventPriority,
+    getHeadingDifference,
     isManualMapInteraction,
     normalizeCompassHeading,
     pickUpcomingSpeedCamera,
@@ -148,6 +149,8 @@ test('compass heading is smoothed across jitter and wraparound', () => {
     assert.equal(smoothCompassHeading(10, 11), 10);
     assert.equal(smoothCompassHeading(350, 10, { smoothing: 0.5, deadzoneDegrees: 0, maxStepDegrees: 30 }), 0);
     assert.equal(smoothCompassHeading(0, 180), 336);
+    assert.equal(getHeadingDifference(350, 10), 20);
+    assert.equal(getHeadingDifference(2, 358), 4);
 });
 
 test('absolute compass events outrank fallback orientation events', () => {

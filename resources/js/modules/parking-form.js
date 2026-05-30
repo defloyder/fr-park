@@ -13,7 +13,7 @@ import {
     uploadParkingPhoto,
 } from './parking-api';
 import { addParkingSpotToMap, buildRouteToSpot, clearActiveRoute, clearPendingSelection, focusNavigationPosition, focusSpot, focusSpots, focusUserLocation, renderSpeedCameras, replaceParkingSpotsOnMap, restoreActiveRoute, setMapPickingMode, startRouteNavigation, updateActiveRouteProgress } from './map';
-import { getCompassEventPriority, normalizeCompassHeading, pickUpcomingSpeedCamera, shouldFollowNavigationPosition, shouldFollowUserLocation, shouldRecenterNavigationFromLocate, smoothCompassHeading } from './navigation-logic';
+import { getCompassEventPriority, getHeadingDifference, normalizeCompassHeading, pickUpcomingSpeedCamera, shouldFollowNavigationPosition, shouldFollowUserLocation, shouldRecenterNavigationFromLocate, smoothCompassHeading } from './navigation-logic';
 
 const STATUS_LABELS = {
     verified: 'Проверено',
@@ -84,6 +84,8 @@ const state = {
     navigationSessionId: 0,
     deviceHeading: null,
     deviceHeadingUpdatedAt: 0,
+    deviceHeadingCandidate: null,
+    deviceHeadingCandidateUpdatedAt: 0,
     deviceHeadingSourcePriority: 0,
     deviceHeadingSourceUpdatedAt: 0,
     deviceHeadingListener: null,
@@ -1190,6 +1192,10 @@ export function initParkingUi() {
                 <div class="navigation-compass" aria-label="Компас направления">
                     <div class="navigation-compass__dial" aria-hidden="true">
                         <span>С</span>
+                        <span class="navigation-compass__cardinal navigation-compass__cardinal--north">N</span>
+                        <span class="navigation-compass__cardinal navigation-compass__cardinal--east">E</span>
+                        <span class="navigation-compass__cardinal navigation-compass__cardinal--south">S</span>
+                        <span class="navigation-compass__cardinal navigation-compass__cardinal--west">W</span>
                         <i data-navigation-compass-needle></i>
                     </div>
                     <div class="navigation-compass__readout">
@@ -1527,7 +1533,7 @@ export function initParkingUi() {
                 return;
             }
 
-            const heading = smoothCompassHeading(state.deviceHeading, rawHeading);
+            const heading = stabilizeDeviceHeading(rawHeading, now);
 
             if (!Number.isFinite(heading)) return;
 
@@ -1554,8 +1560,60 @@ export function initParkingUi() {
         window.removeEventListener('deviceorientationabsolute', state.deviceHeadingListener, true);
         window.removeEventListener('deviceorientation', state.deviceHeadingListener, true);
         state.deviceHeadingListener = null;
+        state.deviceHeadingCandidate = null;
+        state.deviceHeadingCandidateUpdatedAt = 0;
         state.deviceHeadingSourcePriority = 0;
         state.deviceHeadingSourceUpdatedAt = 0;
+    }
+
+    function stabilizeDeviceHeading(rawHeading, now = Date.now()) {
+        const speedKmh = Number(state.currentSpeedKmh) || 0;
+        const currentHeading = Number(state.deviceHeading);
+        const isStationary = speedKmh < 3;
+
+        if (!isStationary || !Number.isFinite(currentHeading)) {
+            state.deviceHeadingCandidate = null;
+            state.deviceHeadingCandidateUpdatedAt = 0;
+
+            return smoothCompassHeading(currentHeading, rawHeading, {
+                smoothing: 0.20,
+                deadzoneDegrees: 3,
+                maxStepDegrees: 14,
+            });
+        }
+
+        const currentDelta = getHeadingDifference(currentHeading, rawHeading);
+
+        if (currentDelta < 12) {
+            state.deviceHeadingCandidate = null;
+            state.deviceHeadingCandidateUpdatedAt = 0;
+
+            return smoothCompassHeading(currentHeading, rawHeading, {
+                smoothing: 0.08,
+                deadzoneDegrees: 6,
+                maxStepDegrees: 3,
+            });
+        }
+
+        if (
+            !Number.isFinite(Number(state.deviceHeadingCandidate))
+            || getHeadingDifference(state.deviceHeadingCandidate, rawHeading) > 14
+        ) {
+            state.deviceHeadingCandidate = rawHeading;
+            state.deviceHeadingCandidateUpdatedAt = now;
+
+            return currentHeading;
+        }
+
+        if (now - state.deviceHeadingCandidateUpdatedAt < 900) {
+            return currentHeading;
+        }
+
+        return smoothCompassHeading(currentHeading, rawHeading, {
+            smoothing: 0.12,
+            deadzoneDegrees: 4,
+            maxStepDegrees: 6,
+        });
     }
 
     function updateNavigationCompass() {

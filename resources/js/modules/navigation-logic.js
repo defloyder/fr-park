@@ -89,6 +89,17 @@ export function smoothCompassHeading(
     return normalizeDegrees(previous + smoothedDelta);
 }
 
+export function getHeadingDifference(firstHeading, secondHeading) {
+    const first = Number(firstHeading);
+    const second = Number(secondHeading);
+
+    if (!Number.isFinite(first) || !Number.isFinite(second)) {
+        return Number.POSITIVE_INFINITY;
+    }
+
+    return Math.abs(getShortestHeadingDelta(first, second));
+}
+
 export function getFreshCompassHeading(userLocation, now = Date.now(), maxAgeMs = COMPASS_HEADING_MAX_AGE_MS) {
     const heading = Number(userLocation?.compassHeading);
     const updatedAt = Number(userLocation?.compassHeadingUpdatedAt);
