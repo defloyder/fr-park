@@ -77,20 +77,23 @@ test('GPS cursor heading is not coupled to manual map rotation', () => {
     assert.match(userLocationLayer, /'icon-pitch-alignment': 'viewport'/);
 });
 
-test('device compass rotates only the GPS cursor and not the map camera', () => {
+test('navigation camera can align to compass without reading map rotation', () => {
     const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
     const focusNavigationPosition = mapSource.match(/export function focusNavigationPosition[\s\S]*?\n\}/)?.[0] ?? '';
 
     assert.doesNotMatch(focusNavigationPosition, /getFreshCompassHeading|compassHeading/);
+    assert.match(focusNavigationPosition, /bearing = null/);
 });
 
 test('GPS cursor heading does not fall back to GPS course', () => {
     const formSource = readFileSync(new URL('../../resources/js/modules/parking-form.js', import.meta.url), 'utf8');
     const getNavigationHeading = formSource.match(/function getNavigationHeading[\s\S]*?\n    \}/)?.[0] ?? '';
+    const getNavigationMarkerHeading = formSource.match(/function getNavigationMarkerHeading[\s\S]*?\n    \}/)?.[0] ?? '';
     const applyUserLocationCoords = formSource.match(/function applyUserLocationCoords[\s\S]*?focusUserLocation/)?.[0] ?? '';
     const applyNavigationLocationCoords = formSource.match(/function applyNavigationLocationCoords[\s\S]*?focusUserLocation/)?.[0] ?? '';
 
     assert.doesNotMatch(getNavigationHeading, /gpsHeading/);
+    assert.match(getNavigationMarkerHeading, /return 0/);
     assert.doesNotMatch(applyUserLocationCoords, /getNavigationHeading\(gpsHeading\)/);
     assert.doesNotMatch(applyNavigationLocationCoords, /getNavigationHeading\(gpsHeading\)/);
 });

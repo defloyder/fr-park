@@ -1025,7 +1025,7 @@ export function initParkingUi() {
                 state.navigationPreserveZoom = false;
                 document.body.classList.remove('is-navigation-detached');
                 document.body.classList.add('is-navigation-following');
-                focusNavigationPosition(location, state.navigationRoute);
+                focusNavigationPosition(location, state.navigationRoute, { bearing: getNavigationCameraBearing() });
                 if (state.navigationWatchId === null) {
                     startNavigationLocationWatch();
                     requestNavigationWakeLock();
@@ -1194,7 +1194,7 @@ export function initParkingUi() {
 
         state.navigationPreserveZoom = false;
         applyDeviceHeadingToUserLocation();
-        focusNavigationPosition(state.userLocation, state.navigationRoute);
+        focusNavigationPosition(state.userLocation, state.navigationRoute, { bearing: getNavigationCameraBearing() });
         document.body.classList.remove('is-navigation-detached');
         saveNavigationState();
     }
@@ -1359,7 +1359,10 @@ export function initParkingUi() {
         startDeviceHeadingWatch();
         if (state.userLocation) {
             focusUserLocation(state.userLocation, { focus: false });
-            focusNavigationPosition(state.userLocation, saved.route, { preserveZoom: state.navigationPreserveZoom });
+            focusNavigationPosition(state.userLocation, saved.route, {
+                preserveZoom: state.navigationPreserveZoom,
+                bearing: getNavigationCameraBearing(),
+            });
         } else {
             startRouteNavigation(saved.route);
         }
@@ -1926,7 +1929,10 @@ export function initParkingUi() {
             state.navigationLastRerouteAt = Date.now();
             updateActiveRouteProgress(state.userLocation, route);
             if (!document.body.classList.contains('is-navigation-detached')) {
-                focusNavigationPosition(state.userLocation, route, { preserveZoom: state.navigationPreserveZoom });
+                focusNavigationPosition(state.userLocation, route, {
+                    preserveZoom: state.navigationPreserveZoom,
+                    bearing: getNavigationCameraBearing(),
+                });
             }
             updateNavigationMetrics();
             refreshSpeedCameras(route);
