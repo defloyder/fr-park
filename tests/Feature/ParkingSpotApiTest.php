@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\ParkingSpot;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ParkingSpotApiTest extends TestCase
@@ -73,6 +75,40 @@ class ParkingSpotApiTest extends TestCase
             'longitude' => 37.6200000,
         ])
             ->assertUnauthorized();
+    }
+
+    public function test_user_can_upload_mobile_camera_photo_with_octet_stream_mime(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create();
+        $photo = UploadedFile::fake()->create('camera-photo.jpg', 35000, 'application/octet-stream');
+
+        $response = $this->actingAs($user)->post('/api/parking-spots/photo', [
+            'photo' => $photo,
+        ], ['Accept' => 'application/json']);
+
+        $response->assertOk();
+        $this->assertStringContainsString('/storage/parking-spots/', $response->json('url'));
+
+        Storage::disk('public')->assertExists(
+            'parking-spots/'.basename(parse_url($response->json('url'), PHP_URL_PATH))
+        );
+    }
+
+    public function test_user_can_upload_heic_mobile_photo(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create();
+        $photo = UploadedFile::fake()->create('phone-capture', 1024, 'image/heic');
+
+        $response = $this->actingAs($user)->post('/api/parking-spots/photo', [
+            'photo' => $photo,
+        ], ['Accept' => 'application/json']);
+
+        $response->assertOk();
+        $this->assertStringEndsWith('.heic', parse_url($response->json('url'), PHP_URL_PATH));
     }
 
     public function test_it_imports_python_like_json_parking_spots(): void

@@ -72,26 +72,68 @@ class ParkingSpotController extends Controller
     public function uploadPhoto(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'photo' => ['required', 'file', 'max:20480'],
+            'photo' => ['required', 'file', 'max:51200'],
         ]);
 
         $photo = $validated['photo'];
         $extension = Str::lower($photo->getClientOriginalExtension());
         $mimeType = Str::lower((string) $photo->getMimeType());
-        $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'];
-        $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'application/octet-stream'];
 
-        if (! in_array($extension, $allowedExtensions, true) && ! in_array($mimeType, $allowedMimeTypes, true)) {
+        if (! $this->isAllowedPhotoUpload($extension, $mimeType)) {
             throw ValidationException::withMessages([
-                'photo' => 'Загрузите фото в формате JPG, PNG, WEBP или HEIC.',
+                'photo' => 'Загрузите фото в формате JPG, PNG, WEBP, HEIC или AVIF.',
             ]);
         }
 
-        $path = $photo->store('parking-spots', 'public');
+        $extension = $this->normalizePhotoExtension($extension, $mimeType);
+        $path = $photo->storeAs('parking-spots', Str::uuid().'.'.$extension, 'public');
 
         return response()->json([
             'url' => url('/storage/'.$path),
         ]);
+    }
+
+    private function isAllowedPhotoUpload(string $extension, string $mimeType): bool
+    {
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'avif'];
+        $allowedMimeTypes = [
+            'image/jpg',
+            'image/jpeg',
+            'image/pjpeg',
+            'image/png',
+            'image/x-png',
+            'image/webp',
+            'image/heic',
+            'image/heif',
+            'image/heic-sequence',
+            'image/heif-sequence',
+            'image/avif',
+        ];
+
+        if (in_array($mimeType, $allowedMimeTypes, true)) {
+            return true;
+        }
+
+        return $mimeType === 'application/octet-stream'
+            && in_array($extension, $allowedExtensions, true);
+    }
+
+    private function normalizePhotoExtension(string $extension, string $mimeType): string
+    {
+        $extension = $extension === 'jpeg' ? 'jpg' : $extension;
+
+        if (in_array($extension, ['jpg', 'png', 'webp', 'heic', 'heif', 'avif'], true)) {
+            return $extension;
+        }
+
+        return match ($mimeType) {
+            'image/png', 'image/x-png' => 'png',
+            'image/webp' => 'webp',
+            'image/heic', 'image/heic-sequence' => 'heic',
+            'image/heif', 'image/heif-sequence' => 'heif',
+            'image/avif' => 'avif',
+            default => 'jpg',
+        };
     }
 
     public function export(Request $request): JsonResponse

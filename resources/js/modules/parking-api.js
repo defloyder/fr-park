@@ -123,7 +123,7 @@ export async function updateParkingSpot(id, payload) {
 
 export async function uploadParkingPhoto(file) {
     const formData = new FormData();
-    formData.append('photo', file);
+    formData.append('photo', file, getPhotoUploadFileName(file));
 
     const response = await fetch('/api/parking-spots/photo', {
         method: 'POST',
@@ -144,6 +144,32 @@ export async function uploadParkingPhoto(file) {
     }
 
     return data;
+}
+
+function getPhotoUploadFileName(file) {
+    const name = String(file?.name || '').trim();
+
+    if (/\.(jpe?g|png|webp|heic|heif|avif)$/i.test(name)) {
+        return name;
+    }
+
+    const extensionByType = {
+        'image/jpeg': 'jpg',
+        'image/jpg': 'jpg',
+        'image/pjpeg': 'jpg',
+        'image/png': 'png',
+        'image/x-png': 'png',
+        'image/webp': 'webp',
+        'image/heic': 'heic',
+        'image/heif': 'heif',
+        'image/heic-sequence': 'heic',
+        'image/heif-sequence': 'heif',
+        'image/avif': 'avif',
+    };
+    const extension = extensionByType[String(file?.type || '').toLowerCase()];
+    const baseName = name.replace(/\.[^.]+$/, '') || 'phone-photo';
+
+    return extension ? `${baseName}.${extension}` : baseName;
 }
 
 export async function importParkingSpots({ file = null, text = '' }) {

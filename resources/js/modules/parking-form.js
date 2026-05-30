@@ -388,8 +388,9 @@ export function initParkingUi() {
     function isUploadableImage(file) {
         if (!file) return false;
         if (file.type?.startsWith('image/')) return true;
+        if (!file.type && file.size > 0) return true;
 
-        return /\.(jpe?g|png|webp|heic|heif)$/i.test(file.name || '');
+        return /\.(jpe?g|png|webp|heic|heif|avif)$/i.test(file.name || '');
     }
 
     function renderCard(spot) {
@@ -1605,7 +1606,7 @@ export function initParkingUi() {
             return currentHeading;
         }
 
-        if (now - state.deviceHeadingCandidateUpdatedAt < 900) {
+        if (now - state.deviceHeadingCandidateUpdatedAt < 500) {
             return currentHeading;
         }
 
@@ -1635,7 +1636,7 @@ export function initParkingUi() {
         state.userLocation = {
             ...state.userLocation,
             ...getDeviceHeadingLocationPatch(),
-            heading: getNavigationHeading(state.userLocation.gpsHeading ?? state.userLocation.heading),
+            heading: getNavigationHeading(state.userLocation.heading),
         };
     }
 
@@ -1661,8 +1662,12 @@ export function initParkingUi() {
         return state.deviceHeading;
     }
 
-    function getNavigationHeading(gpsHeading = null) {
-        return getFreshDeviceHeading() ?? gpsHeading;
+    function getNavigationHeading(previousHeading = null) {
+        const deviceHeading = getFreshDeviceHeading();
+        if (Number.isFinite(deviceHeading)) return deviceHeading;
+
+        const stableHeading = Number(previousHeading);
+        return Number.isFinite(stableHeading) ? stableHeading : 0;
     }
 
     function formatCompassDirection(heading) {
@@ -1755,7 +1760,7 @@ export function initParkingUi() {
             longitude: coords.longitude,
             accuracy: coords.accuracy,
             gpsHeading,
-            heading: getNavigationHeading(gpsHeading),
+            heading: getNavigationHeading(state.userLocation?.heading),
             ...getDeviceHeadingLocationPatch(),
             updatedAt: Date.now(),
         };
@@ -1776,7 +1781,7 @@ export function initParkingUi() {
             longitude: coords.longitude,
             accuracy: coords.accuracy,
             gpsHeading,
-            heading: getNavigationHeading(gpsHeading),
+            heading: getNavigationHeading(state.userLocation?.heading),
             compassHeading: getFreshDeviceHeading(),
             compassHeadingUpdatedAt: state.deviceHeadingUpdatedAt,
             updatedAt: Date.now(),

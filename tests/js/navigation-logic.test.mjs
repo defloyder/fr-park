@@ -74,6 +74,7 @@ test('GPS cursor heading is not coupled to manual map rotation', () => {
     const userLocationLayer = mapSource.match(/id: 'user-location-dot'[\s\S]*?layout: \{[\s\S]*?\},\n    \}\);/)?.[0] ?? '';
 
     assert.match(userLocationLayer, /'icon-rotation-alignment': 'viewport'/);
+    assert.match(userLocationLayer, /'icon-pitch-alignment': 'viewport'/);
 });
 
 test('device compass rotates only the GPS cursor and not the map camera', () => {
@@ -81,6 +82,17 @@ test('device compass rotates only the GPS cursor and not the map camera', () => 
     const focusNavigationPosition = mapSource.match(/export function focusNavigationPosition[\s\S]*?\n\}/)?.[0] ?? '';
 
     assert.doesNotMatch(focusNavigationPosition, /getFreshCompassHeading|compassHeading/);
+});
+
+test('GPS cursor heading does not fall back to GPS course', () => {
+    const formSource = readFileSync(new URL('../../resources/js/modules/parking-form.js', import.meta.url), 'utf8');
+    const getNavigationHeading = formSource.match(/function getNavigationHeading[\s\S]*?\n    \}/)?.[0] ?? '';
+    const applyUserLocationCoords = formSource.match(/function applyUserLocationCoords[\s\S]*?focusUserLocation/)?.[0] ?? '';
+    const applyNavigationLocationCoords = formSource.match(/function applyNavigationLocationCoords[\s\S]*?focusUserLocation/)?.[0] ?? '';
+
+    assert.doesNotMatch(getNavigationHeading, /gpsHeading/);
+    assert.doesNotMatch(applyUserLocationCoords, /getNavigationHeading\(gpsHeading\)/);
+    assert.doesNotMatch(applyNavigationLocationCoords, /getNavigationHeading\(gpsHeading\)/);
 });
 
 test('passed speed camera is skipped instead of sticking at zero meters', () => {

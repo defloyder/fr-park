@@ -1133,6 +1133,7 @@ function addUserLocationSourceAndLayer() {
             'icon-image': USER_LOCATION_MARKER_ID,
             'icon-size': 1,
             'icon-rotate': ['get', 'heading'],
+            'icon-pitch-alignment': 'viewport',
             'icon-rotation-alignment': 'viewport',
             'icon-allow-overlap': true,
             'icon-ignore-placement': true,
