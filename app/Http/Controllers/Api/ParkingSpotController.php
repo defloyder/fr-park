@@ -12,6 +12,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -71,6 +72,16 @@ class ParkingSpotController extends Controller
 
     public function uploadPhoto(Request $request): JsonResponse
     {
+        if (! $request->hasFile('photo')) {
+            Log::warning('Parking photo upload reached API without a file', [
+                'content_length' => $request->server('CONTENT_LENGTH'),
+                'content_type' => $request->server('CONTENT_TYPE'),
+                'post_max_size' => ini_get('post_max_size'),
+                'upload_max_filesize' => ini_get('upload_max_filesize'),
+                'memory_limit' => ini_get('memory_limit'),
+            ]);
+        }
+
         $validated = $request->validate([
             'photo' => ['required', 'file', 'max:51200'],
         ]);
@@ -78,6 +89,15 @@ class ParkingSpotController extends Controller
         $photo = $validated['photo'];
         $extension = Str::lower($photo->getClientOriginalExtension());
         $mimeType = Str::lower((string) $photo->getMimeType());
+
+        Log::info('Parking photo upload received', [
+            'client_extension' => $extension,
+            'client_mime' => Str::lower((string) $photo->getClientMimeType()),
+            'detected_mime' => $mimeType,
+            'size' => $photo->getSize(),
+            'upload_max_filesize' => ini_get('upload_max_filesize'),
+            'post_max_size' => ini_get('post_max_size'),
+        ]);
 
         if (! $this->isAllowedPhotoUpload($extension, $mimeType)) {
             throw ValidationException::withMessages([

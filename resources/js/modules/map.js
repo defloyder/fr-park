@@ -1626,7 +1626,7 @@ export function startRouteNavigation(route) {
     focusRouteStart(route.geometry.coordinates);
 }
 
-export function focusNavigationPosition(userLocation, route = null, { preserveZoom = false, duration = 850 } = {}) {
+export function focusNavigationPosition(userLocation, route = null, { preserveZoom = false, duration = 850, bearing = null } = {}) {
     if (!map || !userLocation) {
         return;
     }
@@ -1642,7 +1642,7 @@ export function focusNavigationPosition(userLocation, route = null, { preserveZo
         center: current,
         zoom: preserveZoom ? map.getZoom() : FOLLOW_ZOOM,
         pitch: FOLLOW_PITCH,
-        bearing: next ? getBearing(current, next) : map.getBearing(),
+        bearing: Number.isFinite(Number(bearing)) ? Number(bearing) : (next ? getBearing(current, next) : map.getBearing()),
         padding: { top: 0, right: 0, bottom: 0, left: 0 },
         retainPadding: false,
         offset: [0, Math.round(window.innerHeight * 0.30)],

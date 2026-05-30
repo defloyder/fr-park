@@ -35,6 +35,13 @@ RUN apk add --no-cache \
         pdo_pgsql \
         zip
 
+RUN { \
+        echo 'upload_max_filesize=64M'; \
+        echo 'post_max_size=72M'; \
+        echo 'memory_limit=512M'; \
+        echo 'max_file_uploads=20'; \
+    } > /usr/local/etc/php/conf.d/parkfree-uploads.ini
+
 COPY --chown=www-data:www-data . .
 COPY --from=vendor --chown=www-data:www-data /app/vendor ./vendor
 COPY --from=assets --chown=www-data:www-data /app/public/build ./public/build
