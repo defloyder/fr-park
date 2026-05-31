@@ -76,6 +76,8 @@ test('manual map move events detach navigation follow', () => {
     assert.match(mapSource, /map\.on\('movestart'[\s\S]*detachNavigationOnManualInteraction\(event\)/);
     assert.match(mapSource, /map\.on\('pitchstart'[\s\S]*detachNavigationOnManualInteraction\(event\)/);
     assert.match(mapSource, /map:manual-interaction/);
+    assert.match(mapSource, /addEventListener\('wheel', dispatchRawManualMapInteraction/);
+    assert.match(mapSource, /addEventListener\('touchstart', dispatchRawManualMapInteraction/);
 });
 
 test('GPS cursor heading is not coupled to manual map rotation', () => {
@@ -93,7 +95,18 @@ test('navigation camera follows route geometry instead of compass', () => {
 
     assert.doesNotMatch(focusNavigationPosition, /getFreshCompassHeading|compassHeading/);
     assert.match(focusNavigationPosition, /bearing = null/);
+    assert.match(mapSource, /function getNavigationCameraBearing/);
+    assert.match(mapSource, /progress \+ 85/);
     assert.doesNotMatch(formSource, /bearing: getNavigationCameraBearing|bearing: heading|getNavigationCameraBearing/);
+});
+
+test('background user GPS updates do not force map recenter after manual movement', () => {
+    const formSource = readFileSync(new URL('../../resources/js/modules/parking-form.js', import.meta.url), 'utf8');
+    const startUserLocationTracking = formSource.match(/function startUserLocationTracking[\s\S]*?function applyUserLocationCoords/)?.[0] ?? '';
+
+    assert.doesNotMatch(startUserLocationTracking, /applyUserLocationCoords\(coords, \{ focus: true \}\)/);
+    assert.doesNotMatch(startUserLocationTracking, /focus: !document\.body\.classList\.contains/);
+    assert.match(startUserLocationTracking, /applyUserLocationCoords\(coords, \{ focus: false \}\)/);
 });
 
 test('GPS cursor heading does not fall back to GPS course', () => {
@@ -165,6 +178,8 @@ test('nearest maneuver hint is rendered on the map', () => {
     assert.match(mapSource, /new maplibregl\.Marker/);
     assert.match(mapSource, /\.setLngLat\(coordinate\)\.addTo\(map\)/);
     assert.match(mapSource, /getRouteCoordinateAtProgress/);
+    assert.match(mapSource, /getRouteManeuverCoordinate/);
+    assert.match(mapSource, /turnAngle < 18/);
     assert.match(formSource, /updateRouteManeuverHint\(instruction, state\.navigationRoute/);
 });
 
@@ -197,6 +212,7 @@ test('map settings expose selectable GPS cursor icons', () => {
     assert.match(mapSource, /createPlaneSvg/);
     assert.match(mapSource, /createHelicopterSvg/);
     assert.match(mapSource, /createBuranSvg/);
+    assert.match(mapSource, /settings\.classList\.remove\('is-open'\)/);
     assert.match(mapSource, /iconImage: getUserLocationIconImage/);
     assert.match(cssSource, /\.map-settings__grid/);
     assert.match(cssSource, /top: calc\(100% \+ 10px\)/);
@@ -208,8 +224,17 @@ test('in-app route build falls back to last known location instead of rejecting 
     const buildInAppRoute = formSource.match(/async function buildInAppRoute[\s\S]*?finally/)?.[0] ?? '';
 
     assert.match(buildInAppRoute, /ensureRouteStartLocation\(\)/);
+    assert.match(formSource, /function resetFailedRouteBuildState/);
+    assert.match(formSource, /resetFailedRouteBuildState\(\);[\s\S]*startDeviceHeadingWatch/);
     assert.doesNotMatch(formSource, /function assertRouteLocation|Location is too inaccurate/);
     assert.match(formSource, /if \(state\.userLocation\) \{\s*return state\.userLocation;/);
+});
+
+test('light map layer has no edge vignette overlay', () => {
+    const cssSource = readFileSync(new URL('../../resources/css/map-ui.css', import.meta.url), 'utf8');
+
+    assert.match(cssSource, /body\[data-map-layer="light"\] \.map-screen > \.map-canvas::after/);
+    assert.match(cssSource, /background: none/);
 });
 
 test('passed speed camera is skipped instead of sticking at zero meters', () => {

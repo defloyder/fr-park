@@ -1957,7 +1957,9 @@ export function updateRouteManeuverHint(instruction, route, hint = {}) {
     const targetProgressMeters = Number.isFinite(remainingMeters) && remainingMeters <= 25 && instructionDistanceMeters > 25
         ? instructionStartMeters + instructionDistanceMeters
         : instructionStartMeters;
-    const coordinate = getRouteCoordinateAtProgress(route.geometry.coordinates, targetProgressMeters);
+    const coordinate = getRouteManeuverCoordinate(route.geometry.coordinates, targetProgressMeters, {
+        scanMeters: Math.max(45, Math.min(220, instructionDistanceMeters || 90)),
+    });
 
     if (!coordinate) {
         clearRouteManeuverHint();
@@ -2055,6 +2057,57 @@ function getRouteCoordinateAtProgress(coordinates, targetProgressMeters) {
     return routeCoordinates.at(-1) ?? null;
 }
 
+function getRouteManeuverCoordinate(coordinates, targetProgressMeters, { scanMeters = 120 } = {}) {
+    const routeCoordinates = sanitizeLineCoordinates(coordinates);
+    const target = Number(targetProgressMeters);
+
+    if (!Number.isFinite(target) || routeCoordinates.length < 3) {
+        return getRouteCoordinateAtProgress(routeCoordinates, targetProgressMeters);
+    }
+
+    let progress = 0;
+    let best = null;
+
+    for (let index = 1; index < routeCoordinates.length - 1; index += 1) {
+        const previous = routeCoordinates[index - 1];
+        const current = routeCoordinates[index];
+        const next = routeCoordinates[index + 1];
+        const segmentDistance = getDistanceMeters(
+            { longitude: previous[0], latitude: previous[1] },
+            { longitude: current[0], latitude: current[1] },
+        );
+
+        progress += segmentDistance;
+
+        if (progress < target - 18) {
+            continue;
+        }
+
+        if (progress > target + scanMeters) {
+            break;
+        }
+
+        const turnAngle = Math.abs(getBearingDelta(
+            getBearing(previous, current),
+            getBearing(current, next),
+        ));
+
+        if (turnAngle < 18) {
+            continue;
+        }
+
+        if (!best || turnAngle > best.turnAngle) {
+            best = { coordinate: current, turnAngle };
+        }
+    }
+
+    return best?.coordinate ?? getRouteCoordinateAtProgress(routeCoordinates, targetProgressMeters);
+}
+
+function getBearingDelta(from, to) {
+    return ((to - from + 540) % 360) - 180;
+}
+
 export function startRouteNavigation(route) {
     const coordinates = sanitizeLineCoordinates(route?.geometry?.coordinates ?? []);
 
@@ -2072,11 +2125,7 @@ export function focusNavigationPosition(userLocation, route = null, { preserveZo
 
     const current = [Number(userLocation.longitude), Number(userLocation.latitude)];
     const routeCoordinates = sanitizeLineCoordinates(route?.geometry?.coordinates ?? []);
-    const nextIndex = routeCoordinates.length > 1
-        ? Math.min(findClosestRouteCoordinateIndex(current, routeCoordinates) + 1, routeCoordinates.length - 1)
-        : -1;
-    const next = routeCoordinates[nextIndex];
-    const routeBearing = Number(userLocation.routeBearing);
+    const cameraBearing = getNavigationCameraBearing(userLocation, routeCoordinates);
 
     safeEaseTo({
         center: current,
@@ -2084,12 +2133,39 @@ export function focusNavigationPosition(userLocation, route = null, { preserveZo
         pitch: FOLLOW_PITCH,
         bearing: Number.isFinite(Number(bearing))
             ? Number(bearing)
-            : (Number.isFinite(routeBearing) ? routeBearing : (next ? getBearing(current, next) : map.getBearing())),
+            : (Number.isFinite(cameraBearing) ? cameraBearing : map.getBearing()),
         padding: { top: 0, right: 0, bottom: 0, left: 0 },
         retainPadding: false,
         offset: [0, Math.round(window.innerHeight * 0.30)],
         duration,
     });
+}
+
+function getNavigationCameraBearing(userLocation, routeCoordinates) {
+    const current = [Number(userLocation?.longitude), Number(userLocation?.latitude)];
+    const progress = Number(userLocation?.routeProgressMeters);
+
+    if (routeCoordinates.length > 1 && Number.isFinite(progress)) {
+        const ahead = getRouteCoordinateAtProgress(routeCoordinates, progress + 85);
+
+        if (ahead) {
+            return getBearing(current, ahead);
+        }
+    }
+
+    const routeBearing = Number(userLocation?.routeBearing);
+    if (Number.isFinite(routeBearing)) {
+        return routeBearing;
+    }
+
+    if (routeCoordinates.length > 1) {
+        const nextIndex = Math.min(findClosestRouteCoordinateIndex(current, routeCoordinates) + 1, routeCoordinates.length - 1);
+        const next = routeCoordinates[nextIndex];
+
+        return next ? getBearing(current, next) : null;
+    }
+
+    return null;
 }
 
 function findClosestRouteCoordinateIndex(current, coordinates) {

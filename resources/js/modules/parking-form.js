@@ -1887,7 +1887,7 @@ export function initParkingUi() {
         if (!navigator.geolocation || state.userLocationWatchId !== null) return;
 
         state.userLocationWatchId = navigator.geolocation.watchPosition(
-            ({ coords }) => applyUserLocationCoords(coords, { focus: !document.body.classList.contains('is-navigation-mode') }),
+            ({ coords }) => applyUserLocationCoords(coords, { focus: false }),
             () => {},
             {
                 enableHighAccuracy: true,
@@ -1900,7 +1900,7 @@ export function initParkingUi() {
             if (document.body.classList.contains('is-navigation-mode')) return;
 
             navigator.geolocation.getCurrentPosition(
-                ({ coords }) => applyUserLocationCoords(coords, { focus: true }),
+                ({ coords }) => applyUserLocationCoords(coords, { focus: false }),
                 () => {},
                 {
                     enableHighAccuracy: true,
