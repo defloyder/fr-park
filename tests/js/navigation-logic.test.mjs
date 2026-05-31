@@ -103,17 +103,19 @@ test('GPS cursor heading does not fall back to GPS course', () => {
     const applyNavigationLocationCoords = formSource.match(/function applyNavigationLocationCoords[\s\S]*?focusUserLocation/)?.[0] ?? '';
 
     assert.doesNotMatch(getNavigationHeading, /gpsHeading/);
-    assert.match(getNavigationMarkerHeading, /return 0/);
+    assert.match(getNavigationMarkerHeading, /getNavigationMarkerPatch/);
     assert.doesNotMatch(applyUserLocationCoords, /getNavigationHeading\(gpsHeading\)/);
     assert.doesNotMatch(applyNavigationLocationCoords, /getNavigationHeading\(gpsHeading\)/);
 });
 
-test('navigation GPS cursor is locked to route-forward heading', () => {
+test('navigation GPS cursor is locked to route segment heading', () => {
     const formSource = readFileSync(new URL('../../resources/js/modules/parking-form.js', import.meta.url), 'utf8');
-    const getNavigationMarkerHeading = formSource.match(/function getNavigationMarkerHeading[\s\S]*?\n    \}/)?.[0] ?? '';
+    const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
+    const getRouteMarkerHeading = formSource.match(/function getRouteMarkerHeading[\s\S]*?\n    \}/)?.[0] ?? '';
 
-    assert.match(getNavigationMarkerHeading, /is-navigation-mode/);
-    assert.match(getNavigationMarkerHeading, /return 0/);
+    assert.match(getRouteMarkerHeading, /routeBearing/);
+    assert.match(mapSource, /id: 'user-navigation-dot'/);
+    assert.match(mapSource, /'icon-rotation-alignment': 'map'/);
 });
 
 test('navigation position is snapped to route before rendering', () => {

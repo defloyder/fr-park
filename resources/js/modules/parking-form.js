@@ -213,6 +213,7 @@ export function initParkingUi() {
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible' && document.body.classList.contains('is-navigation-following')) {
             requestNavigationWakeLock();
+            syncNavigationViewport();
         }
     });
 
@@ -1520,6 +1521,23 @@ export function initParkingUi() {
         }
     }
 
+    function syncNavigationViewport() {
+        if (!state.navigationRoute?.geometry?.coordinates?.length || !state.userLocation) return;
+
+        state.userLocation = {
+            ...state.userLocation,
+            ...getNavigationMarkerPatch(state.userLocation, state.userLocation.heading),
+        };
+        document.body.classList.remove('is-navigation-detached');
+        document.body.classList.add('is-navigation-following');
+        state.navigationPreserveZoom = false;
+        focusUserLocation(state.userLocation, { focus: false });
+        updateActiveRouteProgress(state.userLocation, state.navigationRoute);
+        focusNavigationPosition(state.userLocation, state.navigationRoute);
+        updateNavigationMetrics();
+        saveNavigationState();
+    }
+
     function stopNavigationMode() {
         state.navigationSessionId += 1;
         document.body.classList.remove('is-navigation-mode');
@@ -1717,7 +1735,7 @@ export function initParkingUi() {
         state.userLocation = {
             ...state.userLocation,
             ...getDeviceHeadingLocationPatch(),
-            heading: getNavigationMarkerHeading(state.userLocation.heading),
+            ...getNavigationMarkerPatch(state.userLocation),
         };
     }
 
@@ -1750,12 +1768,34 @@ export function initParkingUi() {
         return Number.isFinite(stableHeading) ? stableHeading : 0;
     }
 
-    function getNavigationMarkerHeading(previousHeading = null) {
+    function getNavigationMarkerPatch(location = null, previousHeading = null) {
         if (document.body.classList.contains('is-navigation-mode')) {
-            return 0;
+            return {
+                heading: getRouteMarkerHeading(location, previousHeading),
+                headingMode: 'navigation',
+            };
         }
 
-        return getNavigationHeading(previousHeading);
+        return {
+            heading: getNavigationHeading(previousHeading),
+            headingMode: 'compass',
+        };
+    }
+
+    function getNavigationMarkerHeading(previousHeading = null) {
+        return getNavigationMarkerPatch(null, previousHeading).heading;
+    }
+
+    function getRouteMarkerHeading(location = null, previousHeading = null) {
+        const routeBearing = Number(location?.routeBearing);
+
+        if (Number.isFinite(routeBearing)) {
+            return routeBearing;
+        }
+
+        const stableHeading = Number(previousHeading);
+
+        return Number.isFinite(stableHeading) ? stableHeading : 0;
     }
 
     function formatCompassDirection(heading) {
@@ -1849,7 +1889,7 @@ export function initParkingUi() {
             accuracy: coords.accuracy,
             gpsHeading,
             ...getDeviceHeadingLocationPatch(),
-            heading: getNavigationMarkerHeading(state.userLocation?.heading),
+            ...getNavigationMarkerPatch(null, state.userLocation?.heading),
             updatedAt: Date.now(),
         };
 
@@ -1871,7 +1911,6 @@ export function initParkingUi() {
             gpsHeading,
             compassHeading: getFreshDeviceHeading(),
             compassHeadingUpdatedAt: state.deviceHeadingUpdatedAt,
-            heading: getNavigationMarkerHeading(state.userLocation?.heading),
             updatedAt: Date.now(),
         };
         state.currentSpeedKmh = getGpsSpeedKmh(coords);
@@ -1879,6 +1918,10 @@ export function initParkingUi() {
             previousLocation: state.userLocation,
             speedKmh: state.currentSpeedKmh,
         });
+        state.userLocation = {
+            ...state.userLocation,
+            ...getNavigationMarkerPatch(state.userLocation, state.userLocation?.heading),
+        };
         state.speedLimitKmh = estimateSpeedLimitKmh(state.navigationRoute, state.userLocation);
 
         focusUserLocation(state.userLocation, { focus: false });
@@ -1981,10 +2024,23 @@ export function initParkingUi() {
                         accuracy: coords.accuracy,
                     };
 
-                    state.userLocation = {
+                    state.userLocation = document.body.classList.contains('is-navigation-mode')
+                        ? getRouteSnappedNavigationLocation({
+                            ...nextLocation,
+                            ...getDeviceHeadingLocationPatch(),
+                            updatedAt: Date.now(),
+                        }, state.navigationRoute, {
+                            previousLocation: state.userLocation,
+                            speedKmh: state.currentSpeedKmh,
+                        })
+                        : {
                         ...nextLocation,
                         ...getDeviceHeadingLocationPatch(),
                         updatedAt: Date.now(),
+                    };
+                    state.userLocation = {
+                        ...state.userLocation,
+                        ...getNavigationMarkerPatch(state.userLocation, state.userLocation.heading),
                     };
                     focusUserLocation(state.userLocation, { focus });
 

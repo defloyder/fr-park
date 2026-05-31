@@ -1146,12 +1146,29 @@ function addUserLocationSourceAndLayer() {
         id: 'user-location-dot',
         type: 'symbol',
         source: USER_LOCATION_SOURCE_ID,
+        filter: ['!=', ['get', 'mode'], 'navigation'],
         layout: {
             'icon-image': USER_LOCATION_MARKER_ID,
             'icon-size': 1,
             'icon-rotate': ['get', 'heading'],
             'icon-pitch-alignment': 'viewport',
             'icon-rotation-alignment': 'viewport',
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true,
+        },
+    });
+
+    map.addLayer({
+        id: 'user-navigation-dot',
+        type: 'symbol',
+        source: USER_LOCATION_SOURCE_ID,
+        filter: ['==', ['get', 'mode'], 'navigation'],
+        layout: {
+            'icon-image': USER_LOCATION_MARKER_ID,
+            'icon-size': 1,
+            'icon-rotate': ['get', 'heading'],
+            'icon-pitch-alignment': 'map',
+            'icon-rotation-alignment': 'map',
             'icon-allow-overlap': true,
             'icon-ignore-placement': true,
         },
@@ -1353,7 +1370,7 @@ export function focusSpots(spots) {
     });
 }
 
-export function focusUserLocation({ latitude, longitude, accuracy = 0, heading = 0 }, { focus = true } = {}) {
+export function focusUserLocation({ latitude, longitude, accuracy = 0, heading = 0, headingMode = 'compass' }, { focus = true } = {}) {
     if (!map) {
         return;
     }
@@ -1363,10 +1380,11 @@ export function focusUserLocation({ latitude, longitude, accuracy = 0, heading =
         longitude: Number(longitude),
         accuracy: Math.max(Number(accuracy) || 0, 20),
         heading: Number.isFinite(Number(heading)) ? Number(heading) : 0,
+        headingMode: headingMode === 'navigation' ? 'navigation' : 'compass',
         updatedAt: performance.now(),
     };
 
-    if (!renderedUserLocation) {
+    if (!renderedUserLocation || renderedUserLocation.headingMode !== nextLocation.headingMode) {
         renderedUserLocation = { ...nextLocation };
         targetUserLocation = { ...nextLocation };
         renderUserLocationFeature(renderedUserLocation);
@@ -1392,6 +1410,7 @@ function renderUserLocationFeature(location) {
             properties: {
                 accuracy: location.accuracy,
                 heading: location.heading,
+                mode: location.headingMode,
             },
             geometry: {
                 type: 'Point',
@@ -1414,7 +1433,10 @@ function startUserLocationAnimation() {
         renderedUserLocation.latitude += (targetUserLocation.latitude - renderedUserLocation.latitude) * factor;
         renderedUserLocation.longitude += (targetUserLocation.longitude - renderedUserLocation.longitude) * factor;
         renderedUserLocation.accuracy += (targetUserLocation.accuracy - renderedUserLocation.accuracy) * factor;
-        renderedUserLocation.heading = interpolateBearing(renderedUserLocation.heading, targetUserLocation.heading, factor);
+        renderedUserLocation.headingMode = targetUserLocation.headingMode;
+        renderedUserLocation.heading = renderedUserLocation.headingMode === 'navigation'
+            ? targetUserLocation.heading
+            : interpolateBearing(renderedUserLocation.heading, targetUserLocation.heading, factor);
 
         renderUserLocationFeature(renderedUserLocation);
 
@@ -1520,6 +1542,7 @@ function keepNavigationLayersOrdered() {
         'pending-spot',
         'user-location-accuracy',
         'user-location-dot',
+        'user-navigation-dot',
         'speed-cameras',
         'speed-camera-direction',
         'speed-camera-label',
@@ -1622,10 +1645,13 @@ export function updateRouteManeuverHint(instruction, route, hint = {}) {
         return;
     }
 
-    const coordinate = getRouteCoordinateAtProgress(
-        route.geometry.coordinates,
-        Number(instruction.distanceFromStartMeters),
-    );
+    const remainingMeters = Number(instruction.remainingMeters);
+    const instructionDistanceMeters = Math.max(Number(instruction.distanceMeters) || 0, 0);
+    const instructionStartMeters = Number(instruction.distanceFromStartMeters);
+    const targetProgressMeters = Number.isFinite(remainingMeters) && remainingMeters <= 25 && instructionDistanceMeters > 25
+        ? instructionStartMeters + instructionDistanceMeters
+        : instructionStartMeters;
+    const coordinate = getRouteCoordinateAtProgress(route.geometry.coordinates, targetProgressMeters);
 
     if (!coordinate) {
         clearRouteManeuverHint();
@@ -1737,12 +1763,15 @@ export function focusNavigationPosition(userLocation, route = null, { preserveZo
         ? Math.min(findClosestRouteCoordinateIndex(current, routeCoordinates) + 1, routeCoordinates.length - 1)
         : -1;
     const next = routeCoordinates[nextIndex];
+    const routeBearing = Number(userLocation.routeBearing);
 
     map.easeTo({
         center: current,
         zoom: preserveZoom ? map.getZoom() : FOLLOW_ZOOM,
         pitch: FOLLOW_PITCH,
-        bearing: Number.isFinite(Number(bearing)) ? Number(bearing) : (next ? getBearing(current, next) : map.getBearing()),
+        bearing: Number.isFinite(Number(bearing))
+            ? Number(bearing)
+            : (Number.isFinite(routeBearing) ? routeBearing : (next ? getBearing(current, next) : map.getBearing())),
         padding: { top: 0, right: 0, bottom: 0, left: 0 },
         retainPadding: false,
         offset: [0, Math.round(window.innerHeight * 0.30)],
