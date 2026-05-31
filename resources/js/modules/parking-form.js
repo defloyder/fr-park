@@ -200,6 +200,10 @@ export function initParkingUi() {
         document.body.classList.add('is-navigation-detached');
     });
 
+    window.addEventListener('map:manual-interaction', () => {
+        state.isUserLocationFollowing = false;
+    });
+
     window.addEventListener('navigation:manual-map-zoom', () => {
         state.isUserLocationFollowing = false;
 

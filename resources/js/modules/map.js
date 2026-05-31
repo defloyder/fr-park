@@ -32,11 +32,21 @@ const POI_ICON_IMAGE_IDS = {
     hospital: 'poi-hospital',
     fuel: 'poi-fuel',
 };
+const USER_LOCATION_ICON_OPTIONS = [
+    { id: 'auralith', label: 'Auralith', svg: createUserLocationSvg },
+    { id: 'redbull-f1', label: 'Red Bull F1', svg: createRedBullF1Svg },
+    { id: 'ferrari-f1', label: 'Ferrari F1', svg: createFerrariF1Svg },
+    { id: 'plane', label: 'Самолет', svg: createPlaneSvg },
+    { id: 'helicopter', label: 'Вертолет', svg: createHelicopterSvg },
+    { id: 'buran', label: 'Буран', svg: createBuranSvg },
+];
 const BASE_LAYER_IDS = ['light', 'dark', 'satellite'];
 const DEFAULT_BASE_LAYER_ID = 'light';
 const BASE_LAYER_STORAGE_KEY = 'auralith:map-layer';
 const ROUTE_CACHE_STORAGE_KEY = 'auralith:last-driving-route';
 const TRAFFIC_LAYER_STORAGE_KEY = 'auralith:traffic-enabled';
+const USER_LOCATION_ICON_STORAGE_KEY = 'auralith:user-location-icon';
+const USER_LOCATION_ICON_PREFIX = 'user-location-';
 const FOLLOW_ZOOM = 15.4;
 const FOLLOW_PITCH = 50;
 
@@ -464,6 +474,7 @@ function initMapLibreMap() {
     bindLayerSwitcher();
     bindTrafficToggle();
     bindMapControlButtons();
+    bindMapSettings();
     bindPerformanceMode();
 
     map.once('load', async () => {
@@ -865,7 +876,11 @@ function setTrafficLayerVisibility(isVisible) {
         return;
     }
 
-    map.setLayoutProperty(TRAFFIC_FLOW_LAYER_ID, 'visibility', isVisible ? 'visible' : 'none');
+    try {
+        map.setLayoutProperty(TRAFFIC_FLOW_LAYER_ID, 'visibility', isVisible ? 'visible' : 'none');
+    } catch {
+        return;
+    }
     updateTrafficToggleButton(isVisible);
 }
 
@@ -887,11 +902,65 @@ function bindMapControlButtons() {
     });
 }
 
+function bindMapSettings() {
+    const settings = document.querySelector('[data-map-settings]');
+    const trigger = settings?.querySelector('[data-map-settings-toggle]');
+    const panel = settings?.querySelector('[data-map-settings-panel]');
+
+    if (!settings || !trigger || !panel) {
+        return;
+    }
+
+    panel.innerHTML = `
+        <span class="map-settings__title">GPS курсор</span>
+        <div class="map-settings__grid">
+            ${USER_LOCATION_ICON_OPTIONS.map((option) => `
+                <button class="map-settings__option" type="button" data-user-location-icon="${option.id}">
+                    <span class="map-settings__preview">${option.svg()}</span>
+                    <small>${option.label}</small>
+                </button>
+            `).join('')}
+        </div>
+    `;
+
+    const refreshActiveIcon = () => {
+        const selected = getSelectedUserLocationIcon();
+        panel.querySelectorAll('[data-user-location-icon]').forEach((button) => {
+            button.classList.toggle('is-active', button.dataset.userLocationIcon === selected);
+        });
+    };
+
+    refreshActiveIcon();
+
+    trigger.addEventListener('click', () => {
+        const isOpen = settings.classList.toggle('is-open');
+        trigger.setAttribute('aria-expanded', String(isOpen));
+    });
+
+    panel.querySelectorAll('[data-user-location-icon]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const icon = button.dataset.userLocationIcon;
+
+            if (!USER_LOCATION_ICON_OPTIONS.some((option) => option.id === icon)) {
+                return;
+            }
+
+            window.localStorage?.setItem(USER_LOCATION_ICON_STORAGE_KEY, icon);
+            refreshActiveIcon();
+            if (renderedUserLocation) {
+                renderUserLocationFeature(renderedUserLocation);
+            }
+        });
+    });
+}
+
 async function addMarkerImages() {
     await Promise.all(Object.entries(MARKER_IMAGES).map(([status, colors]) => (
         addSvgImage(`parking-marker-${status}`, createMarkerSvg(...colors))
     )));
-    await addSvgImage(USER_LOCATION_MARKER_ID, createUserLocationSvg());
+    await Promise.all(USER_LOCATION_ICON_OPTIONS.map((option) => (
+        addSvgImage(getUserLocationIconImage(option.id), option.svg())
+    )));
 }
 
 function addClusterCountImages() {
@@ -980,6 +1049,69 @@ function createUserLocationSvg() {
 </svg>`;
 }
 
+function createRedBullF1Svg() {
+    return createFormulaCarSvg('#12216B', '#FACC15', '#EF174A', '1');
+}
+
+function createFerrariF1Svg() {
+    return createFormulaCarSvg('#DC2626', '#FDE047', '#111827', 'F');
+}
+
+function createFormulaCarSvg(bodyColor, accentColor, wingColor, label) {
+    return `
+<svg xmlns="http://www.w3.org/2000/svg" width="54" height="54" viewBox="0 0 54 54">
+  <defs><filter id="shadow" x="-35%" y="-35%" width="170%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="4" flood-color="#061018" flood-opacity="0.34"/></filter></defs>
+  <g filter="url(#shadow)" transform="rotate(-90 27 27)">
+    <path fill="${wingColor}" d="M7 18h10v18H7c-3 0-5-2-5-5v-8c0-3 2-5 5-5Zm30 0h10c3 0 5 2 5 5v8c0 3-2 5-5 5H37V18Z"/>
+    <path fill="${bodyColor}" stroke="#fff" stroke-width="2" d="M12 27c0-10 7-17 15-17s15 7 15 17-7 17-15 17-15-7-15-17Z"/>
+    <path fill="${accentColor}" d="M18 27c0-6 4-11 9-11s9 5 9 11-4 11-9 11-9-5-9-11Z"/>
+    <circle cx="27" cy="27" r="5" fill="#08111F"/>
+    <text x="27" y="30.5" text-anchor="middle" fill="#fff" font-family="Inter, Arial, sans-serif" font-size="9" font-weight="900">${label}</text>
+  </g>
+</svg>`;
+}
+
+function createPlaneSvg() {
+    return `
+<svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 52 52">
+  <defs><linearGradient id="plane" x1="9" y1="43" x2="43" y2="9"><stop stop-color="#38BDF8"/><stop offset="1" stop-color="#E0F2FE"/></linearGradient><filter id="shadow" x="-35%" y="-35%" width="170%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="4" flood-color="#061018" flood-opacity="0.34"/></filter></defs>
+  <path filter="url(#shadow)" fill="url(#plane)" stroke="#fff" stroke-width="2.2" d="M26 3 43 46 26 36 9 46 26 3Z"/>
+  <path fill="#0F172A" opacity=".82" d="M26 15 33 35 26 31 19 35 26 15Z"/>
+</svg>`;
+}
+
+function createHelicopterSvg() {
+    return `
+<svg xmlns="http://www.w3.org/2000/svg" width="54" height="54" viewBox="0 0 54 54">
+  <defs><filter id="shadow" x="-35%" y="-35%" width="170%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="4" flood-color="#061018" flood-opacity="0.34"/></filter></defs>
+  <g filter="url(#shadow)" transform="rotate(-90 27 27)">
+    <path fill="#14B8A6" stroke="#fff" stroke-width="2" d="M17 20h18c6 0 10 4 10 8s-4 8-10 8H17c-5 0-8-3-8-8s3-8 8-8Z"/>
+    <path fill="#0F172A" d="M18 24h13c3 0 5 2 5 4s-2 4-5 4H18c-3 0-5-2-5-4s2-4 5-4Z"/>
+    <path stroke="#E0F2FE" stroke-width="3" stroke-linecap="round" d="M27 15V7M12 7h30M43 28h7M5 40h20M15 36v8"/>
+  </g>
+</svg>`;
+}
+
+function createBuranSvg() {
+    return `
+<svg xmlns="http://www.w3.org/2000/svg" width="54" height="54" viewBox="0 0 54 54">
+  <defs><linearGradient id="buran" x1="11" y1="43" x2="43" y2="9"><stop stop-color="#CBD5E1"/><stop offset="1" stop-color="#FFFFFF"/></linearGradient><filter id="shadow" x="-35%" y="-35%" width="170%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="4" flood-color="#061018" flood-opacity="0.34"/></filter></defs>
+  <path filter="url(#shadow)" fill="url(#buran)" stroke="#fff" stroke-width="2" d="M27 3 39 34 50 47 33 41 27 51 21 41 4 47 15 34 27 3Z"/>
+  <path fill="#111827" opacity=".82" d="M27 14 32 31 27 27 22 31 27 14Z"/>
+  <path fill="#EF4444" d="M23 38h8l-4 7-4-7Z"/>
+</svg>`;
+}
+
+function getSelectedUserLocationIcon() {
+    const saved = window.localStorage?.getItem(USER_LOCATION_ICON_STORAGE_KEY);
+
+    return USER_LOCATION_ICON_OPTIONS.some((option) => option.id === saved) ? saved : 'auralith';
+}
+
+function getUserLocationIconImage(icon = getSelectedUserLocationIcon()) {
+    return `${USER_LOCATION_ICON_PREFIX}${icon}`;
+}
+
 function bindPerformanceMode() {
     let timer = null;
     const start = () => {
@@ -1000,13 +1132,20 @@ function bindPerformanceMode() {
             window.dispatchEvent(new CustomEvent('navigation:manual-map-move'));
         }
     };
+    const dispatchManualMapInteraction = (event) => {
+        if (event?.originalEvent) {
+            window.dispatchEvent(new CustomEvent('map:manual-interaction'));
+        }
+    };
 
     map.on('movestart', (event) => {
         start();
+        dispatchManualMapInteraction(event);
         detachNavigationOnManualInteraction(event);
     });
     map.on('zoomstart', (event) => {
         start();
+        dispatchManualMapInteraction(event);
         if (event.originalEvent) {
             detachNavigationOnManualInteraction(event);
             dispatchNavigationZoomChange();
@@ -1015,9 +1154,18 @@ function bindPerformanceMode() {
     map.on('moveend', stop);
     map.on('zoomend', stop);
     map.on('click', stop);
-    map.on('dragstart', detachNavigationOnManualInteraction);
-    map.on('rotatestart', detachNavigationOnManualInteraction);
-    map.on('pitchstart', detachNavigationOnManualInteraction);
+    map.on('dragstart', (event) => {
+        dispatchManualMapInteraction(event);
+        detachNavigationOnManualInteraction(event);
+    });
+    map.on('rotatestart', (event) => {
+        dispatchManualMapInteraction(event);
+        detachNavigationOnManualInteraction(event);
+    });
+    map.on('pitchstart', (event) => {
+        dispatchManualMapInteraction(event);
+        detachNavigationOnManualInteraction(event);
+    });
 }
 
 function dispatchNavigationZoomChange() {
@@ -1148,7 +1296,7 @@ function addUserLocationSourceAndLayer() {
         source: USER_LOCATION_SOURCE_ID,
         filter: ['!=', ['get', 'mode'], 'navigation'],
         layout: {
-            'icon-image': USER_LOCATION_MARKER_ID,
+            'icon-image': ['get', 'iconImage'],
             'icon-size': 1,
             'icon-rotate': ['get', 'heading'],
             'icon-pitch-alignment': 'viewport',
@@ -1164,7 +1312,7 @@ function addUserLocationSourceAndLayer() {
         source: USER_LOCATION_SOURCE_ID,
         filter: ['==', ['get', 'mode'], 'navigation'],
         layout: {
-            'icon-image': USER_LOCATION_MARKER_ID,
+            'icon-image': ['get', 'iconImage'],
             'icon-size': 1,
             'icon-rotate': ['get', 'heading'],
             'icon-pitch-alignment': 'map',
@@ -1295,7 +1443,7 @@ async function expandCluster(event) {
     if (!source || clusterId === undefined) return;
 
     const zoom = await source.getClusterExpansionZoom(clusterId);
-    map.easeTo({
+    safeEaseTo({
         center: feature.geometry.coordinates,
         zoom,
         duration: 220,
@@ -1342,7 +1490,7 @@ export function focusSpot(spot) {
         return;
     }
 
-    map.easeTo({
+    safeEaseTo({
         center: [Number(spot.longitude), Number(spot.latitude)],
         zoom: Math.max(map.getZoom(), 15),
         duration: 220,
@@ -1363,7 +1511,7 @@ export function focusSpots(spots) {
     const bounds = new maplibregl.LngLatBounds();
     spots.forEach((spot) => bounds.extend([Number(spot.longitude), Number(spot.latitude)]));
 
-    map.fitBounds(bounds, {
+    safeFitBounds(bounds, {
         padding: { top: 96, right: 90, bottom: 120, left: 90 },
         duration: 220,
         maxZoom: 15,
@@ -1394,7 +1542,7 @@ export function focusUserLocation({ latitude, longitude, accuracy = 0, heading =
     }
 
     if (focus) {
-        map.easeTo({
+        safeEaseTo({
             center: [nextLocation.longitude, nextLocation.latitude],
             zoom: Math.min(Math.max(map.getZoom(), 13.8), 14.8),
             duration: 260,
@@ -1411,6 +1559,7 @@ function renderUserLocationFeature(location) {
                 accuracy: location.accuracy,
                 heading: location.heading,
                 mode: location.headingMode,
+                iconImage: getUserLocationIconImage(),
             },
             geometry: {
                 type: 'Point',
@@ -1493,12 +1642,21 @@ export async function buildRouteToSpot(userLocation, spot, { camera = 'overview'
     const safeRoute = sanitizeRoute(route, start, finish);
     const source = map.getSource(ROUTE_SOURCE_ID);
 
-    cacheRoute(finish, safeRoute);
+    try {
+        cacheRoute(finish, safeRoute);
+    } catch {}
+
     setRouteTrafficMode(true);
 
-    source?.setData(buildRouteFeatureCollection(safeRoute));
+    try {
+        source?.setData(buildRouteFeatureCollection(safeRoute));
+    } catch {
+        const fallbackRoute = sanitizeRoute(buildFallbackRoute(start, finish), start, finish);
+        source?.setData(buildRouteFeatureCollection(fallbackRoute));
+        return fallbackRoute;
+    }
     if (['yandex-traffic', 'tomtom-traffic'].includes(safeRoute.source)) {
-        map.setPaintProperty(ROUTE_LINE_LAYER_ID, 'line-color', [
+        safeSetRouteLineColor([
             'match',
             ['get', 'traffic'],
             'jam',
@@ -1510,7 +1668,7 @@ export async function buildRouteToSpot(userLocation, spot, { camera = 'overview'
             '#22C55E',
         ]);
     } else {
-        map.setPaintProperty(ROUTE_LINE_LAYER_ID, 'line-color', '#22C55E');
+        safeSetRouteLineColor('#22C55E');
     }
     keepNavigationLayersOrdered();
 
@@ -1519,7 +1677,7 @@ export async function buildRouteToSpot(userLocation, spot, { camera = 'overview'
     } else if (camera !== 'none') {
         const bounds = new maplibregl.LngLatBounds();
         safeRoute.geometry.coordinates.forEach((coordinate) => bounds.extend(coordinate));
-        map.fitBounds(bounds, {
+        safeFitBounds(bounds, {
             padding: getRoutePadding(),
             duration: 320,
             maxZoom: 16.5,
@@ -1545,15 +1703,40 @@ function keepNavigationLayersOrdered() {
         'speed-camera-label',
     ];
 
-    if (map.getLayer(TRAFFIC_FLOW_LAYER_ID) && map.getLayer(ROUTE_CASING_LAYER_ID)) {
-        map.moveLayer(TRAFFIC_FLOW_LAYER_ID, ROUTE_CASING_LAYER_ID);
-    }
-
-    orderedTopLayers.forEach((layerId) => {
-        if (map.getLayer(layerId)) {
-            map.moveLayer(layerId);
+    try {
+        if (map.getLayer(TRAFFIC_FLOW_LAYER_ID) && map.getLayer(ROUTE_CASING_LAYER_ID)) {
+            map.moveLayer(TRAFFIC_FLOW_LAYER_ID, ROUTE_CASING_LAYER_ID);
         }
-    });
+
+        orderedTopLayers.forEach((layerId) => {
+            if (map.getLayer(layerId)) {
+                map.moveLayer(layerId);
+            }
+        });
+    } catch {}
+}
+
+function safeSetRouteLineColor(value) {
+    try {
+        if (map?.getLayer(ROUTE_LINE_LAYER_ID)) {
+            map.setPaintProperty(ROUTE_LINE_LAYER_ID, 'line-color', value);
+        }
+    } catch {}
+}
+
+function safeEaseTo(options) {
+    try {
+        map?.stop();
+        map?.easeTo(options);
+    } catch {}
+}
+
+function safeFitBounds(bounds, options) {
+    try {
+        if (bounds?.isEmpty?.()) return;
+        map?.stop();
+        map?.fitBounds(bounds, options);
+    } catch {}
 }
 
 function sanitizeRoute(route, start, finish) {
@@ -1761,7 +1944,7 @@ export function updateRouteManeuverHint(instruction, route, hint = {}) {
             element,
             anchor: 'bottom',
             offset: [0, -18],
-        }).addTo(map);
+        }).setLngLat(coordinate).addTo(map);
     }
 
     const element = routeManeuverMarker.getElement();
@@ -1773,7 +1956,11 @@ export function updateRouteManeuverHint(instruction, route, hint = {}) {
     if (distance) distance.textContent = hint.distanceText ?? '';
     if (text) text.textContent = hint.text ?? '';
 
-    routeManeuverMarker.setLngLat(coordinate);
+    try {
+        routeManeuverMarker.setLngLat(coordinate);
+    } catch {
+        clearRouteManeuverHint();
+    }
 }
 
 export function clearRouteManeuverHint() {
@@ -1857,7 +2044,7 @@ export function focusNavigationPosition(userLocation, route = null, { preserveZo
     const next = routeCoordinates[nextIndex];
     const routeBearing = Number(userLocation.routeBearing);
 
-    map.easeTo({
+    safeEaseTo({
         center: current,
         zoom: preserveZoom ? map.getZoom() : FOLLOW_ZOOM,
         pitch: FOLLOW_PITCH,
@@ -1987,7 +2174,7 @@ function focusRouteStart(coordinates) {
 
     if (!start) return;
 
-    map.easeTo({
+    safeEaseTo({
         center: start,
         zoom: FOLLOW_ZOOM,
         pitch: FOLLOW_PITCH,

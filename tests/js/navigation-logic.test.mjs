@@ -74,7 +74,8 @@ test('manual map move events detach navigation follow', () => {
     const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
 
     assert.match(mapSource, /map\.on\('movestart'[\s\S]*detachNavigationOnManualInteraction\(event\)/);
-    assert.match(mapSource, /map\.on\('pitchstart', detachNavigationOnManualInteraction\)/);
+    assert.match(mapSource, /map\.on\('pitchstart'[\s\S]*detachNavigationOnManualInteraction\(event\)/);
+    assert.match(mapSource, /map:manual-interaction/);
 });
 
 test('GPS cursor heading is not coupled to manual map rotation', () => {
@@ -162,6 +163,7 @@ test('nearest maneuver hint is rendered on the map', () => {
 
     assert.match(mapSource, /export function updateRouteManeuverHint/);
     assert.match(mapSource, /new maplibregl\.Marker/);
+    assert.match(mapSource, /\.setLngLat\(coordinate\)\.addTo\(map\)/);
     assert.match(mapSource, /getRouteCoordinateAtProgress/);
     assert.match(formSource, /updateRouteManeuverHint\(instruction, state\.navigationRoute/);
 });
@@ -175,12 +177,28 @@ test('route geojson is sanitized before MapLibre setData receives it', () => {
     assert.doesNotMatch(mapSource, /directDistanceMeters > 50000[\s\S]*throw error/);
 });
 
-test('light theme close controls stay red', () => {
+test('close controls stay red across map themes', () => {
     const cssSource = readFileSync(new URL('../../resources/css/map-ui.css', import.meta.url), 'utf8');
 
-    assert.match(cssSource, /\.map-theme-light \.icon-button\[data-action\^="close"\]/);
-    assert.match(cssSource, /\.map-theme-light \.route-picker__close/);
-    assert.match(cssSource, /\.map-theme-light \.photo-lightbox__close/);
+    assert.match(cssSource, /\.icon-button\[data-action\^="close"\]/);
+    assert.match(cssSource, /\.route-picker__close/);
+    assert.match(cssSource, /\.photo-lightbox__close/);
+    assert.match(cssSource, /#BE123C/);
+});
+
+test('map settings expose selectable GPS cursor icons', () => {
+    const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
+    const viewSource = readFileSync(new URL('../../resources/views/pages/map.blade.php', import.meta.url), 'utf8');
+    const cssSource = readFileSync(new URL('../../resources/css/map-ui.css', import.meta.url), 'utf8');
+
+    assert.match(viewSource, /data-map-settings-toggle/);
+    assert.match(mapSource, /redbull-f1/);
+    assert.match(mapSource, /ferrari-f1/);
+    assert.match(mapSource, /createPlaneSvg/);
+    assert.match(mapSource, /createHelicopterSvg/);
+    assert.match(mapSource, /createBuranSvg/);
+    assert.match(mapSource, /iconImage: getUserLocationIconImage/);
+    assert.match(cssSource, /\.map-settings__grid/);
 });
 
 test('passed speed camera is skipped instead of sticking at zero meters', () => {
