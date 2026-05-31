@@ -4609,6 +4609,26 @@ body[data-map-layer="satellite"] .export-check.is-checked {
     white-space: nowrap;
 }
 
+.map-theme-light .icon-button[data-action^="close"],
+.map-theme-light .spot-card__close,
+.map-theme-light .route-picker__close,
+.map-theme-light .photo-lightbox__close {
+    color: #BE123C;
+    background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(255, 228, 235, 0.78)),
+        rgba(255, 122, 144, 0.18);
+    border-color: rgba(225, 29, 72, 0.38);
+}
+
+.map-theme-light .icon-button[data-action^="close"]:hover,
+.map-theme-light .spot-card__close:hover,
+.map-theme-light .route-picker__close:hover,
+.map-theme-light .photo-lightbox__close:hover {
+    color: #FFFFFF;
+    background: linear-gradient(145deg, rgba(255, 78, 114, 0.96), rgba(190, 18, 60, 0.94));
+    border-color: rgba(255, 122, 144, 0.74);
+}
+
 @media (max-width: 980px) {
     .admin-shell {
         grid-template-columns: 1fr;

@@ -1480,7 +1480,7 @@ export async function buildRouteToSpot(userLocation, spot, { camera = 'overview'
 
     const directDistanceMeters = getDistanceMeters(start, finish);
     const cachedRoute = getCachedRoute(finish);
-    const route = await fetchTrafficRoute(start, finish, directDistanceMeters).catch((error) => {
+    const route = await fetchTrafficRoute(start, finish, directDistanceMeters).catch(() => {
         if (cachedRoute) {
             return {
                 ...cachedRoute,
@@ -1488,19 +1488,16 @@ export async function buildRouteToSpot(userLocation, spot, { camera = 'overview'
             };
         }
 
-        if (directDistanceMeters > 50000) {
-            throw error;
-        }
-
         return buildFallbackRoute(start, finish);
     });
+    const safeRoute = sanitizeRoute(route, start, finish);
     const source = map.getSource(ROUTE_SOURCE_ID);
 
-    cacheRoute(finish, route);
+    cacheRoute(finish, safeRoute);
     setRouteTrafficMode(true);
 
-    source?.setData(buildRouteFeatureCollection(route));
-    if (['yandex-traffic', 'tomtom-traffic'].includes(route.source)) {
+    source?.setData(buildRouteFeatureCollection(safeRoute));
+    if (['yandex-traffic', 'tomtom-traffic'].includes(safeRoute.source)) {
         map.setPaintProperty(ROUTE_LINE_LAYER_ID, 'line-color', [
             'match',
             ['get', 'traffic'],
@@ -1518,10 +1515,10 @@ export async function buildRouteToSpot(userLocation, spot, { camera = 'overview'
     keepNavigationLayersOrdered();
 
     if (camera === 'follow') {
-        focusRouteStart(route.geometry.coordinates);
+        focusRouteStart(safeRoute.geometry.coordinates);
     } else if (camera !== 'none') {
         const bounds = new maplibregl.LngLatBounds();
-        route.geometry.coordinates.forEach((coordinate) => bounds.extend(coordinate));
+        safeRoute.geometry.coordinates.forEach((coordinate) => bounds.extend(coordinate));
         map.fitBounds(bounds, {
             padding: getRoutePadding(),
             duration: 320,
@@ -1529,7 +1526,7 @@ export async function buildRouteToSpot(userLocation, spot, { camera = 'overview'
         });
     }
 
-    return route;
+    return safeRoute;
 }
 
 function keepNavigationLayersOrdered() {
@@ -1559,18 +1556,89 @@ function keepNavigationLayersOrdered() {
     });
 }
 
+function sanitizeRoute(route, start, finish) {
+    const coordinates = sanitizeLineCoordinates(route?.geometry?.coordinates ?? []);
+    const fallback = () => buildFallbackRoute(start, finish);
+
+    if (coordinates.length < 2) {
+        return fallback();
+    }
+
+    const segments = Array.isArray(route.segments)
+        ? route.segments
+            .map((segment) => ({
+                ...segment,
+                coordinates: sanitizeLineCoordinates(segment.coordinates ?? []),
+            }))
+            .filter((segment) => segment.coordinates.length > 1)
+        : [];
+
+    return {
+        ...route,
+        geometry: {
+            type: 'LineString',
+            coordinates,
+        },
+        segments,
+        distanceMeters: Number.isFinite(Number(route.distanceMeters))
+            ? Number(route.distanceMeters)
+            : getRouteDistanceMeters(coordinates),
+        durationSeconds: Number.isFinite(Number(route.durationSeconds))
+            ? Number(route.durationSeconds)
+            : Math.max(60, getRouteDistanceMeters(coordinates) / 9),
+    };
+}
+
+function sanitizeLineCoordinates(coordinates) {
+    if (!Array.isArray(coordinates)) {
+        return [];
+    }
+
+    return coordinates
+        .map((coordinate) => {
+            const longitude = Number(coordinate?.[0]);
+            const latitude = Number(coordinate?.[1]);
+
+            return Number.isFinite(longitude) && Number.isFinite(latitude)
+                ? [longitude, latitude]
+                : null;
+        })
+        .filter(Boolean);
+}
+
+function getRouteDistanceMeters(coordinates) {
+    return coordinates.reduce((distance, coordinate, index) => {
+        if (index === 0) return 0;
+
+        const previous = coordinates[index - 1];
+
+        return distance + getDistanceMeters(
+            { longitude: previous[0], latitude: previous[1] },
+            { longitude: coordinate[0], latitude: coordinate[1] },
+        );
+    }, 0);
+}
+
 function buildRouteFeatureCollection(route) {
+    const routeCoordinates = sanitizeLineCoordinates(route?.geometry?.coordinates ?? []);
+
+    if (routeCoordinates.length < 2) {
+        return buildFeatureCollection([]);
+    }
+
     const segmentFeatures = Array.isArray(route.segments) && route.segments.length > 0
-        ? route.segments.map((segment) => ({
-            type: 'Feature',
-            properties: {
-                traffic: segment.traffic ?? 'free',
-            },
-            geometry: {
-                type: 'LineString',
-                coordinates: segment.coordinates,
-            },
-        }))
+        ? route.segments
+            .map((segment) => ({
+                type: 'Feature',
+                properties: {
+                    traffic: segment.traffic ?? 'free',
+                },
+                geometry: {
+                    type: 'LineString',
+                    coordinates: sanitizeLineCoordinates(segment.coordinates ?? []),
+                },
+            }))
+            .filter((feature) => feature.geometry.coordinates.length > 1)
         : [];
 
     if (segmentFeatures.length > 0) {
@@ -1587,7 +1655,10 @@ function buildRouteFeatureCollection(route) {
             properties: {
                 traffic: 'free',
             },
-            geometry: route.geometry,
+            geometry: {
+                type: 'LineString',
+                coordinates: routeCoordinates,
+            },
         }],
     };
 }
@@ -1603,7 +1674,19 @@ export function restoreActiveRoute(route) {
         return;
     }
 
-    map.getSource(ROUTE_SOURCE_ID)?.setData(buildRouteFeatureCollection(route));
+    const coordinates = sanitizeLineCoordinates(route.geometry.coordinates);
+
+    if (coordinates.length < 2) {
+        return;
+    }
+
+    map.getSource(ROUTE_SOURCE_ID)?.setData(buildRouteFeatureCollection({
+        ...route,
+        geometry: {
+            type: 'LineString',
+            coordinates,
+        },
+    }));
     setRouteTrafficMode(true);
     keepNavigationLayersOrdered();
 }
@@ -1618,11 +1701,17 @@ export function updateActiveRouteProgress(userLocation, route) {
         return;
     }
 
+    const routeCoordinates = sanitizeLineCoordinates(route.geometry.coordinates);
+
+    if (routeCoordinates.length < 2) {
+        return;
+    }
+
     const closestIndex = findClosestRouteCoordinateIndex(
         [Number(userLocation.longitude), Number(userLocation.latitude)],
-        route.geometry.coordinates,
+        routeCoordinates,
     );
-    const remainingCoordinates = route.geometry.coordinates.slice(Math.max(0, closestIndex));
+    const remainingCoordinates = routeCoordinates.slice(Math.max(0, closestIndex));
 
     if (remainingCoordinates.length < 2) {
         clearActiveRoute();
@@ -1714,16 +1803,17 @@ function trimRouteSegments(segments, closestIndex) {
 
 function getRouteCoordinateAtProgress(coordinates, targetProgressMeters) {
     const target = Number(targetProgressMeters);
+    const routeCoordinates = sanitizeLineCoordinates(coordinates);
 
-    if (!Number.isFinite(target) || target < 0 || coordinates.length < 2) {
+    if (!Number.isFinite(target) || target < 0 || routeCoordinates.length < 2) {
         return null;
     }
 
     let progress = 0;
 
-    for (let index = 1; index < coordinates.length; index += 1) {
-        const start = coordinates[index - 1];
-        const finish = coordinates[index];
+    for (let index = 1; index < routeCoordinates.length; index += 1) {
+        const start = routeCoordinates[index - 1];
+        const finish = routeCoordinates[index];
         const segmentDistance = getDistanceMeters(
             { longitude: start[0], latitude: start[1] },
             { longitude: finish[0], latitude: finish[1] },
@@ -1741,15 +1831,17 @@ function getRouteCoordinateAtProgress(coordinates, targetProgressMeters) {
         progress += segmentDistance;
     }
 
-    return coordinates.at(-1) ?? null;
+    return routeCoordinates.at(-1) ?? null;
 }
 
 export function startRouteNavigation(route) {
-    if (!route?.geometry?.coordinates?.length) {
+    const coordinates = sanitizeLineCoordinates(route?.geometry?.coordinates ?? []);
+
+    if (coordinates.length < 2) {
         return;
     }
 
-    focusRouteStart(route.geometry.coordinates);
+    focusRouteStart(coordinates);
 }
 
 export function focusNavigationPosition(userLocation, route = null, { preserveZoom = false, duration = 850, bearing = null } = {}) {
@@ -1758,7 +1850,7 @@ export function focusNavigationPosition(userLocation, route = null, { preserveZo
     }
 
     const current = [Number(userLocation.longitude), Number(userLocation.latitude)];
-    const routeCoordinates = route?.geometry?.coordinates ?? [];
+    const routeCoordinates = sanitizeLineCoordinates(route?.geometry?.coordinates ?? []);
     const nextIndex = routeCoordinates.length > 1
         ? Math.min(findClosestRouteCoordinateIndex(current, routeCoordinates) + 1, routeCoordinates.length - 1)
         : -1;
@@ -1780,10 +1872,11 @@ export function focusNavigationPosition(userLocation, route = null, { preserveZo
 }
 
 function findClosestRouteCoordinateIndex(current, coordinates) {
+    const routeCoordinates = sanitizeLineCoordinates(coordinates);
     let bestIndex = 0;
     let bestDistance = Number.POSITIVE_INFINITY;
 
-    coordinates.forEach((coordinate, index) => {
+    routeCoordinates.forEach((coordinate, index) => {
         const distance = ((coordinate[0] - current[0]) ** 2) + ((coordinate[1] - current[1]) ** 2);
 
         if (distance < bestDistance) {
@@ -1888,8 +1981,9 @@ function formatOsrmInstruction(step) {
 }
 
 function focusRouteStart(coordinates) {
-    const start = coordinates?.[0];
-    const next = coordinates?.[Math.min(8, Math.max(1, (coordinates?.length ?? 1) - 1))];
+    const routeCoordinates = sanitizeLineCoordinates(coordinates);
+    const start = routeCoordinates[0];
+    const next = routeCoordinates[Math.min(8, Math.max(1, routeCoordinates.length - 1))];
 
     if (!start) return;
 

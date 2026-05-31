@@ -166,6 +166,23 @@ test('nearest maneuver hint is rendered on the map', () => {
     assert.match(formSource, /updateRouteManeuverHint\(instruction, state\.navigationRoute/);
 });
 
+test('route geojson is sanitized before MapLibre setData receives it', () => {
+    const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
+
+    assert.match(mapSource, /function sanitizeRoute/);
+    assert.match(mapSource, /function sanitizeLineCoordinates/);
+    assert.match(mapSource, /source\?\.setData\(buildRouteFeatureCollection\(safeRoute\)\)/);
+    assert.doesNotMatch(mapSource, /directDistanceMeters > 50000[\s\S]*throw error/);
+});
+
+test('light theme close controls stay red', () => {
+    const cssSource = readFileSync(new URL('../../resources/css/map-ui.css', import.meta.url), 'utf8');
+
+    assert.match(cssSource, /\.map-theme-light \.icon-button\[data-action\^="close"\]/);
+    assert.match(cssSource, /\.map-theme-light \.route-picker__close/);
+    assert.match(cssSource, /\.map-theme-light \.photo-lightbox__close/);
+});
+
 test('passed speed camera is skipped instead of sticking at zero meters', () => {
     const camera = pickUpcomingSpeedCamera(
         [
