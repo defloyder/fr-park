@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 class SpeedCameraService
 {
-    private const ROUTE_DISTANCE_THRESHOLD_METERS = 160;
+    private const ROUTE_DISTANCE_THRESHOLD_METERS = 55;
+    private const ROUTE_BOUNDS_PADDING_DEGREES = 0.006;
 
     public function __construct(private readonly NavigationGeometryService $geometry)
     {
@@ -34,7 +36,7 @@ class SpeedCameraService
 
     private function fetchOpenStreetMapSpeedCameras(array $coordinates): array
     {
-        $bounds = $this->geometry->routeBounds($coordinates, 0.012);
+        $bounds = $this->geometry->routeBounds($coordinates, self::ROUTE_BOUNDS_PADDING_DEGREES);
         $bbox = "({$bounds['south']},{$bounds['west']},{$bounds['north']},{$bounds['east']})";
         $query = <<<OVERPASS
             [out:json][timeout:18];
@@ -70,11 +72,13 @@ class SpeedCameraService
 
     private function fetchOverpassPayload(string $query): array
     {
-        return Http::timeout(20)
-            ->asForm()
-            ->post('https://overpass-api.de/api/interpreter', ['data' => $query])
-            ->throw()
-            ->json();
+        return Cache::remember('speed-cameras:overpass:'.sha1($query), now()->addMinutes(20), function () use ($query) {
+            return Http::timeout(20)
+                ->asForm()
+                ->post('https://overpass-api.de/api/interpreter', ['data' => $query])
+                ->throw()
+                ->json();
+        });
     }
 
     private function parseSpeedCameraPayload(array $payload): array
@@ -120,6 +124,10 @@ class SpeedCameraService
 
         return [
             ...$camera,
+            'originalLatitude' => $camera['latitude'],
+            'originalLongitude' => $camera['longitude'],
+            'latitude' => $routePoint['latitude'],
+            'longitude' => $routePoint['longitude'],
             'bearing' => $bearing,
             'routeOffsetMeters' => $routePoint['progressMeters'],
             'routeDistanceMeters' => $routePoint['distanceMeters'],

@@ -599,22 +599,36 @@ function addSpeedCameraImage() {
 }
 
 export function renderSpeedCameras(cameras = []) {
+    const features = cameras
+        .map((camera) => {
+            const longitude = Number(camera.longitude);
+            const latitude = Number(camera.latitude);
+            const bearing = Number(camera.bearing);
+
+            if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) {
+                return null;
+            }
+
+            return {
+                type: 'Feature',
+                properties: {
+                    id: String(camera.id ?? `${longitude}:${latitude}`),
+                    title: camera.title ?? 'РљР°РјРµСЂР°',
+                    label: camera.label ?? 'РљР°РјРµСЂР°',
+                    bearing: Number.isFinite(bearing) ? bearing : 0,
+                    isDummy: Boolean(camera.isDummy),
+                },
+                geometry: {
+                    type: 'Point',
+                    coordinates: [longitude, latitude],
+                },
+            };
+        })
+        .filter(Boolean);
+
     map?.getSource(SPEED_CAMERA_SOURCE_ID)?.setData({
         type: 'FeatureCollection',
-        features: cameras.map((camera) => ({
-            type: 'Feature',
-            properties: {
-                id: camera.id,
-                title: camera.title ?? 'Камера',
-                label: camera.label ?? 'Камера',
-                bearing: Number(camera.bearing) || 0,
-                isDummy: Boolean(camera.isDummy),
-            },
-            geometry: {
-                type: 'Point',
-                coordinates: [Number(camera.longitude), Number(camera.latitude)],
-            },
-        })),
+        features,
     });
 }
 

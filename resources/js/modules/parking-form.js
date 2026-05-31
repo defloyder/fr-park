@@ -13,7 +13,7 @@ import {
     uploadParkingPhoto,
 } from './parking-api';
 import { addParkingSpotToMap, buildRouteToSpot, clearActiveRoute, clearPendingSelection, focusNavigationPosition, focusSpot, focusSpots, focusUserLocation, renderSpeedCameras, replaceParkingSpotsOnMap, restoreActiveRoute, setMapPickingMode, startRouteNavigation, updateActiveRouteProgress } from './map';
-import { getCompassEventPriority, getHeadingDifference, normalizeCompassHeading, pickUpcomingSpeedCamera, shouldFollowNavigationPosition, shouldFollowUserLocation, shouldRecenterNavigationFromLocate, smoothCompassHeading } from './navigation-logic';
+import { getCompassEventPriority, getHeadingDifference, getRouteSnappedNavigationLocation, normalizeCompassHeading, pickUpcomingSpeedCamera, shouldFollowNavigationPosition, shouldFollowUserLocation, shouldRecenterNavigationFromLocate, smoothCompassHeading } from './navigation-logic';
 
 const STATUS_LABELS = {
     verified: 'Проверено',
@@ -24,7 +24,7 @@ const STATUS_LABELS = {
 
 
 const NAVIGATION_STATE_STORAGE_KEY = 'auralith:navigation-state';
-const SPEED_CAMERA_ROUTE_DISTANCE_METERS = 160;
+const SPEED_CAMERA_ROUTE_DISTANCE_METERS = 55;
 
 const MOSCOW_DISTRICT_ALIASES = {
     'патриарших прудов': 'Пресненский',
@@ -1865,8 +1865,11 @@ export function initParkingUi() {
             heading: getNavigationMarkerHeading(state.userLocation?.heading),
             updatedAt: Date.now(),
         };
-        state.userLocation = getRouteSnappedNavigationLocation(rawLocation, state.navigationRoute);
         state.currentSpeedKmh = getGpsSpeedKmh(coords);
+        state.userLocation = getRouteSnappedNavigationLocation(rawLocation, state.navigationRoute, {
+            previousLocation: state.userLocation,
+            speedKmh: state.currentSpeedKmh,
+        });
         state.speedLimitKmh = estimateSpeedLimitKmh(state.navigationRoute, state.userLocation);
 
         focusUserLocation(state.userLocation, { focus: false });
@@ -2808,120 +2811,6 @@ function formatDuration(seconds) {
 function getRouteBuildNote(route) {
     if (route.source?.endsWith('-cached')) {
         return 'Показал сохраненный маршрут. Можно продолжать ведение без интернета.';
-    }
-
-    function getRouteSnappedNavigationLocation(location, route) {
-        const snap = getClosestRouteProjection(route?.geometry?.coordinates ?? [], location);
-
-        if (!snap) return location;
-
-        const accuracy = Number(location.accuracy) || 0;
-        const snapThresholdMeters = Math.min(120, Math.max(35, accuracy * 1.8));
-
-        if (snap.distanceMeters > snapThresholdMeters) {
-            return {
-                ...location,
-                routeDistanceMeters: snap.distanceMeters,
-                routeProgressMeters: snap.progressMeters,
-            };
-        }
-
-        return smoothSnappedNavigationLocation({
-            ...location,
-            rawLatitude: location.latitude,
-            rawLongitude: location.longitude,
-            latitude: snap.latitude,
-            longitude: snap.longitude,
-            routeDistanceMeters: snap.distanceMeters,
-            routeProgressMeters: snap.progressMeters,
-            routeBearing: snap.bearing,
-        });
-    }
-
-    function smoothSnappedNavigationLocation(location) {
-        const previous = state.userLocation;
-
-        if (!previous || !Number.isFinite(Number(previous.latitude)) || !Number.isFinite(Number(previous.longitude))) {
-            return location;
-        }
-
-        const speedKmh = Number(state.currentSpeedKmh) || 0;
-        const factor = speedKmh > 18 ? 0.58 : 0.42;
-
-        return {
-            ...location,
-            latitude: Number(previous.latitude) + ((Number(location.latitude) - Number(previous.latitude)) * factor),
-            longitude: Number(previous.longitude) + ((Number(location.longitude) - Number(previous.longitude)) * factor),
-        };
-    }
-
-    function getClosestRouteProjection(coordinates, location) {
-        if (!coordinates?.length || coordinates.length < 2 || !location) {
-            return null;
-        }
-
-        const point = [Number(location.longitude), Number(location.latitude)];
-        const origin = point;
-        let best = null;
-        let progressBeforeSegment = 0;
-
-        for (let index = 1; index < coordinates.length; index += 1) {
-            const start = coordinates[index - 1];
-            const end = coordinates[index];
-            const segmentDistance = getDistanceMeters(
-                { longitude: start[0], latitude: start[1] },
-                { longitude: end[0], latitude: end[1] },
-            );
-            const projection = projectPointToSegment(point, start, end, origin);
-            const distanceMeters = getDistanceMeters(
-                { longitude: point[0], latitude: point[1] },
-                { longitude: projection.coordinate[0], latitude: projection.coordinate[1] },
-            );
-
-            if (!best || distanceMeters < best.distanceMeters) {
-                best = {
-                    latitude: projection.coordinate[1],
-                    longitude: projection.coordinate[0],
-                    distanceMeters,
-                    progressMeters: progressBeforeSegment + (segmentDistance * projection.t),
-                    bearing: getBearingDegrees(start, end),
-                };
-            }
-
-            progressBeforeSegment += segmentDistance;
-        }
-
-        return best;
-    }
-
-    function projectPointToSegment(point, start, end, origin) {
-        const projectedPoint = toLocalMeters(point, origin);
-        const projectedStart = toLocalMeters(start, origin);
-        const projectedEnd = toLocalMeters(end, origin);
-        const dx = projectedEnd.x - projectedStart.x;
-        const dy = projectedEnd.y - projectedStart.y;
-        const lengthSquared = (dx * dx) + (dy * dy);
-        const t = lengthSquared > 0
-            ? Math.max(0, Math.min(1, (((projectedPoint.x - projectedStart.x) * dx) + ((projectedPoint.y - projectedStart.y) * dy)) / lengthSquared))
-            : 0;
-
-        return {
-            t,
-            coordinate: [
-                start[0] + ((end[0] - start[0]) * t),
-                start[1] + ((end[1] - start[1]) * t),
-            ],
-        };
-    }
-
-    function toLocalMeters(coordinate, origin) {
-        const metersPerDegreeLat = 111320;
-        const metersPerDegreeLng = metersPerDegreeLat * Math.cos((Number(origin[1]) * Math.PI) / 180);
-
-        return {
-            x: (Number(coordinate[0]) - Number(origin[0])) * metersPerDegreeLng,
-            y: (Number(coordinate[1]) - Number(origin[1])) * metersPerDegreeLat,
-        };
     }
 
     if (route.source === 'tomtom-traffic') {

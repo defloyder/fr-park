@@ -34,6 +34,8 @@ class NavigationGeometryService
             'distanceMeters' => INF,
             'progressMeters' => 0.0,
             'bearing' => 0.0,
+            'longitude' => $current[0],
+            'latitude' => $current[1],
         ];
 
         for ($index = 1; $index < count($coordinates); $index++) {
@@ -54,6 +56,8 @@ class NavigationGeometryService
                     'distanceMeters' => $distanceToSegment,
                     'progressMeters' => $progress + ($segmentDistance * $closest['ratio']),
                     'bearing' => $this->bearingDegrees($start, $finish),
+                    'longitude' => (float) $closest['coordinate'][0],
+                    'latitude' => (float) $closest['coordinate'][1],
                 ];
             }
 

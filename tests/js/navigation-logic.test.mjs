@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import {
     getCompassEventPriority,
     getHeadingDifference,
+    getRouteSnappedNavigationLocation,
     isManualMapInteraction,
     normalizeCompassHeading,
     pickUpcomingSpeedCamera,
@@ -113,9 +114,36 @@ test('navigation position is snapped to route before rendering', () => {
     const getRouteProgressMeters = formSource.match(/function getRouteProgressMeters[\s\S]*?\n    \}/)?.[0] ?? '';
     const getDistanceToRouteMeters = formSource.match(/function getDistanceToRouteMeters[\s\S]*?\n    \}/)?.[0] ?? '';
 
-    assert.match(applyNavigationLocationCoords, /getRouteSnappedNavigationLocation\(rawLocation, state\.navigationRoute\)/);
+    assert.match(applyNavigationLocationCoords, /getRouteSnappedNavigationLocation\(rawLocation, state\.navigationRoute, \{/);
     assert.match(getRouteProgressMeters, /routeProgressMeters/);
     assert.match(getDistanceToRouteMeters, /routeDistanceMeters/);
+});
+
+test('navigation route snapping is available as executable logic', () => {
+    const snapped = getRouteSnappedNavigationLocation(
+        { latitude: 55.0004, longitude: 37.0002, accuracy: 12 },
+        {
+            geometry: {
+                coordinates: [
+                    [37, 55],
+                    [37, 55.01],
+                ],
+            },
+        },
+    );
+
+    assert.ok(Math.abs(snapped.longitude - 37) < 0.00001);
+    assert.ok(snapped.routeDistanceMeters > 10);
+    assert.ok(snapped.routeProgressMeters > 0);
+});
+
+test('speed camera rendering filters invalid coordinates before MapLibre receives data', () => {
+    const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
+    const renderSpeedCameras = mapSource.match(/export function renderSpeedCameras[\s\S]*?\n\}/)?.[0] ?? '';
+
+    assert.match(renderSpeedCameras, /Number\.isFinite\(longitude\)/);
+    assert.match(renderSpeedCameras, /Number\.isFinite\(latitude\)/);
+    assert.match(renderSpeedCameras, /features,/);
 });
 
 test('passed speed camera is skipped instead of sticking at zero meters', () => {

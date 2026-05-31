@@ -31,7 +31,8 @@ class SpeedCameraController extends Controller
             return response()->json([
                 'data' => [],
                 'message' => 'Speed cameras are unavailable.',
-            ], 503);
+                'unavailable' => true,
+            ]);
         }
     }
 }
