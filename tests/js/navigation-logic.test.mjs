@@ -107,6 +107,17 @@ test('GPS cursor heading does not fall back to GPS course', () => {
     assert.doesNotMatch(applyNavigationLocationCoords, /getNavigationHeading\(gpsHeading\)/);
 });
 
+test('navigation position is snapped to route before rendering', () => {
+    const formSource = readFileSync(new URL('../../resources/js/modules/parking-form.js', import.meta.url), 'utf8');
+    const applyNavigationLocationCoords = formSource.match(/function applyNavigationLocationCoords[\s\S]*?saveNavigationState\(\);/)?.[0] ?? '';
+    const getRouteProgressMeters = formSource.match(/function getRouteProgressMeters[\s\S]*?\n    \}/)?.[0] ?? '';
+    const getDistanceToRouteMeters = formSource.match(/function getDistanceToRouteMeters[\s\S]*?\n    \}/)?.[0] ?? '';
+
+    assert.match(applyNavigationLocationCoords, /getRouteSnappedNavigationLocation\(rawLocation, state\.navigationRoute\)/);
+    assert.match(getRouteProgressMeters, /routeProgressMeters/);
+    assert.match(getDistanceToRouteMeters, /routeDistanceMeters/);
+});
+
 test('passed speed camera is skipped instead of sticking at zero meters', () => {
     const camera = pickUpcomingSpeedCamera(
         [
