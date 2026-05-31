@@ -1030,7 +1030,7 @@ export function initParkingUi() {
                 state.navigationPreserveZoom = false;
                 document.body.classList.remove('is-navigation-detached');
                 document.body.classList.add('is-navigation-following');
-                focusNavigationPosition(location, state.navigationRoute, { bearing: getNavigationCameraBearing() });
+                focusNavigationPosition(location, state.navigationRoute);
                 if (state.navigationWatchId === null) {
                     startNavigationLocationWatch();
                     requestNavigationWakeLock();
@@ -1199,7 +1199,7 @@ export function initParkingUi() {
 
         state.navigationPreserveZoom = false;
         applyDeviceHeadingToUserLocation();
-        focusNavigationPosition(state.userLocation, state.navigationRoute, { bearing: getNavigationCameraBearing() });
+        focusNavigationPosition(state.userLocation, state.navigationRoute);
         document.body.classList.remove('is-navigation-detached');
         saveNavigationState();
     }
@@ -1364,10 +1364,7 @@ export function initParkingUi() {
         startDeviceHeadingWatch();
         if (state.userLocation) {
             focusUserLocation(state.userLocation, { focus: false });
-            focusNavigationPosition(state.userLocation, saved.route, {
-                preserveZoom: state.navigationPreserveZoom,
-                bearing: getNavigationCameraBearing(),
-            });
+            focusNavigationPosition(state.userLocation, saved.route, { preserveZoom: state.navigationPreserveZoom });
         } else {
             startRouteNavigation(saved.route);
         }
@@ -1620,16 +1617,6 @@ export function initParkingUi() {
             if (!state.userLocation) return;
 
             focusUserLocation(state.userLocation, { focus: false });
-            if (
-                document.body.classList.contains('is-navigation-following')
-                && !document.body.classList.contains('is-navigation-detached')
-            ) {
-                focusNavigationPosition(state.userLocation, state.navigationRoute, {
-                    preserveZoom: state.navigationPreserveZoom,
-                    duration: 220,
-                    bearing: heading,
-                });
-            }
         };
 
         state.deviceHeadingListener = listener;
@@ -1762,10 +1749,6 @@ export function initParkingUi() {
         return getNavigationHeading(previousHeading);
     }
 
-    function getNavigationCameraBearing() {
-        return getFreshDeviceHeading(5000);
-    }
-
     function formatCompassDirection(heading) {
         const directions = ['С', 'СВ', 'В', 'ЮВ', 'Ю', 'ЮЗ', 'З', 'СЗ'];
         const index = Math.round((((Number(heading) % 360) + 360) % 360) / 45) % directions.length;
@@ -1893,10 +1876,7 @@ export function initParkingUi() {
             hasRoute: Boolean(state.navigationRoute),
             hasLocation: Boolean(state.userLocation),
         })) {
-            focusNavigationPosition(state.userLocation, state.navigationRoute, {
-                preserveZoom: state.navigationPreserveZoom,
-                bearing: getNavigationCameraBearing(),
-            });
+            focusNavigationPosition(state.userLocation, state.navigationRoute, { preserveZoom: state.navigationPreserveZoom });
         }
         maybeRefreshNavigationRouteFromGps();
         updateNavigationMetrics();
@@ -1934,10 +1914,7 @@ export function initParkingUi() {
             state.navigationLastRerouteAt = Date.now();
             updateActiveRouteProgress(state.userLocation, route);
             if (!document.body.classList.contains('is-navigation-detached')) {
-                focusNavigationPosition(state.userLocation, route, {
-                    preserveZoom: state.navigationPreserveZoom,
-                    bearing: getNavigationCameraBearing(),
-                });
+                focusNavigationPosition(state.userLocation, route, { preserveZoom: state.navigationPreserveZoom });
             }
             updateNavigationMetrics();
             refreshSpeedCameras(route);

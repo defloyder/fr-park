@@ -84,12 +84,14 @@ test('GPS cursor heading is not coupled to manual map rotation', () => {
     assert.match(userLocationLayer, /'icon-pitch-alignment': 'viewport'/);
 });
 
-test('navigation camera can align to compass without reading map rotation', () => {
+test('navigation camera follows route geometry instead of compass', () => {
     const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
+    const formSource = readFileSync(new URL('../../resources/js/modules/parking-form.js', import.meta.url), 'utf8');
     const focusNavigationPosition = mapSource.match(/export function focusNavigationPosition[\s\S]*?\n\}/)?.[0] ?? '';
 
     assert.doesNotMatch(focusNavigationPosition, /getFreshCompassHeading|compassHeading/);
     assert.match(focusNavigationPosition, /bearing = null/);
+    assert.doesNotMatch(formSource, /bearing: getNavigationCameraBearing|bearing: heading|getNavigationCameraBearing/);
 });
 
 test('GPS cursor heading does not fall back to GPS course', () => {
