@@ -12,6 +12,7 @@ let targetUserLocation = null;
 let isPickingMode = false;
 let isTrafficSuppressedByRoute = false;
 let isTrafficForcedVisibleByUser = false;
+let routeManeuverMarker = null;
 
 const MOSCOW_CENTER = [37.6173, 55.7558];
 const MAP_CONTAINER_ID = 'parking-map';
@@ -1571,6 +1572,7 @@ function buildRouteFeatureCollection(route) {
 export function clearActiveRoute() {
     map?.getSource(ROUTE_SOURCE_ID)?.setData(buildFeatureCollection([]));
     setRouteTrafficMode(false);
+    clearRouteManeuverHint();
 }
 
 export function restoreActiveRoute(route) {
@@ -1614,6 +1616,56 @@ export function updateActiveRouteProgress(userLocation, route) {
     }));
 }
 
+export function updateRouteManeuverHint(instruction, route, hint = {}) {
+    if (!map || !instruction || !route?.geometry?.coordinates?.length) {
+        clearRouteManeuverHint();
+        return;
+    }
+
+    const coordinate = getRouteCoordinateAtProgress(
+        route.geometry.coordinates,
+        Number(instruction.distanceFromStartMeters),
+    );
+
+    if (!coordinate) {
+        clearRouteManeuverHint();
+        return;
+    }
+
+    if (!routeManeuverMarker) {
+        const element = document.createElement('div');
+        element.className = 'route-maneuver-hint';
+        element.innerHTML = `
+            <div class="route-maneuver-hint__icon" aria-hidden="true"></div>
+            <div class="route-maneuver-hint__copy">
+                <strong></strong>
+                <span></span>
+            </div>
+        `;
+        routeManeuverMarker = new maplibregl.Marker({
+            element,
+            anchor: 'bottom',
+            offset: [0, -18],
+        }).addTo(map);
+    }
+
+    const element = routeManeuverMarker.getElement();
+    const icon = element.querySelector('.route-maneuver-hint__icon');
+    const distance = element.querySelector('strong');
+    const text = element.querySelector('span');
+
+    if (icon) icon.innerHTML = hint.iconSvg ?? '';
+    if (distance) distance.textContent = hint.distanceText ?? '';
+    if (text) text.textContent = hint.text ?? '';
+
+    routeManeuverMarker.setLngLat(coordinate);
+}
+
+export function clearRouteManeuverHint() {
+    routeManeuverMarker?.remove();
+    routeManeuverMarker = null;
+}
+
 function trimRouteSegments(segments, closestIndex) {
     let pointOffset = 0;
 
@@ -1632,6 +1684,38 @@ function trimRouteSegments(segments, closestIndex) {
             coordinates: coordinates.slice(Math.max(0, closestIndex - start)),
         };
     }).filter((segment) => segment?.coordinates?.length > 1);
+}
+
+function getRouteCoordinateAtProgress(coordinates, targetProgressMeters) {
+    const target = Number(targetProgressMeters);
+
+    if (!Number.isFinite(target) || target < 0 || coordinates.length < 2) {
+        return null;
+    }
+
+    let progress = 0;
+
+    for (let index = 1; index < coordinates.length; index += 1) {
+        const start = coordinates[index - 1];
+        const finish = coordinates[index];
+        const segmentDistance = getDistanceMeters(
+            { longitude: start[0], latitude: start[1] },
+            { longitude: finish[0], latitude: finish[1] },
+        );
+
+        if (progress + segmentDistance >= target) {
+            const ratio = segmentDistance > 0 ? Math.max(0, Math.min(1, (target - progress) / segmentDistance)) : 0;
+
+            return [
+                Number(start[0]) + ((Number(finish[0]) - Number(start[0])) * ratio),
+                Number(start[1]) + ((Number(finish[1]) - Number(start[1])) * ratio),
+            ];
+        }
+
+        progress += segmentDistance;
+    }
+
+    return coordinates.at(-1) ?? null;
 }
 
 export function startRouteNavigation(route) {

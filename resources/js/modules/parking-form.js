@@ -12,7 +12,7 @@ import {
     updateParkingSpot,
     uploadParkingPhoto,
 } from './parking-api';
-import { addParkingSpotToMap, buildRouteToSpot, clearActiveRoute, clearPendingSelection, focusNavigationPosition, focusSpot, focusSpots, focusUserLocation, renderSpeedCameras, replaceParkingSpotsOnMap, restoreActiveRoute, setMapPickingMode, startRouteNavigation, updateActiveRouteProgress } from './map';
+import { addParkingSpotToMap, buildRouteToSpot, clearActiveRoute, clearPendingSelection, clearRouteManeuverHint, focusNavigationPosition, focusSpot, focusSpots, focusUserLocation, renderSpeedCameras, replaceParkingSpotsOnMap, restoreActiveRoute, setMapPickingMode, startRouteNavigation, updateActiveRouteProgress, updateRouteManeuverHint } from './map';
 import { getCompassEventPriority, getHeadingDifference, getRouteSnappedNavigationLocation, normalizeCompassHeading, pickUpcomingSpeedCamera, shouldFollowNavigationPosition, shouldFollowUserLocation, shouldRecenterNavigationFromLocate, smoothCompassHeading } from './navigation-logic';
 
 const STATUS_LABELS = {
@@ -1413,7 +1413,18 @@ export function initParkingUi() {
         setText('[data-navigation-drive-note]', isFollowing ? `прибытие ${arrival}` : 'к началу маршрута');
 
         const arrow = document.querySelector('.navigation-guidance__arrow');
-        if (arrow) arrow.innerHTML = getManeuverIconSvg(instruction);
+        const maneuverIconSvg = getManeuverIconSvg(instruction);
+        if (arrow) arrow.innerHTML = maneuverIconSvg;
+
+        if (instruction && document.body.classList.contains('is-navigation-following')) {
+            updateRouteManeuverHint(instruction, state.navigationRoute, {
+                iconSvg: maneuverIconSvg,
+                distanceText: Number.isFinite(maneuverDistance) ? formatDistance(maneuverDistance) : '',
+                text: formatNavigationInstructionText(instruction.text || ''),
+            });
+        } else {
+            clearRouteManeuverHint();
+        }
 
         updateNavigationCompass();
         document.querySelector('.navigation-speedometer')?.classList.toggle('is-speeding', isSpeeding);
@@ -1524,6 +1535,7 @@ export function initParkingUi() {
         document.querySelector('.navigation-speed-hud')?.remove();
         document.querySelector('.navigation-camera-alert')?.remove();
         document.querySelector('.navigation-recenter')?.remove();
+        clearRouteManeuverHint();
         state.speedCameras = [];
         renderSpeedCameras([]);
         state.navigationSpot = null;
@@ -1739,10 +1751,7 @@ export function initParkingUi() {
     }
 
     function getNavigationMarkerHeading(previousHeading = null) {
-        if (
-            document.body.classList.contains('is-navigation-following')
-            && !document.body.classList.contains('is-navigation-detached')
-        ) {
+        if (document.body.classList.contains('is-navigation-mode')) {
             return 0;
         }
 

@@ -108,6 +108,14 @@ test('GPS cursor heading does not fall back to GPS course', () => {
     assert.doesNotMatch(applyNavigationLocationCoords, /getNavigationHeading\(gpsHeading\)/);
 });
 
+test('navigation GPS cursor is locked to route-forward heading', () => {
+    const formSource = readFileSync(new URL('../../resources/js/modules/parking-form.js', import.meta.url), 'utf8');
+    const getNavigationMarkerHeading = formSource.match(/function getNavigationMarkerHeading[\s\S]*?\n    \}/)?.[0] ?? '';
+
+    assert.match(getNavigationMarkerHeading, /is-navigation-mode/);
+    assert.match(getNavigationMarkerHeading, /return 0/);
+});
+
 test('navigation position is snapped to route before rendering', () => {
     const formSource = readFileSync(new URL('../../resources/js/modules/parking-form.js', import.meta.url), 'utf8');
     const applyNavigationLocationCoords = formSource.match(/function applyNavigationLocationCoords[\s\S]*?saveNavigationState\(\);/)?.[0] ?? '';
@@ -144,6 +152,16 @@ test('speed camera rendering filters invalid coordinates before MapLibre receive
     assert.match(renderSpeedCameras, /Number\.isFinite\(longitude\)/);
     assert.match(renderSpeedCameras, /Number\.isFinite\(latitude\)/);
     assert.match(renderSpeedCameras, /features,/);
+});
+
+test('nearest maneuver hint is rendered on the map', () => {
+    const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
+    const formSource = readFileSync(new URL('../../resources/js/modules/parking-form.js', import.meta.url), 'utf8');
+
+    assert.match(mapSource, /export function updateRouteManeuverHint/);
+    assert.match(mapSource, /new maplibregl\.Marker/);
+    assert.match(mapSource, /getRouteCoordinateAtProgress/);
+    assert.match(formSource, /updateRouteManeuverHint\(instruction, state\.navigationRoute/);
 });
 
 test('passed speed camera is skipped instead of sticking at zero meters', () => {
