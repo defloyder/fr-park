@@ -1061,12 +1061,13 @@ function createFormulaCarSvg(bodyColor, accentColor, wingColor, label) {
     return `
 <svg xmlns="http://www.w3.org/2000/svg" width="54" height="54" viewBox="0 0 54 54">
   <defs><filter id="shadow" x="-35%" y="-35%" width="170%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="4" flood-color="#061018" flood-opacity="0.34"/></filter></defs>
-  <g filter="url(#shadow)" transform="rotate(-90 27 27)">
-    <path fill="${wingColor}" d="M7 18h10v18H7c-3 0-5-2-5-5v-8c0-3 2-5 5-5Zm30 0h10c3 0 5 2 5 5v8c0 3-2 5-5 5H37V18Z"/>
-    <path fill="${bodyColor}" stroke="#fff" stroke-width="2" d="M12 27c0-10 7-17 15-17s15 7 15 17-7 17-15 17-15-7-15-17Z"/>
-    <path fill="${accentColor}" d="M18 27c0-6 4-11 9-11s9 5 9 11-4 11-9 11-9-5-9-11Z"/>
-    <circle cx="27" cy="27" r="5" fill="#08111F"/>
-    <text x="27" y="30.5" text-anchor="middle" fill="#fff" font-family="Inter, Arial, sans-serif" font-size="9" font-weight="900">${label}</text>
+  <g filter="url(#shadow)">
+    <path fill="${wingColor}" stroke="#fff" stroke-width="1.4" d="M12 8h30v7H12zM9 39h36v7H9z"/>
+    <path fill="#111827" d="M14 12h7v7h-7zM33 12h7v7h-7zM13 35h8v9h-8zM33 35h8v9h-8z"/>
+    <path fill="${bodyColor}" stroke="#fff" stroke-width="2" d="M27 5c6 6 9 14 9 25 0 10-4 18-9 21-5-3-9-11-9-21 0-11 3-19 9-25Z"/>
+    <path fill="${accentColor}" d="M27 12c3 4 5 10 5 18 0 6-2 11-5 14-3-3-5-8-5-14 0-8 2-14 5-18Z"/>
+    <path fill="#061018" d="M27 20c2 0 4 3 4 7s-2 7-4 7-4-3-4-7 2-7 4-7Z"/>
+    <text x="27" y="30.5" text-anchor="middle" fill="#fff" font-family="Inter, Arial, sans-serif" font-size="8.5" font-weight="900">${label}</text>
   </g>
 </svg>`;
 }
@@ -1084,10 +1085,12 @@ function createHelicopterSvg() {
     return `
 <svg xmlns="http://www.w3.org/2000/svg" width="54" height="54" viewBox="0 0 54 54">
   <defs><filter id="shadow" x="-35%" y="-35%" width="170%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="4" flood-color="#061018" flood-opacity="0.34"/></filter></defs>
-  <g filter="url(#shadow)" transform="rotate(-90 27 27)">
-    <path fill="#14B8A6" stroke="#fff" stroke-width="2" d="M17 20h18c6 0 10 4 10 8s-4 8-10 8H17c-5 0-8-3-8-8s3-8 8-8Z"/>
-    <path fill="#0F172A" d="M18 24h13c3 0 5 2 5 4s-2 4-5 4H18c-3 0-5-2-5-4s2-4 5-4Z"/>
-    <path stroke="#E0F2FE" stroke-width="3" stroke-linecap="round" d="M27 15V7M12 7h30M43 28h7M5 40h20M15 36v8"/>
+  <g filter="url(#shadow)">
+    <path stroke="#E0F2FE" stroke-width="3" stroke-linecap="round" d="M10 9h34M27 9v10M7 43h18M16 38v10"/>
+    <path fill="#14B8A6" stroke="#fff" stroke-width="2" d="M15 21h21c6 0 10 4 10 9s-4 9-10 9H15c-5 0-8-4-8-9s3-9 8-9Z"/>
+    <path fill="#0F172A" d="M17 25h13c3 0 6 2 6 5s-3 5-6 5H17c-3 0-5-2-5-5s2-5 5-5Z"/>
+    <path stroke="#0F172A" stroke-width="3" stroke-linecap="round" d="M45 30h6"/>
+    <circle cx="49" cy="30" r="3" fill="#E0F2FE"/>
   </g>
 </svg>`;
 }

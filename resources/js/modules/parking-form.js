@@ -1154,8 +1154,7 @@ export function initParkingUi() {
             startDeviceHeadingWatch();
             button?.setAttribute('disabled', 'disabled');
             if (summary) summary.textContent = 'Строю маршрут от вашего местоположения...';
-            const location = await ensureUserLocation({ refresh: true, focus: false, fastFallback: false });
-            assertRouteLocation(location, state.selectedSpot);
+            const location = await ensureRouteStartLocation();
             const route = await buildRouteToSpot(location, state.selectedSpot);
             const trafficNote = getRouteBuildNote(route);
 
@@ -1170,10 +1169,22 @@ export function initParkingUi() {
             enterNavigationMode(state.selectedSpot, route);
             showToast(`Маршрут: ${formatDuration(route.durationSeconds)}, ${formatDistance(route.distanceMeters)}.`);
         } catch {
-            if (summary) summary.textContent = 'Не удалось построить маршрут. Проверьте геолокацию и интернет.';
-            showToast('Не удалось построить маршрут. Проверьте доступ к геолокации.', true);
+            if (summary) summary.textContent = 'Не удалось построить маршрут. Попробуйте ещё раз или обновите карту.';
+            showToast('Не удалось построить маршрут. Попробуйте ещё раз.', true);
         } finally {
             button?.removeAttribute('disabled');
+        }
+    }
+
+    async function ensureRouteStartLocation() {
+        try {
+            return await ensureUserLocation({ refresh: true, focus: false, fastFallback: true });
+        } catch (error) {
+            if (state.userLocation) {
+                return state.userLocation;
+            }
+
+            throw error;
         }
     }
 
@@ -1207,18 +1218,6 @@ export function initParkingUi() {
         focusNavigationPosition(state.userLocation, state.navigationRoute);
         document.body.classList.remove('is-navigation-detached');
         saveNavigationState();
-    }
-
-    function assertRouteLocation(location, spot) {
-        const accuracy = Number(location?.accuracy) || 0;
-        const distance = getDistanceMeters(
-            { latitude: Number(location.latitude), longitude: Number(location.longitude) },
-            { latitude: Number(spot.latitude), longitude: Number(spot.longitude) },
-        );
-
-        if (accuracy > 25000 && distance > 100000) {
-            throw new Error('Location is too inaccurate for navigation.');
-        }
     }
 
     function enterNavigationMode(spot, route) {

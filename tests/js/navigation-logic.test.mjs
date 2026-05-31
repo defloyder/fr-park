@@ -199,6 +199,17 @@ test('map settings expose selectable GPS cursor icons', () => {
     assert.match(mapSource, /createBuranSvg/);
     assert.match(mapSource, /iconImage: getUserLocationIconImage/);
     assert.match(cssSource, /\.map-settings__grid/);
+    assert.match(cssSource, /top: calc\(100% \+ 10px\)/);
+    assert.match(cssSource, /max-height: calc\(100svh - 150px\)/);
+});
+
+test('in-app route build falls back to last known location instead of rejecting inaccurate GPS', () => {
+    const formSource = readFileSync(new URL('../../resources/js/modules/parking-form.js', import.meta.url), 'utf8');
+    const buildInAppRoute = formSource.match(/async function buildInAppRoute[\s\S]*?finally/)?.[0] ?? '';
+
+    assert.match(buildInAppRoute, /ensureRouteStartLocation\(\)/);
+    assert.doesNotMatch(formSource, /function assertRouteLocation|Location is too inaccurate/);
+    assert.match(formSource, /if \(state\.userLocation\) \{\s*return state\.userLocation;/);
 });
 
 test('passed speed camera is skipped instead of sticking at zero meters', () => {
