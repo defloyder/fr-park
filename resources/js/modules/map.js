@@ -693,7 +693,9 @@ function setBaseMapLayer(layerId = DEFAULT_BASE_LAYER_ID, { persist = false } = 
         const mapLayerId = `basemap-${id}`;
 
         if (map?.getLayer(mapLayerId)) {
-            map.setLayoutProperty(mapLayerId, 'visibility', id === layerId ? 'visible' : 'none');
+            try {
+                map.setLayoutProperty(mapLayerId, 'visibility', id === layerId ? 'visible' : 'none');
+            } catch {}
         }
     });
     updateVectorRoadLayerTheme(layerId);
@@ -790,7 +792,9 @@ function updateVectorRoadLayerTheme(layerId) {
         if (!map.getLayer(layerIdToUpdate)) return;
 
         Object.entries(properties).forEach(([property, value]) => {
-            map.setPaintProperty(layerIdToUpdate, property, value);
+            try {
+                map.setPaintProperty(layerIdToUpdate, property, value);
+            } catch {}
         });
     });
 }
@@ -950,7 +954,18 @@ function bindMapSettings() {
             if (renderedUserLocation) {
                 renderUserLocationFeature(renderedUserLocation);
             }
+            settings.classList.remove('is-open');
+            trigger.setAttribute('aria-expanded', 'false');
         });
+    });
+
+    document.addEventListener('click', (event) => {
+        if (settings.contains(event.target)) {
+            return;
+        }
+
+        settings.classList.remove('is-open');
+        trigger.setAttribute('aria-expanded', 'false');
     });
 }
 
@@ -1075,9 +1090,12 @@ function createFormulaCarSvg(bodyColor, accentColor, wingColor, label) {
 function createPlaneSvg() {
     return `
 <svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 52 52">
-  <defs><linearGradient id="plane" x1="9" y1="43" x2="43" y2="9"><stop stop-color="#38BDF8"/><stop offset="1" stop-color="#E0F2FE"/></linearGradient><filter id="shadow" x="-35%" y="-35%" width="170%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="4" flood-color="#061018" flood-opacity="0.34"/></filter></defs>
-  <path filter="url(#shadow)" fill="url(#plane)" stroke="#fff" stroke-width="2.2" d="M26 3 43 46 26 36 9 46 26 3Z"/>
-  <path fill="#0F172A" opacity=".82" d="M26 15 33 35 26 31 19 35 26 15Z"/>
+  <defs><linearGradient id="plane" x1="10" y1="46" x2="42" y2="6"><stop stop-color="#0EA5E9"/><stop offset=".48" stop-color="#E0F2FE"/><stop offset="1" stop-color="#FFFFFF"/></linearGradient><filter id="shadow" x="-35%" y="-35%" width="170%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="4" flood-color="#061018" flood-opacity="0.34"/></filter></defs>
+  <g filter="url(#shadow)">
+    <path fill="url(#plane)" stroke="#fff" stroke-width="2" d="M26 3c3 5 5 12 5 21l17 12c1 1 1 4-1 5l-16-5-1 8 5 4-2 3-7-3-7 3-2-3 5-4-1-8-16 5c-2-1-2-4-1-5l17-12c0-9 2-16 5-21Z"/>
+    <path fill="#0F172A" opacity=".72" d="M26 12c2 4 3 8 3 13l-3 3-3-3c0-5 1-9 3-13Z"/>
+    <path fill="#38BDF8" d="M23 35h6l-1 7h-4l-1-7Z"/>
+  </g>
 </svg>`;
 }
 
@@ -1098,10 +1116,14 @@ function createHelicopterSvg() {
 function createBuranSvg() {
     return `
 <svg xmlns="http://www.w3.org/2000/svg" width="54" height="54" viewBox="0 0 54 54">
-  <defs><linearGradient id="buran" x1="11" y1="43" x2="43" y2="9"><stop stop-color="#CBD5E1"/><stop offset="1" stop-color="#FFFFFF"/></linearGradient><filter id="shadow" x="-35%" y="-35%" width="170%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="4" flood-color="#061018" flood-opacity="0.34"/></filter></defs>
-  <path filter="url(#shadow)" fill="url(#buran)" stroke="#fff" stroke-width="2" d="M27 3 39 34 50 47 33 41 27 51 21 41 4 47 15 34 27 3Z"/>
-  <path fill="#111827" opacity=".82" d="M27 14 32 31 27 27 22 31 27 14Z"/>
-  <path fill="#EF4444" d="M23 38h8l-4 7-4-7Z"/>
+  <defs><linearGradient id="buran" x1="11" y1="45" x2="43" y2="7"><stop stop-color="#94A3B8"/><stop offset=".45" stop-color="#F8FAFC"/><stop offset="1" stop-color="#FFFFFF"/></linearGradient><filter id="shadow" x="-35%" y="-35%" width="170%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="4" flood-color="#061018" flood-opacity="0.34"/></filter></defs>
+  <g filter="url(#shadow)">
+    <path fill="url(#buran)" stroke="#fff" stroke-width="2" d="M27 3c5 6 8 14 8 25l15 16-14-4-5 10h-8l-5-10-14 4 15-16c0-11 3-19 8-25Z"/>
+    <path fill="#111827" opacity=".82" d="M27 12c3 4 4 9 4 16l-4 4-4-4c0-7 1-12 4-16Z"/>
+    <path fill="#CBD5E1" d="M19 28h16l-3 13H22l-3-13Z"/>
+    <path fill="#EF4444" d="M22 43h10l-2 5h-6l-2-5Z"/>
+    <path stroke="#2563EB" stroke-width="1.5" stroke-linecap="round" d="M19 35h16"/>
+  </g>
 </svg>`;
 }
 
@@ -1140,6 +1162,13 @@ function bindPerformanceMode() {
             window.dispatchEvent(new CustomEvent('map:manual-interaction'));
         }
     };
+    const dispatchRawManualMapInteraction = () => {
+        window.dispatchEvent(new CustomEvent('map:manual-interaction'));
+    };
+
+    map.getCanvas()?.addEventListener('wheel', dispatchRawManualMapInteraction, { passive: true });
+    map.getCanvas()?.addEventListener('touchstart', dispatchRawManualMapInteraction, { passive: true });
+    map.getCanvas()?.addEventListener('pointerdown', dispatchRawManualMapInteraction, { passive: true });
 
     map.on('movestart', (event) => {
         start();
@@ -1182,7 +1211,9 @@ function setTrafficInteractionMode(isInteracting) {
         return;
     }
 
-    map.setPaintProperty(TRAFFIC_FLOW_LAYER_ID, 'raster-opacity', isInteracting ? 0.28 : 0.70);
+    try {
+        map.setPaintProperty(TRAFFIC_FLOW_LAYER_ID, 'raster-opacity', isInteracting ? 0.28 : 0.70);
+    } catch {}
 }
 
 function addParkingSource() {

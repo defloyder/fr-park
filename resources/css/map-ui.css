@@ -124,6 +124,10 @@ textarea {
         radial-gradient(circle at center, transparent 64%, rgba(3, 4, 10, 0.07));
 }
 
+body[data-map-layer="light"] .map-screen > .map-canvas::after {
+    background: none;
+}
+
 .maplibregl-ctrl-group {
     overflow: hidden;
     background: rgba(17, 24, 39, 0.72) !important;

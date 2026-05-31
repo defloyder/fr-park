@@ -1151,6 +1151,7 @@ export function initParkingUi() {
         const button = document.querySelector('[data-action="route-in-app"]');
 
         try {
+            resetFailedRouteBuildState();
             startDeviceHeadingWatch();
             button?.setAttribute('disabled', 'disabled');
             if (summary) summary.textContent = 'Строю маршрут от вашего местоположения...';
@@ -1169,11 +1170,37 @@ export function initParkingUi() {
             enterNavigationMode(state.selectedSpot, route);
             showToast(`Маршрут: ${formatDuration(route.durationSeconds)}, ${formatDistance(route.distanceMeters)}.`);
         } catch {
+            resetFailedRouteBuildState();
             if (summary) summary.textContent = 'Не удалось построить маршрут. Попробуйте ещё раз или обновите карту.';
             showToast('Не удалось построить маршрут. Попробуйте ещё раз.', true);
         } finally {
             button?.removeAttribute('disabled');
         }
+    }
+
+    function resetFailedRouteBuildState() {
+        state.navigationSessionId += 1;
+        document.body.classList.remove('is-navigation-mode', 'is-navigation-following', 'is-navigation-detached');
+        releaseNavigationWakeLock();
+        stopNavigationLocationWatch();
+        stopNavigationLocationPolling();
+        stopNavigationRouteRefreshTimer();
+        stopNavigationMetricsTimer();
+        document.querySelector('.navigation-panel')?.remove();
+        document.querySelector('.navigation-guidance')?.remove();
+        document.querySelector('.navigation-speed-hud')?.remove();
+        document.querySelector('.navigation-camera-alert')?.remove();
+        document.querySelector('.navigation-recenter')?.remove();
+        clearRouteManeuverHint();
+        clearActiveRoute();
+        state.speedCameras = [];
+        renderSpeedCameras([]);
+        state.navigationSpot = null;
+        state.navigationRoute = null;
+        state.navigationRouteRefreshInFlight = false;
+        state.navigationLastRerouteAt = 0;
+        state.navigationPreserveZoom = false;
+        clearNavigationState();
     }
 
     async function ensureRouteStartLocation() {
