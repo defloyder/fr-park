@@ -222,7 +222,6 @@ export function initParkingUi() {
     });
 
     window.addEventListener('beforeinstallprompt', (event) => {
-        event.preventDefault();
         state.deferredInstallPrompt = event;
         renderInstallAppPanel();
     });

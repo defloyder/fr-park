@@ -66,7 +66,11 @@ class SpeedCameraService
         try {
             return $this->parseSpeedCameraPayload($this->fetchOverpassPayload($query));
         } catch (\Throwable) {
-            return $this->parseSpeedCameraPayload($this->fetchOverpassPayload($fallbackQuery));
+            try {
+                return $this->parseSpeedCameraPayload($this->fetchOverpassPayload($fallbackQuery));
+            } catch (\Throwable) {
+                return [];
+            }
         }
     }
 

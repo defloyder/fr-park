@@ -13,6 +13,7 @@ let isPickingMode = false;
 let isTrafficSuppressedByRoute = false;
 let isTrafficForcedVisibleByUser = false;
 let routeManeuverMarker = null;
+let routeManeuverCoordinate = null;
 
 const MOSCOW_CENTER = [37.6173, 55.7558];
 const MAP_CONTAINER_ID = 'parking-map';
@@ -47,9 +48,9 @@ const ROUTE_CACHE_STORAGE_KEY = 'auralith:last-driving-route';
 const TRAFFIC_LAYER_STORAGE_KEY = 'auralith:traffic-enabled';
 const USER_LOCATION_ICON_STORAGE_KEY = 'auralith:user-location-icon';
 const USER_LOCATION_ICON_PREFIX = 'user-location-';
-const FOLLOW_ZOOM = 16.15;
-const FOLLOW_PITCH = 58;
-const FOLLOW_SCREEN_OFFSET_RATIO = 0.24;
+const FOLLOW_ZOOM = 17;
+const FOLLOW_PITCH = 62;
+const FOLLOW_SCREEN_OFFSET_RATIO = 0.32;
 
 const MAP_STYLE = {
     version: 8,
@@ -626,8 +627,8 @@ export function renderSpeedCameras(cameras = []) {
                 type: 'Feature',
                 properties: {
                     id: String(camera.id ?? `${longitude}:${latitude}`),
-                    title: camera.title ?? 'РљР°РјРµСЂР°',
-                    label: camera.label ?? 'РљР°РјРµСЂР°',
+                    title: camera.title ?? 'Камера',
+                    label: camera.label ?? 'Камера',
                     bearing: Number.isFinite(bearing) ? bearing : 0,
                     isDummy: Boolean(camera.isDummy),
                 },
@@ -1591,6 +1592,10 @@ export function focusUserLocation({ latitude, longitude, accuracy = 0, heading =
         updatedAt: performance.now(),
     };
 
+    if (!Number.isFinite(nextLocation.latitude) || !Number.isFinite(nextLocation.longitude)) {
+        return;
+    }
+
     if (!renderedUserLocation || renderedUserLocation.headingMode !== nextLocation.headingMode) {
         renderedUserLocation = { ...nextLocation };
         targetUserLocation = { ...nextLocation };
@@ -1949,11 +1954,20 @@ export function updateActiveRouteProgress(userLocation, route) {
         return;
     }
 
-    const closestIndex = findClosestRouteCoordinateIndex(
-        [Number(userLocation.longitude), Number(userLocation.latitude)],
-        routeCoordinates,
-    );
-    const remainingCoordinates = routeCoordinates.slice(Math.max(0, closestIndex));
+    const projection = getClosestRouteProjection(routeCoordinates, userLocation);
+    const closestIndex = projection
+        ? getRouteCoordinateIndexAtProgress(routeCoordinates, projection.progressMeters)
+        : findClosestRouteCoordinateIndex(
+            [Number(userLocation.longitude), Number(userLocation.latitude)],
+            routeCoordinates,
+        );
+    const projectedCoordinate = projection
+        ? [Number(projection.longitude), Number(projection.latitude)]
+        : null;
+    const remainingCoordinates = [
+        ...(projectedCoordinate ? [projectedCoordinate] : []),
+        ...routeCoordinates.slice(Math.max(0, closestIndex + (projectedCoordinate ? 1 : 0))),
+    ];
 
     if (remainingCoordinates.length < 2) {
         clearActiveRoute();
@@ -1986,10 +2000,12 @@ export function updateRouteManeuverHint(instruction, route, hint = {}) {
         scanMeters: Math.max(45, Math.min(220, instructionDistanceMeters || 90)),
     });
 
-    if (!coordinate) {
+    if (!coordinate || !Number.isFinite(Number(coordinate[0])) || !Number.isFinite(Number(coordinate[1]))) {
         clearRouteManeuverHint();
         return;
     }
+
+    routeManeuverCoordinate = [Number(coordinate[0]), Number(coordinate[1])];
 
     if (!routeManeuverMarker) {
         const element = document.createElement('div');
@@ -2004,8 +2020,10 @@ export function updateRouteManeuverHint(instruction, route, hint = {}) {
         routeManeuverMarker = new maplibregl.Marker({
             element,
             anchor: 'bottom',
-            offset: [0, -18],
-        }).setLngLat(coordinate).addTo(map);
+            offset: [0, -24],
+            pitchAlignment: 'map',
+            rotationAlignment: 'viewport',
+        }).setLngLat(routeManeuverCoordinate).addTo(map);
     }
 
     const element = routeManeuverMarker.getElement();
@@ -2018,7 +2036,7 @@ export function updateRouteManeuverHint(instruction, route, hint = {}) {
     if (text) text.textContent = hint.text ?? '';
 
     try {
-        routeManeuverMarker.setLngLat(coordinate);
+        routeManeuverMarker.setLngLat(routeManeuverCoordinate);
     } catch {
         clearRouteManeuverHint();
     }
@@ -2027,6 +2045,7 @@ export function updateRouteManeuverHint(instruction, route, hint = {}) {
 export function clearRouteManeuverHint() {
     routeManeuverMarker?.remove();
     routeManeuverMarker = null;
+    routeManeuverCoordinate = null;
 }
 
 function trimRouteSegments(segments, closestIndex) {
@@ -2080,6 +2099,32 @@ function getRouteCoordinateAtProgress(coordinates, targetProgressMeters) {
     }
 
     return routeCoordinates.at(-1) ?? null;
+}
+
+function getRouteCoordinateIndexAtProgress(coordinates, targetProgressMeters) {
+    const target = Number(targetProgressMeters);
+    const routeCoordinates = sanitizeLineCoordinates(coordinates);
+
+    if (!Number.isFinite(target) || target <= 0 || routeCoordinates.length < 2) {
+        return 0;
+    }
+
+    let progress = 0;
+
+    for (let index = 1; index < routeCoordinates.length; index += 1) {
+        const start = routeCoordinates[index - 1];
+        const finish = routeCoordinates[index];
+        progress += getDistanceMeters(
+            { longitude: start[0], latitude: start[1] },
+            { longitude: finish[0], latitude: finish[1] },
+        );
+
+        if (progress >= target) {
+            return index - 1;
+        }
+    }
+
+    return Math.max(0, routeCoordinates.length - 2);
 }
 
 function getRouteManeuverCoordinate(coordinates, targetProgressMeters, { scanMeters = 120 } = {}) {
