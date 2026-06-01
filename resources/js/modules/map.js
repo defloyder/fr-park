@@ -48,9 +48,9 @@ const ROUTE_CACHE_STORAGE_KEY = 'auralith:last-driving-route';
 const TRAFFIC_LAYER_STORAGE_KEY = 'auralith:traffic-enabled';
 const USER_LOCATION_ICON_STORAGE_KEY = 'auralith:user-location-icon';
 const USER_LOCATION_ICON_PREFIX = 'user-location-';
-const FOLLOW_ZOOM = 17;
-const FOLLOW_PITCH = 62;
-const FOLLOW_SCREEN_OFFSET_RATIO = 0.27;
+const FOLLOW_ZOOM = 16.25;
+const FOLLOW_PITCH = 56;
+const FOLLOW_SCREEN_OFFSET_RATIO = 0.16;
 
 const MAP_STYLE = {
     version: 8,
@@ -1462,9 +1462,10 @@ function addRouteSourceAndLayer() {
             'line-join': 'round',
         },
         paint: {
-            'line-color': 'rgba(8, 17, 31, 0.62)',
-            'line-width': ['interpolate', ['linear'], ['zoom'], 11, 12, 16, 22],
-            'line-opacity': 0.68,
+            'line-color': 'rgba(0, 195, 255, 0.86)',
+            'line-width': ['interpolate', ['linear'], ['zoom'], 11, 13, 16, 24],
+            'line-blur': ['interpolate', ['linear'], ['zoom'], 11, 2.4, 16, 4.2],
+            'line-opacity': 0.72,
         },
     }, 'spots-pin');
 
@@ -1477,9 +1478,9 @@ function addRouteSourceAndLayer() {
             'line-join': 'round',
         },
         paint: {
-            'line-color': '#22C55E',
-            'line-width': ['interpolate', ['linear'], ['zoom'], 11, 8, 16, 15],
-            'line-opacity': 0.72,
+            'line-color': '#20F4FF',
+            'line-width': ['interpolate', ['linear'], ['zoom'], 11, 7, 16, 13],
+            'line-opacity': 0.92,
         },
     }, 'spots-pin');
 }
@@ -1793,10 +1794,10 @@ export async function buildRouteToSpot(userLocation, spot, { camera = 'overview'
             '#FF7A1A',
             'slow',
             '#FFD84D',
-            '#22C55E',
+            '#20F4FF',
         ]);
     } else {
-        safeSetRouteLineColor('#22C55E');
+        safeSetRouteLineColor('#20F4FF');
     }
     keepNavigationLayersOrdered();
 
@@ -2339,10 +2340,10 @@ function getNavigationCameraBearing(userLocation, routeCoordinates, routeProject
     }
 
     if (routeCoordinates.length > 1) {
-        const nextIndex = Math.min(findClosestRouteCoordinateIndex(current, routeCoordinates) + 1, routeCoordinates.length - 1);
+        const nextIndex = Math.min(findClosestRouteCoordinateIndex(projectedCurrent, routeCoordinates) + 1, routeCoordinates.length - 1);
         const next = routeCoordinates[nextIndex];
 
-        return next ? getBearing(current, next) : null;
+        return next ? getBearing(projectedCurrent, next) : null;
     }
 
     return null;
