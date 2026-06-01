@@ -50,9 +50,7 @@ const USER_LOCATION_ICON_STORAGE_KEY = 'auralith:user-location-icon';
 const USER_LOCATION_ICON_PREFIX = 'user-location-';
 const FOLLOW_ZOOM = 16.65;
 const FOLLOW_PITCH = 58;
-const FOLLOW_SCREEN_OFFSET_RATIO = 0.32;
-const FOLLOW_CENTER_LOOKAHEAD_METERS = 120;
-const FOLLOW_BEARING_LOOKAHEAD_METERS = 220;
+const FOLLOW_SCREEN_OFFSET_RATIO = 0.34;
 const ROUTE_TRAFFIC_LINE_COLOR = [
     'match',
     ['get', 'traffic'],
@@ -2059,7 +2057,7 @@ export function updateActiveRouteProgress(userLocation, route) {
             ...route.geometry,
             coordinates: remainingCoordinates,
         },
-        segments: trimRouteSegments(route.segments ?? [], closestIndex),
+        segments: [],
     }));
     safeSetRouteLineColor(ROUTE_TRAFFIC_LINE_COLOR);
 }
@@ -2279,18 +2277,15 @@ export function focusNavigationPosition(userLocation, route = null, { preserveZo
         ? routeAnchor.coordinate
         : [Number(userLocation.longitude), Number(userLocation.latitude)];
     const progress = Number(routeAnchor?.progressMeters);
-    const cameraCenter = Number.isFinite(progress)
-        ? (getRouteCoordinateAtProgress(routeCoordinates, progress + FOLLOW_CENTER_LOOKAHEAD_METERS) ?? current)
-        : current;
     const bearingTarget = Number.isFinite(progress)
-        ? getRouteCoordinateAtProgress(routeCoordinates, progress + FOLLOW_BEARING_LOOKAHEAD_METERS)
+        ? getRouteCoordinateAtProgress(routeCoordinates, progress + 85)
         : null;
     const cameraBearing = bearingTarget
         ? getBearing(current, bearingTarget)
         : (routeAnchor?.bearing ?? getNavigationCameraBearing(userLocation, routeCoordinates));
 
     safeEaseTo({
-        center: cameraCenter,
+        center: current,
         zoom: preserveZoom ? map.getZoom() : FOLLOW_ZOOM,
         pitch: FOLLOW_PITCH,
         bearing: Number.isFinite(Number(bearing))

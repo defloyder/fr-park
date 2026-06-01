@@ -6743,3 +6743,116 @@ body[data-map-layer="satellite"] .route-picker__close {
         padding: 13px 12px 13px 18px !important;
     }
 }
+
+/* Navigation cockpit corrections */
+body.is-navigation-mode .top-panel {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: min(340px, calc(100vw - 112px)) !important;
+    min-height: 44px !important;
+    padding: 8px 16px !important;
+    color: #07111f !important;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(235, 244, 250, 0.90)) !important;
+    border: 1px solid rgba(255, 255, 255, 0.78) !important;
+    border-radius: 0 0 22px 22px !important;
+    box-shadow: 0 18px 42px rgba(2, 8, 25, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+}
+
+body.is-navigation-mode .top-panel .brand-lockup--map {
+    width: 100% !important;
+}
+
+body.is-navigation-mode .top-panel .brand-mark--maps,
+body.is-navigation-mode .top-panel .brand-mark--maps img {
+    height: 24px !important;
+    filter: none !important;
+}
+
+body[data-map-layer="dark"] .spot-card,
+body[data-map-layer="dark"] .spot-list,
+body[data-map-layer="dark"] .search-panel,
+body[data-map-layer="dark"] .profile-panel,
+body[data-map-layer="dark"] .bottom-sheet,
+body[data-map-layer="dark"] .pick-panel,
+body[data-map-layer="dark"] .status-panel,
+body[data-map-layer="dark"] .route-picker,
+body[data-map-layer="dark"] .map-settings__panel,
+body[data-map-layer="dark"] .layer-switcher__panel,
+body[data-map-layer="satellite"] .spot-card,
+body[data-map-layer="satellite"] .spot-list,
+body[data-map-layer="satellite"] .search-panel,
+body[data-map-layer="satellite"] .profile-panel,
+body[data-map-layer="satellite"] .bottom-sheet,
+body[data-map-layer="satellite"] .pick-panel,
+body[data-map-layer="satellite"] .status-panel,
+body[data-map-layer="satellite"] .route-picker,
+body[data-map-layer="satellite"] .map-settings__panel,
+body[data-map-layer="satellite"] .layer-switcher__panel {
+    color: #07111f !important;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(231, 242, 248, 0.88)) !important;
+    border-color: rgba(255, 255, 255, 0.70) !important;
+    box-shadow: 0 24px 64px rgba(2, 8, 25, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.86) !important;
+}
+
+.navigation-guidance {
+    grid-template-columns: 48px minmax(120px, 1fr) 74px !important;
+    min-width: min(360px, calc(100vw - 146px)) !important;
+    max-width: min(430px, calc(100vw - 146px)) !important;
+}
+
+.navigation-guidance span[data-navigation-instruction] {
+    display: block !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    color: rgba(15, 23, 42, 0.68) !important;
+    font-size: 0.82rem !important;
+    font-weight: 800 !important;
+    line-height: 1.12 !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+.navigation-compass {
+    color: #07111f !important;
+}
+
+.navigation-compass__dial i {
+    transform: rotate(var(--heading, 0deg)) !important;
+}
+
+.route-maneuver-hint {
+    color: #07111f !important;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(229, 242, 248, 0.90)) !important;
+    border: 1px solid rgba(255, 255, 255, 0.72) !important;
+    box-shadow: 0 18px 42px rgba(2, 8, 25, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.86) !important;
+}
+
+.route-maneuver-hint::after {
+    background: rgba(238, 247, 252, 0.94) !important;
+    border-color: rgba(255, 255, 255, 0.72) !important;
+}
+
+.route-maneuver-hint__copy span {
+    display: block !important;
+    color: rgba(15, 23, 42, 0.62) !important;
+}
+
+@media (max-width: 520px) {
+    body.is-navigation-mode .top-panel {
+        width: min(300px, calc(100vw - 112px)) !important;
+        min-height: 40px !important;
+        padding: 7px 12px !important;
+        border-radius: 0 0 18px 18px !important;
+    }
+
+    .navigation-guidance {
+        grid-template-columns: 42px minmax(76px, 1fr) 56px !important;
+        min-width: min(250px, calc(100vw - 144px)) !important;
+        max-width: calc(100vw - 144px) !important;
+    }
+
+    .navigation-guidance span[data-navigation-instruction] {
+        font-size: 0.72rem !important;
+    }
+}
