@@ -48,10 +48,11 @@ const ROUTE_CACHE_STORAGE_KEY = 'auralith:last-driving-route';
 const TRAFFIC_LAYER_STORAGE_KEY = 'auralith:traffic-enabled';
 const USER_LOCATION_ICON_STORAGE_KEY = 'auralith:user-location-icon';
 const USER_LOCATION_ICON_PREFIX = 'user-location-';
-const FOLLOW_ZOOM = 16.05;
-const FOLLOW_PITCH = 52;
-const FOLLOW_SCREEN_OFFSET_RATIO = 0.22;
-const FOLLOW_BEARING_LOOKAHEAD_METERS = 180;
+const FOLLOW_ZOOM = 16.65;
+const FOLLOW_PITCH = 58;
+const FOLLOW_SCREEN_OFFSET_RATIO = 0.32;
+const FOLLOW_CENTER_LOOKAHEAD_METERS = 120;
+const FOLLOW_BEARING_LOOKAHEAD_METERS = 220;
 const ROUTE_TRAFFIC_LINE_COLOR = [
     'match',
     ['get', 'traffic'],
@@ -2099,8 +2100,8 @@ export function updateRouteManeuverHint(instruction, route, hint = {}) {
         routeManeuverMarker = new maplibregl.Marker({
             element,
             anchor: 'bottom',
-            offset: [0, -6],
-            pitchAlignment: 'map',
+            offset: [0, -10],
+            pitchAlignment: 'viewport',
             rotationAlignment: 'viewport',
         }).setLngLat(coordinate).addTo(map);
     }
@@ -2279,7 +2280,7 @@ export function focusNavigationPosition(userLocation, route = null, { preserveZo
         : [Number(userLocation.longitude), Number(userLocation.latitude)];
     const progress = Number(routeAnchor?.progressMeters);
     const cameraCenter = Number.isFinite(progress)
-        ? (getRouteCoordinateAtProgress(routeCoordinates, progress + 85) ?? current)
+        ? (getRouteCoordinateAtProgress(routeCoordinates, progress + FOLLOW_CENTER_LOOKAHEAD_METERS) ?? current)
         : current;
     const bearingTarget = Number.isFinite(progress)
         ? getRouteCoordinateAtProgress(routeCoordinates, progress + FOLLOW_BEARING_LOOKAHEAD_METERS)
@@ -2297,9 +2298,17 @@ export function focusNavigationPosition(userLocation, route = null, { preserveZo
             : (Number.isFinite(cameraBearing) ? cameraBearing : map.getBearing()),
         padding: { top: 0, right: 0, bottom: 0, left: 0 },
         retainPadding: false,
-        offset: [0, Math.round(window.innerHeight * FOLLOW_SCREEN_OFFSET_RATIO)],
+        offset: [0, Math.round(window.innerHeight * getNavigationScreenOffsetRatio())],
         duration,
     });
+}
+
+function getNavigationScreenOffsetRatio() {
+    if (window.innerWidth >= 900) {
+        return 0.24;
+    }
+
+    return FOLLOW_SCREEN_OFFSET_RATIO;
 }
 
 function getNavigationRouteAnchor(userLocation, routeCoordinates) {
@@ -2496,7 +2505,7 @@ function focusRouteStart(coordinates) {
         zoom: FOLLOW_ZOOM,
         pitch: FOLLOW_PITCH,
         bearing: next ? getBearing(start, next) : map.getBearing(),
-        offset: [0, Math.round(window.innerHeight * 0.18)],
+        offset: [0, Math.round(window.innerHeight * getNavigationScreenOffsetRatio())],
         duration: 420,
     });
 }

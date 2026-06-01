@@ -13,13 +13,9 @@
         </div>
 
         @unless($isEmbed)
-        <header class="top-panel liquid-glass">
-            <div class="brand-lockup brand-lockup--map">
+        <header class="top-panel liquid-glass" aria-label="Auralith Maps">
+            <div class="brand-lockup brand-lockup--map brand-lockup--image-only">
                 <x-brand-logo />
-                <div>
-                    <span class="eyebrow">Карта бесплатных парковок</span>
-                    <h1>Auralith Maps</h1>
-                </div>
             </div>
         </header>
 
@@ -193,7 +189,7 @@
 
             <div id="favorite-panel" class="favorite-panel hidden">
                 <div class="favorite-panel__head">
-                    <span class="eyebrow">Saved spots</span>
+                    <span class="eyebrow">Сохраненные точки</span>
                     <button class="ghost-button" type="button" data-action="logout">Выйти</button>
                 </div>
                 <div id="favorite-list" class="favorite-list"></div>

@@ -1124,7 +1124,7 @@ export function initParkingUi() {
                 </button>
                 <button class="route-option route-option--app" type="button" data-action="route-in-app">
                     <span class="route-option__logo route-option__logo--auralith" aria-hidden="true">
-                        <img src="/images/logo_transient.png?v=20260529" alt="" loading="lazy">
+                        <img src="/assets/brand/auralith-maps-logo-dark.png?v=20260601" alt="Auralith Maps" loading="lazy">
                     </span>
                     <strong>Auralith</strong>
                     <small>показать на карте</small>
@@ -1231,7 +1231,6 @@ export function initParkingUi() {
 
         if (!state.navigationRoute) return;
 
-        startRouteNavigation(state.navigationRoute);
         document.body.classList.add('is-navigation-following');
         document.body.classList.remove('is-navigation-detached');
         state.navigationPreserveZoom = false;
@@ -1247,7 +1246,9 @@ export function initParkingUi() {
                 ...getNavigationMarkerPatch(navigationLocation, state.userLocation.heading),
             };
             updateActiveRouteProgress(state.userLocation, state.navigationRoute);
-            focusNavigationPosition(state.userLocation, state.navigationRoute, { duration: 420 });
+            focusNavigationPosition(state.userLocation, state.navigationRoute, { duration: 260 });
+        } else {
+            startRouteNavigation(state.navigationRoute);
         }
         startDeviceHeadingWatch();
         startNavigationLocationWatch();
@@ -1286,7 +1287,6 @@ export function initParkingUi() {
         document.body.classList.remove('is-navigation-detached');
         state.navigationPreserveZoom = false;
         setActiveNav('show-map');
-        startRouteNavigation(route);
         if (state.userLocation) {
             const navigationLocation = getRouteSnappedNavigationLocation(state.userLocation, route, {
                 previousLocation: state.userLocation,
@@ -1298,7 +1298,9 @@ export function initParkingUi() {
                 ...getNavigationMarkerPatch(navigationLocation, state.userLocation.heading),
             };
             updateActiveRouteProgress(state.userLocation, route);
-            focusNavigationPosition(state.userLocation, route, { duration: 420 });
+            focusNavigationPosition(state.userLocation, route, { duration: 260 });
+        } else {
+            startRouteNavigation(route);
         }
         startDeviceHeadingWatch();
         startNavigationLocationWatch();
