@@ -1,6 +1,6 @@
 import maplibregl from 'maplibre-gl';
 import { fetchDrivingRoute as fetchYandexDrivingRoute, fetchParkingSpots, reverseGeocode } from './parking-api';
-import { isManualMapInteraction } from './navigation-logic';
+import { getClosestRouteProjection, isManualMapInteraction } from './navigation-logic';
 
 let map = null;
 let spotsCache = [];
@@ -47,8 +47,9 @@ const ROUTE_CACHE_STORAGE_KEY = 'auralith:last-driving-route';
 const TRAFFIC_LAYER_STORAGE_KEY = 'auralith:traffic-enabled';
 const USER_LOCATION_ICON_STORAGE_KEY = 'auralith:user-location-icon';
 const USER_LOCATION_ICON_PREFIX = 'user-location-';
-const FOLLOW_ZOOM = 15.4;
-const FOLLOW_PITCH = 50;
+const FOLLOW_ZOOM = 16.15;
+const FOLLOW_PITCH = 58;
+const FOLLOW_SCREEN_OFFSET_RATIO = 0.24;
 
 const MAP_STYLE = {
     version: 8,
@@ -1074,15 +1075,26 @@ function createFerrariF1Svg() {
 
 function createFormulaCarSvg(bodyColor, accentColor, wingColor, label) {
     return `
-<svg xmlns="http://www.w3.org/2000/svg" width="54" height="54" viewBox="0 0 54 54">
-  <defs><filter id="shadow" x="-35%" y="-35%" width="170%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="4" flood-color="#061018" flood-opacity="0.34"/></filter></defs>
+<svg xmlns="http://www.w3.org/2000/svg" width="58" height="58" viewBox="0 0 58 58">
+  <defs>
+    <linearGradient id="f1-body-${label}" x1="16" y1="52" x2="42" y2="6" gradientUnits="userSpaceOnUse">
+      <stop stop-color="${bodyColor}"/>
+      <stop offset=".58" stop-color="${bodyColor}"/>
+      <stop offset="1" stop-color="${accentColor}"/>
+    </linearGradient>
+    <filter id="shadow" x="-35%" y="-35%" width="170%" height="170%">
+      <feDropShadow dx="0" dy="7" stdDeviation="4" flood-color="#061018" flood-opacity="0.36"/>
+    </filter>
+  </defs>
   <g filter="url(#shadow)">
-    <path fill="${wingColor}" stroke="#fff" stroke-width="1.4" d="M12 8h30v7H12zM9 39h36v7H9z"/>
-    <path fill="#111827" d="M14 12h7v7h-7zM33 12h7v7h-7zM13 35h8v9h-8zM33 35h8v9h-8z"/>
-    <path fill="${bodyColor}" stroke="#fff" stroke-width="2" d="M27 5c6 6 9 14 9 25 0 10-4 18-9 21-5-3-9-11-9-21 0-11 3-19 9-25Z"/>
-    <path fill="${accentColor}" d="M27 12c3 4 5 10 5 18 0 6-2 11-5 14-3-3-5-8-5-14 0-8 2-14 5-18Z"/>
-    <path fill="#061018" d="M27 20c2 0 4 3 4 7s-2 7-4 7-4-3-4-7 2-7 4-7Z"/>
-    <text x="27" y="30.5" text-anchor="middle" fill="#fff" font-family="Inter, Arial, sans-serif" font-size="8.5" font-weight="900">${label}</text>
+    <path fill="${wingColor}" stroke="#F8FAFC" stroke-width="1.4" d="M16 5h26l3 4-3 4H16l-3-4 3-4ZM10 43h38l4 5-4 5H10l-4-5 4-5Z"/>
+    <path fill="#0B1020" d="M9 16h9c2 0 3 1 3 3v7c0 2-1 3-3 3H9c-2 0-3-1-3-3v-7c0-2 1-3 3-3ZM40 16h9c2 0 3 1 3 3v7c0 2-1 3-3 3h-9c-2 0-3-1-3-3v-7c0-2 1-3 3-3ZM8 34h10c2 0 3 1 3 3v8c0 2-1 3-3 3H8c-2 0-3-1-3-3v-8c0-2 1-3 3-3ZM40 34h10c2 0 3 1 3 3v8c0 2-1 3-3 3H40c-2 0-3-1-3-3v-8c0-2 1-3 3-3Z"/>
+    <path fill="#1F2937" opacity=".9" d="M10 18h7v9h-7zM41 18h7v9h-7zM9 36h8v10H9zM41 36h8v10h-8z"/>
+    <path fill="url(#f1-body-${label})" stroke="#F8FAFC" stroke-width="2" d="M29 4c5 5 7 13 7 24 0 12-3 22-7 26-4-4-7-14-7-26 0-11 2-19 7-24Z"/>
+    <path fill="${accentColor}" stroke="#F8FAFC" stroke-width="1.1" d="M29 12c2 4 4 10 4 17 0 8-2 14-4 17-2-3-4-9-4-17 0-7 2-13 4-17Z"/>
+    <path fill="#0B1020" d="M29 22c3 0 5 3 5 7s-2 7-5 7-5-3-5-7 2-7 5-7Z"/>
+    <path fill="none" stroke="#F8FAFC" stroke-width="1.4" stroke-linecap="round" d="M20 30h-5M38 30h5M23 40l-8 6M35 40l8 6"/>
+    <text x="29" y="32" text-anchor="middle" fill="#fff" font-family="Inter, Arial, sans-serif" font-size="9" font-weight="950">${label}</text>
   </g>
 </svg>`;
 }
@@ -1101,14 +1113,27 @@ function createPlaneSvg() {
 
 function createHelicopterSvg() {
     return `
-<svg xmlns="http://www.w3.org/2000/svg" width="54" height="54" viewBox="0 0 54 54">
-  <defs><filter id="shadow" x="-35%" y="-35%" width="170%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="4" flood-color="#061018" flood-opacity="0.34"/></filter></defs>
+<svg xmlns="http://www.w3.org/2000/svg" width="58" height="58" viewBox="0 0 58 58">
+  <defs>
+    <linearGradient id="heli-body" x1="14" y1="42" x2="41" y2="16" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0891B2"/>
+      <stop offset=".52" stop-color="#22D3EE"/>
+      <stop offset="1" stop-color="#E0F2FE"/>
+    </linearGradient>
+    <filter id="shadow" x="-35%" y="-35%" width="170%" height="170%">
+      <feDropShadow dx="0" dy="7" stdDeviation="4" flood-color="#061018" flood-opacity="0.34"/>
+    </filter>
+  </defs>
   <g filter="url(#shadow)">
-    <path stroke="#E0F2FE" stroke-width="3" stroke-linecap="round" d="M10 9h34M27 9v10M7 43h18M16 38v10"/>
-    <path fill="#14B8A6" stroke="#fff" stroke-width="2" d="M15 21h21c6 0 10 4 10 9s-4 9-10 9H15c-5 0-8-4-8-9s3-9 8-9Z"/>
-    <path fill="#0F172A" d="M17 25h13c3 0 6 2 6 5s-3 5-6 5H17c-3 0-5-2-5-5s2-5 5-5Z"/>
-    <path stroke="#0F172A" stroke-width="3" stroke-linecap="round" d="M45 30h6"/>
-    <circle cx="49" cy="30" r="3" fill="#E0F2FE"/>
+    <path stroke="#E0F2FE" stroke-width="3" stroke-linecap="round" opacity=".92" d="M9 8h40M29 8v13"/>
+    <path fill="#E0F2FE" stroke="#fff" stroke-width="1.2" d="M22 45h14l4 5H18l4-5Z"/>
+    <path fill="url(#heli-body)" stroke="#fff" stroke-width="2" d="M16 22h20c7 0 12 5 12 10s-5 10-12 10H16c-5 0-9-4-9-10s4-10 9-10Z"/>
+    <path fill="#0F172A" d="M17 26h14c4 0 7 2 7 6s-3 6-7 6H17c-3 0-6-3-6-6s3-6 6-6Z"/>
+    <path fill="#67E8F9" d="M16 28h7c2 0 4 2 4 4s-2 4-4 4h-7c-2 0-3-2-3-4s1-4 3-4Z"/>
+    <path stroke="#0F172A" stroke-width="4" stroke-linecap="round" d="M47 32h7"/>
+    <path stroke="#E0F2FE" stroke-width="2.6" stroke-linecap="round" d="M52 25v14M45 25l6 7-6 7"/>
+    <path stroke="#E0F2FE" stroke-width="2.4" stroke-linecap="round" d="M15 43 9 50M39 43l6 7"/>
+    <circle cx="29" cy="21" r="3.6" fill="#F8FAFC" stroke="#0F172A" stroke-width="1.2"/>
   </g>
 </svg>`;
 }
@@ -2123,9 +2148,12 @@ export function focusNavigationPosition(userLocation, route = null, { preserveZo
         return;
     }
 
-    const current = [Number(userLocation.longitude), Number(userLocation.latitude)];
     const routeCoordinates = sanitizeLineCoordinates(route?.geometry?.coordinates ?? []);
-    const cameraBearing = getNavigationCameraBearing(userLocation, routeCoordinates);
+    const routeProjection = getClosestRouteProjection(routeCoordinates, userLocation);
+    const current = routeProjection
+        ? [Number(routeProjection.longitude), Number(routeProjection.latitude)]
+        : [Number(userLocation.longitude), Number(userLocation.latitude)];
+    const cameraBearing = getNavigationCameraBearing(userLocation, routeCoordinates, routeProjection);
 
     safeEaseTo({
         center: current,
@@ -2136,21 +2164,33 @@ export function focusNavigationPosition(userLocation, route = null, { preserveZo
             : (Number.isFinite(cameraBearing) ? cameraBearing : map.getBearing()),
         padding: { top: 0, right: 0, bottom: 0, left: 0 },
         retainPadding: false,
-        offset: [0, Math.round(window.innerHeight * 0.30)],
+        offset: [0, Math.round(window.innerHeight * FOLLOW_SCREEN_OFFSET_RATIO)],
         duration,
     });
 }
 
-function getNavigationCameraBearing(userLocation, routeCoordinates) {
-    const current = [Number(userLocation?.longitude), Number(userLocation?.latitude)];
-    const progress = Number(userLocation?.routeProgressMeters);
+function getNavigationCameraBearing(userLocation, routeCoordinates, routeProjection = null) {
+    const projectedCurrent = routeProjection
+        ? [Number(routeProjection.longitude), Number(routeProjection.latitude)]
+        : [Number(userLocation?.longitude), Number(userLocation?.latitude)];
+    const progress = Number.isFinite(Number(routeProjection?.progressMeters))
+        ? Number(routeProjection.progressMeters)
+        : Number(userLocation?.routeProgressMeters);
 
     if (routeCoordinates.length > 1 && Number.isFinite(progress)) {
-        const ahead = getRouteCoordinateAtProgress(routeCoordinates, progress + 85);
+        const ahead = getRouteCoordinateAtProgress(routeCoordinates, progress + 120);
 
-        if (ahead) {
-            return getBearing(current, ahead);
+        if (ahead && Number.isFinite(projectedCurrent[0]) && Number.isFinite(projectedCurrent[1])) {
+            const bearing = getBearing(projectedCurrent, ahead);
+            if (Number.isFinite(bearing)) {
+                return bearing;
+            }
         }
+    }
+
+    const projectionBearing = Number(routeProjection?.bearing);
+    if (Number.isFinite(projectionBearing)) {
+        return projectionBearing;
     }
 
     const routeBearing = Number(userLocation?.routeBearing);
