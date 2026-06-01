@@ -120,7 +120,12 @@ export function getRouteSnappedNavigationLocation(
         maxSnapDistanceMeters = 120,
     } = {},
 ) {
-    const snap = getClosestRouteProjection(route?.geometry?.coordinates ?? [], location);
+    const coordinates = route?.geometry?.coordinates ?? [];
+    const previousProgress = Number(previousLocation?.routeProgressMeters);
+    const progressWindowMeters = Math.max(180, Math.min(420, (Number(speedKmh) || 0) * 10 + 180));
+    const snap = Number.isFinite(previousProgress)
+        ? getClosestRouteProjectionNearProgress(coordinates, location, previousProgress, progressWindowMeters)
+        : getClosestRouteProjection(coordinates, location);
 
     if (!snap) return location;
 
@@ -148,6 +153,17 @@ export function getRouteSnappedNavigationLocation(
 }
 
 export function getClosestRouteProjection(coordinates, location) {
+    return getClosestRouteProjectionInProgressWindow(coordinates, location);
+}
+
+function getClosestRouteProjectionNearProgress(coordinates, location, progressMeters, windowMeters = 220) {
+    return getClosestRouteProjectionInProgressWindow(coordinates, location, {
+        minProgressMeters: Math.max(0, Number(progressMeters) - windowMeters),
+        maxProgressMeters: Number(progressMeters) + windowMeters,
+    }) ?? getClosestRouteProjectionInProgressWindow(coordinates, location);
+}
+
+function getClosestRouteProjectionInProgressWindow(coordinates, location, progressWindow = null) {
     if (!coordinates?.length || coordinates.length < 2 || !location) {
         return null;
     }
@@ -173,6 +189,20 @@ export function getClosestRouteProjection(coordinates, location) {
             { longitude: start[0], latitude: start[1] },
             { longitude: finish[0], latitude: finish[1] },
         );
+        const segmentStartProgress = progressBeforeSegment;
+        const segmentEndProgress = progressBeforeSegment + segmentDistance;
+
+        if (
+            progressWindow
+            && (
+                segmentEndProgress < progressWindow.minProgressMeters
+                || segmentStartProgress > progressWindow.maxProgressMeters
+            )
+        ) {
+            progressBeforeSegment += segmentDistance;
+            continue;
+        }
+
         const projection = projectPointToSegment(point, start, finish, point);
         const distanceMeters = getDistanceMeters(
             { longitude: point[0], latitude: point[1] },

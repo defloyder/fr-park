@@ -50,7 +50,7 @@ const USER_LOCATION_ICON_STORAGE_KEY = 'auralith:user-location-icon';
 const USER_LOCATION_ICON_PREFIX = 'user-location-';
 const FOLLOW_ZOOM = 17;
 const FOLLOW_PITCH = 62;
-const FOLLOW_SCREEN_OFFSET_RATIO = 0.32;
+const FOLLOW_SCREEN_OFFSET_RATIO = 0.27;
 
 const MAP_STYLE = {
     version: 8,
@@ -1022,7 +1022,7 @@ function addSvgImage(name, svg) {
     }
 
     return new Promise((resolve, reject) => {
-        const image = new Image(40, 48);
+        const image = new Image(72, 72);
         image.onload = () => {
             map.addImage(name, image, { pixelRatio: 1 });
             resolve();
@@ -1067,35 +1067,80 @@ function createUserLocationSvg() {
 }
 
 function createRedBullF1Svg() {
-    return createFormulaCarSvg('#12216B', '#FACC15', '#EF174A', '1');
+    return createFormulaCarSvg({
+        bodyColor: '#08111F',
+        sideColor: '#123B8C',
+        accentColor: '#F97316',
+        noseColor: '#FACC15',
+        wingColor: '#050A14',
+        haloColor: '#1E293B',
+        label: '1',
+    });
 }
 
 function createFerrariF1Svg() {
-    return createFormulaCarSvg('#DC2626', '#FDE047', '#111827', 'F');
+    return createFormulaCarSvg({
+        bodyColor: '#DC1628',
+        sideColor: '#7F0C17',
+        accentColor: '#FFFFFF',
+        noseColor: '#F59E0B',
+        wingColor: '#080B12',
+        haloColor: '#1F2937',
+        label: '44',
+    });
 }
 
-function createFormulaCarSvg(bodyColor, accentColor, wingColor, label) {
+function createFormulaCarSvg({ bodyColor, sideColor, accentColor, noseColor, wingColor, haloColor, label }) {
     return `
-<svg xmlns="http://www.w3.org/2000/svg" width="58" height="58" viewBox="0 0 58 58">
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
   <defs>
-    <linearGradient id="f1-body-${label}" x1="16" y1="52" x2="42" y2="6" gradientUnits="userSpaceOnUse">
-      <stop stop-color="${bodyColor}"/>
-      <stop offset=".58" stop-color="${bodyColor}"/>
+    <linearGradient id="f1-body-${label}" x1="27" y1="86" x2="69" y2="8" gradientUnits="userSpaceOnUse">
+      <stop stop-color="${sideColor}"/>
+      <stop offset=".38" stop-color="${bodyColor}"/>
+      <stop offset=".72" stop-color="${bodyColor}"/>
       <stop offset="1" stop-color="${accentColor}"/>
     </linearGradient>
-    <filter id="shadow" x="-35%" y="-35%" width="170%" height="170%">
-      <feDropShadow dx="0" dy="7" stdDeviation="4" flood-color="#061018" flood-opacity="0.36"/>
+    <linearGradient id="f1-nose-${label}" x1="42" y1="9" x2="54" y2="77" gradientUnits="userSpaceOnUse">
+      <stop stop-color="${noseColor}"/>
+      <stop offset=".5" stop-color="${bodyColor}"/>
+      <stop offset="1" stop-color="${sideColor}"/>
+    </linearGradient>
+    <radialGradient id="f1-tyre-${label}" cx="50%" cy="42%" r="62%">
+      <stop stop-color="#334155"/>
+      <stop offset=".38" stop-color="#05070B"/>
+      <stop offset=".74" stop-color="#020308"/>
+      <stop offset="1" stop-color="#111827"/>
+    </radialGradient>
+    <linearGradient id="f1-shine-${label}" x1="35" y1="12" x2="58" y2="70" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity=".78"/>
+      <stop offset=".28" stop-color="#FFFFFF" stop-opacity=".20"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="f1-shadow-${label}" x="-35%" y="-35%" width="170%" height="175%">
+      <feDropShadow dx="0" dy="9" stdDeviation="5" flood-color="#020617" flood-opacity="0.48"/>
+    </filter>
+    <filter id="f1-glow-${label}" x="-35%" y="-35%" width="170%" height="170%">
+      <feDropShadow dx="0" dy="0" stdDeviation="1.2" flood-color="#FFFFFF" flood-opacity="0.35"/>
     </filter>
   </defs>
-  <g filter="url(#shadow)">
-    <path fill="${wingColor}" stroke="#F8FAFC" stroke-width="1.4" d="M16 5h26l3 4-3 4H16l-3-4 3-4ZM10 43h38l4 5-4 5H10l-4-5 4-5Z"/>
-    <path fill="#0B1020" d="M9 16h9c2 0 3 1 3 3v7c0 2-1 3-3 3H9c-2 0-3-1-3-3v-7c0-2 1-3 3-3ZM40 16h9c2 0 3 1 3 3v7c0 2-1 3-3 3h-9c-2 0-3-1-3-3v-7c0-2 1-3 3-3ZM8 34h10c2 0 3 1 3 3v8c0 2-1 3-3 3H8c-2 0-3-1-3-3v-8c0-2 1-3 3-3ZM40 34h10c2 0 3 1 3 3v8c0 2-1 3-3 3H40c-2 0-3-1-3-3v-8c0-2 1-3 3-3Z"/>
-    <path fill="#1F2937" opacity=".9" d="M10 18h7v9h-7zM41 18h7v9h-7zM9 36h8v10H9zM41 36h8v10h-8z"/>
-    <path fill="url(#f1-body-${label})" stroke="#F8FAFC" stroke-width="2" d="M29 4c5 5 7 13 7 24 0 12-3 22-7 26-4-4-7-14-7-26 0-11 2-19 7-24Z"/>
-    <path fill="${accentColor}" stroke="#F8FAFC" stroke-width="1.1" d="M29 12c2 4 4 10 4 17 0 8-2 14-4 17-2-3-4-9-4-17 0-7 2-13 4-17Z"/>
-    <path fill="#0B1020" d="M29 22c3 0 5 3 5 7s-2 7-5 7-5-3-5-7 2-7 5-7Z"/>
-    <path fill="none" stroke="#F8FAFC" stroke-width="1.4" stroke-linecap="round" d="M20 30h-5M38 30h5M23 40l-8 6M35 40l8 6"/>
-    <text x="29" y="32" text-anchor="middle" fill="#fff" font-family="Inter, Arial, sans-serif" font-size="9" font-weight="950">${label}</text>
+  <g filter="url(#f1-shadow-${label})">
+    <ellipse cx="22" cy="28" rx="9" ry="14" fill="url(#f1-tyre-${label})" transform="rotate(-5 22 28)"/>
+    <ellipse cx="74" cy="28" rx="9" ry="14" fill="url(#f1-tyre-${label})" transform="rotate(5 74 28)"/>
+    <ellipse cx="19" cy="66" rx="10" ry="15" fill="url(#f1-tyre-${label})" transform="rotate(-6 19 66)"/>
+    <ellipse cx="77" cy="66" rx="10" ry="15" fill="url(#f1-tyre-${label})" transform="rotate(6 77 66)"/>
+    <path fill="#111827" opacity=".95" d="M16 16h64l7 8-7 8H16l-7-8 7-8ZM12 75h72l7 8-7 7H12l-7-7 7-8Z"/>
+    <path fill="${wingColor}" stroke="#CBD5E1" stroke-width="1.2" d="M18 18h60l4 5-4 5H18l-4-5 4-5ZM14 77h68l4 5-4 5H14l-4-5 4-5Z"/>
+    <path fill="#0B1020" d="M27 29h12l4 8-6 9H25l-6-10 8-7ZM57 29h12l8 7-6 10H59l-6-9 4-8ZM27 58h12l4 10-7 11H23l-6-12 10-9ZM57 58h12l10 9-6 12H60l-7-11 4-10Z"/>
+    <path fill="#1F2937" opacity=".96" d="M27 31h9l3 6-4 6h-8l-4-7 4-5ZM60 31h9l4 5-4 7h-8l-4-6 3-6ZM27 61h9l3 7-5 8h-8l-5-8 6-7ZM60 61h9l6 7-5 8h-8l-5-8 3-7Z"/>
+    <path fill="${wingColor}" d="M31 31h34v6H31zM28 67h40v7H28z"/>
+    <path fill="url(#f1-body-${label})" stroke="#F8FAFC" stroke-width="2.2" d="M48 7c8 9 12 23 12 42 0 20-4 34-12 41-8-7-12-21-12-41 0-19 4-33 12-42Z"/>
+    <path fill="url(#f1-nose-${label})" d="M48 12c4 9 6 22 6 38 0 15-2 26-6 32-4-6-6-17-6-32 0-16 2-29 6-38Z"/>
+    <path fill="${accentColor}" opacity=".88" d="M42 19c-4 8-6 17-6 28h5c0-11 2-20 5-27l2-5-6 4ZM54 19c4 8 6 17 6 28h-5c0-11-2-20-5-27l-2-5 6 4Z"/>
+    <path fill="${haloColor}" stroke="#F8FAFC" stroke-width="1.4" d="M48 36c7 0 12 6 12 14 0 7-5 13-12 13S36 57 36 50c0-8 5-14 12-14Zm0 6c-4 0-6 3-6 8 0 4 2 7 6 7s6-3 6-7c0-5-2-8-6-8Z"/>
+    <ellipse cx="48" cy="50" rx="5.5" ry="8" fill="#030712"/>
+    <path fill="url(#f1-shine-${label})" d="M45 13c-3 12-4 23-4 36 0 15 2 24 5 30-1-18 0-42 4-64l-5-2Z"/>
+    <path fill="none" stroke="#F8FAFC" stroke-width="1.5" stroke-linecap="round" opacity=".72" d="M34 42l-12-8M62 42l12-8M35 64l-17 12M61 64l17 12M39 81h18"/>
+    <text x="48" y="31" text-anchor="middle" fill="#fff" stroke="#020617" stroke-width="2" paint-order="stroke" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="950">${label}</text>
   </g>
 </svg>`;
 }
@@ -1114,27 +1159,46 @@ function createPlaneSvg() {
 
 function createHelicopterSvg() {
     return `
-<svg xmlns="http://www.w3.org/2000/svg" width="58" height="58" viewBox="0 0 58 58">
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
   <defs>
-    <linearGradient id="heli-body" x1="14" y1="42" x2="41" y2="16" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#0891B2"/>
-      <stop offset=".52" stop-color="#22D3EE"/>
-      <stop offset="1" stop-color="#E0F2FE"/>
+    <linearGradient id="heli-body" x1="22" y1="82" x2="68" y2="18" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#172A22"/>
+      <stop offset=".42" stop-color="#315344"/>
+      <stop offset=".72" stop-color="#4B6355"/>
+      <stop offset="1" stop-color="#A3B2A7"/>
     </linearGradient>
-    <filter id="shadow" x="-35%" y="-35%" width="170%" height="170%">
-      <feDropShadow dx="0" dy="7" stdDeviation="4" flood-color="#061018" flood-opacity="0.34"/>
+    <linearGradient id="heli-glass" x1="31" y1="33" x2="55" y2="59" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D8F3FF"/>
+      <stop offset=".38" stop-color="#68B5C7"/>
+      <stop offset="1" stop-color="#0F172A"/>
+    </linearGradient>
+    <filter id="heli-shadow" x="-35%" y="-35%" width="170%" height="170%">
+      <feDropShadow dx="0" dy="9" stdDeviation="5" flood-color="#020617" flood-opacity=".44"/>
+    </filter>
+    <filter id="rotor-blur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation=".55"/>
     </filter>
   </defs>
-  <g filter="url(#shadow)">
-    <path stroke="#E0F2FE" stroke-width="3" stroke-linecap="round" opacity=".92" d="M9 8h40M29 8v13"/>
-    <path fill="#E0F2FE" stroke="#fff" stroke-width="1.2" d="M22 45h14l4 5H18l4-5Z"/>
-    <path fill="url(#heli-body)" stroke="#fff" stroke-width="2" d="M16 22h20c7 0 12 5 12 10s-5 10-12 10H16c-5 0-9-4-9-10s4-10 9-10Z"/>
-    <path fill="#0F172A" d="M17 26h14c4 0 7 2 7 6s-3 6-7 6H17c-3 0-6-3-6-6s3-6 6-6Z"/>
-    <path fill="#67E8F9" d="M16 28h7c2 0 4 2 4 4s-2 4-4 4h-7c-2 0-3-2-3-4s1-4 3-4Z"/>
-    <path stroke="#0F172A" stroke-width="4" stroke-linecap="round" d="M47 32h7"/>
-    <path stroke="#E0F2FE" stroke-width="2.6" stroke-linecap="round" d="M52 25v14M45 25l6 7-6 7"/>
-    <path stroke="#E0F2FE" stroke-width="2.4" stroke-linecap="round" d="M15 43 9 50M39 43l6 7"/>
-    <circle cx="29" cy="21" r="3.6" fill="#F8FAFC" stroke="#0F172A" stroke-width="1.2"/>
+  <g filter="url(#heli-shadow)">
+    <g filter="url(#rotor-blur)" opacity=".82">
+      <path stroke="#DCE7E1" stroke-width="4" stroke-linecap="round" d="M13 13 83 83M83 13 13 83"/>
+      <path stroke="#94A3B8" stroke-width="2" stroke-linecap="round" d="M17 18 79 78M79 18 17 78"/>
+    </g>
+    <path stroke="#121A17" stroke-width="7" stroke-linecap="round" d="M48 48 80 54"/>
+    <path stroke="#8AA099" stroke-width="3" stroke-linecap="round" d="M79 45v18M70 49l10 5-11 5"/>
+    <path fill="#1F352C" d="M22 53 8 61v7l18-3 8-6-12-6ZM74 53l14 8v7l-18-3-8-6 12-6Z"/>
+    <path fill="url(#heli-body)" stroke="#E6F0EA" stroke-width="2.2" d="M48 18c13 5 21 18 21 35 0 17-9 29-21 34-12-5-21-17-21-34 0-17 8-30 21-35Z"/>
+    <path fill="#203B31" opacity=".95" d="M35 49c0-12 5-22 13-27 8 5 13 15 13 27 0 10-5 18-13 22-8-4-13-12-13-22Z"/>
+    <path fill="url(#heli-glass)" stroke="#D9E7E2" stroke-width="1.4" d="M38 38c2-8 6-13 10-16 4 3 8 8 10 16-3 4-7 6-10 6s-7-2-10-6Z"/>
+    <path fill="#111827" opacity=".86" d="M39 47h18c2 0 4 2 4 5s-2 5-4 5H39c-2 0-4-2-4-5s2-5 4-5Z"/>
+    <path fill="#6B7F71" d="M32 62h32l-5 13H37l-5-13Z"/>
+    <path fill="#0F1F19" d="M38 73h20l-3 7H41l-3-7Z"/>
+    <path stroke="#DCE7E1" stroke-width="3" stroke-linecap="round" d="M28 82h40M34 76v10M62 76v10"/>
+    <path stroke="#101A16" stroke-width="3" stroke-linecap="round" d="M20 58h15M61 58h15"/>
+    <circle cx="28" cy="58" r="4" fill="#111827" stroke="#DCE7E1" stroke-width="1.3"/>
+    <circle cx="68" cy="58" r="4" fill="#111827" stroke="#DCE7E1" stroke-width="1.3"/>
+    <circle cx="48" cy="48" r="5" fill="#E5E7EB" stroke="#111827" stroke-width="1.4"/>
+    <path fill="none" stroke="#F8FAFC" stroke-width="1.4" stroke-linecap="round" opacity=".55" d="M42 25c-5 8-7 17-7 27M53 23c6 8 8 18 8 29"/>
   </g>
 </svg>`;
 }
