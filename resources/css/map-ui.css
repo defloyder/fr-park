@@ -1669,11 +1669,11 @@ body[data-map-layer="satellite"] .route-picker__close {
     left: 18px;
     z-index: 61;
     display: grid;
-    grid-template-columns: 58px minmax(0, 118px);
-    width: min(236px, calc(50vw - 24px));
+    grid-template-columns: 52px minmax(0, 74px);
+    width: min(166px, calc(50vw - 24px));
     align-items: center;
-    gap: 12px;
-    padding: 12px 14px;
+    gap: 9px;
+    padding: 10px 11px;
     color: #F8FAFC;
     background:
         linear-gradient(145deg, rgba(15, 23, 42, 0.92), rgba(3, 7, 18, 0.76)),
@@ -1687,11 +1687,10 @@ body[data-map-layer="satellite"] .route-picker__close {
     --heading: 0deg;
     display: grid;
     grid-column: 1 / -1;
-    grid-template-columns: 58px minmax(0, 1fr);
-    align-items: center;
-    gap: 12px;
+    justify-items: center;
+    gap: 5px;
     min-width: 0;
-    padding: 9px 11px;
+    padding: 8px 8px 7px;
     color: #F8FAFC;
     background:
         linear-gradient(145deg, rgba(15, 23, 42, 0.48), rgba(3, 7, 18, 0.28)),
@@ -1703,8 +1702,8 @@ body[data-map-layer="satellite"] .route-picker__close {
 .navigation-compass__dial {
     position: relative;
     display: grid;
-    width: 58px;
-    height: 58px;
+    width: 48px;
+    height: 48px;
     place-items: center;
     color: rgba(248, 250, 252, 0.72);
     font-size: 0.56rem;
@@ -1727,31 +1726,31 @@ body[data-map-layer="satellite"] .route-picker__close {
 .navigation-compass__cardinal {
     position: absolute;
     color: rgba(248, 250, 252, 0.58);
-    font-size: 0.48rem;
+    font-size: 0.43rem;
     font-weight: 950;
     line-height: 1;
 }
 
 .navigation-compass__cardinal--north {
-    top: 5px;
+    top: 4px;
     color: #38BDF8;
 }
 
 .navigation-compass__cardinal--east {
-    right: 6px;
+    right: 5px;
 }
 
 .navigation-compass__cardinal--south {
-    bottom: 5px;
+    bottom: 4px;
 }
 
 .navigation-compass__cardinal--west {
-    left: 6px;
+    left: 5px;
 }
 
 .navigation-compass__dial i {
     position: absolute;
-    inset: 9px;
+    inset: 7px;
     transform: rotate(var(--heading));
     transition: transform 260ms ease-out;
 }
@@ -1762,9 +1761,9 @@ body[data-map-layer="satellite"] .route-picker__close {
     left: 50%;
     width: 0;
     height: 0;
-    border-right: 6px solid transparent;
-    border-bottom: 24px solid #0EA5E9;
-    border-left: 6px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 20px solid #0EA5E9;
+    border-left: 5px solid transparent;
     filter:
         drop-shadow(0 5px 10px rgba(14, 165, 233, 0.34))
         drop-shadow(0 0 1px rgba(255, 255, 255, 0.66));
@@ -1778,7 +1777,7 @@ body[data-map-layer="satellite"] .route-picker__close {
     left: 50%;
     width: 0;
     height: 0;
-    border-top: 15px solid rgba(15, 23, 42, 0.46);
+    border-top: 13px solid rgba(15, 23, 42, 0.46);
     border-right: 4px solid transparent;
     border-left: 4px solid transparent;
     border-radius: 2px;
@@ -1789,7 +1788,9 @@ body[data-map-layer="satellite"] .route-picker__close {
 .navigation-compass__readout {
     display: grid;
     min-width: 0;
+    justify-items: center;
     gap: 1px;
+    text-align: center;
 }
 
 .navigation-compass__readout strong {
@@ -1814,13 +1815,13 @@ body[data-map-layer="satellite"] .route-picker__close {
 
 .navigation-guidance__arrow {
     display: grid;
-    width: 58px;
-    height: 58px;
+    width: 52px;
+    height: 52px;
     place-items: center;
     color: #061018;
     background: linear-gradient(145deg, #A7F3D0, #FDE68A);
     border: 1px solid rgba(16, 185, 129, 0.30);
-    border-radius: 18px;
+    border-radius: 16px;
     box-shadow:
         0 12px 30px rgba(16, 185, 129, 0.22),
         inset 0 1px 0 rgba(255, 255, 255, 0.62);
@@ -1876,8 +1877,8 @@ body[data-map-layer="satellite"] .route-picker__close {
 }
 
 .navigation-guidance__arrow svg {
-    width: 34px;
-    height: 34px;
+    width: 31px;
+    height: 31px;
     fill: none;
     stroke: currentColor;
     stroke-linecap: round;
@@ -1888,7 +1889,8 @@ body[data-map-layer="satellite"] .route-picker__close {
 .navigation-guidance__main {
     display: grid;
     min-width: 0;
-    gap: 3px;
+    justify-items: start;
+    gap: 0;
 }
 
 .navigation-speedometer {
@@ -2302,17 +2304,18 @@ body.is-navigation-mode .map-canvas::after {
     .navigation-guidance {
         top: calc(10px + env(safe-area-inset-top));
         left: 8px;
-        grid-template-columns: 50px minmax(0, 1fr);
-        width: calc(50vw - 12px);
+        grid-template-columns: 50px minmax(0, 68px);
+        width: 150px;
         min-width: 0;
         gap: 8px;
-        padding: 10px;
+        padding: 9px;
         border-radius: 18px;
     }
 
     .navigation-compass {
-        grid-template-columns: 50px minmax(0, 1fr);
-        gap: 7px;
+        grid-template-columns: 1fr;
+        justify-items: center;
+        gap: 5px;
         padding: 6px 7px;
         border-radius: 12px;
     }
@@ -2343,7 +2346,7 @@ body.is-navigation-mode .map-canvas::after {
     }
 
     .navigation-compass__readout strong {
-        font-size: 0.8rem;
+        font-size: 0.9rem;
     }
 
     .navigation-compass__readout span {

@@ -1322,7 +1322,6 @@ export function initParkingUi() {
                 <div class="navigation-guidance__arrow" aria-hidden="true"></div>
                 <div class="navigation-guidance__main">
                     <strong data-navigation-maneuver-distance></strong>
-                    <span data-navigation-instruction></span>
                 </div>
                 <div class="navigation-compass" aria-label="Компас направления">
                     <div class="navigation-compass__dial" aria-hidden="true">
@@ -1460,7 +1459,6 @@ export function initParkingUi() {
         const isSpeeding = state.currentSpeedKmh > state.speedLimitKmh + 15;
 
         setText('[data-navigation-maneuver-distance]', Number.isFinite(maneuverDistance) ? formatDistance(maneuverDistance) : formatDistance(remainingDistance));
-        setText('[data-navigation-instruction]', formatNavigationInstructionText(instruction?.text || 'Двигайтесь по маршруту'));
         setText('[data-navigation-traffic]', getTrafficLabel(state.navigationRoute));
         setText('[data-navigation-duration]', formatDuration(remainingDuration));
         setText('[data-navigation-distance]', formatDistance(remainingDistance));

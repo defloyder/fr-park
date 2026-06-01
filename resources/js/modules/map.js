@@ -1954,19 +1954,16 @@ export function updateActiveRouteProgress(userLocation, route) {
         return;
     }
 
-    const projection = getClosestRouteProjection(routeCoordinates, userLocation);
-    const closestIndex = projection
-        ? getRouteCoordinateIndexAtProgress(routeCoordinates, projection.progressMeters)
+    const routeAnchor = getNavigationRouteAnchor(userLocation, routeCoordinates);
+    const closestIndex = routeAnchor
+        ? getRouteCoordinateIndexAtProgress(routeCoordinates, routeAnchor.progressMeters)
         : findClosestRouteCoordinateIndex(
             [Number(userLocation.longitude), Number(userLocation.latitude)],
             routeCoordinates,
         );
-    const projectedCoordinate = projection
-        ? [Number(projection.longitude), Number(projection.latitude)]
-        : null;
     const remainingCoordinates = [
-        ...(projectedCoordinate ? [projectedCoordinate] : []),
-        ...routeCoordinates.slice(Math.max(0, closestIndex + (projectedCoordinate ? 1 : 0))),
+        ...(routeAnchor?.coordinate ? [routeAnchor.coordinate] : []),
+        ...routeCoordinates.slice(Math.max(0, closestIndex + (routeAnchor?.coordinate ? 1 : 0))),
     ];
 
     if (remainingCoordinates.length < 2) {
@@ -2194,11 +2191,11 @@ export function focusNavigationPosition(userLocation, route = null, { preserveZo
     }
 
     const routeCoordinates = sanitizeLineCoordinates(route?.geometry?.coordinates ?? []);
-    const routeProjection = getClosestRouteProjection(routeCoordinates, userLocation);
-    const current = routeProjection
-        ? [Number(routeProjection.longitude), Number(routeProjection.latitude)]
+    const routeAnchor = getNavigationRouteAnchor(userLocation, routeCoordinates);
+    const current = routeAnchor?.coordinate
+        ? routeAnchor.coordinate
         : [Number(userLocation.longitude), Number(userLocation.latitude)];
-    const cameraBearing = getNavigationCameraBearing(userLocation, routeCoordinates, routeProjection);
+    const cameraBearing = routeAnchor?.bearing ?? getNavigationCameraBearing(userLocation, routeCoordinates);
 
     safeEaseTo({
         center: current,
@@ -2212,6 +2209,40 @@ export function focusNavigationPosition(userLocation, route = null, { preserveZo
         offset: [0, Math.round(window.innerHeight * FOLLOW_SCREEN_OFFSET_RATIO)],
         duration,
     });
+}
+
+function getNavigationRouteAnchor(userLocation, routeCoordinates) {
+    const progress = Number(userLocation?.routeProgressMeters);
+
+    if (routeCoordinates.length > 1 && Number.isFinite(progress)) {
+        const coordinate = getRouteCoordinateAtProgress(routeCoordinates, progress);
+        const ahead = getRouteCoordinateAtProgress(routeCoordinates, progress + 120);
+        const bearing = coordinate && ahead ? getBearing(coordinate, ahead) : Number(userLocation?.routeBearing);
+
+        if (coordinate && Number.isFinite(Number(coordinate[0])) && Number.isFinite(Number(coordinate[1]))) {
+            return {
+                coordinate: [Number(coordinate[0]), Number(coordinate[1])],
+                progressMeters: progress,
+                bearing: Number.isFinite(bearing) ? bearing : null,
+            };
+        }
+    }
+
+    const projection = getClosestRouteProjection(routeCoordinates, userLocation);
+
+    if (!projection) {
+        return null;
+    }
+
+    const coordinate = [Number(projection.longitude), Number(projection.latitude)];
+    const ahead = getRouteCoordinateAtProgress(routeCoordinates, Number(projection.progressMeters) + 120);
+    const bearing = ahead ? getBearing(coordinate, ahead) : Number(projection.bearing);
+
+    return {
+        coordinate,
+        progressMeters: Number(projection.progressMeters),
+        bearing: Number.isFinite(bearing) ? bearing : Number(projection.bearing),
+    };
 }
 
 function getNavigationCameraBearing(userLocation, routeCoordinates, routeProjection = null) {
