@@ -48,9 +48,11 @@ const ROUTE_CACHE_STORAGE_KEY = 'auralith:last-driving-route';
 const TRAFFIC_LAYER_STORAGE_KEY = 'auralith:traffic-enabled';
 const USER_LOCATION_ICON_STORAGE_KEY = 'auralith:user-location-icon';
 const USER_LOCATION_ICON_PREFIX = 'user-location-';
-const FOLLOW_ZOOM = 16.25;
-const FOLLOW_PITCH = 56;
-const FOLLOW_SCREEN_OFFSET_RATIO = 0.16;
+const FOLLOW_ZOOM = 16.05;
+const FOLLOW_PITCH = 52;
+const FOLLOW_SCREEN_OFFSET_RATIO = 0.22;
+const FOLLOW_LOOKAHEAD_METERS = 95;
+const FOLLOW_BEARING_LOOKAHEAD_METERS = 180;
 
 const MAP_STYLE = {
     version: 8,
@@ -973,10 +975,10 @@ function bindMapSettings() {
 
 async function addMarkerImages() {
     await Promise.all(Object.entries(MARKER_IMAGES).map(([status, colors]) => (
-        addSvgImage(`parking-marker-${status}`, createMarkerSvg(...colors))
+        addSvgImage(`parking-marker-${status}`, createMarkerSvg(...colors), { width: 40, height: 48 })
     )));
     await Promise.all(USER_LOCATION_ICON_OPTIONS.map((option) => (
-        addSvgImage(getUserLocationIconImage(option.id), option.svg())
+        addSvgImage(getUserLocationIconImage(option.id), option.svg(), { width: 56, height: 56 })
     )));
 }
 
@@ -1016,13 +1018,13 @@ function addClusterCountImage(label) {
     map.addImage(imageId, context.getImageData(0, 0, size, size), { pixelRatio: 2 });
 }
 
-function addSvgImage(name, svg) {
+function addSvgImage(name, svg, { width = 40, height = 48 } = {}) {
     if (map.hasImage(name)) {
         return Promise.resolve();
     }
 
     return new Promise((resolve, reject) => {
-        const image = new Image(72, 72);
+        const image = new Image(width, height);
         image.onload = () => {
             map.addImage(name, image, { pixelRatio: 1 });
             resolve();
@@ -1340,7 +1342,7 @@ function addParkingLayers() {
         layout: {
             'icon-image': ['concat', 'parking-marker-', ['get', 'status']],
             'icon-anchor': 'bottom',
-            'icon-size': 1.22,
+            'icon-size': ['interpolate', ['linear'], ['zoom'], 12, 0.74, 16, 0.92, 18, 1.04],
             'icon-rotate': ['get', 'heading'],
             'icon-pitch-alignment': 'viewport',
             'icon-rotation-alignment': 'viewport',
@@ -1376,7 +1378,7 @@ function addPendingSourceAndLayer() {
         layout: {
             'icon-image': 'parking-marker-new',
             'icon-anchor': 'bottom',
-            'icon-size': 1,
+            'icon-size': ['interpolate', ['linear'], ['zoom'], 12, 0.76, 16, 0.94, 18, 1.04],
             'icon-pitch-alignment': 'viewport',
             'icon-rotation-alignment': 'viewport',
             'icon-allow-overlap': true,
@@ -1421,7 +1423,7 @@ function addUserLocationSourceAndLayer() {
         filter: ['!=', ['get', 'mode'], 'navigation'],
         layout: {
             'icon-image': ['get', 'iconImage'],
-            'icon-size': 1,
+            'icon-size': ['interpolate', ['linear'], ['zoom'], 12, 0.58, 16, 0.74, 18, 0.86],
             'icon-rotate': ['get', 'heading'],
             'icon-pitch-alignment': 'viewport',
             'icon-rotation-alignment': 'viewport',
@@ -1437,7 +1439,7 @@ function addUserLocationSourceAndLayer() {
         filter: ['==', ['get', 'mode'], 'navigation'],
         layout: {
             'icon-image': ['get', 'iconImage'],
-            'icon-size': 1,
+            'icon-size': ['interpolate', ['linear'], ['zoom'], 12, 0.56, 16, 0.72, 18, 0.84],
             'icon-rotate': ['get', 'heading'],
             'icon-pitch-alignment': 'map',
             'icon-rotation-alignment': 'map',
@@ -2083,7 +2085,7 @@ export function updateRouteManeuverHint(instruction, route, hint = {}) {
             element,
             anchor: 'bottom',
             offset: [0, -24],
-            pitchAlignment: 'map',
+            pitchAlignment: 'viewport',
             rotationAlignment: 'viewport',
         }).setLngLat(routeManeuverCoordinate).addTo(map);
     }
@@ -2260,10 +2262,19 @@ export function focusNavigationPosition(userLocation, route = null, { preserveZo
     const current = routeAnchor?.coordinate
         ? routeAnchor.coordinate
         : [Number(userLocation.longitude), Number(userLocation.latitude)];
-    const cameraBearing = routeAnchor?.bearing ?? getNavigationCameraBearing(userLocation, routeCoordinates);
+    const progress = Number(routeAnchor?.progressMeters);
+    const cameraCenter = Number.isFinite(progress)
+        ? (getRouteCoordinateAtProgress(routeCoordinates, progress + FOLLOW_LOOKAHEAD_METERS) ?? current)
+        : current;
+    const bearingTarget = Number.isFinite(progress)
+        ? getRouteCoordinateAtProgress(routeCoordinates, progress + FOLLOW_BEARING_LOOKAHEAD_METERS)
+        : null;
+    const cameraBearing = bearingTarget
+        ? getBearing(current, bearingTarget)
+        : (routeAnchor?.bearing ?? getNavigationCameraBearing(userLocation, routeCoordinates));
 
     safeEaseTo({
-        center: current,
+        center: cameraCenter,
         zoom: preserveZoom ? map.getZoom() : FOLLOW_ZOOM,
         pitch: FOLLOW_PITCH,
         bearing: Number.isFinite(Number(bearing))
