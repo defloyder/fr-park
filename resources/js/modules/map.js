@@ -51,8 +51,20 @@ const USER_LOCATION_ICON_PREFIX = 'user-location-';
 const FOLLOW_ZOOM = 16.05;
 const FOLLOW_PITCH = 52;
 const FOLLOW_SCREEN_OFFSET_RATIO = 0.22;
-const FOLLOW_LOOKAHEAD_METERS = 95;
 const FOLLOW_BEARING_LOOKAHEAD_METERS = 180;
+const ROUTE_TRAFFIC_LINE_COLOR = [
+    'match',
+    ['get', 'traffic'],
+    'jam',
+    '#EF174A',
+    'heavy',
+    '#FF7A1A',
+    'slow',
+    '#FFD84D',
+    'free',
+    '#22C55E',
+    '#20F4FF',
+];
 
 const MAP_STYLE = {
     version: 8,
@@ -1051,20 +1063,35 @@ function createMarkerSvg(fill, accent) {
 
 function createUserLocationSvg() {
     return `
-<svg xmlns="http://www.w3.org/2000/svg" width="42" height="42" viewBox="0 0 42 42">
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
   <defs>
-    <linearGradient id="geo" x1="8" y1="34" x2="34" y2="8" gradientUnits="userSpaceOnUse">
+    <linearGradient id="geo" x1="14" y1="54" x2="50" y2="9" gradientUnits="userSpaceOnUse">
       <stop stop-color="#8B5CF6"/>
       <stop offset="0.48" stop-color="#21A8FF"/>
       <stop offset="1" stop-color="#75F7AF"/>
     </linearGradient>
-    <filter id="shadow" x="-35%" y="-35%" width="170%" height="170%">
-      <feDropShadow dx="0" dy="7" stdDeviation="4.4" flood-color="#061018" flood-opacity="0.34"/>
+    <linearGradient id="geoSide" x1="17" y1="55" x2="48" y2="20" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#351A8C"/>
+      <stop offset="0.54" stop-color="#0F6FD6"/>
+      <stop offset="1" stop-color="#0F766E"/>
+    </linearGradient>
+    <radialGradient id="geoGlass" cx="45%" cy="34%" r="58%">
+      <stop stop-color="#FFFFFF" stop-opacity="0.96"/>
+      <stop offset="0.42" stop-color="#DDF7FF" stop-opacity="0.46"/>
+      <stop offset="1" stop-color="#061018" stop-opacity="0.12"/>
+    </radialGradient>
+    <filter id="shadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="10" stdDeviation="5.2" flood-color="#061018" flood-opacity="0.42"/>
     </filter>
   </defs>
-  <path filter="url(#shadow)" fill="url(#geo)" stroke="#fff" stroke-width="2.2" d="M21 2.5 36 38 21 30.5 6 38 21 2.5Z"/>
-  <path fill="#061018" opacity="0.78" stroke="rgba(255,255,255,.55)" stroke-width="1" d="M21 13.2 27 29 21 26 15 29 21 13.2Z"/>
-  <circle cx="21" cy="21.4" r="3.4" fill="#fff"/>
+  <g filter="url(#shadow)">
+    <path fill="url(#geoSide)" opacity="0.94" d="M32 6 53 56 32 45.5 11 56 32 6Z" transform="translate(0 3)"/>
+    <path fill="url(#geo)" stroke="#F8FAFC" stroke-width="3" stroke-linejoin="round" d="M32 4 53 54 32 43.5 11 54 32 4Z"/>
+    <path fill="rgba(6,16,24,.84)" stroke="rgba(255,255,255,.62)" stroke-width="1.4" d="M32 19 40.5 42 32 37.5 23.5 42 32 19Z"/>
+    <path fill="url(#geoGlass)" d="M32 9 46 42 32 35.6 18 42 32 9Z" opacity="0.52"/>
+    <ellipse cx="32" cy="32.6" rx="5" ry="4.4" fill="#fff"/>
+    <path fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" opacity="0.62" d="M26 18 32 8 38 18"/>
+  </g>
 </svg>`;
 }
 
@@ -1441,7 +1468,7 @@ function addUserLocationSourceAndLayer() {
             'icon-image': ['get', 'iconImage'],
             'icon-size': ['interpolate', ['linear'], ['zoom'], 12, 0.56, 16, 0.72, 18, 0.84],
             'icon-rotate': ['get', 'heading'],
-            'icon-pitch-alignment': 'map',
+            'icon-pitch-alignment': 'viewport',
             'icon-rotation-alignment': 'map',
             'icon-allow-overlap': true,
             'icon-ignore-placement': true,
@@ -1464,10 +1491,10 @@ function addRouteSourceAndLayer() {
             'line-join': 'round',
         },
         paint: {
-            'line-color': 'rgba(0, 195, 255, 0.86)',
+            'line-color': 'rgba(5, 12, 28, 0.82)',
             'line-width': ['interpolate', ['linear'], ['zoom'], 11, 13, 16, 24],
-            'line-blur': ['interpolate', ['linear'], ['zoom'], 11, 2.4, 16, 4.2],
-            'line-opacity': 0.72,
+            'line-blur': ['interpolate', ['linear'], ['zoom'], 11, 1.2, 16, 2.2],
+            'line-opacity': 0.58,
         },
     }, 'spots-pin');
 
@@ -1786,21 +1813,7 @@ export async function buildRouteToSpot(userLocation, spot, { camera = 'overview'
         source?.setData(buildRouteFeatureCollection(fallbackRoute));
         return fallbackRoute;
     }
-    if (['yandex-traffic', 'tomtom-traffic'].includes(safeRoute.source)) {
-        safeSetRouteLineColor([
-            'match',
-            ['get', 'traffic'],
-            'jam',
-            '#EF174A',
-            'heavy',
-            '#FF7A1A',
-            'slow',
-            '#FFD84D',
-            '#20F4FF',
-        ]);
-    } else {
-        safeSetRouteLineColor('#20F4FF');
-    }
+    safeSetRouteLineColor(ROUTE_TRAFFIC_LINE_COLOR);
     keepNavigationLayersOrdered();
 
     if (camera === 'follow') {
@@ -2001,6 +2014,7 @@ export function restoreActiveRoute(route) {
             coordinates,
         },
     }));
+    safeSetRouteLineColor(ROUTE_TRAFFIC_LINE_COLOR);
     setRouteTrafficMode(true);
     keepNavigationLayersOrdered();
 }
@@ -2046,6 +2060,7 @@ export function updateActiveRouteProgress(userLocation, route) {
         },
         segments: trimRouteSegments(route.segments ?? [], closestIndex),
     }));
+    safeSetRouteLineColor(ROUTE_TRAFFIC_LINE_COLOR);
 }
 
 export function updateRouteManeuverHint(instruction, route, hint = {}) {
@@ -2084,10 +2099,10 @@ export function updateRouteManeuverHint(instruction, route, hint = {}) {
         routeManeuverMarker = new maplibregl.Marker({
             element,
             anchor: 'bottom',
-            offset: [0, -24],
-            pitchAlignment: 'viewport',
+            offset: [0, -6],
+            pitchAlignment: 'map',
             rotationAlignment: 'viewport',
-        }).setLngLat(routeManeuverCoordinate).addTo(map);
+        }).setLngLat(coordinate).addTo(map);
     }
 
     const element = routeManeuverMarker.getElement();
@@ -2264,7 +2279,7 @@ export function focusNavigationPosition(userLocation, route = null, { preserveZo
         : [Number(userLocation.longitude), Number(userLocation.latitude)];
     const progress = Number(routeAnchor?.progressMeters);
     const cameraCenter = Number.isFinite(progress)
-        ? (getRouteCoordinateAtProgress(routeCoordinates, progress + FOLLOW_LOOKAHEAD_METERS) ?? current)
+        ? (getRouteCoordinateAtProgress(routeCoordinates, progress + 85) ?? current)
         : current;
     const bearingTarget = Number.isFinite(progress)
         ? getRouteCoordinateAtProgress(routeCoordinates, progress + FOLLOW_BEARING_LOOKAHEAD_METERS)
