@@ -50,7 +50,7 @@ const USER_LOCATION_ICON_STORAGE_KEY = 'auralith:user-location-icon';
 const USER_LOCATION_ICON_PREFIX = 'user-location-';
 const FOLLOW_ZOOM = 17.75;
 const FOLLOW_PITCH = 68;
-const FOLLOW_SCREEN_OFFSET_RATIO = 0.30;
+const FOLLOW_SCREEN_OFFSET_RATIO = 0.18;
 const FOLLOW_CENTER_LOOKAHEAD_METERS = 70;
 const FOLLOW_BEARING_LOOKAHEAD_METERS = 45;
 const MANEUVER_HINT_MIN_AHEAD_METERS = 85;
@@ -2081,6 +2081,12 @@ export function updateRouteManeuverHint(instruction, route, hint = {}) {
     const remainingMeters = Number(instruction.remainingMeters);
     const instructionDistanceMeters = Math.max(Number(instruction.distanceMeters) || 0, 0);
     const instructionStartMeters = Number(instruction.distanceFromStartMeters);
+
+    if (Number.isFinite(remainingMeters) && remainingMeters <= 15) {
+        clearRouteManeuverHint();
+        return;
+    }
+
     const currentProgressMeters = Number(hint.currentProgressMeters);
     const rawTargetProgressMeters = Number.isFinite(remainingMeters) && remainingMeters <= 25 && instructionDistanceMeters > 25
         ? instructionStartMeters + instructionDistanceMeters
@@ -2314,7 +2320,7 @@ export function focusNavigationPosition(userLocation, route = null, { preserveZo
 
 function getNavigationScreenOffsetRatio() {
     if (window.innerWidth >= 900) {
-        return 0.26;
+        return 0.16;
     }
 
     return FOLLOW_SCREEN_OFFSET_RATIO;
