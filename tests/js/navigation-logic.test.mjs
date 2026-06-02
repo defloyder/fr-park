@@ -96,7 +96,8 @@ test('navigation camera follows route geometry instead of compass', () => {
     assert.doesNotMatch(focusNavigationPosition, /getFreshCompassHeading|compassHeading/);
     assert.match(focusNavigationPosition, /bearing = null/);
     assert.match(mapSource, /function getNavigationCameraBearing/);
-    assert.match(mapSource, /progress \+ 85/);
+    assert.match(mapSource, /const FOLLOW_CENTER_LOOKAHEAD_METERS = 90/);
+    assert.match(mapSource, /const FOLLOW_BEARING_LOOKAHEAD_METERS = 150/);
     assert.doesNotMatch(formSource, /bearing: getNavigationCameraBearing|bearing: heading|getNavigationCameraBearing/);
 });
 
