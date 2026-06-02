@@ -1,5 +1,5 @@
 <div {{ $attributes->class(['brand-mark', 'auralith-mark', 'brand-mark--maps']) }}>
-    <svg class="brand-mark--maps__svg" viewBox="0 0 360 54" role="img" aria-label="Auralith Maps" xmlns="http://www.w3.org/2000/svg">
+    <svg class="brand-mark--maps__svg" viewBox="0 0 340 54" role="img" aria-label="Auralith Maps" xmlns="http://www.w3.org/2000/svg">
         <defs>
             <linearGradient id="auralith-mark-gradient" x1="12" y1="47" x2="52" y2="8" gradientUnits="userSpaceOnUse">
                 <stop stop-color="#15d8ff"/>
@@ -18,7 +18,7 @@
             <circle cx="63.4" cy="42.6" r="7.1" fill="#8b54ff"/>
             <circle cx="63.4" cy="42.6" r="3.2" fill="#1fd8ff" opacity=".9"/>
         </g>
-        <text class="brand-mark--maps__text brand-mark--maps__text-main" x="91" y="33">AURALITH</text>
-        <text class="brand-mark--maps__text brand-mark--maps__text-accent" x="264" y="33">MAPS</text>
+        <text class="brand-mark--maps__text brand-mark--maps__text-main" x="86" y="33" textLength="142" lengthAdjust="spacing">AURALITH</text>
+        <text class="brand-mark--maps__text brand-mark--maps__text-accent" x="252" y="33" textLength="70" lengthAdjust="spacing">MAPS</text>
     </svg>
 </div>

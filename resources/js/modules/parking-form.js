@@ -1178,14 +1178,78 @@ export function initParkingUi() {
             enterNavigationMode(state.selectedSpot, route);
             closeRoutePicker();
             showToast(`Маршрут: ${formatDuration(route.durationSeconds)}, ${formatDistance(route.distanceMeters)}.`);
-        } catch {
+        } catch (error) {
+            console.error('Failed to build in-app route.', error);
+            const fallbackRoute = await buildEmergencyRouteToSelectedSpot().catch(() => null);
+
+            if (fallbackRoute && state.selectedSpot) {
+                if (summary) {
+                    summary.innerHTML = `
+                        <strong>${formatDuration(fallbackRoute.durationSeconds)}</strong>
+                        <span>${formatDistance(fallbackRoute.distanceMeters)}</span>
+                        <small>Приблизительный маршрут</small>
+                    `;
+                }
+
+                enterNavigationMode(state.selectedSpot, fallbackRoute);
+                showToast(`Маршрут: ${formatDuration(fallbackRoute.durationSeconds)}, ${formatDistance(fallbackRoute.distanceMeters)}.`);
+                return;
+            }
+
             resetFailedRouteBuildState();
-            if (summary) summary.textContent = 'Не удалось построить маршрут. Попробуйте ещё раз или обновите карту.';
-            showToast('Не удалось построить маршрут. Попробуйте ещё раз.', true);
+            if (summary) summary.textContent = 'Не удалось построить маршрут: нужна геопозиция и координаты парковки.';
+            showToast('Не удалось построить маршрут. Проверьте геопозицию.', true);
         } finally {
             button?.removeAttribute('disabled');
             if (button && previousButtonText) button.textContent = previousButtonText;
         }
+    }
+
+    async function buildEmergencyRouteToSelectedSpot() {
+        const spot = state.selectedSpot;
+        if (!spot) return null;
+
+        const start = state.userLocation || await ensureRouteStartLocation().catch(() => null);
+        const finish = {
+            latitude: Number(spot.latitude),
+            longitude: Number(spot.longitude),
+        };
+
+        if (!start
+            || !Number.isFinite(Number(start.latitude))
+            || !Number.isFinite(Number(start.longitude))
+            || !Number.isFinite(finish.latitude)
+            || !Number.isFinite(finish.longitude)) {
+            return null;
+        }
+
+        const routeStart = {
+            ...start,
+            latitude: Number(start.latitude),
+            longitude: Number(start.longitude),
+        };
+        const distanceMeters = getDistanceMeters(routeStart, finish);
+        const durationSeconds = Math.max(120, Math.round(distanceMeters / (28000 / 3600)));
+
+        if (!state.userLocation) {
+            state.userLocation = routeStart;
+        }
+
+        return {
+            geometry: {
+                type: 'LineString',
+                coordinates: [
+                    [routeStart.longitude, routeStart.latitude],
+                    [finish.longitude, finish.latitude],
+                ],
+            },
+            distanceMeters,
+            durationSeconds,
+            delaySeconds: 0,
+            trafficDelaySeconds: 0,
+            source: 'local-fallback',
+            segments: [],
+        };
     }
 
     function resetFailedRouteBuildState() {
@@ -2958,23 +3022,10 @@ function formatDuration(seconds) {
 }
 
 function getRouteBuildNote(route) {
-    if (route.source?.endsWith('-cached')) {
-        return 'Показал сохраненный маршрут. Можно продолжать ведение без интернета.';
-    }
+    const delaySeconds = Math.max(0, Number(route?.delaySeconds ?? route?.trafficDelaySeconds ?? 0));
+    const delayMinutes = Math.round(delaySeconds / 60);
 
-    if (route.source === 'tomtom-traffic') {
-        return 'Маршрут построен с учетом текущего трафика.';
-    }
-
-    if (route.source === 'yandex-traffic') {
-        return 'Маршрут построен через Яндекс с учетом дорожной ситуации.';
-    }
-
-    if (route.source === 'road') {
-        return 'Построил резервный маршрут OSRM: TomTom traffic routing не ответил.';
-    }
-
-    return 'Показал приблизительный маршрут: traffic routing сейчас недоступен.';
+    return `задержка ${delayMinutes} мин`;
 }
 
 function getSegmentDistance(segment) {
