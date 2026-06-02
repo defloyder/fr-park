@@ -1554,6 +1554,7 @@ export function initParkingUi() {
                 iconSvg: maneuverIconSvg,
                 distanceText: Number.isFinite(maneuverDistance) ? formatDistance(maneuverDistance) : '',
                 text: formatNavigationInstructionText(instruction.text || ''),
+                currentProgressMeters: state.userLocation?.routeProgressMeters,
             });
         } else {
             clearRouteManeuverHint();

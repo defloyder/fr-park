@@ -179,6 +179,9 @@ test('nearest maneuver hint is rendered on the map', () => {
     assert.match(mapSource, /export function updateRouteManeuverHint/);
     assert.match(mapSource, /new maplibregl\.Marker/);
     assert.match(mapSource, /\.setLngLat\(coordinate\)\.addTo\(map\)/);
+    assert.match(mapSource, /MANEUVER_HINT_MIN_AHEAD_METERS = 85/);
+    assert.match(mapSource, /currentProgressMeters \+ MANEUVER_HINT_MIN_AHEAD_METERS/);
+    assert.match(mapSource, /offset: \[22, -18\]/);
     assert.match(mapSource, /getRouteCoordinateAtProgress/);
     assert.match(mapSource, /getRouteManeuverCoordinate/);
     assert.match(mapSource, /turnAngle < 18/);

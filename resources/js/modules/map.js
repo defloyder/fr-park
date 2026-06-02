@@ -53,6 +53,7 @@ const FOLLOW_PITCH = 68;
 const FOLLOW_SCREEN_OFFSET_RATIO = 0.30;
 const FOLLOW_CENTER_LOOKAHEAD_METERS = 70;
 const FOLLOW_BEARING_LOOKAHEAD_METERS = 45;
+const MANEUVER_HINT_MIN_AHEAD_METERS = 85;
 const ROUTE_TRAFFIC_LINE_COLOR = [
     'match',
     ['get', 'traffic'],
@@ -2080,9 +2081,13 @@ export function updateRouteManeuverHint(instruction, route, hint = {}) {
     const remainingMeters = Number(instruction.remainingMeters);
     const instructionDistanceMeters = Math.max(Number(instruction.distanceMeters) || 0, 0);
     const instructionStartMeters = Number(instruction.distanceFromStartMeters);
-    const targetProgressMeters = Number.isFinite(remainingMeters) && remainingMeters <= 25 && instructionDistanceMeters > 25
+    const currentProgressMeters = Number(hint.currentProgressMeters);
+    const rawTargetProgressMeters = Number.isFinite(remainingMeters) && remainingMeters <= 25 && instructionDistanceMeters > 25
         ? instructionStartMeters + instructionDistanceMeters
         : instructionStartMeters;
+    const targetProgressMeters = Number.isFinite(currentProgressMeters)
+        ? Math.max(rawTargetProgressMeters, currentProgressMeters + MANEUVER_HINT_MIN_AHEAD_METERS)
+        : rawTargetProgressMeters;
     const coordinate = getRouteManeuverCoordinate(route.geometry.coordinates, targetProgressMeters, {
         scanMeters: Math.max(45, Math.min(220, instructionDistanceMeters || 90)),
     });
@@ -2107,7 +2112,7 @@ export function updateRouteManeuverHint(instruction, route, hint = {}) {
         routeManeuverMarker = new maplibregl.Marker({
             element,
             anchor: 'bottom',
-            offset: [0, -10],
+            offset: [22, -18],
             pitchAlignment: 'viewport',
             rotationAlignment: 'viewport',
         }).setLngLat(coordinate).addTo(map);

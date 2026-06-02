@@ -2215,57 +2215,62 @@ body.is-navigation-mode .map-profile-control {
     }
 
     body.is-navigation-mode .navigation-guidance {
-        top: calc(58px + var(--safe-top));
+        top: calc(52px + var(--safe-top));
         left: max(8px, var(--safe-left));
-        width: min(286px, calc(100vw - 128px));
-        min-height: 176px;
-        grid-template-columns: 52px minmax(0, 1fr);
-        gap: 10px;
-        padding: 12px;
+        width: min(218px, calc(100vw - 136px));
+        min-height: 118px;
+        grid-template-columns: 42px minmax(0, 1fr);
+        gap: 8px;
+        padding: 8px;
         border-radius: 16px;
     }
 
     .navigation-guidance__arrow {
-        width: 50px;
-        height: 50px;
-        border-radius: 13px;
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
     }
 
     .navigation-guidance__arrow svg {
-        width: 32px;
-        height: 32px;
+        width: 28px;
+        height: 28px;
     }
 
     .navigation-guidance strong {
-        font-size: 1.18rem;
+        font-size: 0.98rem;
     }
 
     .navigation-guidance span[data-navigation-instruction] {
-        font-size: 0.66rem;
+        margin-top: 2px;
+        font-size: 0.56rem;
         -webkit-line-clamp: 2;
     }
 
     .navigation-compass {
-        grid-template-columns: 54px 1px minmax(0, 1fr);
-        gap: 10px;
-        padding-top: 10px;
+        grid-template-columns: 42px 1px minmax(0, 1fr);
+        gap: 7px;
+        padding-top: 6px;
     }
 
     .navigation-compass::before {
-        height: 50px;
+        height: 40px;
     }
 
     .navigation-compass__dial {
-        width: 52px;
-        height: 52px;
+        width: 42px;
+        height: 42px;
     }
 
     .navigation-compass__readout strong {
-        font-size: 1.18rem;
+        font-size: 0.98rem;
     }
 
     .navigation-compass__readout span {
-        font-size: 0.66rem;
+        font-size: 0.56rem;
+    }
+
+    .navigation-guidance::after {
+        height: 2px;
     }
 
     .navigation-speed-hud {
