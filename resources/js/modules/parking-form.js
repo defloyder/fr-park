@@ -1786,7 +1786,12 @@ export function initParkingUi() {
         const compass = document.querySelector('.navigation-compass');
         if (!compass) return;
 
-        const heading = getFreshDeviceHeading(5000);
+        const routeHeading = document.body.classList.contains('is-navigation-mode')
+            ? Number(state.userLocation?.routeBearing)
+            : Number.NaN;
+        const heading = Number.isFinite(routeHeading)
+            ? routeHeading
+            : getFreshDeviceHeading(5000);
         const hasHeading = Number.isFinite(heading);
 
         compass.classList.toggle('is-muted', !hasHeading);

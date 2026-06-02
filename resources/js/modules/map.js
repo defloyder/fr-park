@@ -2066,7 +2066,7 @@ export function updateActiveRouteProgress(userLocation, route) {
             ...route.geometry,
             coordinates: remainingCoordinates,
         },
-        segments: trimRouteSegments(route.segments ?? [], closestIndex),
+        segments: [],
     }));
     safeSetRouteLineColor(ROUTE_TRAFFIC_LINE_COLOR);
 }
