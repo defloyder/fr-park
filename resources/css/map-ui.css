@@ -158,12 +158,13 @@ body[data-map-layer="satellite"] .map-screen > .map-canvas::after {
     top: var(--safe-top);
     left: 50%;
     display: flex;
-    width: min(430px, calc(100vw - 24px));
-    min-height: 48px;
+    width: auto;
+    min-width: min(360px, calc(100vw - 116px));
+    min-height: 44px;
     align-items: center;
     justify-content: center;
-    padding: 8px 18px;
-    border-radius: 0 0 18px 18px;
+    padding: 4px 18px 8px;
+    border-radius: 0 0 20px 20px;
     transform: translateX(-50%);
 }
 
@@ -179,7 +180,7 @@ body[data-map-layer="satellite"] .map-screen > .map-canvas::after {
 
 .brand-mark,
 .brand-mark--maps,
-.brand-mark--maps img {
+.brand-mark--maps svg {
     background: transparent;
     border: 0;
     box-shadow: none;
@@ -187,30 +188,37 @@ body[data-map-layer="satellite"] .map-screen > .map-canvas::after {
 
 .brand-mark--maps {
     display: grid;
-    width: min(280px, calc(100vw - 80px));
-    height: 32px;
+    width: min(330px, calc(100vw - 142px));
+    height: 38px;
     place-items: center;
     overflow: visible;
 }
 
-.brand-mark--maps__image {
+.brand-mark--maps__svg {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    overflow: visible;
 }
 
-.brand-mark--maps__image--dark {
-    display: none;
+.brand-mark--maps__text {
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 18px;
+    font-weight: 850;
+    letter-spacing: 7px;
 }
 
-body[data-map-layer="dark"] .brand-mark--maps__image--light,
-body[data-map-layer="satellite"] .brand-mark--maps__image--light {
-    display: none;
+.brand-mark--maps__text-main {
+    fill: var(--text-strong);
 }
 
-body[data-map-layer="dark"] .brand-mark--maps__image--dark,
-body[data-map-layer="satellite"] .brand-mark--maps__image--dark {
-    display: block;
+.brand-mark--maps__text-accent {
+    fill: url("#auralith-word-gradient");
+}
+
+body[data-map-layer="dark"] .brand-mark--maps__text-main,
+body[data-map-layer="satellite"] .brand-mark--maps__text-main,
+body.is-navigation-mode .brand-mark--maps__text-main {
+    fill: #f8fbff;
 }
 
 .map-control-stack {
@@ -830,9 +838,72 @@ body[data-map-layer="satellite"] .brand-mark--maps__image--dark {
 .install-app-panel,
 .profile-user {
     display: grid;
-    grid-template-columns: 46px minmax(0, 1fr) auto;
     align-items: center;
     gap: 12px;
+}
+
+.profile-user {
+    grid-template-columns: 46px minmax(0, 1fr) auto;
+}
+
+.install-app-panel {
+    grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.install-app-panel > div,
+.profile-user > div {
+    min-width: 0;
+}
+
+.install-app-panel .ghost-button {
+    width: auto;
+    min-width: 128px;
+    white-space: nowrap;
+}
+
+.spot-card__address-row {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+}
+
+.spot-card__address {
+    min-width: 0;
+    margin: 0;
+}
+
+.spot-card__meta {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.spot-card__meta span,
+.spot-card__address,
+.spot-detail {
+    padding: 9px 11px;
+    background: rgba(232, 246, 252, 0.70);
+    border: 1px solid rgba(58, 137, 166, 0.24);
+    border-radius: 14px;
+}
+
+.spot-card__meta span {
+    display: inline-flex;
+    min-width: 0;
+    min-height: 38px;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    color: var(--text-strong);
+    font-size: 0.84rem;
+    font-weight: 850;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.spot-card__meta .spot-status {
+    color: #00b9d8;
+    background: rgba(20, 216, 255, 0.10);
+    border-color: rgba(20, 216, 255, 0.42);
 }
 
 .auth-tabs {
@@ -842,6 +913,104 @@ body[data-map-layer="satellite"] .brand-mark--maps__image--dark {
     padding: 4px;
     background: rgba(232, 246, 252, 0.72);
     border-radius: 14px;
+}
+
+body[data-map-layer="light"]:not(.is-navigation-mode) .top-panel,
+body[data-map-layer="light"]:not(.is-navigation-mode) .spot-card,
+body[data-map-layer="light"]:not(.is-navigation-mode) .spot-list,
+body[data-map-layer="light"]:not(.is-navigation-mode) .search-panel,
+body[data-map-layer="light"]:not(.is-navigation-mode) .profile-panel,
+body[data-map-layer="light"]:not(.is-navigation-mode) .bottom-sheet,
+body[data-map-layer="light"]:not(.is-navigation-mode) .floating-nav,
+body[data-map-layer="light"]:not(.is-navigation-mode) .map-control-stack {
+    color: #f8fbff;
+    background: linear-gradient(145deg, rgba(5, 15, 35, 0.88), rgba(13, 31, 67, 0.76));
+    border-color: rgba(105, 188, 255, 0.36);
+    box-shadow: 0 22px 56px rgba(0, 12, 34, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+body[data-map-layer="light"]:not(.is-navigation-mode) .panel-eyebrow,
+body[data-map-layer="light"]:not(.is-navigation-mode) .spot-card__label,
+body[data-map-layer="light"]:not(.is-navigation-mode) .export-selection-count {
+    color: var(--sky);
+}
+
+body[data-map-layer="light"]:not(.is-navigation-mode) .panel-header h2,
+body[data-map-layer="light"]:not(.is-navigation-mode) .spot-card h2,
+body[data-map-layer="light"]:not(.is-navigation-mode) .profile-user strong,
+body[data-map-layer="light"]:not(.is-navigation-mode) .install-app-panel strong,
+body[data-map-layer="light"]:not(.is-navigation-mode) .spot-list__content strong,
+body[data-map-layer="light"]:not(.is-navigation-mode) .search-result strong,
+body[data-map-layer="light"]:not(.is-navigation-mode) .favorite-item strong,
+body[data-map-layer="light"]:not(.is-navigation-mode) .nav-button {
+    color: #f8fbff;
+}
+
+body[data-map-layer="light"]:not(.is-navigation-mode) .spot-list__content small,
+body[data-map-layer="light"]:not(.is-navigation-mode) .search-result small,
+body[data-map-layer="light"]:not(.is-navigation-mode) .favorite-item small,
+body[data-map-layer="light"]:not(.is-navigation-mode) .spot-card__address,
+body[data-map-layer="light"]:not(.is-navigation-mode) .spot-card__description,
+body[data-map-layer="light"]:not(.is-navigation-mode) .spot-detail p,
+body[data-map-layer="light"]:not(.is-navigation-mode) .profile-user span,
+body[data-map-layer="light"]:not(.is-navigation-mode) .install-app-panel p,
+body[data-map-layer="light"]:not(.is-navigation-mode) .search-field,
+body[data-map-layer="light"]:not(.is-navigation-mode) .spot-form label,
+body[data-map-layer="light"]:not(.is-navigation-mode) .auth-form label {
+    color: rgba(226, 239, 255, 0.76);
+}
+
+body[data-map-layer="light"]:not(.is-navigation-mode) .search-field input,
+body[data-map-layer="light"]:not(.is-navigation-mode) .search-field select,
+body[data-map-layer="light"]:not(.is-navigation-mode) .spot-form input,
+body[data-map-layer="light"]:not(.is-navigation-mode) .spot-form textarea,
+body[data-map-layer="light"]:not(.is-navigation-mode) .spot-form select,
+body[data-map-layer="light"]:not(.is-navigation-mode) .auth-form input,
+body[data-map-layer="light"]:not(.is-navigation-mode) .spot-detail,
+body[data-map-layer="light"]:not(.is-navigation-mode) .install-app-panel,
+body[data-map-layer="light"]:not(.is-navigation-mode) .profile-user,
+body[data-map-layer="light"]:not(.is-navigation-mode) .photo-dropzone,
+body[data-map-layer="light"]:not(.is-navigation-mode) .spot-card__meta span,
+body[data-map-layer="light"]:not(.is-navigation-mode) .spot-card__address {
+    color: #f8fbff;
+    background: rgba(12, 27, 58, 0.62);
+    border-color: rgba(105, 188, 255, 0.30);
+}
+
+body[data-map-layer="light"]:not(.is-navigation-mode) .search-field input::placeholder,
+body[data-map-layer="light"]:not(.is-navigation-mode) .spot-form input::placeholder,
+body[data-map-layer="light"]:not(.is-navigation-mode) .spot-form textarea::placeholder,
+body[data-map-layer="light"]:not(.is-navigation-mode) .auth-form input::placeholder {
+    color: rgba(226, 239, 255, 0.48);
+}
+
+body[data-map-layer="light"]:not(.is-navigation-mode) .spot-list__item,
+body[data-map-layer="light"]:not(.is-navigation-mode) .search-result,
+body[data-map-layer="light"]:not(.is-navigation-mode) .favorite-item {
+    background: linear-gradient(145deg, rgba(14, 38, 80, 0.78), rgba(9, 25, 54, 0.64));
+    border-color: rgba(88, 191, 255, 0.46);
+    box-shadow: 0 14px 30px rgba(0, 10, 30, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+body[data-map-layer="light"]:not(.is-navigation-mode) .map-control-button,
+body[data-map-layer="light"]:not(.is-navigation-mode) .icon-button,
+body[data-map-layer="light"]:not(.is-navigation-mode) .spot-card__close,
+body[data-map-layer="light"]:not(.is-navigation-mode) .route-picker__close,
+body[data-map-layer="light"]:not(.is-navigation-mode) .photo-lightbox__close,
+body[data-map-layer="light"]:not(.is-navigation-mode) .ghost-button,
+body[data-map-layer="light"]:not(.is-navigation-mode) .edit-button,
+body[data-map-layer="light"]:not(.is-navigation-mode) .favorite-button,
+body[data-map-layer="light"]:not(.is-navigation-mode) .copy-address-button,
+body[data-map-layer="light"]:not(.is-navigation-mode) .field-icon-button {
+    color: #f8fbff;
+    background: rgba(238, 246, 255, 0.12);
+    border-color: rgba(162, 213, 255, 0.28);
+}
+
+body[data-map-layer="light"]:not(.is-navigation-mode) .nav-button.is-active,
+body[data-map-layer="light"]:not(.is-navigation-mode) .route-button {
+    color: #ffffff;
+    background: linear-gradient(135deg, var(--violet), #21a8ff);
 }
 
 .auth-tab {
@@ -870,9 +1039,86 @@ body[data-map-layer="satellite"] .brand-mark--maps__image--dark {
     gap: 8px;
 }
 
-.navigation-recenter,
-.route-maneuver-hint {
+.navigation-recenter {
     display: none !important;
+}
+
+.route-maneuver-hint {
+    display: grid !important;
+    min-width: 150px;
+    max-width: 240px;
+    grid-template-columns: 40px minmax(0, 1fr);
+    align-items: center;
+    gap: 9px;
+    padding: 9px 11px;
+    color: #f8fbff;
+    background: linear-gradient(145deg, rgba(7, 18, 36, 0.86), rgba(18, 36, 70, 0.72));
+    border: 1px solid rgba(103, 213, 255, 0.42);
+    border-radius: 16px;
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    pointer-events: none;
+    backdrop-filter: blur(16px) saturate(145%);
+}
+
+.route-maneuver-hint::after {
+    position: absolute;
+    bottom: -7px;
+    left: 50%;
+    width: 14px;
+    height: 14px;
+    background: rgba(7, 18, 36, 0.86);
+    border-right: 1px solid rgba(103, 213, 255, 0.34);
+    border-bottom: 1px solid rgba(103, 213, 255, 0.34);
+    content: "";
+    transform: translateX(-50%) rotate(45deg);
+}
+
+.route-maneuver-hint__icon {
+    display: grid;
+    width: 40px;
+    height: 40px;
+    place-items: center;
+    color: var(--sky);
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(103, 213, 255, 0.30);
+    border-radius: 13px;
+}
+
+.route-maneuver-hint__icon svg {
+    width: 26px;
+    height: 26px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2.6;
+}
+
+.route-maneuver-hint__copy {
+    display: grid;
+    min-width: 0;
+    gap: 2px;
+}
+
+.route-maneuver-hint__copy strong {
+    overflow: hidden;
+    color: #ffffff;
+    font-size: 0.92rem;
+    font-weight: 950;
+    line-height: 1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.route-maneuver-hint__copy span {
+    display: -webkit-box;
+    overflow: hidden;
+    color: rgba(232, 243, 255, 0.82);
+    font-size: 0.72rem;
+    font-weight: 780;
+    line-height: 1.14;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
 }
 
 body.is-navigation-mode .floating-nav,
@@ -903,7 +1149,7 @@ body.is-navigation-mode .navigation-guidance {
     left: max(14px, var(--safe-left));
     z-index: 66;
     display: grid;
-    width: 184px;
+    width: 216px;
     min-height: 198px;
     grid-template-columns: 64px minmax(0, 1fr);
     grid-template-rows: auto auto auto;
@@ -1449,7 +1695,8 @@ body.is-navigation-mode .map-profile-control {
 
 @media (max-width: 720px) {
     .top-panel {
-        width: min(340px, calc(100vw - 20px));
+        width: auto;
+        min-width: min(300px, calc(100vw - 112px));
         min-height: 42px;
         padding: 7px 14px;
         border-radius: 0 0 16px 16px;
@@ -1484,7 +1731,7 @@ body.is-navigation-mode .map-profile-control {
     .bottom-sheet,
     .spot-card {
         top: calc(58px + var(--safe-top));
-        right: 10px;
+        right: 72px;
         bottom: calc(74px + var(--safe-bottom));
         left: 10px;
         width: auto;
@@ -1522,8 +1769,26 @@ body.is-navigation-mode .map-profile-control {
         text-overflow: ellipsis;
     }
 
+    .install-app-panel {
+        grid-template-columns: minmax(0, 1fr);
+        align-items: start;
+    }
+
+    .install-app-panel .ghost-button {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .spot-card__meta {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .spot-card__meta .spot-status {
+        grid-column: 1 / -1;
+    }
+
     body.is-navigation-mode .top-panel {
-        width: min(246px, calc(100vw - 112px));
+        min-width: min(246px, calc(100vw - 112px));
         min-height: 38px;
         padding: 6px 12px;
     }
@@ -1536,23 +1801,23 @@ body.is-navigation-mode .map-profile-control {
     body.is-navigation-mode .navigation-guidance {
         top: calc(58px + var(--safe-top));
         left: max(8px, var(--safe-left));
-        width: min(190px, calc(100vw - 126px));
-        min-height: 146px;
-        grid-template-columns: 42px minmax(0, 1fr);
-        gap: 8px;
-        padding: 9px;
+        width: min(286px, calc(100vw - 128px));
+        min-height: 176px;
+        grid-template-columns: 52px minmax(0, 1fr);
+        gap: 10px;
+        padding: 12px;
         border-radius: 16px;
     }
 
     .navigation-guidance__arrow {
-        width: 42px;
-        height: 42px;
+        width: 50px;
+        height: 50px;
         border-radius: 13px;
     }
 
     .navigation-guidance__arrow svg {
-        width: 28px;
-        height: 28px;
+        width: 32px;
+        height: 32px;
     }
 
     .navigation-guidance strong {
@@ -1565,22 +1830,22 @@ body.is-navigation-mode .map-profile-control {
     }
 
     .navigation-compass {
-        grid-template-columns: 42px 1px minmax(0, 1fr);
-        gap: 8px;
-        padding-top: 8px;
+        grid-template-columns: 54px 1px minmax(0, 1fr);
+        gap: 10px;
+        padding-top: 10px;
     }
 
     .navigation-compass::before {
-        height: 42px;
+        height: 50px;
     }
 
     .navigation-compass__dial {
-        width: 42px;
-        height: 42px;
+        width: 52px;
+        height: 52px;
     }
 
     .navigation-compass__readout strong {
-        font-size: 1rem;
+        font-size: 1.18rem;
     }
 
     .navigation-compass__readout span {
@@ -1648,11 +1913,11 @@ body.is-navigation-mode .map-profile-control {
     }
 
     body.is-navigation-mode .map-control-stack:not(.map-control-stack--secondary) {
-        top: calc(214px + var(--safe-top));
+        top: calc(224px + var(--safe-top));
     }
 
     body.is-navigation-mode .map-control-stack--secondary {
-        top: calc(382px + var(--safe-top));
+        top: calc(398px + var(--safe-top));
     }
 
     .admin-shell {

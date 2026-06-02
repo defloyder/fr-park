@@ -50,7 +50,7 @@ const USER_LOCATION_ICON_STORAGE_KEY = 'auralith:user-location-icon';
 const USER_LOCATION_ICON_PREFIX = 'user-location-';
 const FOLLOW_ZOOM = 17.75;
 const FOLLOW_PITCH = 68;
-const FOLLOW_SCREEN_OFFSET_RATIO = 0.30;
+const FOLLOW_SCREEN_OFFSET_RATIO = 0.36;
 const FOLLOW_CENTER_LOOKAHEAD_METERS = 150;
 const FOLLOW_BEARING_LOOKAHEAD_METERS = 45;
 const ROUTE_TRAFFIC_LINE_COLOR = [
@@ -2309,7 +2309,7 @@ export function focusNavigationPosition(userLocation, route = null, { preserveZo
 
 function getNavigationScreenOffsetRatio() {
     if (window.innerWidth >= 900) {
-        return 0.28;
+        return 0.34;
     }
 
     return FOLLOW_SCREEN_OFFSET_RATIO;
@@ -2541,15 +2541,16 @@ function formatOsrmInstruction(step) {
 function focusRouteStart(coordinates) {
     const routeCoordinates = sanitizeLineCoordinates(coordinates);
     const start = routeCoordinates[0];
-    const next = routeCoordinates[Math.min(8, Math.max(1, routeCoordinates.length - 1))];
 
     if (!start) return;
+
+    const routeBearing = getNavigationRouteForwardBearing(routeCoordinates, 0, start);
 
     safeEaseTo({
         center: start,
         zoom: FOLLOW_ZOOM,
         pitch: FOLLOW_PITCH,
-        bearing: next ? getBearing(start, next) : map.getBearing(),
+        bearing: Number.isFinite(routeBearing) ? routeBearing : map.getBearing(),
         offset: [0, Math.round(window.innerHeight * getNavigationScreenOffsetRatio())],
         duration: 420,
     });
