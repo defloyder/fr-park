@@ -50,8 +50,8 @@ const USER_LOCATION_ICON_STORAGE_KEY = 'auralith:user-location-icon';
 const USER_LOCATION_ICON_PREFIX = 'user-location-';
 const FOLLOW_ZOOM = 17.75;
 const FOLLOW_PITCH = 68;
-const FOLLOW_SCREEN_OFFSET_RATIO = 0.36;
-const FOLLOW_CENTER_LOOKAHEAD_METERS = 150;
+const FOLLOW_SCREEN_OFFSET_RATIO = 0.30;
+const FOLLOW_CENTER_LOOKAHEAD_METERS = 70;
 const FOLLOW_BEARING_LOOKAHEAD_METERS = 45;
 const ROUTE_TRAFFIC_LINE_COLOR = [
     'match',
@@ -2309,7 +2309,7 @@ export function focusNavigationPosition(userLocation, route = null, { preserveZo
 
 function getNavigationScreenOffsetRatio() {
     if (window.innerWidth >= 900) {
-        return 0.34;
+        return 0.26;
     }
 
     return FOLLOW_SCREEN_OFFSET_RATIO;
