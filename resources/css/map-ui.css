@@ -887,15 +887,15 @@ body.is-navigation-mode .bottom-sheet {
 
 body.is-navigation-mode .top-panel {
     z-index: 70;
-    width: min(372px, calc(100vw - 116px));
+    width: min(430px, calc(100vw - 116px));
     min-height: 46px;
     padding: 8px 18px;
     pointer-events: none;
 }
 
 body.is-navigation-mode .top-panel .brand-mark--maps {
-    width: min(270px, calc(100vw - 154px));
-    height: 30px;
+    width: min(340px, calc(100vw - 154px));
+    height: 34px;
 }
 
 body.is-navigation-mode .navigation-guidance {
@@ -975,6 +975,8 @@ body.is-navigation-mode .navigation-guidance {
 }
 
 .navigation-compass::before {
+    grid-column: 2;
+    grid-row: 1;
     width: 1px;
     height: 58px;
     background: rgba(71, 85, 105, 0.18);
@@ -984,6 +986,8 @@ body.is-navigation-mode .navigation-guidance {
 .navigation-compass__dial {
     position: relative;
     display: grid;
+    grid-column: 1;
+    grid-row: 1;
     width: 60px;
     height: 60px;
     place-items: center;
@@ -1053,6 +1057,8 @@ body.is-navigation-mode .navigation-guidance {
 }
 
 .navigation-compass__readout {
+    grid-column: 3;
+    grid-row: 1;
     min-width: 0;
 }
 
@@ -1296,11 +1302,15 @@ body.is-navigation-mode .navigation-guidance {
 }
 
 body.is-navigation-mode .map-control-stack:not(.map-control-stack--secondary) {
-    top: calc(236px + var(--safe-top));
+    top: calc(226px + var(--safe-top));
 }
 
 body.is-navigation-mode .map-control-stack--secondary {
-    top: calc(410px + var(--safe-top));
+    top: calc(374px + var(--safe-top));
+}
+
+body.is-navigation-mode .map-profile-control {
+    display: none;
 }
 
 .maplibregl-ctrl-group {

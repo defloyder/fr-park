@@ -2297,7 +2297,7 @@ export function focusNavigationPosition(userLocation, route = null, { preserveZo
         center: cameraCenter,
         zoom: preserveZoom ? Math.max(map.getZoom(), FOLLOW_ZOOM) : FOLLOW_ZOOM,
         pitch: FOLLOW_PITCH,
-        bearing: Number.isFinite(Number(bearing))
+        bearing: bearing !== null && bearing !== undefined && Number.isFinite(Number(bearing))
             ? Number(bearing)
             : (Number.isFinite(cameraBearing) ? cameraBearing : map.getBearing()),
         padding: { top: 0, right: 0, bottom: 0, left: 0 },
