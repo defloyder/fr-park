@@ -50,9 +50,9 @@ const USER_LOCATION_ICON_STORAGE_KEY = 'auralith:user-location-icon';
 const USER_LOCATION_ICON_PREFIX = 'user-location-';
 const FOLLOW_ZOOM = 17.75;
 const FOLLOW_PITCH = 68;
-const FOLLOW_SCREEN_OFFSET_RATIO = 0.20;
-const FOLLOW_CENTER_LOOKAHEAD_METERS = 55;
-const FOLLOW_BEARING_LOOKAHEAD_METERS = 85;
+const FOLLOW_SCREEN_OFFSET_RATIO = 0.30;
+const FOLLOW_CENTER_LOOKAHEAD_METERS = 150;
+const FOLLOW_BEARING_LOOKAHEAD_METERS = 45;
 const ROUTE_TRAFFIC_LINE_COLOR = [
     'match',
     ['get', 'traffic'],
@@ -2289,13 +2289,9 @@ export function focusNavigationPosition(userLocation, route = null, { preserveZo
     const cameraCenter = Number.isFinite(progress)
         ? (getRouteCoordinateAtProgress(routeCoordinates, progress + FOLLOW_CENTER_LOOKAHEAD_METERS) ?? current)
         : current;
-    const bearingTarget = Number.isFinite(progress)
-        ? getRouteCoordinateAtProgress(routeCoordinates, progress + FOLLOW_BEARING_LOOKAHEAD_METERS)
-        : null;
-    const lookaheadBearing = bearingTarget ? getBearing(current, bearingTarget) : null;
-    const cameraBearing = Number.isFinite(Number(routeAnchor?.bearing))
-        ? Number(routeAnchor.bearing)
-        : (Number.isFinite(lookaheadBearing) ? lookaheadBearing : getNavigationCameraBearing(userLocation, routeCoordinates));
+    const cameraBearing = Number.isFinite(progress)
+        ? getNavigationRouteForwardBearing(routeCoordinates, progress, current)
+        : getNavigationCameraBearing(userLocation, routeCoordinates);
 
     safeEaseTo({
         center: cameraCenter,
@@ -2313,10 +2309,51 @@ export function focusNavigationPosition(userLocation, route = null, { preserveZo
 
 function getNavigationScreenOffsetRatio() {
     if (window.innerWidth >= 900) {
-        return 0.18;
+        return 0.28;
     }
 
     return FOLLOW_SCREEN_OFFSET_RATIO;
+}
+
+function getNavigationRouteForwardBearing(routeCoordinates, progressMeters, current) {
+    const progress = Number(progressMeters);
+
+    if (!Number.isFinite(progress) || routeCoordinates.length < 2) {
+        return null;
+    }
+
+    const anchor = current ?? getRouteCoordinateAtProgress(routeCoordinates, progress);
+
+    if (!anchor) {
+        return null;
+    }
+
+    const lookaheads = [
+        FOLLOW_BEARING_LOOKAHEAD_METERS,
+        75,
+        110,
+        160,
+        230,
+    ];
+
+    for (const meters of lookaheads) {
+        const ahead = getRouteCoordinateAtProgress(routeCoordinates, progress + meters);
+
+        if (!ahead) {
+            continue;
+        }
+
+        const distance = getDistanceMeters(
+            { longitude: anchor[0], latitude: anchor[1] },
+            { longitude: ahead[0], latitude: ahead[1] },
+        );
+
+        if (distance >= 8) {
+            return getBearing(anchor, ahead);
+        }
+    }
+
+    return null;
 }
 
 function getNavigationRouteAnchor(userLocation, routeCoordinates) {

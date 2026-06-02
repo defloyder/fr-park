@@ -96,8 +96,9 @@ test('navigation camera follows route geometry instead of compass', () => {
     assert.doesNotMatch(focusNavigationPosition, /getFreshCompassHeading|compassHeading/);
     assert.match(focusNavigationPosition, /bearing = null/);
     assert.match(mapSource, /function getNavigationCameraBearing/);
-    assert.match(mapSource, /const FOLLOW_CENTER_LOOKAHEAD_METERS = 55/);
-    assert.match(mapSource, /const FOLLOW_BEARING_LOOKAHEAD_METERS = 85/);
+    assert.match(mapSource, /const FOLLOW_CENTER_LOOKAHEAD_METERS = 150/);
+    assert.match(mapSource, /const FOLLOW_BEARING_LOOKAHEAD_METERS = 45/);
+    assert.match(mapSource, /function getNavigationRouteForwardBearing/);
     assert.doesNotMatch(formSource, /bearing: getNavigationCameraBearing|bearing: heading|getNavigationCameraBearing/);
 });
 
@@ -216,8 +217,8 @@ test('map settings expose selectable GPS cursor icons', () => {
     assert.match(mapSource, /settings\.classList\.remove\('is-open'\)/);
     assert.match(mapSource, /iconImage: getUserLocationIconImage/);
     assert.match(cssSource, /\.map-settings__grid/);
-    assert.match(cssSource, /top: calc\(100% \+ 10px\)/);
-    assert.match(cssSource, /max-height: calc\(100svh - 150px\)/);
+    assert.match(cssSource, /right: calc\(100% \+ 12px\)/);
+    assert.match(cssSource, /width: min\(280px, calc\(100vw - 120px\)\)/);
 });
 
 test('in-app route build falls back to last known location instead of rejecting inaccurate GPS', () => {
