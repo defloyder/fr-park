@@ -48,11 +48,11 @@ const ROUTE_CACHE_STORAGE_KEY = 'auralith:last-driving-route';
 const TRAFFIC_LAYER_STORAGE_KEY = 'auralith:traffic-enabled';
 const USER_LOCATION_ICON_STORAGE_KEY = 'auralith:user-location-icon';
 const USER_LOCATION_ICON_PREFIX = 'user-location-';
-const FOLLOW_ZOOM = 16.65;
-const FOLLOW_PITCH = 58;
+const FOLLOW_ZOOM = 16.25;
+const FOLLOW_PITCH = 60;
 const FOLLOW_SCREEN_OFFSET_RATIO = 0.32;
-const FOLLOW_CENTER_LOOKAHEAD_METERS = 120;
-const FOLLOW_BEARING_LOOKAHEAD_METERS = 220;
+const FOLLOW_CENTER_LOOKAHEAD_METERS = 220;
+const FOLLOW_BEARING_LOOKAHEAD_METERS = 360;
 const ROUTE_TRAFFIC_LINE_COLOR = [
     'match',
     ['get', 'traffic'],
@@ -485,7 +485,14 @@ function initMapLibreMap() {
     map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
 
     map.on('error', (event) => {
-        console.error('MapLibre error', event.error);
+        const message = String(event?.error?.message || event?.error || '');
+
+        if (message.includes('Failed to fetch') || message.includes('AJAXError')) {
+            console.warn('MapLibre tile/source request failed', message);
+            return;
+        }
+
+        console.warn('MapLibre error', event.error);
     });
 
     bindLayerSwitcher();
