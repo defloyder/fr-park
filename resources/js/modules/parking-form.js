@@ -511,7 +511,7 @@ export function initParkingUi() {
                     <span aria-hidden="true">♥</span>
                 </button>
                 ${editButton}
-                <button class="route-button" type="button" data-action="route-in-app">Маршрут</button>
+                <button class="route-button" type="button" data-action="open-route-picker">Маршрут</button>
             </div>
         `;
         card.querySelector('.spot-card__close').addEventListener('click', () => card.classList.add('hidden'));
@@ -1125,10 +1125,10 @@ export function initParkingUi() {
                 <button class="route-option route-option--app" type="button" data-action="route-in-app">
                     <span class="route-option__logo route-option__logo--auralith" aria-hidden="true">A</span>
                     <strong>Auralith</strong>
-                    <small>показать на карте</small>
+                    <small>встроенный навигатор</small>
                 </button>
             </div>
-            <p class="route-picker__note">Для пробок используем данные выбранного навигатора. Внутри карты строим дорожный маршрут и показываем расчет времени.</p>
+            <p class="route-picker__note">Выберите, где вести маршрут. Auralith построит маршрут прямо на карте.</p>
             <div class="route-picker__summary" data-route-summary></div>
         `;
         document.body.append(modal);
@@ -1176,6 +1176,7 @@ export function initParkingUi() {
             }
 
             enterNavigationMode(state.selectedSpot, route);
+            closeRoutePicker();
             showToast(`Маршрут: ${formatDuration(route.durationSeconds)}, ${formatDistance(route.distanceMeters)}.`);
         } catch {
             resetFailedRouteBuildState();
@@ -2637,7 +2638,6 @@ function renderDetail(title, value) {
                 <strong>${escapeHtml(title)}</strong>
                 <p>${escapeHtml(value)}</p>
             </div>
-            <span class="spot-detail__chevron" aria-hidden="true">›</span>
         </article>
     `;
 }

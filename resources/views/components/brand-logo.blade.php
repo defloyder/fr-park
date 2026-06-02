@@ -19,7 +19,6 @@
             <circle cx="63.4" cy="42.6" r="3.2" fill="#1fd8ff" opacity=".9"/>
         </g>
         <text class="brand-mark--maps__text brand-mark--maps__text-main" x="91" y="33">AURALITH</text>
-        <text class="brand-mark--maps__text brand-mark--maps__text-accent" x="252" y="33">MAPS</text>
-        <path class="brand-mark--maps__spark" d="M307 43h4m24 0h4" stroke="#25cfff" stroke-width="2" stroke-linecap="round"/>
+        <text class="brand-mark--maps__text brand-mark--maps__text-accent" x="264" y="33">MAPS</text>
     </svg>
 </div>
