@@ -218,7 +218,7 @@ body[data-map-layer="satellite"] .map-screen > .map-canvas::after {
 body[data-map-layer="dark"] .brand-mark--maps__text-main,
 body[data-map-layer="satellite"] .brand-mark--maps__text-main,
 body.is-navigation-mode .brand-mark--maps__text-main {
-    fill: #f8fbff;
+    fill: #07111f;
 }
 
 .map-control-stack {
@@ -628,6 +628,26 @@ body.is-navigation-mode .brand-mark--maps__text-main {
     border: 0;
 }
 
+.copy-address-button {
+    width: 42px;
+    min-width: 42px;
+    height: 42px;
+    min-height: 42px;
+    flex: 0 0 42px;
+    padding: 0;
+    border-radius: 50%;
+}
+
+.copy-address-button svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+}
+
 .danger-button {
     color: #fff;
     background: linear-gradient(135deg, #ef4444, #be123c);
@@ -782,13 +802,14 @@ body.is-navigation-mode .brand-mark--maps__text-main {
 .spot-list__status {
     min-height: 26px;
     padding: 5px 9px;
-    color: var(--sky);
-    background: rgba(32, 200, 255, 0.12);
-    border: 1px solid rgba(32, 200, 255, 0.42);
+    color: #07111f;
+    background: linear-gradient(135deg, rgba(103, 232, 249, 0.92), rgba(134, 239, 172, 0.88));
+    border: 1px solid rgba(103, 232, 249, 0.66);
     border-radius: 999px;
     font-size: 0.66rem;
     font-style: normal;
     font-weight: 900;
+    box-shadow: 0 8px 18px rgba(20, 216, 255, 0.16);
     white-space: nowrap;
 }
 
@@ -901,9 +922,83 @@ body.is-navigation-mode .brand-mark--maps__text-main {
 }
 
 .spot-card__meta .spot-status {
-    color: #00b9d8;
-    background: rgba(20, 216, 255, 0.10);
-    border-color: rgba(20, 216, 255, 0.42);
+    color: #07111f;
+    background: linear-gradient(135deg, rgba(103, 232, 249, 0.92), rgba(134, 239, 172, 0.92));
+    border-color: rgba(103, 232, 249, 0.72);
+    box-shadow: 0 10px 22px rgba(20, 216, 255, 0.20);
+}
+
+.spot-status--unverified {
+    background: linear-gradient(135deg, rgba(254, 215, 170, 0.95), rgba(251, 146, 60, 0.92)) !important;
+    border-color: rgba(251, 146, 60, 0.66) !important;
+}
+
+.spot-status--temporary {
+    background: linear-gradient(135deg, rgba(191, 219, 254, 0.95), rgba(96, 165, 250, 0.92)) !important;
+    border-color: rgba(96, 165, 250, 0.66) !important;
+}
+
+.spot-status--outdated {
+    color: #fff !important;
+    background: linear-gradient(135deg, rgba(248, 113, 113, 0.96), rgba(190, 18, 60, 0.92)) !important;
+    border-color: rgba(244, 63, 94, 0.70) !important;
+}
+
+.spot-card__details {
+    display: grid;
+    gap: 10px;
+}
+
+.spot-detail {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 20px;
+    align-items: center;
+    gap: 12px;
+    min-height: 72px;
+}
+
+.spot-detail__icon {
+    display: grid;
+    width: 42px;
+    height: 42px;
+    place-items: center;
+    color: var(--sky);
+    background: rgba(32, 200, 255, 0.10);
+    border: 1px solid rgba(32, 200, 255, 0.28);
+    border-radius: 50%;
+}
+
+.spot-detail__icon svg {
+    width: 24px;
+    height: 24px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+}
+
+.spot-detail__copy {
+    min-width: 0;
+}
+
+.spot-detail__copy strong {
+    display: block;
+    color: var(--sky);
+    font-size: 0.82rem;
+    font-weight: 950;
+    line-height: 1.1;
+    text-transform: uppercase;
+}
+
+.spot-detail__copy p {
+    margin: 3px 0 0;
+}
+
+.spot-detail__chevron {
+    color: rgba(226, 239, 255, 0.86);
+    font-size: 1.6rem;
+    line-height: 1;
 }
 
 .auth-tabs {
@@ -915,7 +1010,6 @@ body.is-navigation-mode .brand-mark--maps__text-main {
     border-radius: 14px;
 }
 
-body[data-map-layer="light"]:not(.is-navigation-mode) .top-panel,
 body[data-map-layer="light"]:not(.is-navigation-mode) .spot-card,
 body[data-map-layer="light"]:not(.is-navigation-mode) .spot-list,
 body[data-map-layer="light"]:not(.is-navigation-mode) .search-panel,
@@ -927,6 +1021,13 @@ body[data-map-layer="light"]:not(.is-navigation-mode) .map-control-stack {
     background: linear-gradient(145deg, rgba(5, 15, 35, 0.88), rgba(13, 31, 67, 0.76));
     border-color: rgba(105, 188, 255, 0.36);
     box-shadow: 0 22px 56px rgba(0, 12, 34, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+body[data-map-layer="light"]:not(.is-navigation-mode) .top-panel {
+    color: #07111f;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(229, 243, 250, 0.90));
+    border-color: rgba(148, 163, 184, 0.22);
+    box-shadow: 0 16px 34px rgba(15, 23, 42, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.86);
 }
 
 body[data-map-layer="light"]:not(.is-navigation-mode) .panel-eyebrow,
@@ -1731,7 +1832,7 @@ body.is-navigation-mode .map-profile-control {
     .bottom-sheet,
     .spot-card {
         top: calc(58px + var(--safe-top));
-        right: 72px;
+        right: 88px;
         bottom: calc(74px + var(--safe-bottom));
         left: 10px;
         width: auto;

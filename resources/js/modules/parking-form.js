@@ -511,7 +511,7 @@ export function initParkingUi() {
                     <span aria-hidden="true">♥</span>
                 </button>
                 ${editButton}
-                <button class="route-button" type="button" data-action="open-route-picker">Маршрут</button>
+                <button class="route-button" type="button" data-action="route-in-app">Маршрут</button>
             </div>
         `;
         card.querySelector('.spot-card__close').addEventListener('click', () => card.classList.add('hidden'));
@@ -1123,9 +1123,7 @@ export function initParkingUi() {
                     <small>открыть навигацию</small>
                 </button>
                 <button class="route-option route-option--app" type="button" data-action="route-in-app">
-                    <span class="route-option__logo route-option__logo--auralith" aria-hidden="true">
-                        <img src="/assets/brand/auralith-maps-logo-dark.png?v=20260601" alt="Auralith Maps" loading="lazy">
-                    </span>
+                    <span class="route-option__logo route-option__logo--auralith" aria-hidden="true">A</span>
                     <strong>Auralith</strong>
                     <small>показать на карте</small>
                 </button>
@@ -1157,11 +1155,13 @@ export function initParkingUi() {
 
         const summary = document.querySelector('[data-route-summary]');
         const button = document.querySelector('[data-action="route-in-app"]');
+        const previousButtonText = button?.textContent;
 
         try {
             resetFailedRouteBuildState();
             startDeviceHeadingWatch();
             button?.setAttribute('disabled', 'disabled');
+            if (button) button.textContent = 'Строю...';
             if (summary) summary.textContent = 'Строю маршрут от вашего местоположения...';
             const location = await ensureRouteStartLocation();
             const route = await buildRouteToSpot(location, state.selectedSpot);
@@ -1183,6 +1183,7 @@ export function initParkingUi() {
             showToast('Не удалось построить маршрут. Попробуйте ещё раз.', true);
         } finally {
             button?.removeAttribute('disabled');
+            if (button && previousButtonText) button.textContent = previousButtonText;
         }
     }
 
@@ -2622,7 +2623,23 @@ function capitalizeDistrict(value) {
 
 function renderDetail(title, value) {
     if (!value) return '';
-    return `<article class="spot-detail"><span>${escapeHtml(title)}</span><p>${escapeHtml(value)}</p></article>`;
+    const icons = {
+        'Как заехать': '<path d="M6 17h12l1-5H5l1 5Z"></path><path d="M8 17v2"></path><path d="M16 17v2"></path><path d="M8 12l1.4-3.5A2 2 0 0 1 11.3 7h3.4a2 2 0 0 1 1.9 1.5L18 12"></path>',
+        'Ориентиры': '<path d="M12 3v3"></path><path d="M12 18v3"></path><path d="M3 12h3"></path><path d="M18 12h3"></path><circle cx="12" cy="12" r="5"></circle><circle cx="12" cy="12" r="1.5"></circle>',
+        'Примечания': '<path d="M7 4h8l3 3v13H7V4Z"></path><path d="M15 4v4h4"></path><path d="M10 12h5"></path><path d="M10 16h4"></path>',
+    };
+    const icon = icons[title] ?? '<path d="M12 5v14"></path><path d="M5 12h14"></path>';
+
+    return `
+        <article class="spot-detail">
+            <span class="spot-detail__icon" aria-hidden="true"><svg viewBox="0 0 24 24">${icon}</svg></span>
+            <div class="spot-detail__copy">
+                <strong>${escapeHtml(title)}</strong>
+                <p>${escapeHtml(value)}</p>
+            </div>
+            <span class="spot-detail__chevron" aria-hidden="true">›</span>
+        </article>
+    `;
 }
 
 function getValidationMessage(error) {
