@@ -1471,9 +1471,9 @@ export function initParkingUi() {
         setText('[data-navigation-speed-limit]', String(state.speedLimitKmh));
         setText('[data-navigation-bottom-duration]', formatDuration(remainingDuration));
         setText('[data-navigation-bottom-distance]', formatDistance(remainingDistance));
-        setText('[data-navigation-bottom-note]', `${getTrafficLabel(state.navigationRoute)} · прибытие ${arrival}`);
-        setText('[data-navigation-arrival-time]', `прибытие ${arrival}`);
-        setText('[data-navigation-trip-duration]', formatDuration(remainingDuration));
+        setText('[data-navigation-bottom-note]', getTrafficDelayLabel(state.navigationRoute));
+        setText('[data-navigation-arrival-time]', 'Прибытие');
+        setText('[data-navigation-trip-duration]', arrival);
         setText('[data-navigation-trip-distance]', formatDistance(remainingDistance));
         setText('[data-navigation-trip-delay]', getTrafficDelayLabel(state.navigationRoute));
         setText('[data-navigation-drive-title]', isFollowing ? 'Завершить' : 'Поехать');
@@ -2790,15 +2790,11 @@ function getTrafficLabel(route) {
     }
 
     if (route.source === 'tomtom-traffic') {
-        const delay = Number(route.trafficDelaySeconds) || 0;
-
-        return delay > 60
-            ? `Трафик учтен, задержка около ${formatDuration(delay)}`
-            : 'Маршрут построен с учетом текущего трафика';
+        return getTrafficDelayLabel(route);
     }
 
     if (route.source === 'yandex-traffic') {
-        return 'Маршрут Яндекса с учетом дорожной ситуации';
+        return getTrafficDelayLabel(route);
     }
 
     if (route.source === 'road') {
@@ -2811,7 +2807,7 @@ function getTrafficLabel(route) {
 function getTrafficDelayLabel(route) {
     const delay = Number(route?.trafficDelaySeconds) || 0;
 
-    return delay > 60 ? `задержка ${formatDuration(delay)}` : '';
+    return delay > 60 ? `задержка ${formatDuration(delay)}` : 'задержка 0 мин';
 }
 
 function getGpsSpeedKmh(coords) {
