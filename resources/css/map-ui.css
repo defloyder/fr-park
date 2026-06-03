@@ -2896,7 +2896,7 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
 }
 
 .spot-card__meta {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(108px, 0.78fr);
     gap: 7px;
 }
 
@@ -2908,7 +2908,7 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
 }
 
 .spot-card__meta .spot-status {
-    grid-column: 1 / -1;
+    grid-column: auto;
     min-height: 32px;
     color: #10b981;
     background: rgba(16, 185, 129, 0.06);
@@ -2942,7 +2942,7 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
 }
 
 .spot-card__actions {
-    grid-template-columns: 38px 38px minmax(126px, 0.72fr);
+    grid-template-columns: 38px minmax(0, 1fr);
     justify-content: start;
     align-items: center;
     gap: 7px;
@@ -2959,9 +2959,9 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
 
 .spot-card__actions .route-button,
 .spot-card__actions:not(:has(.edit-button)) .route-button {
-    grid-column: 3;
+    grid-column: 2;
     min-height: 42px;
-    max-width: 160px;
+    max-width: none;
     border-radius: 14px;
     font-size: 0.82rem;
 }
@@ -2989,7 +2989,8 @@ body[data-map-layer="light"]:not(.is-navigation-mode) .spot-detail {
 
 @media (max-width: 720px) {
     .spot-card {
-        bottom: auto;
+        top: auto;
+        bottom: calc(76px + var(--safe-bottom));
         max-height: calc(100svh - 118px);
         gap: 7px;
         padding: 9px;
@@ -3026,8 +3027,16 @@ body[data-map-layer="light"]:not(.is-navigation-mode) .spot-detail {
         line-height: 1.2;
     }
 
+    .spot-card__meta {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(92px, 0.76fr);
+    }
+
+    .spot-card__meta .spot-status {
+        grid-column: auto;
+    }
+
     .spot-card__actions {
-        grid-template-columns: 34px 34px 148px;
+        grid-template-columns: 34px minmax(0, 1fr);
     }
 
     .spot-card__actions .favorite-button,
@@ -3040,8 +3049,9 @@ body[data-map-layer="light"]:not(.is-navigation-mode) .spot-detail {
 
     .spot-card__actions .route-button,
     .spot-card__actions:not(:has(.edit-button)) .route-button {
+        grid-column: 2;
         min-height: 38px;
-        max-width: 148px;
+        max-width: none;
         font-size: 0.76rem;
     }
 }
