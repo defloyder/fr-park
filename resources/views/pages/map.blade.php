@@ -190,7 +190,9 @@
             <div id="favorite-panel" class="favorite-panel hidden">
                 <div class="favorite-panel__head">
                     <span class="eyebrow">Сохраненные точки</span>
-                    <button class="ghost-button" type="button" data-action="logout">Выйти</button>
+                    <button class="icon-button logout-button" type="button" data-action="logout" aria-label="Выйти">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6H6.5A2.5 2.5 0 0 0 4 8.5v7A2.5 2.5 0 0 0 6.5 18H10"></path><path d="M14 8l4 4-4 4"></path><path d="M8 12h10"></path></svg>
+                    </button>
                 </div>
                 <div id="favorite-list" class="favorite-list"></div>
             </div>

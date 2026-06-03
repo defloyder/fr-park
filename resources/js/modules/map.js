@@ -1716,6 +1716,21 @@ export function focusUserLocation({ latitude, longitude, accuracy = 0, heading =
     }
 }
 
+export function getMapCenterLocation() {
+    if (!map) {
+        return null;
+    }
+
+    const center = map.getCenter();
+
+    return {
+        latitude: center.lat,
+        longitude: center.lng,
+        accuracy: null,
+        updatedAt: Date.now(),
+    };
+}
+
 function renderUserLocationFeature(location) {
     map.getSource(USER_LOCATION_SOURCE_ID)?.setData({
         type: 'FeatureCollection',

@@ -12,7 +12,7 @@ import {
     updateParkingSpot,
     uploadParkingPhoto,
 } from './parking-api';
-import { addParkingSpotToMap, buildRouteToSpot, clearActiveRoute, clearPendingSelection, clearRouteManeuverHint, focusNavigationPosition, focusSpot, focusSpots, focusUserLocation, renderSpeedCameras, replaceParkingSpotsOnMap, restoreActiveRoute, setMapPickingMode, startRouteNavigation, updateActiveRouteProgress, updateRouteManeuverHint } from './map';
+import { addParkingSpotToMap, buildRouteToSpot, clearActiveRoute, clearPendingSelection, clearRouteManeuverHint, focusNavigationPosition, focusSpot, focusSpots, focusUserLocation, getMapCenterLocation, renderSpeedCameras, replaceParkingSpotsOnMap, restoreActiveRoute, setMapPickingMode, startRouteNavigation, updateActiveRouteProgress, updateRouteManeuverHint } from './map';
 import { getCompassEventPriority, getHeadingDifference, getRouteSnappedNavigationLocation, normalizeCompassHeading, pickUpcomingSpeedCamera, shouldFollowNavigationPosition, shouldFollowUserLocation, shouldRecenterNavigationFromLocate, smoothCompassHeading } from './navigation-logic';
 
 const STATUS_LABELS = {
@@ -481,7 +481,6 @@ export function initParkingUi() {
             <div class="spot-card__photo">${photo}</div>
             <div class="spot-card__header">
                 <div>
-                    <span class="spot-card__label">Auralith Maps</span>
                     <h2>${escapeHtml(spot.title)}</h2>
                 </div>
                 <button class="spot-card__close" type="button" aria-label="Закрыть карточку">×</button>
@@ -741,7 +740,6 @@ export function initParkingUi() {
                     <strong>${escapeHtml(spot.title)}</strong>
                     <small>${escapeHtml(spot.address || 'Адрес не указан')}</small>
                 </span>
-                <em>${escapeHtml(getAvailabilityLabel(spot))}</em>
             </button>
         `).join('') : '<p class="search-empty">Здесь будут сохранённые парковки.</p>';
 
@@ -1123,7 +1121,7 @@ export function initParkingUi() {
                     <small>открыть навигацию</small>
                 </button>
                 <button class="route-option route-option--app" type="button" data-action="route-in-app">
-                    <span class="route-option__logo route-option__logo--auralith" aria-hidden="true">A</span>
+                    <span class="route-option__logo route-option__logo--auralith" aria-hidden="true"><img src="/images/auralith-mark.svg" alt=""></span>
                     <strong>Auralith</strong>
                     <small>встроенный навигатор</small>
                 </button>
@@ -1179,7 +1177,9 @@ export function initParkingUi() {
             closeRoutePicker();
             showToast(`Маршрут: ${formatDuration(route.durationSeconds)}, ${formatDistance(route.distanceMeters)}.`);
         } catch (error) {
-            console.error('Failed to build in-app route.', error);
+            if (!isGeolocationTimeoutError(error)) {
+                console.error('Failed to build in-app route.', error);
+            }
             const fallbackRoute = await buildEmergencyRouteToSelectedSpot().catch(() => null);
 
             if (fallbackRoute && state.selectedSpot) {
@@ -1209,7 +1209,9 @@ export function initParkingUi() {
         const spot = state.selectedSpot;
         if (!spot) return null;
 
-        const start = state.userLocation || await ensureRouteStartLocation().catch(() => null);
+        const start = state.userLocation
+            || await ensureRouteStartLocation().catch(() => null)
+            || getMapCenterLocation();
         const finish = {
             latitude: Number(spot.latitude),
             longitude: Number(spot.longitude),
@@ -1250,6 +1252,10 @@ export function initParkingUi() {
             source: 'local-fallback',
             segments: [],
         };
+    }
+
+    function isGeolocationTimeoutError(error) {
+        return Number(error?.code) === 3 || String(error?.message || '').toLowerCase().includes('timeout');
     }
 
     function resetFailedRouteBuildState() {
