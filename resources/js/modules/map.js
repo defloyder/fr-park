@@ -50,10 +50,9 @@ const USER_LOCATION_ICON_STORAGE_KEY = 'auralith:user-location-icon';
 const USER_LOCATION_ICON_PREFIX = 'user-location-';
 const FOLLOW_ZOOM = 17.75;
 const FOLLOW_PITCH = 68;
-const FOLLOW_SCREEN_OFFSET_RATIO = 0.18;
-const FOLLOW_CENTER_LOOKAHEAD_METERS = 70;
+const FOLLOW_SCREEN_OFFSET_RATIO = 0.24;
+const FOLLOW_CENTER_LOOKAHEAD_METERS = 12;
 const FOLLOW_BEARING_LOOKAHEAD_METERS = 45;
-const MANEUVER_HINT_MIN_AHEAD_METERS = 85;
 const ROUTE_TRAFFIC_LINE_COLOR = [
     'match',
     ['get', 'traffic'],
@@ -2044,30 +2043,12 @@ export function updateActiveRouteProgress(userLocation, route) {
         return;
     }
 
-    const routeAnchor = getNavigationRouteAnchor(userLocation, routeCoordinates);
-    const closestIndex = routeAnchor
-        ? getRouteCoordinateIndexAtProgress(routeCoordinates, routeAnchor.progressMeters)
-        : findClosestRouteCoordinateIndex(
-            [Number(userLocation.longitude), Number(userLocation.latitude)],
-            routeCoordinates,
-        );
-    const remainingCoordinates = [
-        ...(routeAnchor?.coordinate ? [routeAnchor.coordinate] : []),
-        ...routeCoordinates.slice(Math.max(0, closestIndex + (routeAnchor?.coordinate ? 1 : 0))),
-    ];
-
-    if (remainingCoordinates.length < 2) {
-        clearActiveRoute();
-        return;
-    }
-
     map.getSource(ROUTE_SOURCE_ID)?.setData(buildRouteFeatureCollection({
         ...route,
         geometry: {
             ...route.geometry,
-            coordinates: remainingCoordinates,
+            coordinates: routeCoordinates,
         },
-        segments: [],
     }));
     safeSetRouteLineColor(ROUTE_TRAFFIC_LINE_COLOR);
 }
@@ -2082,18 +2063,7 @@ export function updateRouteManeuverHint(instruction, route, hint = {}) {
     const instructionDistanceMeters = Math.max(Number(instruction.distanceMeters) || 0, 0);
     const instructionStartMeters = Number(instruction.distanceFromStartMeters);
 
-    if (Number.isFinite(remainingMeters) && remainingMeters <= 15) {
-        clearRouteManeuverHint();
-        return;
-    }
-
-    const currentProgressMeters = Number(hint.currentProgressMeters);
-    const rawTargetProgressMeters = Number.isFinite(remainingMeters) && remainingMeters <= 25 && instructionDistanceMeters > 25
-        ? instructionStartMeters + instructionDistanceMeters
-        : instructionStartMeters;
-    const targetProgressMeters = Number.isFinite(currentProgressMeters)
-        ? Math.max(rawTargetProgressMeters, currentProgressMeters + MANEUVER_HINT_MIN_AHEAD_METERS)
-        : rawTargetProgressMeters;
+    const targetProgressMeters = instructionStartMeters;
     const coordinate = getRouteManeuverCoordinate(route.geometry.coordinates, targetProgressMeters, {
         scanMeters: Math.max(45, Math.min(220, instructionDistanceMeters || 90)),
     });
@@ -2118,7 +2088,7 @@ export function updateRouteManeuverHint(instruction, route, hint = {}) {
         routeManeuverMarker = new maplibregl.Marker({
             element,
             anchor: 'bottom',
-            offset: [22, -18],
+            offset: [0, -10],
             pitchAlignment: 'viewport',
             rotationAlignment: 'viewport',
         }).setLngLat(coordinate).addTo(map);
@@ -2306,7 +2276,7 @@ export function focusNavigationPosition(userLocation, route = null, { preserveZo
 
     safeEaseTo({
         center: cameraCenter,
-        zoom: preserveZoom ? Math.max(map.getZoom(), FOLLOW_ZOOM) : FOLLOW_ZOOM,
+        zoom: preserveZoom ? map.getZoom() : FOLLOW_ZOOM,
         pitch: FOLLOW_PITCH,
         bearing: bearing !== null && bearing !== undefined && Number.isFinite(Number(bearing))
             ? Number(bearing)
@@ -2320,7 +2290,7 @@ export function focusNavigationPosition(userLocation, route = null, { preserveZo
 
 function getNavigationScreenOffsetRatio() {
     if (window.innerWidth >= 900) {
-        return 0.16;
+        return 0.20;
     }
 
     return FOLLOW_SCREEN_OFFSET_RATIO;

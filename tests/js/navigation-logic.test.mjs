@@ -70,14 +70,17 @@ test('programmatic map rotation during follow must not detach navigation', () =>
     assert.equal(isManualMapInteraction({ originalEvent: { type: 'touchmove' } }, false), false);
 });
 
-test('manual map move events detach navigation follow', () => {
+test('manual map gestures keep navigation follow active', () => {
     const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
+    const formSource = readFileSync(new URL('../../resources/js/modules/parking-form.js', import.meta.url), 'utf8');
 
     assert.match(mapSource, /map\.on\('movestart'[\s\S]*detachNavigationOnManualInteraction\(event\)/);
     assert.match(mapSource, /map\.on\('pitchstart'[\s\S]*detachNavigationOnManualInteraction\(event\)/);
     assert.match(mapSource, /map:manual-interaction/);
     assert.match(mapSource, /addEventListener\('wheel', dispatchRawManualMapInteraction/);
     assert.match(mapSource, /addEventListener\('touchstart', dispatchRawManualMapInteraction/);
+    assert.match(formSource, /navigation:manual-map-zoom[\s\S]*state\.navigationPreserveZoom = true/);
+    assert.doesNotMatch(formSource, /navigation:manual-map-zoom[\s\S]*classList\.add\('is-navigation-detached'\)/);
 });
 
 test('GPS cursor heading is not coupled to manual map rotation', () => {
@@ -96,7 +99,7 @@ test('navigation camera follows route geometry instead of compass', () => {
     assert.doesNotMatch(focusNavigationPosition, /getFreshCompassHeading|compassHeading/);
     assert.match(focusNavigationPosition, /bearing = null/);
     assert.match(mapSource, /function getNavigationCameraBearing/);
-    assert.match(mapSource, /const FOLLOW_CENTER_LOOKAHEAD_METERS = 70/);
+    assert.match(mapSource, /const FOLLOW_CENTER_LOOKAHEAD_METERS = 12/);
     assert.match(mapSource, /const FOLLOW_BEARING_LOOKAHEAD_METERS = 45/);
     assert.match(mapSource, /function getNavigationRouteForwardBearing/);
     assert.doesNotMatch(formSource, /bearing: getNavigationCameraBearing|bearing: heading|getNavigationCameraBearing/);
@@ -179,9 +182,8 @@ test('nearest maneuver hint is rendered on the map', () => {
     assert.match(mapSource, /export function updateRouteManeuverHint/);
     assert.match(mapSource, /new maplibregl\.Marker/);
     assert.match(mapSource, /\.setLngLat\(coordinate\)\.addTo\(map\)/);
-    assert.match(mapSource, /MANEUVER_HINT_MIN_AHEAD_METERS = 85/);
-    assert.match(mapSource, /currentProgressMeters \+ MANEUVER_HINT_MIN_AHEAD_METERS/);
-    assert.match(mapSource, /offset: \[22, -18\]/);
+    assert.match(mapSource, /const targetProgressMeters = instructionStartMeters/);
+    assert.match(mapSource, /offset: \[0, -10\]/);
     assert.match(mapSource, /getRouteCoordinateAtProgress/);
     assert.match(mapSource, /getRouteManeuverCoordinate/);
     assert.match(mapSource, /turnAngle < 18/);

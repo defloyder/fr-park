@@ -188,11 +188,11 @@ export function initParkingUi() {
         state.isUserLocationFollowing = false;
 
         if (document.body.classList.contains('is-navigation-mode')) {
-            document.body.classList.add('is-navigation-detached');
             applyDeviceHeadingToUserLocation();
             if (state.userLocation) {
                 focusUserLocation(state.userLocation, { focus: false });
             }
+            document.body.classList.remove('is-navigation-detached');
             saveNavigationState();
             return;
         }
@@ -208,8 +208,8 @@ export function initParkingUi() {
         state.isUserLocationFollowing = false;
 
         if (document.body.classList.contains('is-navigation-mode')) {
-            document.body.classList.add('is-navigation-detached');
             state.navigationPreserveZoom = true;
+            document.body.classList.remove('is-navigation-detached');
             saveNavigationState();
         }
     });
@@ -1858,7 +1858,9 @@ export function initParkingUi() {
             : Number.NaN;
         const heading = Number.isFinite(routeHeading)
             ? routeHeading
-            : getFreshDeviceHeading(5000);
+            : (Number.isFinite(Number(state.userLocation?.heading))
+                ? Number(state.userLocation.heading)
+                : getFreshDeviceHeading(5000));
         const hasHeading = Number.isFinite(heading);
 
         compass.classList.toggle('is-muted', !hasHeading);
