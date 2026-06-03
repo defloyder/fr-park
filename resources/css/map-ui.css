@@ -606,9 +606,41 @@ body[data-map-layer="light"]:not(.is-navigation-mode) .layer-switcher__option {
 .spot-card__close,
 .route-picker__close,
 .photo-lightbox__close {
+    position: relative;
     color: #BE123C;
     background: rgba(255, 240, 244, 0.92);
     border-color: rgba(225, 29, 72, 0.28);
+    font-size: 0;
+}
+
+.icon-button[data-action^="close"]::before,
+.icon-button[data-action^="close"]::after,
+.spot-card__close::before,
+.spot-card__close::after,
+.route-picker__close::before,
+.route-picker__close::after,
+.photo-lightbox__close::before,
+.photo-lightbox__close::after {
+    position: absolute;
+    width: 14px;
+    height: 2px;
+    background: currentColor;
+    border-radius: 999px;
+    content: "";
+}
+
+.icon-button[data-action^="close"]::before,
+.spot-card__close::before,
+.route-picker__close::before,
+.photo-lightbox__close::before {
+    transform: rotate(45deg);
+}
+
+.icon-button[data-action^="close"]::after,
+.spot-card__close::after,
+.route-picker__close::after,
+.photo-lightbox__close::after {
+    transform: rotate(-45deg);
 }
 
 .search-field,
@@ -2957,6 +2989,8 @@ body[data-map-layer="light"]:not(.is-navigation-mode) .spot-detail {
 
 @media (max-width: 720px) {
     .spot-card {
+        bottom: auto;
+        max-height: calc(100svh - 118px);
         gap: 7px;
         padding: 9px;
     }
@@ -2965,48 +2999,49 @@ body[data-map-layer="light"]:not(.is-navigation-mode) .spot-detail {
     .spot-card__photo .photo-carousel,
     .photo-carousel,
     .spot-card__photo-placeholder {
-        height: 104px;
-        min-height: 104px;
+        height: 86px;
+        min-height: 86px;
         border-radius: 13px;
     }
 
     .spot-card__header h2 {
-        font-size: 0.92rem;
+        font-size: 0.86rem;
     }
 
     .spot-card__address {
-        min-height: 30px;
-        padding: 6px 8px;
-        font-size: 0.64rem;
+        min-height: 28px;
+        padding: 5px 8px;
+        font-size: 0.62rem;
     }
 
     .spot-card__meta span,
     .spot-card__meta .spot-status {
-        min-height: 30px;
-        padding: 6px 8px;
-        font-size: 0.68rem;
+        min-height: 28px;
+        padding: 5px 8px;
+        font-size: 0.66rem;
     }
 
     .spot-card__description {
-        font-size: 0.7rem;
+        font-size: 0.68rem;
+        line-height: 1.2;
     }
 
     .spot-card__actions {
-        grid-template-columns: 36px 36px 124px;
+        grid-template-columns: 34px 34px 148px;
     }
 
     .spot-card__actions .favorite-button,
     .spot-card__actions .edit-button {
-        width: 36px;
-        min-width: 36px;
-        height: 36px;
-        min-height: 36px;
+        width: 34px;
+        min-width: 34px;
+        height: 34px;
+        min-height: 34px;
     }
 
     .spot-card__actions .route-button,
     .spot-card__actions:not(:has(.edit-button)) .route-button {
-        min-height: 40px;
-        max-width: 124px;
-        font-size: 0.74rem;
+        min-height: 38px;
+        max-width: 148px;
+        font-size: 0.76rem;
     }
 }
