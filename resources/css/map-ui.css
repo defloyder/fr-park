@@ -897,6 +897,13 @@ body[data-map-layer="light"]:not(.is-navigation-mode) .layer-switcher__option {
 .search-result,
 .favorite-item {
     min-width: 0;
+    text-align: left;
+}
+
+.favorite-item > span {
+    min-width: 0;
+    justify-self: start;
+    text-align: left;
 }
 
 .spot-list__content {
@@ -1072,6 +1079,10 @@ body[data-map-layer="light"]:not(.is-navigation-mode) .layer-switcher__option {
 
 .profile-user {
     grid-template-columns: 46px minmax(0, 1fr) auto;
+}
+
+.profile-panel {
+    align-content: start;
 }
 
 .favorite-panel {

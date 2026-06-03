@@ -505,9 +505,6 @@ function initMapLibreMap() {
         map.resize();
         setBaseMapLayer(getSavedBaseMapLayer());
 
-        scheduleParkingSpotsLoad();
-        return;
-
         try {
             await addMarkerImages();
             addPoiIconImages();
