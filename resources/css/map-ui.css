@@ -994,9 +994,27 @@ body[data-map-layer="light"]:not(.is-navigation-mode) .layer-switcher__option {
 .photo-carousel {
     position: relative;
     overflow: hidden;
+    height: 220px;
     min-height: 220px;
     border-radius: 18px;
     background: rgba(15, 23, 42, 0.08);
+}
+
+.spot-card__photo .photo-carousel {
+    height: 100%;
+    min-height: 100%;
+}
+
+.photo-slide {
+    display: block;
+    height: 100%;
+}
+
+.photo-slide img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .spot-card__photo-placeholder {
@@ -1083,6 +1101,9 @@ body[data-map-layer="light"]:not(.is-navigation-mode) .layer-switcher__option {
 
 .profile-panel {
     align-content: start;
+    bottom: auto;
+    height: auto;
+    max-height: calc(100svh - 96px);
 }
 
 .favorite-panel {
@@ -2021,6 +2042,7 @@ body.is-navigation-mode .navigation-guidance {
 }
 
 .navigation-panel__summary span {
+    display: none;
     margin-top: 4px;
     color: rgba(15, 23, 42, 0.70);
     font-size: 0.8rem;
@@ -2089,6 +2111,10 @@ body.is-navigation-mode .navigation-guidance {
 
 .navigation-panel__trip em {
     display: none;
+}
+
+.navigation-panel__trip small::after {
+    content: "Расстояние";
 }
 
 .navigation-panel__drive {
