@@ -1,7 +1,7 @@
 <div {{ $attributes->class(['brand-mark', 'auralith-mark', 'brand-mark--maps']) }}>
     <img
         class="brand-mark--maps__icon"
-        src="{{ asset('images/auralith-mark.svg') }}"
+        src="{{ asset('images/ChatGPT Image Jun 1, 2026, 02_33_28 PM.png') }}"
         alt=""
         aria-hidden="true"
     >

@@ -505,6 +505,9 @@ function initMapLibreMap() {
         map.resize();
         setBaseMapLayer(getSavedBaseMapLayer());
 
+        scheduleParkingSpotsLoad();
+        return;
+
         try {
             await addMarkerImages();
             addPoiIconImages();
@@ -525,15 +528,34 @@ function initMapLibreMap() {
         }
 
         try {
-            const response = await fetchParkingSpots();
-            renderParkingSpots(response.data);
-            window.dispatchEvent(new CustomEvent('parking:loaded', { detail: response.data }));
+            await loadParkingSpots();
         } catch {
             reportMapError('Не удалось загрузить точки. Проверьте соединение и попробуйте снова.');
         }
     });
 
     window.addEventListener('resize', () => map?.resize());
+}
+
+function scheduleParkingSpotsLoad() {
+    const run = () => {
+        loadParkingSpots().catch(() => {
+            reportMapError('ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð·Ð°Ð³Ñ€ÑƒÐ·Ð¸Ñ‚ÑŒ Ñ‚Ð¾Ñ‡ÐºÐ¸. ÐŸÑ€Ð¾Ð²ÐµÑ€ÑŒÑ‚Ðµ ÑÐ¾ÐµÐ´Ð¸Ð½ÐµÐ½Ð¸Ðµ Ð¸ Ð¿Ð¾Ð¿Ñ€Ð¾Ð±ÑƒÐ¹Ñ‚Ðµ ÑÐ½Ð¾Ð²Ð°.');
+        });
+    };
+
+    if ('requestIdleCallback' in window) {
+        window.requestIdleCallback(run, { timeout: 1200 });
+        return;
+    }
+
+    window.setTimeout(run, 180);
+}
+
+async function loadParkingSpots() {
+    const response = await fetchParkingSpots();
+    renderParkingSpots(response.data);
+    window.dispatchEvent(new CustomEvent('parking:loaded', { detail: response.data }));
 }
 
 function addSpeedCameraSourceAndLayer() {
