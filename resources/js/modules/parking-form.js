@@ -1128,6 +1128,7 @@ export function initParkingUi() {
                     ...getNavigationMarkerPatch(navigationLocation, state.userLocation?.heading),
                 };
                 state.navigationPreserveZoom = false;
+                state.navigationViewportHoldUntil = 0;
                 document.body.classList.remove('is-navigation-detached');
                 document.body.classList.add('is-navigation-following');
                 updateActiveRouteProgress(state.userLocation, state.navigationRoute);
@@ -1783,6 +1784,7 @@ export function initParkingUi() {
         document.body.classList.add('is-navigation-following');
         document.body.classList.remove('is-navigation-detached');
         state.navigationPreserveZoom = false;
+        state.navigationViewportHoldUntil = 0;
         state.navigationSessionId += 1;
         if (state.userLocation) {
             const navigationLocation = getRouteSnappedNavigationLocation(state.userLocation, state.navigationRoute, {
@@ -1812,6 +1814,7 @@ export function initParkingUi() {
         if (!state.userLocation || !state.navigationRoute) return;
 
         state.navigationPreserveZoom = false;
+        state.navigationViewportHoldUntil = 0;
         applyDeviceHeadingToUserLocation();
         focusNavigationPosition(state.userLocation, state.navigationRoute);
         document.body.classList.remove('is-navigation-detached');
@@ -1835,6 +1838,7 @@ export function initParkingUi() {
         document.body.classList.add('is-navigation-following');
         document.body.classList.remove('is-navigation-detached');
         state.navigationPreserveZoom = false;
+        state.navigationViewportHoldUntil = 0;
         setActiveNav('show-map');
         if (state.userLocation) {
             const navigationLocation = getRouteSnappedNavigationLocation(state.userLocation, route, {
@@ -1973,6 +1977,7 @@ export function initParkingUi() {
         state.navigationRoute = saved.route;
         state.userLocation = saved.userLocation ?? state.userLocation;
         state.navigationPreserveZoom = Boolean(saved.preserveZoom);
+        state.navigationViewportHoldUntil = 0;
         state.navigationSessionId += 1;
         document.body.classList.add('is-navigation-mode', 'is-navigation-following');
         document.body.classList.remove('is-navigation-detached');
@@ -2174,6 +2179,7 @@ export function initParkingUi() {
         document.body.classList.remove('is-navigation-detached');
         document.body.classList.add('is-navigation-following');
         state.navigationPreserveZoom = false;
+        state.navigationViewportHoldUntil = 0;
         focusUserLocation(state.userLocation, { focus: false });
         updateActiveRouteProgress(state.userLocation, state.navigationRoute);
         focusNavigationPosition(state.userLocation, state.navigationRoute);
@@ -2650,7 +2656,7 @@ export function initParkingUi() {
             state.speedLimitKmh = estimateSpeedLimitKmh(route, state.userLocation);
             state.navigationLastRerouteAt = Date.now();
             updateActiveRouteProgress(state.userLocation, route);
-            if (!document.body.classList.contains('is-navigation-detached')) {
+            if (!document.body.classList.contains('is-navigation-detached') && !isNavigationViewportHeld()) {
                 focusNavigationPosition(state.userLocation, route, { preserveZoom: state.navigationPreserveZoom });
             }
             updateNavigationMetrics();
