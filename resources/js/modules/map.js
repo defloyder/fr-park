@@ -23,6 +23,7 @@ const PENDING_SOURCE_ID = 'pending-parking-spot';
 const USER_LOCATION_SOURCE_ID = 'user-location';
 const ROUTE_SOURCE_ID = 'active-route';
 const SPEED_CAMERA_SOURCE_ID = 'speed-cameras';
+const PERSONAL_PLACE_SOURCE_ID = 'personal-places';
 const TRAFFIC_FLOW_SOURCE_ID = 'tomtom-traffic-flow';
 const TRAFFIC_FLOW_LAYER_ID = 'tomtom-traffic-flow';
 const ROUTE_CASING_LAYER_ID = 'active-route-casing';
@@ -518,11 +519,13 @@ function initMapLibreMap() {
             addParkingSource();
             addParkingLayers();
             addPendingSourceAndLayer();
+            addPersonalPlacesSourceAndLayer();
             addUserLocationSourceAndLayer();
             addRouteSourceAndLayer();
             addSpeedCameraSourceAndLayer();
             addTrafficFlowLayer();
             bindMapEvents();
+            window.dispatchEvent(new CustomEvent('map:ready'));
         } catch (error) {
             console.error('Map layers failed', error);
             reportMapError('Не удалось отрисовать карту. Обновите страницу.');
@@ -919,6 +922,7 @@ function updateTrafficToggleButton(isEnabled) {
     if (!button) return;
 
     button.classList.toggle('is-active', isEnabled);
+    button.classList.toggle('is-loading', false);
     button.setAttribute('aria-pressed', String(isEnabled));
     button.setAttribute('aria-label', isEnabled ? 'Выключить пробки' : 'Включить пробки');
 }
@@ -1454,6 +1458,57 @@ function addPendingSourceAndLayer() {
     });
 }
 
+function addPersonalPlacesSourceAndLayer() {
+    map.addSource(PERSONAL_PLACE_SOURCE_ID, {
+        type: 'geojson',
+        data: buildFeatureCollection([]),
+    });
+
+    map.addLayer({
+        id: 'personal-place-halo',
+        type: 'circle',
+        source: PERSONAL_PLACE_SOURCE_ID,
+        paint: {
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 8, 16, 13],
+            'circle-color': 'rgba(124, 61, 255, 0.20)',
+            'circle-stroke-color': 'rgba(103, 232, 249, 0.88)',
+            'circle-stroke-width': 2,
+        },
+    });
+
+    map.addLayer({
+        id: 'personal-place-dot',
+        type: 'circle',
+        source: PERSONAL_PLACE_SOURCE_ID,
+        paint: {
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4, 16, 6],
+            'circle-color': '#21A8FF',
+            'circle-stroke-color': '#FFFFFF',
+            'circle-stroke-width': 1.5,
+        },
+    });
+
+    map.addLayer({
+        id: 'personal-place-label',
+        type: 'symbol',
+        source: PERSONAL_PLACE_SOURCE_ID,
+        minzoom: 13,
+        layout: {
+            'text-field': ['get', 'title'],
+            'text-font': ['Open Sans Semibold'],
+            'text-size': 11,
+            'text-offset': [0, 1.4],
+            'text-anchor': 'top',
+            'text-allow-overlap': false,
+        },
+        paint: {
+            'text-color': '#EAF7FF',
+            'text-halo-color': 'rgba(5, 15, 35, 0.82)',
+            'text-halo-width': 1.5,
+        },
+    });
+}
+
 function addUserLocationSourceAndLayer() {
     map.addSource(USER_LOCATION_SOURCE_ID, {
         type: 'geojson',
@@ -1602,6 +1657,7 @@ function bindMapEvents() {
     });
 
     map.on('click', 'spots-pin', (event) => selectSpotFromFeature(event.features?.[0]));
+    map.on('click', 'personal-place-dot', (event) => selectPersonalPlaceFromFeature(event.features?.[0]));
 
     map.on('mouseenter', 'clusters', () => setMapCursor('pointer'));
     map.on('mouseleave', 'clusters', () => setMapCursor(''));
@@ -1609,6 +1665,8 @@ function bindMapEvents() {
     map.on('mouseleave', 'cluster-count', () => setMapCursor(''));
     map.on('mouseenter', 'spots-pin', () => setMapCursor('pointer'));
     map.on('mouseleave', 'spots-pin', () => setMapCursor(''));
+    map.on('mouseenter', 'personal-place-dot', () => setMapCursor('pointer'));
+    map.on('mouseleave', 'personal-place-dot', () => setMapCursor(''));
 
     map.on('click', (event) => {
         if (clickedFeature(event.point)) {
@@ -1667,7 +1725,7 @@ async function expandCluster(event) {
 }
 
 function clickedFeature(point) {
-    return map.queryRenderedFeatures(point, { layers: ['clusters', 'cluster-count', 'spots-pin'] }).length > 0;
+    return map.queryRenderedFeatures(point, { layers: ['clusters', 'cluster-count', 'spots-pin', 'personal-place-dot'] }).length > 0;
 }
 
 function setMapCursor(cursor) {
@@ -1686,6 +1744,26 @@ function selectSpotFromFeature(feature) {
     }
 }
 
+function selectPersonalPlaceFromFeature(feature) {
+    const properties = feature?.properties ?? {};
+    const latitude = Number(properties.latitude);
+    const longitude = Number(properties.longitude);
+
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        return;
+    }
+
+    window.dispatchEvent(new CustomEvent('navigator:personal-place-selected', {
+        detail: {
+            id: properties.placeId,
+            title: properties.title,
+            address: properties.address,
+            latitude,
+            longitude,
+        },
+    }));
+}
+
 export function addParkingSpotToMap(spot) {
     const exists = spotsCache.some((item) => Number(item.id) === Number(spot.id));
     spotsCache = exists
@@ -1699,6 +1777,28 @@ export function addParkingSpotToMap(spot) {
 export function replaceParkingSpotsOnMap(spots) {
     spotsCache = spots;
     renderParkingSpots(spotsCache);
+}
+
+export function replacePersonalPlacesOnMap(places = []) {
+    const source = map?.getSource(PERSONAL_PLACE_SOURCE_ID);
+    if (!source) return;
+
+    source.setData(buildFeatureCollection((places || [])
+        .filter((place) => Number.isFinite(Number(place.latitude)) && Number.isFinite(Number(place.longitude)))
+        .map((place) => ({
+            type: 'Feature',
+            geometry: {
+                type: 'Point',
+                coordinates: [Number(place.longitude), Number(place.latitude)],
+            },
+            properties: {
+                placeId: String(place.id ?? ''),
+                title: String(place.title || 'Моя точка'),
+                address: String(place.address || ''),
+                latitude: Number(place.latitude),
+                longitude: Number(place.longitude),
+            },
+        }))));
 }
 
 export function focusSpot(spot) {
@@ -1913,6 +2013,9 @@ function keepNavigationLayersOrdered() {
         'spots-pin',
         'cluster-count',
         'pending-spot',
+        'personal-place-halo',
+        'personal-place-dot',
+        'personal-place-label',
         'user-location-accuracy',
         'user-location-dot',
         'user-navigation-dot',

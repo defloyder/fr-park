@@ -40,8 +40,11 @@
                 <span>Финиш</span>
                 <input id="navigator-destination-input" type="text" autocomplete="off" placeholder="Адрес или координаты">
             </label>
+            <div id="navigator-suggestions" class="navigator-suggestions hidden"></div>
+            <div id="navigator-quick-places" class="navigator-quick-places hidden"></div>
             <div class="navigator-panel__actions">
-                <button class="ghost-button" type="button" data-action="pick-route-destination">Выбрать на карте</button>
+                <button class="ghost-button" type="button" data-action="pick-route-destination">На карте</button>
+                <button class="ghost-button" type="button" data-action="save-navigator-place">Сохранить</button>
                 <button class="route-button" type="button" data-action="build-free-route">Поехать</button>
             </div>
             <p id="navigator-message" class="form-message hidden" role="status"></p>

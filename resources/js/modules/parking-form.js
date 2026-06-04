@@ -12,7 +12,7 @@ import {
     updateParkingSpot,
     uploadParkingPhoto,
 } from './parking-api';
-import { addParkingSpotToMap, buildRouteToSpot, clearActiveRoute, clearPendingSelection, clearRouteManeuverHint, focusNavigationPosition, focusSpot, focusSpots, focusUserLocation, getMapCenterLocation, renderSpeedCameras, replaceParkingSpotsOnMap, restoreActiveRoute, setMapPickingMode, setRouteDestinationPickingMode, startRouteNavigation, updateActiveRouteProgress, updateRouteManeuverHint } from './map';
+import { addParkingSpotToMap, buildRouteToSpot, clearActiveRoute, clearPendingSelection, clearRouteManeuverHint, focusNavigationPosition, focusSpot, focusSpots, focusUserLocation, getMapCenterLocation, renderSpeedCameras, replaceParkingSpotsOnMap, replacePersonalPlacesOnMap, restoreActiveRoute, setMapPickingMode, setRouteDestinationPickingMode, startRouteNavigation, updateActiveRouteProgress, updateRouteManeuverHint } from './map';
 import { getCompassEventPriority, getHeadingDifference, getRouteSnappedNavigationLocation, normalizeCompassHeading, pickUpcomingSpeedCamera, shouldFollowNavigationPosition, shouldFollowUserLocation, shouldRecenterNavigationFromLocate, smoothCompassHeading } from './navigation-logic';
 
 const STATUS_LABELS = {
@@ -24,6 +24,7 @@ const STATUS_LABELS = {
 
 
 const NAVIGATION_STATE_STORAGE_KEY = 'auralith:navigation-state';
+const PERSONAL_PLACES_STORAGE_KEY = 'auralith:personal-places';
 const SPEED_CAMERA_ROUTE_DISTANCE_METERS = 55;
 const NAVIGATION_FINISH_DISTANCE_METERS = 28;
 
@@ -85,6 +86,11 @@ const state = {
     navigationPreserveZoom: false,
     navigatorDestination: null,
     navigatorPicking: false,
+    navigatorSuggestions: [],
+    navigatorSuggestTimer: null,
+    navigatorSuggestRequestId: 0,
+    personalPlaces: [],
+    navigationViewportHoldUntil: 0,
     navigationSessionId: 0,
     deviceHeading: null,
     deviceHeadingUpdatedAt: 0,
@@ -110,6 +116,8 @@ export function initParkingUi() {
     const pickPanel = document.getElementById('pick-panel');
     const navigatorPanel = document.getElementById('navigator-panel');
     const navigatorDestinationInput = document.getElementById('navigator-destination-input');
+    const navigatorSuggestions = document.getElementById('navigator-suggestions');
+    const navigatorQuickPlaces = document.getElementById('navigator-quick-places');
     const navigatorMessage = document.getElementById('navigator-message');
     const profilePanel = document.getElementById('profile-panel');
     const profileTitle = document.getElementById('profile-title');
@@ -178,6 +186,10 @@ export function initParkingUi() {
             'close-navigator': closeNavigatorPanel,
             'pick-route-destination': startRouteDestinationPicking,
             'build-free-route': buildFreeNavigatorRoute,
+            'save-navigator-place': saveNavigatorPlace,
+            'select-navigator-suggestion': () => selectNavigatorSuggestion(Number(event.target.closest('[data-suggestion-index]')?.dataset.suggestionIndex)),
+            'route-personal-place': () => routePersonalPlace(event.target.closest('[data-place-id]')?.dataset.placeId),
+            'delete-personal-place': () => deletePersonalPlace(event.target.closest('[data-place-id]')?.dataset.placeId),
             'start-navigation': startNavigation,
             'recenter-navigation': recenterNavigation,
             'stop-navigation': stopNavigationMode,
@@ -199,6 +211,8 @@ export function initParkingUi() {
         state.isUserLocationFollowing = false;
 
         if (document.body.classList.contains('is-navigation-mode')) {
+            state.navigationPreserveZoom = true;
+            state.navigationViewportHoldUntil = Date.now() + 6500;
             applyDeviceHeadingToUserLocation();
             if (state.userLocation) {
                 focusUserLocation(state.userLocation, { focus: false });
@@ -220,8 +234,25 @@ export function initParkingUi() {
 
         if (document.body.classList.contains('is-navigation-mode')) {
             state.navigationPreserveZoom = true;
+            state.navigationViewportHoldUntil = Date.now() + 2200;
             document.body.classList.remove('is-navigation-detached');
             saveNavigationState();
+        }
+    });
+
+    navigatorDestinationInput?.addEventListener('input', () => {
+        state.navigatorDestination = null;
+        scheduleNavigatorSuggestions();
+    });
+
+    navigatorDestinationInput?.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            if (state.navigatorSuggestions.length > 0) {
+                selectNavigatorSuggestion(0);
+                return;
+            }
+            buildFreeNavigatorRoute();
         }
     });
 
@@ -263,10 +294,13 @@ export function initParkingUi() {
         renderSearchControls();
         renderSearchResults();
         renderFavoriteList();
+        renderPersonalPlaces();
         restoreNavigationState();
         hideStatus();
         if (state.spots.length === 0) showStatus('Пока нет добавленных парковок. Добавьте первую точку на карту.');
     });
+
+    window.addEventListener('map:ready', renderPersonalPlaces);
 
     loadAccountSession();
 
@@ -334,6 +368,21 @@ export function initParkingUi() {
         showNavigatorMessage('Точка выбрана. Можно строить маршрут.');
         openNavigatorPanel();
     });
+
+    window.addEventListener('navigator:personal-place-selected', (event) => {
+        const place = normalizePersonalPlace(event.detail);
+        if (!place) return;
+
+        state.navigatorDestination = createNavigatorDestination(place);
+        if (navigatorDestinationInput) {
+            navigatorDestinationInput.value = place.address || place.title;
+        }
+        openNavigatorPanel();
+        showNavigatorMessage('Личная точка выбрана. Можно ехать.');
+    });
+
+    state.personalPlaces = readPersonalPlaces();
+    renderPersonalPlaces();
 
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -1195,6 +1244,7 @@ export function initParkingUi() {
         setRouteDestinationPickingMode(false);
         document.body.classList.remove('is-sheet-open', 'is-navigator-panel-open');
         document.body.classList.add('is-navigator-panel-open');
+        renderNavigatorQuickPlaces();
         window.setTimeout(() => navigatorDestinationInput?.focus(), 80);
     }
 
@@ -1204,6 +1254,7 @@ export function initParkingUi() {
         state.navigatorPicking = false;
         setRouteDestinationPickingMode(false);
         hideNavigatorMessage();
+        hideNavigatorSuggestions();
         setActiveNav('show-map');
     }
 
@@ -1226,6 +1277,7 @@ export function initParkingUi() {
             resetFailedRouteBuildState();
             startDeviceHeadingWatch();
             button?.setAttribute('disabled', 'disabled');
+            navigatorPanel?.classList.add('is-loading');
             if (button) button.textContent = 'Строю...';
             showNavigatorMessage('Строю маршрут...');
 
@@ -1258,8 +1310,52 @@ export function initParkingUi() {
             showToast('Не удалось построить маршрут.', true);
         } finally {
             button?.removeAttribute('disabled');
+            navigatorPanel?.classList.remove('is-loading');
             if (button && previousButtonText) button.textContent = previousButtonText;
         }
+    }
+
+    async function saveNavigatorPlace() {
+        try {
+            showNavigatorMessage('Сохраняю точку...');
+            const destination = await resolveNavigatorDestination();
+            const place = normalizePersonalPlace({
+                ...destination,
+                title: destination.title || navigatorDestinationInput?.value?.trim() || 'Моя точка',
+            });
+
+            if (!place) {
+                throw new Error('Invalid personal place.');
+            }
+
+            const existsIndex = state.personalPlaces.findIndex((item) => item.id === place.id);
+            state.personalPlaces = existsIndex >= 0
+                ? state.personalPlaces.map((item, index) => (index === existsIndex ? place : item))
+                : [place, ...state.personalPlaces].slice(0, 20);
+            writePersonalPlaces();
+            renderPersonalPlaces();
+            showNavigatorMessage('Точка сохранена.');
+        } catch {
+            showNavigatorMessage('Не удалось сохранить точку. Выберите адрес или место на карте.', true);
+        }
+    }
+
+    async function routePersonalPlace(placeId) {
+        const place = state.personalPlaces.find((item) => String(item.id) === String(placeId));
+        if (!place) return;
+
+        state.navigatorDestination = createNavigatorDestination(place);
+        if (navigatorDestinationInput) {
+            navigatorDestinationInput.value = place.address || place.title;
+        }
+        await buildFreeNavigatorRoute();
+    }
+
+    function deletePersonalPlace(placeId) {
+        state.personalPlaces = state.personalPlaces.filter((item) => String(item.id) !== String(placeId));
+        writePersonalPlaces();
+        renderPersonalPlaces();
+        showNavigatorMessage('Точка удалена.');
     }
 
     function openExternalRoute(provider) {
@@ -1453,9 +1549,19 @@ export function initParkingUi() {
     }
 
     async function geocodeDestination(query) {
+        const [result] = await geocodeDestinationSuggestions(query, 1);
+
+        if (!result) {
+            throw new Error('Geocoding returned no coordinates.');
+        }
+
+        return result;
+    }
+
+    async function geocodeDestinationSuggestions(query, limit = 5) {
         const url = new URL('https://nominatim.openstreetmap.org/search');
         url.searchParams.set('format', 'jsonv2');
-        url.searchParams.set('limit', '1');
+        url.searchParams.set('limit', String(limit));
         url.searchParams.set('accept-language', 'ru');
         url.searchParams.set('q', query);
 
@@ -1469,19 +1575,160 @@ export function initParkingUi() {
             throw new Error(`Geocoding failed: ${response.status}`);
         }
 
-        const [result] = await response.json();
-        const latitude = Number(result?.lat);
-        const longitude = Number(result?.lon);
+        const results = await response.json();
 
-        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-            throw new Error('Geocoding returned no coordinates.');
+        return (Array.isArray(results) ? results : [])
+            .map((result) => ({
+                latitude: Number(result?.lat),
+                longitude: Number(result?.lon),
+                title: getSuggestionTitle(result?.display_name || query),
+                address: result?.display_name || query,
+            }))
+            .filter((result) => Number.isFinite(result.latitude) && Number.isFinite(result.longitude));
+    }
+
+    function scheduleNavigatorSuggestions() {
+        window.clearTimeout(state.navigatorSuggestTimer);
+        const query = navigatorDestinationInput?.value?.trim() ?? '';
+
+        if (query.length < 3 || parseCoordinates(query)) {
+            state.navigatorSuggestions = [];
+            hideNavigatorSuggestions();
+            return;
         }
 
+        state.navigatorSuggestTimer = window.setTimeout(() => loadNavigatorSuggestions(query), 280);
+    }
+
+    async function loadNavigatorSuggestions(query) {
+        const requestId = ++state.navigatorSuggestRequestId;
+        renderNavigatorSuggestionsLoading();
+
+        try {
+            const suggestions = await geocodeDestinationSuggestions(query, 5);
+            if (requestId !== state.navigatorSuggestRequestId) return;
+
+            state.navigatorSuggestions = suggestions;
+            renderNavigatorSuggestions();
+        } catch {
+            if (requestId !== state.navigatorSuggestRequestId) return;
+            state.navigatorSuggestions = [];
+            hideNavigatorSuggestions();
+        }
+    }
+
+    function selectNavigatorSuggestion(index) {
+        const suggestion = state.navigatorSuggestions[index];
+        if (!suggestion) return;
+
+        state.navigatorDestination = createNavigatorDestination(suggestion);
+        if (navigatorDestinationInput) {
+            navigatorDestinationInput.value = suggestion.address;
+        }
+        hideNavigatorSuggestions();
+        showNavigatorMessage('Адрес выбран. Можно ехать.');
+    }
+
+    function renderNavigatorSuggestionsLoading() {
+        if (!navigatorSuggestions) return;
+
+        navigatorSuggestions.innerHTML = `
+            <div class="navigator-suggestions__loading">
+                <span class="app-spinner" aria-hidden="true"></span>
+                <span>Ищу варианты...</span>
+            </div>
+        `;
+        navigatorSuggestions.classList.remove('hidden');
+    }
+
+    function renderNavigatorSuggestions() {
+        if (!navigatorSuggestions) return;
+
+        if (state.navigatorSuggestions.length === 0) {
+            hideNavigatorSuggestions();
+            return;
+        }
+
+        navigatorSuggestions.innerHTML = state.navigatorSuggestions.map((suggestion, index) => `
+            <button class="navigator-suggestion" type="button" data-action="select-navigator-suggestion" data-suggestion-index="${index}">
+                <strong>${escapeHtml(suggestion.title)}</strong>
+                <small>${escapeHtml(suggestion.address)}</small>
+            </button>
+        `).join('');
+        navigatorSuggestions.classList.remove('hidden');
+    }
+
+    function hideNavigatorSuggestions() {
+        state.navigatorSuggestions = [];
+        navigatorSuggestions?.classList.add('hidden');
+        if (navigatorSuggestions) {
+            navigatorSuggestions.innerHTML = '';
+        }
+    }
+
+    function getSuggestionTitle(address) {
+        return String(address || '').split(',').map((part) => part.trim()).filter(Boolean).slice(0, 2).join(', ') || 'Адрес';
+    }
+
+    function normalizePersonalPlace(place) {
+        const latitude = Number(place?.latitude);
+        const longitude = Number(place?.longitude);
+
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+            return null;
+        }
+
+        const title = String(place?.title || place?.address || 'Моя точка').trim();
+
         return {
+            id: String(place?.id || `place-${Date.now()}`),
+            title: title || 'Моя точка',
+            address: String(place?.address || title || '').trim(),
             latitude,
             longitude,
-            address: result?.display_name || query,
         };
+    }
+
+    function readPersonalPlaces() {
+        try {
+            const places = JSON.parse(window.localStorage?.getItem(PERSONAL_PLACES_STORAGE_KEY) || '[]');
+            return (Array.isArray(places) ? places : []).map(normalizePersonalPlace).filter(Boolean);
+        } catch {
+            return [];
+        }
+    }
+
+    function writePersonalPlaces() {
+        window.localStorage?.setItem(PERSONAL_PLACES_STORAGE_KEY, JSON.stringify(state.personalPlaces));
+    }
+
+    function renderPersonalPlaces() {
+        replacePersonalPlacesOnMap(state.personalPlaces);
+        renderNavigatorQuickPlaces();
+    }
+
+    function renderNavigatorQuickPlaces() {
+        if (!navigatorQuickPlaces) return;
+
+        if (state.personalPlaces.length === 0) {
+            navigatorQuickPlaces.classList.add('hidden');
+            navigatorQuickPlaces.innerHTML = '';
+            return;
+        }
+
+        navigatorQuickPlaces.innerHTML = `
+            <span>Личные точки</span>
+            <div>
+                ${state.personalPlaces.slice(0, 6).map((place) => `
+                    <button class="navigator-place" type="button" data-action="route-personal-place" data-place-id="${escapeAttribute(place.id)}">
+                        <strong>${escapeHtml(place.title)}</strong>
+                        <small>${escapeHtml(place.address || formatCoordinates(place.latitude, place.longitude))}</small>
+                        <em data-action="delete-personal-place" data-place-id="${escapeAttribute(place.id)}" aria-label="Удалить">×</em>
+                    </button>
+                `).join('')}
+            </div>
+        `;
+        navigatorQuickPlaces.classList.remove('hidden');
     }
 
     function isGeolocationTimeoutError(error) {
@@ -2339,10 +2586,11 @@ export function initParkingUi() {
         if (shouldFollowNavigationPosition({
             isNavigationFollowing: document.body.classList.contains('is-navigation-following'),
             isNavigationDetached: document.body.classList.contains('is-navigation-detached'),
+            isNavigationViewportHeld: isNavigationViewportHeld(),
             hasRoute: Boolean(state.navigationRoute),
             hasLocation: Boolean(state.userLocation),
         })) {
-            focusNavigationPosition(state.userLocation, state.navigationRoute, { preserveZoom: state.navigationPreserveZoom });
+            focusNavigationPosition(state.userLocation, state.navigationRoute, { preserveZoom: state.navigationPreserveZoom, duration: state.navigationPreserveZoom ? 320 : 850 });
         }
         maybeRefreshNavigationRouteFromGps();
         updateNavigationMetrics();
@@ -2361,9 +2609,15 @@ export function initParkingUi() {
         };
         focusUserLocation(state.userLocation, { focus: false });
         updateActiveRouteProgress(state.userLocation, state.navigationRoute);
-        focusNavigationPosition(state.userLocation, state.navigationRoute, { preserveZoom: true, duration: 180 });
+        if (!isNavigationViewportHeld()) {
+            focusNavigationPosition(state.userLocation, state.navigationRoute, { preserveZoom: true, duration: 180 });
+        }
         updateNavigationMetrics();
         saveNavigationState();
+    }
+
+    function isNavigationViewportHeld() {
+        return Date.now() < Number(state.navigationViewportHoldUntil || 0);
     }
 
     function startNavigationRouteRefreshTimer() {

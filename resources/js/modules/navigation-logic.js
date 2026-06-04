@@ -8,10 +8,11 @@ export function shouldRecenterNavigationFromLocate({ isNavigationMode = false, h
 export function shouldFollowNavigationPosition({
     isNavigationFollowing = false,
     isNavigationDetached = false,
+    isNavigationViewportHeld = false,
     hasRoute = false,
     hasLocation = false,
 } = {}) {
-    return Boolean(isNavigationFollowing && !isNavigationDetached && hasRoute && hasLocation);
+    return Boolean(isNavigationFollowing && !isNavigationDetached && !isNavigationViewportHeld && hasRoute && hasLocation);
 }
 
 export function shouldFollowUserLocation({

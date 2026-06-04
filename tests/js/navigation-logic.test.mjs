@@ -51,6 +51,16 @@ test('navigation GPS update should not steal map after manual detach', () => {
     }), false);
 });
 
+test('navigation GPS update should wait while user inspects the map', () => {
+    assert.equal(shouldFollowNavigationPosition({
+        isNavigationFollowing: true,
+        isNavigationDetached: false,
+        isNavigationViewportHeld: true,
+        hasRoute: true,
+        hasLocation: true,
+    }), false);
+});
+
 test('GPS button should keep following user location outside navigation', () => {
     assert.equal(shouldFollowUserLocation({
         isUserLocationFollowing: true,
@@ -80,7 +90,20 @@ test('manual map gestures keep navigation follow active', () => {
     assert.match(mapSource, /addEventListener\('wheel', dispatchRawManualMapInteraction/);
     assert.match(mapSource, /addEventListener\('touchstart', dispatchRawManualMapInteraction/);
     assert.match(formSource, /navigation:manual-map-zoom[\s\S]*state\.navigationPreserveZoom = true/);
+    assert.match(formSource, /navigation:manual-map-zoom[\s\S]*state\.navigationViewportHoldUntil = Date\.now\(\) \+ 2200/);
+    assert.match(formSource, /navigation:manual-map-move[\s\S]*state\.navigationViewportHoldUntil = Date\.now\(\) \+ 6500/);
     assert.doesNotMatch(formSource, /navigation:manual-map-zoom[\s\S]*classList\.add\('is-navigation-detached'\)/);
+});
+
+test('personal navigator places are rendered as their own map layer', () => {
+    const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
+    const formSource = readFileSync(new URL('../../resources/js/modules/parking-form.js', import.meta.url), 'utf8');
+
+    assert.match(mapSource, /PERSONAL_PLACE_SOURCE_ID/);
+    assert.match(mapSource, /id: 'personal-place-dot'/);
+    assert.match(mapSource, /export function replacePersonalPlacesOnMap/);
+    assert.match(formSource, /PERSONAL_PLACES_STORAGE_KEY/);
+    assert.match(formSource, /renderNavigatorQuickPlaces/);
 });
 
 test('GPS cursor heading is not coupled to manual map rotation', () => {
