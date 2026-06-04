@@ -1335,7 +1335,7 @@ export function initParkingUi() {
                 : [place, ...state.personalPlaces].slice(0, 20);
             writePersonalPlaces();
             renderPersonalPlaces();
-            showNavigatorMessage('Точка сохранена.');
+            showNavigatorMessage('Точка сохранена в личные точки. Теперь ее можно быстро выбрать в навигаторе.');
         } catch {
             showNavigatorMessage('Не удалось сохранить точку. Выберите адрес или место на карте.', true);
         }

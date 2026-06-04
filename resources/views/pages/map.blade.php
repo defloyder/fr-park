@@ -35,7 +35,7 @@
                 </div>
                 <button class="panel-close" type="button" data-action="close-navigator" aria-label="Закрыть">×</button>
             </div>
-            <p class="navigator-panel__hint">Введите адрес финиша или выберите точку на карте.</p>
+            <p class="navigator-panel__hint">Введите адрес финиша, выберите точку на карте или сохраните адрес в личные точки.</p>
             <label>
                 <span>Финиш</span>
                 <input id="navigator-destination-input" type="text" autocomplete="off" placeholder="Адрес или координаты">
