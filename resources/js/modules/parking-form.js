@@ -1183,12 +1183,11 @@ export function initParkingUi() {
     }
 
     function openNavigatorPanel() {
-        setActiveNav('show-map');
+        setActiveNav('open-navigator');
         navigatorPanel?.classList.remove('hidden');
         list.classList.add('hidden');
         searchPanel?.classList.add('hidden');
         profilePanel?.classList.add('hidden');
-        navigatorPanel?.classList.add('hidden');
         sheet.classList.add('hidden');
         card.classList.add('hidden');
         pickPanel?.classList.add('hidden');
@@ -1205,6 +1204,7 @@ export function initParkingUi() {
         state.navigatorPicking = false;
         setRouteDestinationPickingMode(false);
         hideNavigatorMessage();
+        setActiveNav('show-map');
     }
 
     function startRouteDestinationPicking() {

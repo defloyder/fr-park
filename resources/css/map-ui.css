@@ -315,21 +315,6 @@ body:has(.pick-panel:not(.hidden)) .map-control-stack {
     stroke-width: 2;
 }
 
-.map-navigator-control svg {
-    width: 24px;
-    height: 24px;
-}
-
-.map-navigator-control svg path:first-of-type {
-    fill: url("#navigatorButtonGradient");
-    stroke: rgba(7, 17, 38, 0.16);
-}
-
-.map-navigator-control svg path:last-of-type {
-    fill: rgba(7, 17, 38, 0.92);
-    stroke: rgba(255, 255, 255, 0.62);
-}
-
 .map-location-button svg {
     width: 25px;
     height: 25px;
@@ -490,8 +475,8 @@ body[data-map-layer="light"]:not(.is-navigation-mode) .layer-switcher__option {
     bottom: calc(10px + var(--safe-bottom));
     z-index: 48;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    width: min(430px, calc(100vw - 24px));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: min(560px, calc(100vw - 24px));
     min-height: 56px;
     gap: 4px;
     padding: 6px;
@@ -512,6 +497,22 @@ body[data-map-layer="light"]:not(.is-navigation-mode) .layer-switcher__option {
     border-radius: 14px;
     font-size: 0.88rem;
     font-weight: 850;
+}
+
+.nav-button[data-action="open-navigator"] svg {
+    width: 22px;
+    height: 22px;
+    flex-basis: 22px;
+}
+
+.nav-button[data-action="open-navigator"] svg path:first-of-type {
+    fill: url("#navigatorNavGradient");
+    stroke: rgba(7, 17, 38, 0.16);
+}
+
+.nav-button[data-action="open-navigator"] svg path:last-of-type {
+    fill: rgba(7, 17, 38, 0.92);
+    stroke: rgba(255, 255, 255, 0.62);
 }
 
 .nav-button svg {
@@ -1619,9 +1620,17 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .route-picker__note {
     color: rgba(226, 238, 255, 0.48);
 }
 
+.navigator-panel__hint {
+    margin: -4px 0 0;
+    color: rgba(226, 238, 255, 0.70);
+    font-size: 0.82rem;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
 .navigator-panel__actions {
     display: grid;
-    grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
     gap: 10px;
 }
 
@@ -2759,8 +2768,20 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
 
     .nav-button {
         gap: 5px;
-        padding: 0 6px;
-        font-size: 0.78rem;
+        padding: 0 4px;
+        font-size: 0.70rem;
+    }
+
+    .nav-button svg {
+        width: 18px;
+        height: 18px;
+        flex-basis: 18px;
+    }
+
+    .nav-button[data-action="open-navigator"] svg {
+        width: 19px;
+        height: 19px;
+        flex-basis: 19px;
     }
 
     .spot-list__item {
