@@ -27,11 +27,42 @@
                 <button class="route-button" type="button" data-action="return-to-form">К форме</button>
             </div>
         </section>
+        <section id="navigator-panel" class="navigator-panel liquid-glass hidden" aria-label="Навигатор">
+            <div class="panel-header">
+                <div>
+                    <span>Навигатор</span>
+                    <h2>Куда едем?</h2>
+                </div>
+                <button class="panel-close" type="button" data-action="close-navigator" aria-label="Закрыть">×</button>
+            </div>
+            <label>
+                <span>Финиш</span>
+                <input id="navigator-destination-input" type="text" autocomplete="off" placeholder="Адрес или координаты">
+            </label>
+            <div class="navigator-panel__actions">
+                <button class="ghost-button" type="button" data-action="pick-route-destination">На карте</button>
+                <button class="route-button" type="button" data-action="build-free-route">Маршрут</button>
+            </div>
+            <p id="navigator-message" class="form-message hidden" role="status"></p>
+        </section>
         <section id="selected-spot-card" class="spot-card liquid-glass hidden" aria-live="polite"></section>
 
         <div class="map-control-stack liquid-glass" aria-label="Инструменты карты">
             <button class="map-control-button map-traffic-button" type="button" data-traffic-toggle aria-label="Включить пробки" aria-pressed="false">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="3" width="8" height="18" rx="3"></rect><circle cx="12" cy="8" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="16" r="1.5"></circle><path d="M6 7H4"></path><path d="M6 12H4"></path><path d="M6 17H4"></path><path d="M20 7h-2"></path><path d="M20 12h-2"></path><path d="M20 17h-2"></path></svg>
+            </button>
+            <button class="map-control-button map-navigator-control" type="button" data-action="open-navigator" aria-label="Открыть навигатор">
+                <svg viewBox="0 0 28 28" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="navigatorButtonGradient" x1="4" y1="24" x2="24" y2="4" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#8B5CF6"></stop>
+                            <stop offset="0.5" stop-color="#21A8FF"></stop>
+                            <stop offset="1" stop-color="#75F7AF"></stop>
+                        </linearGradient>
+                    </defs>
+                    <path d="M14 3.8 24 24 14 19.2 4 24 14 3.8Z"></path>
+                    <path d="M14 9.6 18.4 20.1 14 17.9 9.6 20.1 14 9.6Z"></path>
+                </svg>
             </button>
             <div class="map-settings" data-map-settings>
                 <button class="map-control-button map-settings__trigger" type="button" data-map-settings-toggle aria-label="Настройки карты" aria-expanded="false">

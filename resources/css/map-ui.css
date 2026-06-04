@@ -285,6 +285,8 @@ body:has(.profile-panel:not(.hidden)) .map-control-stack,
 body:has(.bottom-sheet:not(.hidden)) .map-control-stack,
 body:has(.spot-card:not(.hidden)) .map-control-stack,
 body:has(.route-picker.is-visible) .map-control-stack,
+body:has(.navigator-panel:not(.hidden)) .map-control-stack,
+body.is-navigator-panel-open .map-control-stack,
 body:has(.pick-panel:not(.hidden)) .map-control-stack {
     opacity: 0;
     pointer-events: none;
@@ -311,6 +313,21 @@ body:has(.pick-panel:not(.hidden)) .map-control-stack {
     stroke-linecap: round;
     stroke-linejoin: round;
     stroke-width: 2;
+}
+
+.map-navigator-control svg {
+    width: 24px;
+    height: 24px;
+}
+
+.map-navigator-control svg path:first-of-type {
+    fill: url("#navigatorButtonGradient");
+    stroke: rgba(7, 17, 38, 0.16);
+}
+
+.map-navigator-control svg path:last-of-type {
+    fill: rgba(7, 17, 38, 0.92);
+    stroke: rgba(255, 255, 255, 0.62);
 }
 
 .map-location-button svg {
@@ -1119,7 +1136,8 @@ body[data-map-layer="light"]:not(.is-navigation-mode) .layer-switcher__option {
 .form-actions,
 .photo-dropzone__actions {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: min(100%, 360px);
+    grid-template-columns: minmax(0, 1fr);
     gap: 8px;
 }
 
@@ -1530,6 +1548,16 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .route-picker__note {
     }
 }
 
+@media (max-width: 720px) {
+    .photo-dropzone__actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .photo-dropzone [data-action="take-photo"] {
+        display: inline-flex;
+    }
+}
+
 .route-picker {
     position: fixed;
     right: 18px;
@@ -1548,6 +1576,69 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .route-picker__note {
     transform: translateY(14px);
     pointer-events: none;
     backdrop-filter: blur(22px) saturate(150%);
+}
+
+.navigator-panel {
+    position: fixed;
+    right: 18px;
+    bottom: calc(88px + var(--safe-bottom));
+    z-index: 88;
+    display: grid;
+    width: min(420px, calc(100vw - 36px));
+    gap: 14px;
+    padding: 16px;
+    color: #f8fbff;
+    background: linear-gradient(145deg, rgba(5, 15, 35, 0.94), rgba(13, 31, 67, 0.86));
+    border: 1px solid rgba(105, 188, 255, 0.38);
+    border-radius: 22px;
+    box-shadow: 0 24px 60px rgba(0, 12, 34, 0.44), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    backdrop-filter: blur(22px) saturate(150%);
+}
+
+.navigator-panel label {
+    display: grid;
+    gap: 8px;
+    color: rgba(226, 238, 255, 0.78);
+    font-size: 0.78rem;
+    font-weight: 900;
+}
+
+.navigator-panel input {
+    width: 100%;
+    min-height: 48px;
+    color: #f8fbff;
+    background: rgba(9, 30, 67, 0.76);
+    border: 1px solid rgba(88, 191, 255, 0.36);
+    border-radius: 14px;
+    padding: 0 14px;
+    font: 800 0.92rem Inter, system-ui, sans-serif;
+    outline: none;
+}
+
+.navigator-panel input::placeholder {
+    color: rgba(226, 238, 255, 0.48);
+}
+
+.navigator-panel__actions {
+    display: grid;
+    grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+    gap: 10px;
+}
+
+@media (max-width: 720px) {
+    .navigator-panel {
+        right: max(10px, var(--safe-right));
+        bottom: calc(76px + var(--safe-bottom));
+        left: max(10px, var(--safe-left));
+        width: auto;
+        padding: 12px;
+        border-radius: 18px;
+    }
+
+    .navigator-panel__actions {
+        grid-template-columns: 0.9fr 1.25fr;
+        gap: 8px;
+    }
 }
 
 .route-picker.is-visible {
@@ -1637,13 +1728,19 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .route-picker__note {
 }
 
 .route-option__logo--auralith {
-    background: rgba(248, 252, 255, 0.10);
+    width: 48px;
+    height: 40px;
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
 }
 
 .route-option__logo--auralith img {
-    width: 34px;
-    height: 34px;
+    width: 48px;
+    height: 40px;
     object-fit: contain;
+    border-radius: 0;
+    filter: drop-shadow(0 6px 10px rgba(5, 12, 28, 0.24));
 }
 
 .route-option strong,
@@ -2635,6 +2732,8 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
     body:has(.profile-panel:not(.hidden)) .map-control-stack,
     body:has(.bottom-sheet:not(.hidden)) .map-control-stack,
     body:has(.spot-card:not(.hidden)) .map-control-stack,
+    body:has(.navigator-panel:not(.hidden)) .map-control-stack,
+    body.is-navigator-panel-open .map-control-stack,
     body:has(.route-picker.is-visible) .map-control-stack {
         opacity: 0;
         pointer-events: none;

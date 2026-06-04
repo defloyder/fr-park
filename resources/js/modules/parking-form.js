@@ -12,7 +12,7 @@ import {
     updateParkingSpot,
     uploadParkingPhoto,
 } from './parking-api';
-import { addParkingSpotToMap, buildRouteToSpot, clearActiveRoute, clearPendingSelection, clearRouteManeuverHint, focusNavigationPosition, focusSpot, focusSpots, focusUserLocation, getMapCenterLocation, renderSpeedCameras, replaceParkingSpotsOnMap, restoreActiveRoute, setMapPickingMode, startRouteNavigation, updateActiveRouteProgress, updateRouteManeuverHint } from './map';
+import { addParkingSpotToMap, buildRouteToSpot, clearActiveRoute, clearPendingSelection, clearRouteManeuverHint, focusNavigationPosition, focusSpot, focusSpots, focusUserLocation, getMapCenterLocation, renderSpeedCameras, replaceParkingSpotsOnMap, restoreActiveRoute, setMapPickingMode, setRouteDestinationPickingMode, startRouteNavigation, updateActiveRouteProgress, updateRouteManeuverHint } from './map';
 import { getCompassEventPriority, getHeadingDifference, getRouteSnappedNavigationLocation, normalizeCompassHeading, pickUpcomingSpeedCamera, shouldFollowNavigationPosition, shouldFollowUserLocation, shouldRecenterNavigationFromLocate, smoothCompassHeading } from './navigation-logic';
 
 const STATUS_LABELS = {
@@ -83,6 +83,8 @@ const state = {
     navigationRouteRefreshInFlight: false,
     navigationLastRerouteAt: 0,
     navigationPreserveZoom: false,
+    navigatorDestination: null,
+    navigatorPicking: false,
     navigationSessionId: 0,
     deviceHeading: null,
     deviceHeadingUpdatedAt: 0,
@@ -90,6 +92,7 @@ const state = {
     deviceHeadingCandidateUpdatedAt: 0,
     deviceHeadingSourcePriority: 0,
     deviceHeadingSourceUpdatedAt: 0,
+    lastCompassHeading: null,
     deviceHeadingListener: null,
     deviceHeadingPermissionRequested: false,
     wakeLock: null,
@@ -105,6 +108,9 @@ export function initParkingUi() {
     const exportSelectionCount = document.getElementById('export-selection-count');
     const searchPanel = document.getElementById('search-panel');
     const pickPanel = document.getElementById('pick-panel');
+    const navigatorPanel = document.getElementById('navigator-panel');
+    const navigatorDestinationInput = document.getElementById('navigator-destination-input');
+    const navigatorMessage = document.getElementById('navigator-message');
     const profilePanel = document.getElementById('profile-panel');
     const profileTitle = document.getElementById('profile-title');
     const profileUser = document.getElementById('profile-user');
@@ -155,8 +161,8 @@ export function initParkingUi() {
             'pick-on-map': startPicking,
             'cancel-picking': cancelPicking,
             'return-to-form': returnToForm,
-            'choose-photo': () => photoFileInput.click(),
-            'take-photo': () => photoCameraInput.click(),
+            'choose-photo': () => photoFileInput?.click(),
+            'take-photo': () => photoCameraInput?.click(),
             'copy-address': () => copyAddress(event.target.closest('[data-address]')),
             'edit-spot': () => isAdmin() && openEditSheet(Number(event.target.closest('[data-spot-id]')?.dataset.spotId)),
             'open-photo': () => openLightbox(Number(event.target.closest('[data-photo-index]')?.dataset.photoIndex)),
@@ -168,6 +174,10 @@ export function initParkingUi() {
             'route-yandex': () => openExternalRoute('yandex'),
             'route-2gis': () => openExternalRoute('2gis'),
             'route-in-app': buildInAppRoute,
+            'open-navigator': openNavigatorPanel,
+            'close-navigator': closeNavigatorPanel,
+            'pick-route-destination': startRouteDestinationPicking,
+            'build-free-route': buildFreeNavigatorRoute,
             'start-navigation': startNavigation,
             'recenter-navigation': recenterNavigation,
             'stop-navigation': stopNavigationMode,
@@ -271,7 +281,8 @@ export function initParkingUi() {
         searchPanel?.classList.add('hidden');
         sheet.classList.add('hidden');
         profilePanel?.classList.add('hidden');
-        document.body.classList.remove('is-sheet-open');
+        navigatorPanel?.classList.add('hidden');
+        document.body.classList.remove('is-sheet-open', 'is-navigator-panel-open');
     });
 
     window.addEventListener('map:coords-selected', (event) => {
@@ -300,6 +311,28 @@ export function initParkingUi() {
             form.elements.address.value = address;
         }
         form.elements.address.placeholder = address ? 'Адрес определён по карте' : 'Адрес не найден, можно ввести вручную';
+    });
+
+    window.addEventListener('navigator:destination-loading', (event) => {
+        const { latitude, longitude } = event.detail ?? {};
+        state.navigatorDestination = createNavigatorDestination({ latitude, longitude });
+        if (navigatorDestinationInput) {
+            navigatorDestinationInput.value = formatCoordinates(latitude, longitude);
+        }
+        showNavigatorMessage('Определяю адрес...');
+        openNavigatorPanel();
+    });
+
+    window.addEventListener('navigator:destination-selected', (event) => {
+        const { latitude, longitude, address } = event.detail ?? {};
+        state.navigatorDestination = createNavigatorDestination({ latitude, longitude, address });
+        state.navigatorPicking = false;
+        setRouteDestinationPickingMode(false);
+        if (navigatorDestinationInput) {
+            navigatorDestinationInput.value = address || formatCoordinates(latitude, longitude);
+        }
+        showNavigatorMessage('Точка выбрана. Можно строить маршрут.');
+        openNavigatorPanel();
     });
 
     form.addEventListener('submit', async (event) => {
@@ -764,8 +797,9 @@ export function initParkingUi() {
         list.classList.add('hidden');
         searchPanel?.classList.add('hidden');
         sheet.classList.add('hidden');
+        navigatorPanel?.classList.add('hidden');
         card.classList.add('hidden');
-        document.body.classList.remove('is-sheet-open');
+        document.body.classList.remove('is-sheet-open', 'is-navigator-panel-open');
         renderProfile();
     }
 
@@ -974,7 +1008,9 @@ export function initParkingUi() {
         searchPanel?.classList.add('hidden');
         profilePanel?.classList.add('hidden');
         pickPanel?.classList.add('hidden');
+        navigatorPanel?.classList.add('hidden');
         card.classList.add('hidden');
+        document.body.classList.remove('is-navigator-panel-open');
         document.body.classList.add('is-sheet-open');
     }
 
@@ -1000,10 +1036,14 @@ export function initParkingUi() {
         sheet.classList.add('hidden');
         clearFormMessage();
         state.picking = false;
+        state.navigatorPicking = false;
         setMapPickingMode(false);
+        setRouteDestinationPickingMode(false);
         hidePickPanel();
+        navigatorPanel?.classList.add('hidden');
         state.editingSpotId = null;
         deleteButton?.classList.add('hidden');
+        document.body.classList.remove('is-navigator-panel-open');
         document.body.classList.remove('is-sheet-open');
         setActiveNav('show-map');
     }
@@ -1013,8 +1053,10 @@ export function initParkingUi() {
         list.classList.remove('hidden');
         searchPanel?.classList.add('hidden');
         profilePanel?.classList.add('hidden');
+        navigatorPanel?.classList.add('hidden');
         sheet.classList.add('hidden');
         card.classList.add('hidden');
+        document.body.classList.remove('is-navigator-panel-open');
         document.body.classList.remove('is-sheet-open');
     }
 
@@ -1140,6 +1182,86 @@ export function initParkingUi() {
         window.setTimeout(() => modal.remove(), 180);
     }
 
+    function openNavigatorPanel() {
+        setActiveNav('show-map');
+        navigatorPanel?.classList.remove('hidden');
+        list.classList.add('hidden');
+        searchPanel?.classList.add('hidden');
+        profilePanel?.classList.add('hidden');
+        navigatorPanel?.classList.add('hidden');
+        sheet.classList.add('hidden');
+        card.classList.add('hidden');
+        pickPanel?.classList.add('hidden');
+        state.navigatorPicking = false;
+        setRouteDestinationPickingMode(false);
+        document.body.classList.remove('is-sheet-open', 'is-navigator-panel-open');
+        document.body.classList.add('is-navigator-panel-open');
+        window.setTimeout(() => navigatorDestinationInput?.focus(), 80);
+    }
+
+    function closeNavigatorPanel() {
+        navigatorPanel?.classList.add('hidden');
+        document.body.classList.remove('is-navigator-panel-open');
+        state.navigatorPicking = false;
+        setRouteDestinationPickingMode(false);
+        hideNavigatorMessage();
+    }
+
+    function startRouteDestinationPicking() {
+        state.navigatorPicking = true;
+        navigatorPanel?.classList.add('hidden');
+        document.body.classList.remove('is-navigator-panel-open');
+        hideNavigatorMessage();
+        closeRoutePicker();
+        setRouteDestinationPickingMode(true);
+        clearPendingSelection();
+        showStatus('Коснитесь карты или удержите точку финиша.');
+    }
+
+    async function buildFreeNavigatorRoute() {
+        const button = document.querySelector('[data-action="build-free-route"]');
+        const previousButtonText = button?.textContent;
+
+        try {
+            resetFailedRouteBuildState();
+            startDeviceHeadingWatch();
+            button?.setAttribute('disabled', 'disabled');
+            if (button) button.textContent = 'Строю...';
+            showNavigatorMessage('Строю маршрут...');
+
+            const destination = await resolveNavigatorDestination();
+            const location = await ensureRouteStartLocation();
+            const route = await buildRouteToSpot(location, destination);
+
+            enterNavigationMode(destination, route);
+            closeNavigatorPanel();
+            hideStatus();
+            showToast(`Маршрут: ${formatDuration(route.durationSeconds)}, ${formatDistance(route.distanceMeters)}.`);
+        } catch (error) {
+            if (!isGeolocationTimeoutError(error)) {
+                console.error('Failed to build navigator route.', error);
+            }
+
+            const destination = state.navigatorDestination;
+            const fallbackRoute = destination ? await buildEmergencyRouteToSpot(destination).catch(() => null) : null;
+
+            if (fallbackRoute && destination) {
+                enterNavigationMode(destination, fallbackRoute);
+                closeNavigatorPanel();
+                hideStatus();
+                showToast(`Маршрут: ${formatDuration(fallbackRoute.durationSeconds)}, ${formatDistance(fallbackRoute.distanceMeters)}.`);
+                return;
+            }
+
+            resetFailedRouteBuildState();
+            showNavigatorMessage('Не удалось построить маршрут. Укажите адрес или точку на карте.', true);
+            showToast('Не удалось построить маршрут.', true);
+        } finally {
+            button?.removeAttribute('disabled');
+            if (button && previousButtonText) button.textContent = previousButtonText;
+        }
+    }
+
     function openExternalRoute(provider) {
         if (!state.selectedSpot) return;
 
@@ -1205,7 +1327,10 @@ export function initParkingUi() {
     }
 
     async function buildEmergencyRouteToSelectedSpot() {
-        const spot = state.selectedSpot;
+        return buildEmergencyRouteToSpot(state.selectedSpot);
+    }
+
+    async function buildEmergencyRouteToSpot(spot) {
         if (!spot) return null;
 
         const start = state.userLocation
@@ -1250,6 +1375,112 @@ export function initParkingUi() {
             trafficDelaySeconds: 0,
             source: 'local-fallback',
             segments: [],
+        };
+    }
+
+    async function resolveNavigatorDestination() {
+        const typedValue = navigatorDestinationInput?.value?.trim() ?? '';
+        const coordinates = parseCoordinates(typedValue);
+
+        if (coordinates) {
+            state.navigatorDestination = createNavigatorDestination({
+                latitude: coordinates.latitude,
+                longitude: coordinates.longitude,
+                address: typedValue,
+            });
+            return state.navigatorDestination;
+        }
+
+        if (state.navigatorDestination
+            && Number.isFinite(Number(state.navigatorDestination.latitude))
+            && Number.isFinite(Number(state.navigatorDestination.longitude))
+            && (!typedValue || typedValue === state.navigatorDestination.address || typedValue === formatCoordinates(state.navigatorDestination.latitude, state.navigatorDestination.longitude))) {
+            return state.navigatorDestination;
+        }
+
+        if (!typedValue) {
+            throw new Error('Navigator destination is empty.');
+        }
+
+        const geocoded = await geocodeDestination(typedValue);
+        state.navigatorDestination = createNavigatorDestination({
+            latitude: geocoded.latitude,
+            longitude: geocoded.longitude,
+            address: geocoded.address || typedValue,
+            title: typedValue,
+        });
+
+        return state.navigatorDestination;
+    }
+
+    function createNavigatorDestination({ latitude, longitude, address = '', title = '' } = {}) {
+        const lat = Number(latitude);
+        const lng = Number(longitude);
+        const label = title || address || 'Точка на карте';
+
+        return {
+            id: `navigator-${Date.now()}`,
+            title: label,
+            address: address || label,
+            latitude: lat,
+            longitude: lng,
+            isNavigatorDestination: true,
+        };
+    }
+
+    function parseCoordinates(value) {
+        const match = String(value || '').match(/(-?\d+(?:[.,]\d+)?)\s*[,;\s]\s*(-?\d+(?:[.,]\d+)?)/);
+        if (!match) return null;
+
+        const latitude = Number(match[1].replace(',', '.'));
+        const longitude = Number(match[2].replace(',', '.'));
+
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+        if (Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return null;
+
+        return { latitude, longitude };
+    }
+
+    function formatCoordinates(latitude, longitude) {
+        const lat = Number(latitude);
+        const lng = Number(longitude);
+
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+            return '';
+        }
+
+        return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    }
+
+    async function geocodeDestination(query) {
+        const url = new URL('https://nominatim.openstreetmap.org/search');
+        url.searchParams.set('format', 'jsonv2');
+        url.searchParams.set('limit', '1');
+        url.searchParams.set('accept-language', 'ru');
+        url.searchParams.set('q', query);
+
+        const response = await fetch(url.toString(), {
+            headers: {
+                Accept: 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`Geocoding failed: ${response.status}`);
+        }
+
+        const [result] = await response.json();
+        const latitude = Number(result?.lat);
+        const longitude = Number(result?.lon);
+
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+            throw new Error('Geocoding returned no coordinates.');
+        }
+
+        return {
+            latitude,
+            longitude,
+            address: result?.display_name || query,
         };
     }
 
@@ -1888,12 +2119,19 @@ export function initParkingUi() {
         const routeHeading = document.body.classList.contains('is-navigation-mode')
             ? Number(state.userLocation?.routeBearing)
             : Number.NaN;
+        const freshDeviceHeading = getFreshDeviceHeading(5000);
         const heading = Number.isFinite(routeHeading)
             ? routeHeading
             : (Number.isFinite(Number(state.userLocation?.heading))
                 ? Number(state.userLocation.heading)
-                : getFreshDeviceHeading(5000));
+                : (Number.isFinite(freshDeviceHeading)
+                    ? freshDeviceHeading
+                    : Number(state.lastCompassHeading)));
         const hasHeading = Number.isFinite(heading);
+
+        if (hasHeading) {
+            state.lastCompassHeading = heading;
+        }
 
         compass.classList.toggle('is-muted', !hasHeading);
         compass.style.setProperty('--heading', `${hasHeading ? heading : 0}deg`);
@@ -2302,11 +2540,14 @@ export function initParkingUi() {
         searchPanel?.classList.add('hidden');
         profilePanel?.classList.add('hidden');
         pickPanel?.classList.add('hidden');
+        navigatorPanel?.classList.add('hidden');
         sheet.classList.add('hidden');
         card.classList.add('hidden');
         state.picking = false;
+        state.navigatorPicking = false;
         setMapPickingMode(false);
-        document.body.classList.remove('is-sheet-open');
+        setRouteDestinationPickingMode(false);
+        document.body.classList.remove('is-sheet-open', 'is-navigator-panel-open');
     }
 
     function setActiveNav(action) {
@@ -2319,9 +2560,10 @@ export function initParkingUi() {
         searchPanel?.classList.remove('hidden');
         list.classList.add('hidden');
         profilePanel?.classList.add('hidden');
+        navigatorPanel?.classList.add('hidden');
         sheet.classList.add('hidden');
         card.classList.add('hidden');
-        document.body.classList.remove('is-sheet-open');
+        document.body.classList.remove('is-sheet-open', 'is-navigator-panel-open');
         renderSearchControls();
         renderSearchResults();
         window.setTimeout(() => searchInput?.focus(), 80);
@@ -2338,7 +2580,8 @@ export function initParkingUi() {
         card.classList.add('hidden');
         list.classList.add('hidden');
         searchPanel?.classList.add('hidden');
-        document.body.classList.remove('is-sheet-open');
+        navigatorPanel?.classList.add('hidden');
+        document.body.classList.remove('is-sheet-open', 'is-navigator-panel-open');
         showStatus('Коснитесь карты в месте парковки.');
         showPickPanel();
     }
@@ -2549,6 +2792,22 @@ export function initParkingUi() {
 
     function hideStatus() {
         statusPanel.classList.add('hidden');
+    }
+
+    function showNavigatorMessage(message, isError = false) {
+        if (!navigatorMessage) return;
+
+        navigatorMessage.textContent = message;
+        navigatorMessage.classList.toggle('is-error', isError);
+        navigatorMessage.classList.remove('hidden');
+    }
+
+    function hideNavigatorMessage() {
+        if (!navigatorMessage) return;
+
+        navigatorMessage.textContent = '';
+        navigatorMessage.classList.remove('is-error');
+        navigatorMessage.classList.add('hidden');
     }
 
     function showToast(message, isError = false) {

@@ -10,6 +10,7 @@ let userLocationRenderFrame = null;
 let renderedUserLocation = null;
 let targetUserLocation = null;
 let isPickingMode = false;
+let isRouteDestinationPickingMode = false;
 let isTrafficSuppressedByRoute = false;
 let isTrafficForcedVisibleByUser = false;
 let routeManeuverMarker = null;
@@ -1610,7 +1611,16 @@ function bindMapEvents() {
     map.on('mouseleave', 'spots-pin', () => setMapCursor(''));
 
     map.on('click', (event) => {
-        if (!isPickingMode || clickedFeature(event.point)) {
+        if (clickedFeature(event.point)) {
+            return;
+        }
+
+        if (isRouteDestinationPickingMode) {
+            selectRouteDestination(event.lngLat);
+            return;
+        }
+
+        if (!isPickingMode) {
             return;
         }
 
@@ -1625,6 +1635,19 @@ function bindMapEvents() {
         }));
 
         resolveAddress(coords);
+    });
+
+    map.on('contextmenu', (event) => {
+        if (!isRouteDestinationPickingMode && !document.body.classList.contains('is-navigation-mode')) {
+            return;
+        }
+
+        if (clickedFeature(event.point)) {
+            return;
+        }
+
+        event.preventDefault?.();
+        selectRouteDestination(event.lngLat);
     });
 }
 
@@ -2791,6 +2814,42 @@ export function clearPendingSelection() {
 export function setMapPickingMode(isActive) {
     isPickingMode = isActive;
     setMapCursor(isActive ? 'crosshair' : '');
+}
+
+export function setRouteDestinationPickingMode(isActive) {
+    isRouteDestinationPickingMode = isActive;
+    setMapCursor(isActive ? 'crosshair' : (isPickingMode ? 'crosshair' : ''));
+}
+
+async function selectRouteDestination(lngLat) {
+    const coords = [Number(lngLat.lat), Number(lngLat.lng)];
+    setPendingCoords(coords);
+    setRouteDestinationPickingMode(false);
+    window.dispatchEvent(new CustomEvent('navigator:destination-loading', {
+        detail: {
+            latitude: coords[0],
+            longitude: coords[1],
+        },
+    }));
+
+    try {
+        const response = await reverseGeocode(coords[0], coords[1]);
+        window.dispatchEvent(new CustomEvent('navigator:destination-selected', {
+            detail: {
+                latitude: coords[0],
+                longitude: coords[1],
+                address: typeof response.address === 'string' ? response.address.trim() : '',
+            },
+        }));
+    } catch {
+        window.dispatchEvent(new CustomEvent('navigator:destination-selected', {
+            detail: {
+                latitude: coords[0],
+                longitude: coords[1],
+                address: '',
+            },
+        }));
+    }
 }
 
 async function resolveAddress(coords) {
