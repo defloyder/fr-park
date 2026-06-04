@@ -9,9 +9,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="Auralith Maps">
     <title>{{ $title ?? 'Auralith Maps' }}</title>
-    <link rel="icon" type="image/png" href="{{ asset('images/auralith-icon-192.png') }}?v=20260529">
+    <link rel="icon" type="image/png" href="{{ asset('images/ChatGPT Image Jun 1, 2026, 02_33_28 PM.png') }}?v=20260604">
     <link rel="manifest" href="{{ asset('site.webmanifest') }}">
-    <link rel="apple-touch-icon" href="{{ asset('images/auralith-icon-192.png') }}?v=20260529">
+    <link rel="apple-touch-icon" href="{{ asset('images/ChatGPT Image Jun 1, 2026, 02_33_28 PM.png') }}?v=20260604">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="app-shell">

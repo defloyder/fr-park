@@ -471,6 +471,9 @@ function isWebGlSupported() {
 }
 
 function initMapLibreMap() {
+    document.body.classList.add('is-map-loading');
+    document.body.classList.remove('is-map-ready');
+
     map = new maplibregl.Map({
         container: MAP_CONTAINER_ID,
         center: MOSCOW_CENTER,
@@ -504,6 +507,8 @@ function initMapLibreMap() {
     map.once('load', async () => {
         map.resize();
         setBaseMapLayer(getSavedBaseMapLayer());
+        document.body.classList.remove('is-map-loading');
+        document.body.classList.add('is-map-ready');
 
         try {
             await addMarkerImages();
@@ -525,7 +530,7 @@ function initMapLibreMap() {
         }
 
         try {
-            await loadParkingSpots();
+            scheduleParkingSpotsLoad();
         } catch {
             reportMapError('Не удалось загрузить точки. Проверьте соединение и попробуйте снова.');
         }

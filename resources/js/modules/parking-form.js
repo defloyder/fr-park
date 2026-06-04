@@ -25,6 +25,7 @@ const STATUS_LABELS = {
 
 const NAVIGATION_STATE_STORAGE_KEY = 'auralith:navigation-state';
 const SPEED_CAMERA_ROUTE_DISTANCE_METERS = 55;
+const NAVIGATION_FINISH_DISTANCE_METERS = 28;
 
 const MOSCOW_DISTRICT_ALIASES = {
     'патриарших прудов': 'Пресненский',
@@ -1119,8 +1120,8 @@ export function initParkingUi() {
                     <small>открыть навигацию</small>
                 </button>
                 <button class="route-option route-option--app" type="button" data-action="route-in-app">
-                    <span class="route-option__logo route-option__logo--auralith" aria-hidden="true"><img src="/images/auralith-mark.svg" alt=""></span>
-                    <strong>Auralith</strong>
+                    <span class="route-option__logo route-option__logo--auralith" aria-hidden="true"><img src="/images/ChatGPT%20Image%20Jun%204%2C%202026%2C%2009_52_20%20AM.png" alt=""></span>
+                    <strong>Auralith Maps</strong>
                     <small>встроенный навигатор</small>
                 </button>
             </div>
@@ -1531,6 +1532,11 @@ export function initParkingUi() {
         const isFollowing = document.body.classList.contains('is-navigation-following');
         const isSpeeding = state.currentSpeedKmh > state.speedLimitKmh + 15;
 
+        if (isFollowing && hasReachedNavigationDestination(remainingDistance)) {
+            stopNavigationMode();
+            return;
+        }
+
         setText('[data-navigation-maneuver-distance]', Number.isFinite(maneuverDistance) ? formatDistance(maneuverDistance) : formatDistance(remainingDistance));
         setText('[data-navigation-instruction]', formatNavigationInstructionText(instruction?.text || ''));
         setText('[data-navigation-traffic]', getTrafficLabel(state.navigationRoute));
@@ -1567,6 +1573,28 @@ export function initParkingUi() {
         updateNavigationCompass();
         document.querySelector('.navigation-speedometer')?.classList.toggle('is-speeding', isSpeeding);
         renderCameraAlert();
+    }
+
+    function hasReachedNavigationDestination(remainingDistance) {
+        if (!state.userLocation || !state.navigationSpot || !state.navigationRoute?.geometry?.coordinates?.length) {
+            return false;
+        }
+
+        const totalDistance = Number(state.navigationRoute.distanceMeters);
+        const progress = Number(state.userLocation.routeProgressMeters);
+        const distanceToSpot = getDistanceMeters(state.userLocation, state.navigationSpot);
+
+        return (
+            Number.isFinite(remainingDistance)
+            && remainingDistance <= NAVIGATION_FINISH_DISTANCE_METERS
+        ) || (
+            Number.isFinite(totalDistance)
+            && Number.isFinite(progress)
+            && totalDistance - progress <= NAVIGATION_FINISH_DISTANCE_METERS
+        ) || (
+            Number.isFinite(distanceToSpot)
+            && distanceToSpot <= NAVIGATION_FINISH_DISTANCE_METERS
+        );
     }
 
     function renderCameraAlert() {
