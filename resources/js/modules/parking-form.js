@@ -1986,7 +1986,7 @@ export function initParkingUi() {
 
         state.navigationWatchId = navigator.geolocation.watchPosition(
             ({ coords }) => applyNavigationLocationCoords(coords),
-            () => {},
+            handleNavigationLocationError,
             {
                 enableHighAccuracy: true,
                 maximumAge: 0,
@@ -2010,7 +2010,7 @@ export function initParkingUi() {
 
             navigator.geolocation.getCurrentPosition(
                 ({ coords }) => applyNavigationLocationCoords(coords),
-                () => {},
+                handleNavigationLocationError,
                 {
                     enableHighAccuracy: true,
                     maximumAge: 1000,
@@ -2107,6 +2107,23 @@ export function initParkingUi() {
             focusNavigationPosition(state.userLocation, state.navigationRoute, { preserveZoom: state.navigationPreserveZoom });
         }
         maybeRefreshNavigationRouteFromGps();
+        updateNavigationMetrics();
+        saveNavigationState();
+    }
+
+    function handleNavigationLocationError() {
+        if (!state.userLocation || !state.navigationRoute || !document.body.classList.contains('is-navigation-following')) {
+            return;
+        }
+
+        state.userLocation = {
+            ...state.userLocation,
+            updatedAt: Date.now(),
+            ...getNavigationMarkerPatch(state.userLocation, state.userLocation.heading),
+        };
+        focusUserLocation(state.userLocation, { focus: false });
+        updateActiveRouteProgress(state.userLocation, state.navigationRoute);
+        focusNavigationPosition(state.userLocation, state.navigationRoute, { preserveZoom: true, duration: 180 });
         updateNavigationMetrics();
         saveNavigationState();
     }

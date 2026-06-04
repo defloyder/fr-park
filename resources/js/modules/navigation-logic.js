@@ -236,11 +236,20 @@ function smoothSnappedNavigationLocation(location, previousLocation, speedKmh) {
 
     const speed = Number(speedKmh) || 0;
     const factor = speed > 18 ? 0.58 : 0.42;
+    const previousProgress = Number(previousLocation.routeProgressMeters);
+    const nextProgress = Number(location.routeProgressMeters);
+    const hasProgress = Number.isFinite(previousProgress) && Number.isFinite(nextProgress);
+    const progressDelta = hasProgress ? nextProgress - previousProgress : 0;
+    const maxForwardStep = Math.max(18, (speed / 3.6) * 2.8);
+    const smoothedProgress = hasProgress
+        ? previousProgress + Math.max(-3, Math.min(maxForwardStep, progressDelta * factor))
+        : location.routeProgressMeters;
 
     return {
         ...location,
         latitude: Number(previousLocation.latitude) + ((Number(location.latitude) - Number(previousLocation.latitude)) * factor),
         longitude: Number(previousLocation.longitude) + ((Number(location.longitude) - Number(previousLocation.longitude)) * factor),
+        routeProgressMeters: smoothedProgress,
     };
 }
 

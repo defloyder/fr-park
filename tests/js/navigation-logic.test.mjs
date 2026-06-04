@@ -166,6 +166,37 @@ test('navigation route snapping is available as executable logic', () => {
     assert.ok(snapped.routeProgressMeters > 0);
 });
 
+test('navigation route progress is smoothed and does not jump backwards', () => {
+    const route = {
+        geometry: {
+            coordinates: [
+                [37, 55],
+                [37, 55.01],
+            ],
+        },
+    };
+    const previousLocation = {
+        latitude: 55.0045,
+        longitude: 37,
+        routeProgressMeters: 500,
+    };
+
+    const forward = getRouteSnappedNavigationLocation(
+        { latitude: 55.006, longitude: 37.00002, accuracy: 8 },
+        route,
+        { previousLocation, speedKmh: 36 },
+    );
+    const backward = getRouteSnappedNavigationLocation(
+        { latitude: 55.0001, longitude: 37.00002, accuracy: 8 },
+        route,
+        { previousLocation, speedKmh: 36 },
+    );
+
+    assert.ok(forward.routeProgressMeters > previousLocation.routeProgressMeters);
+    assert.ok(forward.routeProgressMeters < 700);
+    assert.ok(backward.routeProgressMeters >= previousLocation.routeProgressMeters - 3);
+});
+
 test('speed camera rendering filters invalid coordinates before MapLibre receives data', () => {
     const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
     const renderSpeedCameras = mapSource.match(/export function renderSpeedCameras[\s\S]*?\n\}/)?.[0] ?? '';
@@ -173,6 +204,15 @@ test('speed camera rendering filters invalid coordinates before MapLibre receive
     assert.match(renderSpeedCameras, /Number\.isFinite\(longitude\)/);
     assert.match(renderSpeedCameras, /Number\.isFinite\(latitude\)/);
     assert.match(renderSpeedCameras, /features,/);
+});
+
+test('cluster labels use text instead of pre-rendering hundreds of canvas images', () => {
+    const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
+    const initMapLoad = mapSource.match(/map\.once\('load'[\s\S]*?bindMapEvents\(\);/)?.[0] ?? '';
+    const clusterCountLayer = mapSource.match(/id: 'cluster-count'[\s\S]*?\n    \}\);/)?.[0] ?? '';
+
+    assert.doesNotMatch(initMapLoad, /addClusterCountImages\(\)/);
+    assert.match(clusterCountLayer, /'text-field': \['get', 'point_count_abbreviated'\]/);
 });
 
 test('nearest maneuver hint is rendered on the map', () => {
@@ -197,6 +237,15 @@ test('route geojson is sanitized before MapLibre setData receives it', () => {
     assert.match(mapSource, /function sanitizeLineCoordinates/);
     assert.match(mapSource, /source\?\.setData\(buildRouteFeatureCollection\(safeRoute\)\)/);
     assert.doesNotMatch(mapSource, /directDistanceMeters > 50000[\s\S]*throw error/);
+});
+
+test('active navigation route is trimmed by smoothed progress', () => {
+    const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
+    const updateActiveRouteProgress = mapSource.match(/export function updateActiveRouteProgress[\s\S]*?safeSetRouteLineColor/)?.[0] ?? '';
+
+    assert.match(updateActiveRouteProgress, /trimRouteByProgress/);
+    assert.match(mapSource, /function getLineCoordinatesAfterProgress/);
+    assert.match(mapSource, /progressMeters - 6/);
 });
 
 test('close controls stay red across map themes', () => {
