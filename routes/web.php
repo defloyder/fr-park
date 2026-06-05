@@ -4,6 +4,7 @@ use App\Http\Controllers\Web\MapController;
 use App\Http\Controllers\Web\AdminController;
 use App\Http\Controllers\Web\AuthController;
 use App\Http\Controllers\Web\FavoriteParkingSpotController;
+use App\Http\Controllers\Web\PersonalPlaceController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', MapController::class)->name('map');
@@ -25,4 +26,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/account/favorites', [FavoriteParkingSpotController::class, 'index'])->name('account.favorites');
     Route::post('/account/favorites/{parkingSpot}/toggle', [FavoriteParkingSpotController::class, 'toggle'])
         ->name('account.favorites.toggle');
+    Route::get('/account/personal-places', [PersonalPlaceController::class, 'index'])
+        ->name('account.personal-places.index');
+    Route::post('/account/personal-places', [PersonalPlaceController::class, 'store'])
+        ->name('account.personal-places.store');
+    Route::post('/account/personal-places/sync', [PersonalPlaceController::class, 'sync'])
+        ->name('account.personal-places.sync');
+    Route::delete('/account/personal-places/{personalPlace}', [PersonalPlaceController::class, 'destroy'])
+        ->name('account.personal-places.destroy');
 });

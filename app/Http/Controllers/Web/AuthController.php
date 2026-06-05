@@ -25,6 +25,15 @@ class AuthController extends Controller
             'favorite_ids' => $user
                 ? $user->favoriteParkingSpots()->pluck('parking_spots.id')->values()
                 : [],
+            'personal_places' => $user
+                ? $user->personalPlaces()->latest()->limit(50)->get()->map(fn ($place): array => [
+                    'id' => (string) $place->id,
+                    'title' => $place->title,
+                    'address' => $place->address,
+                    'latitude' => (float) $place->latitude,
+                    'longitude' => (float) $place->longitude,
+                ])->values()
+                : [],
             'csrf_token' => csrf_token(),
         ]);
     }
@@ -73,6 +82,7 @@ class AuthController extends Controller
         return response()->json([
             'user' => null,
             'favorite_ids' => [],
+            'personal_places' => [],
             'is_admin' => false,
             'csrf_token' => csrf_token(),
         ]);

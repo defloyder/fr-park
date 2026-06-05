@@ -1807,23 +1807,31 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .route-picker__note {
 
 .navigator-place {
     position: relative;
-    padding-right: 34px;
+    padding-right: 32px;
 }
 
 .navigator-place em {
     position: absolute;
     top: 50%;
-    right: 7px;
+    right: 8px;
     display: grid;
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     place-items: center;
     color: #fb2f68;
-    background: rgba(255, 240, 245, 0.90);
-    border-radius: 9px;
+    background: rgba(255, 240, 245, 0.72);
+    border: 1px solid rgba(251, 47, 104, 0.18);
+    border-radius: 8px;
     font-size: 0;
     font-style: normal;
     transform: translateY(-50%);
+    transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+.navigator-place em:hover {
+    background: rgba(255, 240, 245, 0.96);
+    box-shadow: 0 6px 14px rgba(251, 47, 104, 0.16);
+    transform: translateY(-50%) scale(1.04);
 }
 
 .navigator-place em::before,
@@ -2867,10 +2875,20 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
     }
 
     .profile-panel {
-        bottom: auto;
-        height: auto;
-        max-height: calc(100svh - 86px);
+        bottom: auto !important;
+        height: auto !important;
+        min-height: 0;
+        max-height: min(680px, calc(100svh - 92px));
         align-content: start;
+        justify-content: flex-start;
+    }
+
+    .profile-panel .favorite-panel {
+        margin-top: 0;
+    }
+
+    .profile-panel .favorite-list {
+        max-height: min(230px, 30svh);
     }
 
     .spot-card {

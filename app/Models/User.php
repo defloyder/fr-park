@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -44,6 +45,11 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(ParkingSpot::class, 'favorite_parking_spot')
             ->withTimestamps();
+    }
+
+    public function personalPlaces(): HasMany
+    {
+        return $this->hasMany(PersonalPlace::class);
     }
 
     public function isAdmin(): bool

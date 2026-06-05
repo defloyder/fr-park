@@ -1,6 +1,8 @@
 import {
     createParkingSpot,
+    createPersonalPlace,
     deleteParkingSpot,
+    deletePersonalPlace as deletePersonalPlaceFromAccount,
     fetchAccountSession,
     fetchFavorites,
     fetchRouteSpeedCameras,
@@ -8,6 +10,7 @@ import {
     logoutAccount,
     importParkingSpots,
     submitAuth,
+    syncPersonalPlaces,
     toggleFavoriteSpot,
     updateParkingSpot,
     uploadParkingPhoto,
@@ -701,11 +704,19 @@ export function initParkingUi() {
     function applyAccountState(data) {
         state.user = data.user ?? null;
         state.favoriteIds = new Set((data.favorite_ids ?? []).map(Number));
+        const accountPlaces = (data.personal_places ?? []).map(normalizePersonalPlace).filter(Boolean);
+        const localPlaces = readPersonalPlaces();
+        state.personalPlaces = state.user ? accountPlaces : localPlaces;
         updateAdminControls();
         renderList();
         renderProfile();
         renderInstallAppPanel();
         rerenderOpenCard();
+        renderPersonalPlaces();
+
+        if (state.user && localPlaces.length > 0) {
+            syncLocalPersonalPlaces(localPlaces);
+        }
     }
 
     function isAdmin() {
@@ -1329,13 +1340,23 @@ export function initParkingUi() {
                 throw new Error('Invalid personal place.');
             }
 
-            const existsIndex = state.personalPlaces.findIndex((item) => item.id === place.id);
-            state.personalPlaces = existsIndex >= 0
-                ? state.personalPlaces.map((item, index) => (index === existsIndex ? place : item))
-                : [place, ...state.personalPlaces].slice(0, 20);
-            writePersonalPlaces();
+            if (state.user) {
+                const response = await createPersonalPlace({
+                    title: place.title,
+                    address: place.address,
+                    latitude: place.latitude,
+                    longitude: place.longitude,
+                });
+                state.personalPlaces = (response.personal_places ?? []).map(normalizePersonalPlace).filter(Boolean);
+                window.localStorage?.removeItem(PERSONAL_PLACES_STORAGE_KEY);
+            } else {
+                state.personalPlaces = [place, ...state.personalPlaces].slice(0, 20);
+                writePersonalPlaces();
+            }
             renderPersonalPlaces();
-            showNavigatorMessage('Точка сохранена в личные точки. Теперь ее можно быстро выбрать в навигаторе.');
+            showNavigatorMessage(state.user
+                ? 'Точка сохранена в аккаунте и появится на всех ваших устройствах.'
+                : 'Точка сохранена на этом устройстве. Войдите в профиль для синхронизации.');
         } catch {
             showNavigatorMessage('Не удалось сохранить точку. Выберите адрес или место на карте.', true);
         }
@@ -1352,11 +1373,20 @@ export function initParkingUi() {
         await buildFreeNavigatorRoute();
     }
 
-    function deletePersonalPlace(placeId) {
-        state.personalPlaces = state.personalPlaces.filter((item) => String(item.id) !== String(placeId));
-        writePersonalPlaces();
-        renderPersonalPlaces();
-        showNavigatorMessage('Точка удалена.');
+    async function deletePersonalPlace(placeId) {
+        try {
+            if (state.user) {
+                const response = await deletePersonalPlaceFromAccount(placeId);
+                state.personalPlaces = (response.personal_places ?? []).map(normalizePersonalPlace).filter(Boolean);
+            } else {
+                state.personalPlaces = state.personalPlaces.filter((item) => String(item.id) !== String(placeId));
+                writePersonalPlaces();
+            }
+            renderPersonalPlaces();
+            showNavigatorMessage('Точка удалена.');
+        } catch {
+            showNavigatorMessage('Не удалось удалить точку.', true);
+        }
     }
 
     function openExternalRoute(provider) {
@@ -1701,6 +1731,22 @@ export function initParkingUi() {
 
     function writePersonalPlaces() {
         window.localStorage?.setItem(PERSONAL_PLACES_STORAGE_KEY, JSON.stringify(state.personalPlaces));
+    }
+
+    async function syncLocalPersonalPlaces(localPlaces) {
+        try {
+            const response = await syncPersonalPlaces(localPlaces.map((place) => ({
+                title: place.title,
+                address: place.address,
+                latitude: place.latitude,
+                longitude: place.longitude,
+            })));
+            state.personalPlaces = (response.personal_places ?? []).map(normalizePersonalPlace).filter(Boolean);
+            window.localStorage?.removeItem(PERSONAL_PLACES_STORAGE_KEY);
+            renderPersonalPlaces();
+        } catch {
+            // Keep local places until account synchronization succeeds.
+        }
     }
 
     function renderPersonalPlaces() {

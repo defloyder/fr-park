@@ -385,6 +385,40 @@ export async function toggleFavoriteSpot(id) {
     return data;
 }
 
+export async function createPersonalPlace(payload) {
+    return sendPersonalPlaceRequest('/account/personal-places', 'POST', payload);
+}
+
+export async function syncPersonalPlaces(places) {
+    return sendPersonalPlaceRequest('/account/personal-places/sync', 'POST', { places });
+}
+
+export async function deletePersonalPlace(id) {
+    return sendPersonalPlaceRequest(`/account/personal-places/${encodeURIComponent(id)}`, 'DELETE');
+}
+
+async function sendPersonalPlaceRequest(url, method, payload = null) {
+    const response = await fetch(url, {
+        method,
+        credentials: 'same-origin',
+        headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document
+                .querySelector('meta[name="csrf-token"]')
+                ?.getAttribute('content'),
+        },
+        body: payload ? JSON.stringify(payload) : undefined,
+    });
+    const data = await readJson(response);
+
+    if (!response.ok) {
+        throwApiError(response, data, 'Failed to update personal places');
+    }
+
+    return data;
+}
+
 function syncCsrfToken(data) {
     if (data?.csrf_token) {
         document
