@@ -163,14 +163,14 @@ export function initAdminPanel() {
         const filtered = getFilteredSpots();
         rows.innerHTML = filtered.map((spot) => `
             <tr>
-                <td><button class="export-check ${selectedIds.has(Number(spot.id)) ? 'is-checked' : ''}" type="button" data-admin-row-check="${spot.id}"><span></span></button></td>
-                <td>
+                <td class="admin-table__select" data-label="Выбрать"><button class="export-check ${selectedIds.has(Number(spot.id)) ? 'is-checked' : ''}" type="button" data-admin-row-check="${spot.id}" aria-label="Выбрать точку «${escapeAttribute(spot.title)}»"><span></span></button></td>
+                <td class="admin-table__primary" data-label="Точка">
                     <strong>${escapeHtml(spot.title)}</strong>
                     <small>${escapeHtml(spot.address || 'Адрес не указан')}</small>
                 </td>
-                <td><em class="spot-list__status spot-list__status--${getStatus(spot)}">${STATUS_LABELS[getStatus(spot)]}</em></td>
-                <td>${getPhotos(spot).length}</td>
-                <td>
+                <td data-label="Статус"><em class="spot-list__status spot-list__status--${getStatus(spot)}">${STATUS_LABELS[getStatus(spot)]}</em></td>
+                <td data-label="Фото">${getPhotos(spot).length}</td>
+                <td class="admin-table__actions" data-label="Действия">
                     <div class="admin-row-actions">
                         <button class="ghost-button admin-row-action" type="button" data-admin-edit="${spot.id}">Редактировать</button>
                         <button class="danger-button admin-row-action" type="button" data-admin-delete="${spot.id}">Удалить</button>
@@ -187,11 +187,11 @@ export function initAdminPanel() {
     function renderUsers() {
         usersList.innerHTML = users.map((user) => `
             <tr>
-                <td><strong>${escapeHtml(user.name)}</strong></td>
-                <td><small>${escapeHtml(user.email)}</small></td>
-                <td><em class="admin-role-badge ${user.is_admin ? 'is-admin' : ''}">${user.is_root_admin ? 'Главный админ' : (user.is_admin ? 'Админ' : 'Пользователь')}</em></td>
-                <td><small>${formatDate(user.created_at)}</small></td>
-                <td>
+                <td class="admin-table__primary" data-label="Пользователь"><strong>${escapeHtml(user.name)}</strong></td>
+                <td data-label="Email"><small>${escapeHtml(user.email)}</small></td>
+                <td data-label="Роль"><em class="admin-role-badge ${user.is_admin ? 'is-admin' : ''}">${user.is_root_admin ? 'Главный админ' : (user.is_admin ? 'Админ' : 'Пользователь')}</em></td>
+                <td data-label="Регистрация"><small>${formatDate(user.created_at)}</small></td>
+                <td class="admin-table__actions" data-label="Действия">
                     <button class="ghost-button admin-row-action ${user.is_admin ? 'is-active' : ''}" type="button" data-admin-user="${user.id}" data-admin-role="${user.is_admin ? 'false' : 'true'}" ${user.is_root_admin ? 'disabled' : ''}>
                         ${user.is_root_admin ? 'Защищен' : (user.is_admin ? 'Снять роль' : 'Назначить админом')}
                     </button>
@@ -227,6 +227,10 @@ export function initAdminPanel() {
         editor.elements.photo_urls.value = editorPhotos.join(', ');
         renderEditorPhotos();
         setMessage('');
+
+        if (window.matchMedia('(max-width: 1199px)').matches) {
+            root.querySelector('.admin-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     }
 
     async function uploadEditorPhotos(files) {

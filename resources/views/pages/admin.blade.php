@@ -43,22 +43,30 @@
             </header>
 
             <div class="admin-filters">
-                <input data-admin-search type="search" placeholder="Адрес, название, описание">
-                <select data-admin-status>
-                    <option value="">Все статусы</option>
-                    <option value="verified">Проверено</option>
-                    <option value="unverified">Не проверено</option>
-                    <option value="temporary">Временная</option>
-                    <option value="outdated">Неактуально</option>
-                </select>
+                <label class="admin-filter admin-filter--search">
+                    <span>Поиск</span>
+                    <input data-admin-search type="search" placeholder="Адрес, название, описание">
+                </label>
+                <label class="admin-filter">
+                    <span>Статус</span>
+                    <select data-admin-status>
+                        <option value="">Все статусы</option>
+                        <option value="verified">Проверено</option>
+                        <option value="unverified">Не проверено</option>
+                        <option value="temporary">Временная</option>
+                        <option value="outdated">Неактуально</option>
+                    </select>
+                </label>
             </div>
 
             <div class="admin-bulkbar">
-                <span data-admin-selected-count>Выбрано: 0</span>
-                <button class="ghost-button" type="button" data-admin-bulk="verified">Проверено</button>
-                <button class="ghost-button" type="button" data-admin-bulk="unverified">Не проверено</button>
-                <button class="ghost-button" type="button" data-admin-bulk="temporary">Временная</button>
-                <button class="danger-button" type="button" data-admin-hide>Скрыть</button>
+                <strong data-admin-selected-count>Выбрано: 0</strong>
+                <div class="admin-bulk-actions">
+                    <button class="ghost-button" type="button" data-admin-bulk="verified">Проверено</button>
+                    <button class="ghost-button" type="button" data-admin-bulk="unverified">Не проверено</button>
+                    <button class="ghost-button" type="button" data-admin-bulk="temporary">Временная</button>
+                    <button class="danger-button" type="button" data-admin-hide>Скрыть</button>
+                </div>
             </div>
 
             <div class="admin-table-wrap">
