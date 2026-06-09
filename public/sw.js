@@ -1,4 +1,4 @@
-const CACHE_NAME = 'auralith-navigation-v4';
+const CACHE_NAME = 'auralith-navigation-v5';
 const SHELL_URLS = [
     '/',
 ];
@@ -37,7 +37,6 @@ self.addEventListener('fetch', (event) => {
 
     if (url.origin === self.location.origin && (
         url.pathname.startsWith('/build/')
-        || url.pathname.startsWith('/storage/')
         || url.pathname.startsWith('/images/')
         || url.pathname === '/site.webmanifest'
         || url.pathname === '/'

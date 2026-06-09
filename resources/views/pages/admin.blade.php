@@ -3,10 +3,6 @@
         <aside class="admin-sidebar liquid-glass">
             <div class="brand-lockup">
                 <x-brand-logo />
-                <div>
-                    <span class="eyebrow">Auralith Maps</span>
-                    <h1>Админ-панель</h1>
-                </div>
             </div>
 
             <div class="admin-stats">
@@ -26,6 +22,7 @@
 
             <nav class="admin-nav">
                 <button type="button" data-admin-open-map title="Открыть карту">Карта</button>
+                <button type="button" data-admin-open-users>Пользователи</button>
                 <a href="/api/parking-spots/export" data-admin-export-all>Экспорт JSON</a>
             </nav>
 

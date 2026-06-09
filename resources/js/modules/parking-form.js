@@ -9,6 +9,8 @@ import {
     getParkingSpotsExportUrl,
     logoutAccount,
     importParkingSpots,
+    isUploadableParkingPhoto,
+    prepareParkingPhotoForUpload,
     submitAuth,
     syncPersonalPlaces,
     toggleFavoriteSpot,
@@ -462,7 +464,7 @@ export function initParkingUi() {
     }
 
     async function uploadPhotoFiles(files) {
-        const images = files.filter((file) => isUploadableImage(file));
+        const images = files.filter((file) => isUploadableParkingPhoto(file));
         if (images.some((file) => file.size > 50 * 1024 * 1024)) return showFormError('Фото слишком большое. Сделайте снимок меньше 50 МБ.');
         if (files.length > 0 && images.length === 0) return showFormError('Можно загрузить только изображения.');
         if (getFormPhotos().length + images.length > 12) return showFormError('Можно добавить до 12 фото на одну точку.');
@@ -474,7 +476,7 @@ export function initParkingUi() {
                 photoDropzone.querySelector('strong').textContent = images.length > 1
                     ? `Загружаю фото: ${index + 1}/${images.length}`
                     : 'Загружаю фото...';
-                const uploadFile = await preparePhotoForUpload(file);
+                const uploadFile = await prepareParkingPhotoForUpload(file);
                 const response = await uploadParkingPhoto(uploadFile);
                 state.formPhotos.push(response.url);
             }
@@ -488,68 +490,6 @@ export function initParkingUi() {
             photoDropzone.classList.remove('is-uploading');
             resetDropzoneText();
         }
-    }
-
-    function isUploadableImage(file) {
-        if (!file) return false;
-        if (file.type?.startsWith('image/')) return true;
-        if (!file.type && file.size > 0) return true;
-
-        return /\.(jpe?g|png|webp|heic|heif|avif)$/i.test(file.name || '');
-    }
-
-    async function preparePhotoForUpload(file) {
-        if (!shouldCompressPhoto(file)) return file;
-
-        try {
-            return await compressPhotoFile(file);
-        } catch {
-            return file;
-        }
-    }
-
-    function shouldCompressPhoto(file) {
-        const type = String(file?.type || '').toLowerCase();
-        const name = String(file?.name || '').toLowerCase();
-
-        if (!file || file.size < 1600 * 1024) return false;
-        if (/\.(heic|heif|avif)$/i.test(name)) return false;
-
-        return ['image/jpeg', 'image/jpg', 'image/pjpeg', 'image/png', 'image/x-png', 'image/webp', ''].includes(type)
-            || /\.(jpe?g|png|webp)$/i.test(name);
-    }
-
-    async function compressPhotoFile(file) {
-        const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
-        const maxSide = 1600;
-        const ratio = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
-        const width = Math.max(1, Math.round(bitmap.width * ratio));
-        const height = Math.max(1, Math.round(bitmap.height * ratio));
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const context = canvas.getContext('2d', { alpha: false });
-
-        context.drawImage(bitmap, 0, 0, width, height);
-        bitmap.close?.();
-
-        const blob = await new Promise((resolve, reject) => {
-            canvas.toBlob((result) => {
-                result ? resolve(result) : reject(new Error('Photo compression failed'));
-            }, 'image/jpeg', 0.72);
-        });
-
-        if (!blob || blob.size >= file.size) return file;
-
-        return new File([blob], getCompressedPhotoName(file), {
-            type: 'image/jpeg',
-            lastModified: Date.now(),
-        });
-    }
-
-    function getCompressedPhotoName(file) {
-        const name = String(file?.name || '').trim().replace(/\.[^.]+$/, '');
-        return `${name || 'phone-photo'}.jpg`;
     }
 
     function renderCard(spot) {

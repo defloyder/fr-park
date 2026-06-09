@@ -146,6 +146,131 @@ export async function uploadParkingPhoto(file) {
     return data;
 }
 
+export function isUploadableParkingPhoto(file) {
+    if (!file) return false;
+    if (file.type?.startsWith('image/')) return true;
+    if (!file.type && file.size > 0) return true;
+
+    return /\.(jpe?g|png|webp|heic|heif|avif)$/i.test(file.name || '');
+}
+
+export async function prepareParkingPhotoForUpload(file) {
+    if (!shouldCompressParkingPhoto(file)) return file;
+
+    try {
+        return await compressParkingPhoto(file);
+    } catch (error) {
+        if (file.size > 12 * 1024 * 1024) {
+            throw new Error('Не удалось уменьшить большое фото. Выберите снимок до 12 МБ или отключите максимальное качество камеры.');
+        }
+
+        return file;
+    }
+}
+
+function shouldCompressParkingPhoto(file) {
+    const type = String(file?.type || '').toLowerCase();
+    const name = String(file?.name || '').toLowerCase();
+
+    if (!file || file.size < 900 * 1024) return false;
+    if (/\.(heic|heif|avif)$/i.test(name)) return false;
+
+    return ['image/jpeg', 'image/jpg', 'image/pjpeg', 'image/png', 'image/x-png', 'image/webp', ''].includes(type)
+        || /\.(jpe?g|png|webp)$/i.test(name);
+}
+
+async function compressParkingPhoto(file) {
+    const source = await decodeReducedPhoto(file);
+    const maxSide = 1600;
+    const ratio = Math.min(1, maxSide / Math.max(source.width, source.height));
+    const width = Math.max(1, Math.round(source.width * ratio));
+    const height = Math.max(1, Math.round(source.height * ratio));
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext('2d', { alpha: false });
+    if (!context) {
+        source.close();
+        throw new Error('Photo canvas is unavailable');
+    }
+
+    try {
+        context.drawImage(source.image, 0, 0, width, height);
+    } finally {
+        source.close();
+    }
+
+    const blob = await new Promise((resolve, reject) => {
+        canvas.toBlob((result) => {
+            result ? resolve(result) : reject(new Error('Photo compression failed'));
+        }, 'image/jpeg', 0.76);
+    });
+
+    canvas.width = 1;
+    canvas.height = 1;
+
+    if (!blob || (blob.size >= file.size && file.size <= 8 * 1024 * 1024)) return file;
+
+    return new File([blob], getCompressedParkingPhotoName(file), {
+        type: 'image/jpeg',
+        lastModified: Date.now(),
+    });
+}
+
+async function decodeReducedPhoto(file) {
+    if (typeof createImageBitmap === 'function') {
+        const options = {
+            imageOrientation: 'from-image',
+            resizeWidth: 1600,
+            resizeQuality: 'high',
+        };
+
+        try {
+            const bitmap = await createImageBitmap(file, options);
+            return {
+                image: bitmap,
+                width: bitmap.width,
+                height: bitmap.height,
+                close: () => bitmap.close?.(),
+            };
+        } catch {
+            // Older mobile browsers may not support resize options.
+        }
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    const image = new Image();
+
+    try {
+        image.decoding = 'async';
+        image.src = objectUrl;
+        if (typeof image.decode === 'function') {
+            await image.decode();
+        } else {
+            await new Promise((resolve, reject) => {
+                image.onload = resolve;
+                image.onerror = reject;
+            });
+        }
+
+        return {
+            image,
+            width: image.naturalWidth,
+            height: image.naturalHeight,
+            close: () => URL.revokeObjectURL(objectUrl),
+        };
+    } catch (error) {
+        URL.revokeObjectURL(objectUrl);
+        throw error;
+    }
+}
+
+function getCompressedParkingPhotoName(file) {
+    const name = String(file?.name || '').trim().replace(/\.[^.]+$/, '');
+    return `${name || 'phone-photo'}.jpg`;
+}
+
 function getPhotoUploadFileName(file) {
     const name = String(file?.name || '').trim();
 
@@ -437,6 +562,7 @@ function throwApiError(response, data, fallback) {
     const messages = {
         401: 'Войдите в профиль и попробуйте снова.',
         403: 'Недостаточно прав для этого действия.',
+        413: 'Фото слишком большое для загрузки. Попробуйте уменьшить его или выбрать другое.',
         419: 'Сессия истекла или браузер не принял cookie. Обновите страницу и попробуйте снова.',
         422: 'Проверьте заполненные поля.',
     };

@@ -1109,6 +1109,21 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-settings__option:
     background: rgba(15, 23, 42, 0.08);
 }
 
+.photo-carousel {
+    display: flex;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+.photo-carousel::-webkit-scrollbar {
+    display: none;
+}
+
 .spot-card__photo .photo-carousel {
     height: 100%;
     min-height: 100%;
@@ -1116,7 +1131,15 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-settings__option:
 
 .photo-slide {
     display: block;
+    width: 100%;
+    min-width: 100%;
     height: 100%;
+    flex: 0 0 100%;
+    padding: 0;
+    overflow: hidden;
+    background: transparent;
+    border: 0;
+    scroll-snap-align: start;
 }
 
 .photo-slide img {
@@ -1124,6 +1147,7 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-settings__option:
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center;
 }
 
 .spot-card__photo-placeholder {
@@ -2854,10 +2878,15 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
 
 .admin-workspace {
     grid-area: workspace;
+    display: flex;
+    max-height: calc(100svh - 32px);
+    flex-direction: column;
 }
 
 .admin-editor {
     grid-area: editor;
+    max-height: calc(100svh - 32px);
+    overflow: auto;
 }
 
 .admin-users-panel {
@@ -2871,10 +2900,22 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
 }
 
 .admin-sidebar .brand-mark--maps {
+    width: 100%;
     max-width: 100%;
     justify-content: flex-start;
-    transform-origin: left center;
-    transform: scale(0.78);
+    gap: 9px;
+}
+
+.admin-sidebar .brand-mark--maps__icon {
+    width: 32px;
+    height: 32px;
+    flex-basis: 32px;
+}
+
+.admin-sidebar .brand-mark--maps__wordmark {
+    gap: 10px;
+    font-size: 12px;
+    letter-spacing: 0.30em;
 }
 
 .admin-sidebar h1 {
@@ -3100,6 +3141,13 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
     background: var(--admin-card-bg-strong);
     border: 1px solid var(--admin-control-border);
     border-radius: 16px;
+}
+
+.admin-workspace .admin-table-wrap {
+    min-height: 280px;
+    flex: 1 1 auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
 }
 
 .admin-table {
@@ -3378,8 +3426,8 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
         grid-template-columns: minmax(210px, 240px) minmax(0, 1fr);
         grid-template-areas:
             "sidebar workspace"
-            "sidebar editor"
-            "sidebar users";
+            "sidebar users"
+            "sidebar editor";
     }
 
     .admin-editor {
@@ -3394,8 +3442,8 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
         grid-template-areas:
             "sidebar"
             "workspace"
-            "editor"
-            "users";
+            "users"
+            "editor";
         gap: 10px;
         padding:
             max(10px, var(--safe-top))
@@ -3424,12 +3472,7 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
     }
 
     .admin-sidebar .brand-mark--maps {
-        max-width: 58%;
-        transform: scale(0.68);
-    }
-
-    .admin-sidebar .brand-lockup > div {
-        text-align: right;
+        max-width: 250px;
     }
 
     .admin-sidebar h1 {
@@ -3446,6 +3489,10 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
 
     .admin-nav {
         grid-template-columns: 1fr 1fr;
+    }
+
+    .admin-nav a {
+        grid-column: 1 / -1;
     }
 
     .admin-header {
@@ -3487,6 +3534,22 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
         background: transparent;
         border: 0;
         border-radius: 0;
+    }
+
+    .admin-workspace {
+        max-height: none;
+    }
+
+    .admin-workspace .admin-table-wrap {
+        min-height: 320px;
+        max-height: 58svh;
+        overflow: auto;
+        padding-right: 3px;
+    }
+
+    .admin-editor {
+        max-height: none;
+        overflow: visible;
     }
 
     .admin-table,
@@ -3615,8 +3678,7 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
 
 @media (max-width: 420px) {
     .admin-sidebar .brand-mark--maps {
-        max-width: 52%;
-        transform: scale(0.58);
+        max-width: 230px;
     }
 
     .admin-sidebar .eyebrow {

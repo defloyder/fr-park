@@ -1,4 +1,11 @@
-import { deleteParkingSpot, importParkingSpots, updateParkingSpot, uploadParkingPhoto } from './parking-api';
+import {
+    deleteParkingSpot,
+    importParkingSpots,
+    isUploadableParkingPhoto,
+    prepareParkingPhotoForUpload,
+    updateParkingSpot,
+    uploadParkingPhoto,
+} from './parking-api';
 
 const STATUS_LABELS = {
     verified: 'Проверено',
@@ -52,6 +59,9 @@ export function initAdminPanel() {
         if (event.target.closest('[data-admin-users-refresh]')) await loadUsers();
         if (event.target.closest('[data-admin-export-selected]')) exportSelected();
         if (event.target.closest('[data-admin-open-map]')) openMapModal();
+        if (event.target.closest('[data-admin-open-users]')) {
+            root.querySelector('.admin-users-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
         if (event.target.closest('[data-admin-close-map]')) closeMapModal();
         if (event.target === mapModal) closeMapModal();
         if (userAdminButton) await toggleUserAdmin(Number(userAdminButton.dataset.adminUser), userAdminButton.dataset.adminRole === 'true');
@@ -239,15 +249,27 @@ export function initAdminPanel() {
     }
 
     async function uploadEditorPhotos(files) {
-        const images = files.filter((file) => file.type.startsWith('image/'));
+        const images = files.filter((file) => isUploadableParkingPhoto(file));
         if (images.length === 0) return;
+        if (images.some((file) => file.size > 50 * 1024 * 1024)) {
+            setMessage('Фото слишком большое. Максимальный размер исходного файла — 50 МБ.', true);
+            return;
+        }
 
         photoDropzone?.classList.add('is-uploading');
         setMessage('Загружаю фото...');
 
         try {
-            const uploaded = await Promise.all(images.map((file) => uploadParkingPhoto(file)));
-            editorPhotos = [...new Set([...editorPhotos, ...uploaded.map((item) => item.url).filter(Boolean)])];
+            const uploadedUrls = [];
+
+            for (const [index, file] of images.entries()) {
+                setMessage(images.length > 1 ? `Обрабатываю фото ${index + 1} из ${images.length}...` : 'Обрабатываю фото...');
+                const preparedFile = await prepareParkingPhotoForUpload(file);
+                const uploaded = await uploadParkingPhoto(preparedFile);
+                if (uploaded.url) uploadedUrls.push(uploaded.url);
+            }
+
+            editorPhotos = [...new Set([...editorPhotos, ...uploadedUrls])];
             editor.elements.photo_urls.value = editorPhotos.join(', ');
             renderEditorPhotos();
             setMessage('Фото добавлены.', false);
