@@ -28,6 +28,20 @@
                 <button type="button" data-admin-open-map title="Открыть карту">Карта</button>
                 <a href="/api/parking-spots/export" data-admin-export-all>Экспорт JSON</a>
             </nav>
+
+            <div class="admin-theme-picker" aria-label="Тема оформления">
+                <span>Оформление</span>
+                <div class="admin-theme-options">
+                    <button type="button" data-admin-theme-option="light" aria-pressed="false">
+                        <span aria-hidden="true">☀</span>
+                        Светлая
+                    </button>
+                    <button type="button" data-admin-theme-option="dark" aria-pressed="false">
+                        <span aria-hidden="true">☾</span>
+                        Тёмная
+                    </button>
+                </div>
+            </div>
         </aside>
 
         <section class="admin-workspace liquid-glass">

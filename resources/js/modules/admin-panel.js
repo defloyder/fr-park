@@ -6,6 +6,7 @@ const STATUS_LABELS = {
     temporary: 'Временная',
     outdated: 'Неактуально',
 };
+const ADMIN_THEME_STORAGE_KEY = 'auralith-admin-theme';
 
 let spots = [];
 let users = [];
@@ -15,6 +16,8 @@ let editorPhotos = [];
 export function initAdminPanel() {
     const root = document.querySelector('[data-admin-app]');
     if (!root) return;
+
+    initAdminTheme(root);
 
     const rows = root.querySelector('[data-admin-rows]');
     const search = root.querySelector('[data-admin-search]');
@@ -39,10 +42,12 @@ export function initAdminPanel() {
         const checkButton = event.target.closest('[data-admin-row-check]');
         const bulkStatus = event.target.closest('[data-admin-bulk]')?.dataset.adminBulk;
         const userAdminButton = event.target.closest('[data-admin-user]');
+        const themeButton = event.target.closest('[data-admin-theme-option]');
 
         if (editButton) fillEditor(findSpot(editButton.dataset.adminEdit));
         if (deleteButton) await deleteSingleSpot(Number(deleteButton.dataset.adminDelete));
         if (checkButton) toggleSelected(Number(checkButton.dataset.adminRowCheck));
+        if (themeButton) setAdminTheme(root, themeButton.dataset.adminThemeOption, true);
         if (event.target.closest('[data-admin-refresh]')) await loadSpots();
         if (event.target.closest('[data-admin-users-refresh]')) await loadUsers();
         if (event.target.closest('[data-admin-export-selected]')) exportSelected();
@@ -384,6 +389,43 @@ export function initAdminPanel() {
         message.classList.toggle('hidden', !text);
         message.classList.toggle('is-error', isError);
         message.classList.toggle('is-success', Boolean(text) && !isError);
+    }
+}
+
+function initAdminTheme(root) {
+    let savedTheme = null;
+
+    try {
+        savedTheme = window.localStorage?.getItem(ADMIN_THEME_STORAGE_KEY);
+    } catch {
+        // Storage can be unavailable in strict privacy modes.
+    }
+
+    const systemTheme = window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    setAdminTheme(root, savedTheme === 'light' || savedTheme === 'dark' ? savedTheme : systemTheme);
+}
+
+function setAdminTheme(root, theme, persist = false) {
+    const nextTheme = theme === 'dark' ? 'dark' : 'light';
+    root.dataset.adminTheme = nextTheme;
+    document.documentElement.style.colorScheme = nextTheme;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute(
+        'content',
+        nextTheme === 'dark' ? '#07111f' : '#eaf4fa',
+    );
+
+    root.querySelectorAll('[data-admin-theme-option]').forEach((button) => {
+        const isActive = button.dataset.adminThemeOption === nextTheme;
+        button.classList.toggle('is-active', isActive);
+        button.setAttribute('aria-pressed', String(isActive));
+    });
+
+    if (!persist) return;
+
+    try {
+        window.localStorage?.setItem(ADMIN_THEME_STORAGE_KEY, nextTheme);
+    } catch {
+        // The selected theme still applies for the current page.
     }
 }
 
