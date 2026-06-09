@@ -75,6 +75,9 @@ h2 {
 .export-toolbar.hidden,
 .export-selection-count.hidden,
 .import-panel.hidden,
+.profile-panel .auth-form.hidden,
+.profile-panel .profile-user.hidden,
+.profile-panel .favorite-panel.hidden,
 .admin-editor-form.hidden,
 .admin-empty-editor.hidden,
 .admin-map-modal.hidden {
@@ -4308,7 +4311,7 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
 }
 
 .spot-card__actions {
-    grid-template-columns: 38px minmax(0, 1fr);
+    grid-template-columns: 38px 38px minmax(0, 1fr);
     justify-content: start;
     align-items: center;
     gap: 7px;
@@ -4323,13 +4326,16 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
     border-radius: 12px;
 }
 
-.spot-card__actions .route-button,
-.spot-card__actions:not(:has(.edit-button)) .route-button {
-    grid-column: 2;
+.spot-card__actions .route-button {
+    grid-column: 3;
     min-height: 42px;
     max-width: none;
     border-radius: 14px;
     font-size: 0.82rem;
+}
+
+.spot-card__actions:not(:has(.edit-button)) .route-button {
+    grid-column: 2 / 4;
 }
 
 body[data-map-layer="light"]:not(.is-navigation-mode) .spot-card {
@@ -4402,7 +4408,7 @@ body[data-map-layer="light"]:not(.is-navigation-mode) .spot-detail {
     }
 
     .spot-card__actions {
-        grid-template-columns: 34px minmax(0, 1fr);
+        grid-template-columns: 34px 34px minmax(0, 1fr);
     }
 
     .spot-card__actions .favorite-button,
@@ -4413,11 +4419,14 @@ body[data-map-layer="light"]:not(.is-navigation-mode) .spot-detail {
         min-height: 34px;
     }
 
-    .spot-card__actions .route-button,
-    .spot-card__actions:not(:has(.edit-button)) .route-button {
-        grid-column: 2;
+    .spot-card__actions .route-button {
+        grid-column: 3;
         min-height: 38px;
         max-width: none;
         font-size: 0.76rem;
+    }
+
+    .spot-card__actions:not(:has(.edit-button)) .route-button {
+        grid-column: 2 / 4;
     }
 }

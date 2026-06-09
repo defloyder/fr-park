@@ -499,7 +499,9 @@ export function initParkingUi() {
         const photo = photos.length > 0 ? renderPhotoCarousel(photos) : '<div class="spot-card__photo-placeholder"><span>Фото места</span></div>';
         const status = getAvailabilityStatus(spot);
         const isFavorite = state.favoriteIds.has(Number(spot.id));
-        const editButton = '';
+        const editButton = isAdmin()
+            ? `<button class="edit-button" type="button" data-action="edit-spot" data-spot-id="${spot.id}" aria-label="Редактировать точку" title="Редактировать"></button>`
+            : '';
 
         card.innerHTML = `
             <div class="spot-card__photo">${photo}</div>
