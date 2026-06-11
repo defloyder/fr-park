@@ -14,6 +14,16 @@ class ExampleTest extends TestCase
     {
         $response = $this->get('/');
 
-        $response->assertStatus(200);
+        $response
+            ->assertStatus(200)
+            ->assertHeader('X-Content-Type-Options', 'nosniff')
+            ->assertHeader('X-Frame-Options', 'SAMEORIGIN')
+            ->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
+            ->assertHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+
+        $this->assertStringContainsString(
+            "frame-ancestors 'self'",
+            $response->headers->get('Content-Security-Policy'),
+        );
     }
 }

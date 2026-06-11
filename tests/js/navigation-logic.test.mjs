@@ -5,10 +5,12 @@ import { readFileSync } from 'node:fs';
 import {
     getCompassEventPriority,
     getHeadingDifference,
+    getNavigationRerouteDecision,
     getRouteSnappedNavigationLocation,
     isManualMapInteraction,
     normalizeCompassHeading,
     pickUpcomingSpeedCamera,
+    selectUpcomingRouteInstruction,
     shouldFollowNavigationPosition,
     shouldFollowUserLocation,
     shouldRecenterNavigationFromLocate,
@@ -335,6 +337,41 @@ test('passed speed camera is skipped instead of sticking at zero meters', () => 
     assert.equal(camera.distanceMeters, 40);
 });
 
+test('passed route maneuver advances to the next instruction', () => {
+    const instruction = selectUpcomingRouteInstruction([
+        { id: 'depart', distanceFromStartMeters: 0 },
+        { id: 'turn', distanceFromStartMeters: 120 },
+    ], 12);
+
+    assert.equal(instruction.id, 'turn');
+    assert.equal(instruction.remainingMeters, 108);
+});
+
+test('route refresh waits for a stable deviation and then reroutes quickly', () => {
+    const first = getNavigationRerouteDecision({
+        distanceFromRouteMeters: 110,
+        now: 10000,
+    });
+    const confirmed = getNavigationRerouteDecision({
+        distanceFromRouteMeters: 110,
+        offRouteSince: first.offRouteSince,
+        now: 11600,
+    });
+
+    assert.equal(first.shouldRefresh, false);
+    assert.equal(confirmed.shouldRefresh, true);
+});
+
+test('route refresh resets deviation state after returning to route', () => {
+    const decision = getNavigationRerouteDecision({
+        distanceFromRouteMeters: 20,
+        offRouteSince: 10000,
+        now: 12000,
+    });
+
+    assert.deepEqual(decision, { shouldRefresh: false, offRouteSince: 0 });
+});
+
 test('speed camera at zero meters is hidden and next server-projected camera is selected', () => {
     const camera = pickUpcomingSpeedCamera(
         [
@@ -390,4 +427,43 @@ test('absolute compass events outrank fallback orientation events', () => {
     assert.equal(getCompassEventPriority({ webkitCompassHeading: 12 }), 2);
     assert.equal(getCompassEventPriority({ absolute: true, alpha: 12 }), 2);
     assert.equal(getCompassEventPriority({ alpha: 12 }), 1);
+});
+
+test('GPS failure clears live navigation values and exposes a warning', () => {
+    const formSource = readFileSync(new URL('../../resources/js/modules/parking-form.js', import.meta.url), 'utf8');
+    const errorHandler = formSource.match(/function handleNavigationLocationError[\s\S]*?function isNavigationViewportHeld/)?.[0] ?? '';
+
+    assert.match(errorHandler, /state\.navigationGpsAvailable = false/);
+    assert.match(errorHandler, /state\.currentSpeedKmh = 0/);
+    assert.doesNotMatch(errorHandler, /updatedAt: Date\.now/);
+    assert.match(formSource, /GPS недоступен/);
+    assert.match(formSource, /Ожидание сигнала GPS/);
+});
+
+test('map labels only request font stacks available from OpenFreeMap', () => {
+    const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
+
+    assert.doesNotMatch(mapSource, /Open Sans/);
+    assert.match(mapSource, /Noto Sans Bold/);
+    assert.match(mapSource, /Noto Sans Regular/);
+});
+
+test('offline PWA fallback is readable and does not reuse dynamic map HTML', () => {
+    const workerSource = readFileSync(new URL('../../public/sw.js', import.meta.url), 'utf8');
+    const offlineSource = readFileSync(new URL('../../public/offline.html', import.meta.url), 'utf8');
+
+    assert.match(workerSource, /networkFirst\(request, '\/offline\.html'\)/);
+    assert.match(workerSource, /charset=utf-8/);
+    assert.doesNotMatch(workerSource, /cache\.put\(fallbackUrl/);
+    assert.match(offlineSource, /<meta charset="utf-8">/);
+    assert.match(offlineSource, /Нет подключения к сети/);
+});
+
+test('primary mobile controls keep at least 44 pixel touch targets', () => {
+    const cssSource = readFileSync(new URL('../../resources/css/map-ui.css', import.meta.url), 'utf8');
+
+    assert.match(cssSource, /\.map-control-button\s*\{[^}]*width: 44px;[^}]*height: 44px;/);
+    assert.match(cssSource, /\.export-check\s*\{[^}]*width: 44px;[^}]*height: 44px;/);
+    assert.match(cssSource, /\.spot-list__content\s*\{[^}]*min-height: 44px;/);
+    assert.doesNotMatch(cssSource, /\.spot-card__actions \.(?:favorite-button|edit-button)\s*\{[^}]*min-height: (?:34|38)px;/);
 });

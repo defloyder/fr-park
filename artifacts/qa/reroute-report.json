@@ -1,0 +1,31 @@
+{
+  "startedAt": "2026-06-11T08:11:52.582Z",
+  "before": {
+    "following": true,
+    "speed": "50",
+    "instruction": "Поверните направо на Юлиуса Фучика улица"
+  },
+  "request": {
+    "observedAfterMs": 11615,
+    "url": "https://park.auralith.ru/api/routes/driving?from_latitude=55.77&from_longitude=37.59&to_latitude=55.765&to_longitude=37.635"
+  },
+  "response": {
+    "status": 200,
+    "requestDurationMs": 616,
+    "observedAfterMs": 12231
+  },
+  "afterDeviation": {
+    "following": true,
+    "speed": "50",
+    "instruction": "Поверните направо на Юлиуса Фучика улица",
+    "maneuverDistance": "82 м"
+  },
+  "afterGpsError": {
+    "observedForMs": 7014,
+    "following": true,
+    "speed": "50",
+    "instruction": "Поверните направо на Юлиуса Фучика улица",
+    "statusText": ""
+  },
+  "finishedAt": "2026-06-11T08:12:17.371Z"
+}

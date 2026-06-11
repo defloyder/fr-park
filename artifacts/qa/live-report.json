@@ -1,0 +1,2803 @@
+{
+  "startedAt": "2026-06-11T08:06:57.327Z",
+  "baseUrl": "https://park.auralith.ru",
+  "browser": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/149.0.7827.103",
+    "revision": "@39b29242bd61cdd8cf7d5c293800d97c4ac403d6",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/149.0.0.0 Safari/537.36",
+    "jsVersion": "14.9.207.27"
+  },
+  "console": [
+    {
+      "type": "warning",
+      "text": "Unable to load glyph range 0, 0-255. Rendering codepoint U+0030 locally instead. Error: AJAXError:  (404): https://tiles.openfreemap.org/fonts/Open Sans Bold/0-255.pbf"
+    },
+    {
+      "type": "warning",
+      "text": "Unable to load glyph range 0, 0-255. Rendering codepoint U+0031 locally instead. Error: AJAXError:  (404): https://tiles.openfreemap.org/fonts/Open Sans Bold/0-255.pbf"
+    },
+    {
+      "type": "warning",
+      "text": "Unable to load glyph range 0, 0-255. Rendering codepoint U+0032 locally instead. Error: AJAXError:  (404): https://tiles.openfreemap.org/fonts/Open Sans Bold/0-255.pbf"
+    },
+    {
+      "type": "warning",
+      "text": "Unable to load glyph range 0, 0-255. Rendering codepoint U+0033 locally instead. Error: AJAXError:  (404): https://tiles.openfreemap.org/fonts/Open Sans Bold/0-255.pbf"
+    },
+    {
+      "type": "warning",
+      "text": "Unable to load glyph range 0, 0-255. Rendering codepoint U+0034 locally instead. Error: AJAXError:  (404): https://tiles.openfreemap.org/fonts/Open Sans Bold/0-255.pbf"
+    },
+    {
+      "type": "warning",
+      "text": "Unable to load glyph range 0, 0-255. Rendering codepoint U+0035 locally instead. Error: AJAXError:  (404): https://tiles.openfreemap.org/fonts/Open Sans Bold/0-255.pbf"
+    },
+    {
+      "type": "warning",
+      "text": "Unable to load glyph range 0, 0-255. Rendering codepoint U+0037 locally instead. Error: AJAXError:  (404): https://tiles.openfreemap.org/fonts/Open Sans Bold/0-255.pbf"
+    },
+    {
+      "type": "warning",
+      "text": "Unable to load glyph range 0, 0-255. Rendering codepoint U+0038 locally instead. Error: AJAXError:  (404): https://tiles.openfreemap.org/fonts/Open Sans Bold/0-255.pbf"
+    },
+    {
+      "type": "warning",
+      "text": "Unable to load glyph range 0, 0-255. Rendering codepoint U+0036 locally instead. Error: AJAXError:  (404): https://tiles.openfreemap.org/fonts/Open Sans Bold/0-255.pbf"
+    },
+    {
+      "type": "warning",
+      "text": "Unable to load glyph range 0, 0-255. Rendering codepoint U+0039 locally instead. Error: AJAXError:  (404): https://tiles.openfreemap.org/fonts/Open Sans Bold/0-255.pbf"
+    },
+    {
+      "type": "warning",
+      "text": "Unable to load glyph range 0, 0-255. Rendering codepoint U+0030 locally instead. Error: AJAXError:  (404): https://tiles.openfreemap.org/fonts/Open Sans Bold/0-255.pbf"
+    },
+    {
+      "type": "warning",
+      "text": "Unable to load glyph range 0, 0-255. Rendering codepoint U+0031 locally instead. Error: AJAXError:  (404): https://tiles.openfreemap.org/fonts/Open Sans Bold/0-255.pbf"
+    },
+    {
+      "type": "warning",
+      "text": "Unable to load glyph range 0, 0-255. Rendering codepoint U+0032 locally instead. Error: AJAXError:  (404): https://tiles.openfreemap.org/fonts/Open Sans Bold/0-255.pbf"
+    },
+    {
+      "type": "warning",
+      "text": "Unable to load glyph range 0, 0-255. Rendering codepoint U+0033 locally instead. Error: AJAXError:  (404): https://tiles.openfreemap.org/fonts/Open Sans Bold/0-255.pbf"
+    },
+    {
+      "type": "warning",
+      "text": "Unable to load glyph range 0, 0-255. Rendering codepoint U+0034 locally instead. Error: AJAXError:  (404): https://tiles.openfreemap.org/fonts/Open Sans Bold/0-255.pbf"
+    },
+    {
+      "type": "warning",
+      "text": "Unable to load glyph range 0, 0-255. Rendering codepoint U+0035 locally instead. Error: AJAXError:  (404): https://tiles.openfreemap.org/fonts/Open Sans Bold/0-255.pbf"
+    },
+    {
+      "type": "warning",
+      "text": "Unable to load glyph range 0, 0-255. Rendering codepoint U+0037 locally instead. Error: AJAXError:  (404): https://tiles.openfreemap.org/fonts/Open Sans Bold/0-255.pbf"
+    },
+    {
+      "type": "warning",
+      "text": "Unable to load glyph range 0, 0-255. Rendering codepoint U+0038 locally instead. Error: AJAXError:  (404): https://tiles.openfreemap.org/fonts/Open Sans Bold/0-255.pbf"
+    },
+    {
+      "type": "warning",
+      "text": "Unable to load glyph range 0, 0-255. Rendering codepoint U+0036 locally instead. Error: AJAXError:  (404): https://tiles.openfreemap.org/fonts/Open Sans Bold/0-255.pbf"
+    },
+    {
+      "type": "warning",
+      "text": "Unable to load glyph range 0, 0-255. Rendering codepoint U+0030 locally instead. Error: AJAXError:  (404): https://tiles.openfreemap.org/fonts/Open Sans Bold/0-255.pbf"
+    },
+    {
+      "type": "warning",
+      "text": "Unable to load glyph range 0, 0-255. Rendering codepoint U+0031 locally instead. Error: AJAXError:  (404): https://tiles.openfreemap.org/fonts/Open Sans Bold/0-255.pbf"
+    },
+    {
+      "type": "warning",
+      "text": "Unable to load glyph range 0, 0-255. Rendering codepoint U+0032 locally instead. Error: AJAXError:  (404): https://tiles.openfreemap.org/fonts/Open Sans Bold/0-255.pbf"
+    },
+    {
+      "type": "warning",
+      "text": "Unable to load glyph range 0, 0-255. Rendering codepoint U+0033 locally instead. Error: AJAXError:  (404): https://tiles.openfreemap.org/fonts/Open Sans Bold/0-255.pbf"
+    },
+    {
+      "type": "warning",
+      "text": "Unable to load glyph range 0, 0-255. Rendering codepoint U+0034 locally instead. Error: AJAXError:  (404): https://tiles.openfreemap.org/fonts/Open Sans Bold/0-255.pbf"
+    },
+    {
+      "type": "warning",
+      "text": "Unable to load glyph range 0, 0-255. Rendering codepoint U+0035 locally instead. Error: AJAXError:  (404): https://tiles.openfreemap.org/fonts/Open Sans Bold/0-255.pbf"
+    },
+    {
+      "type": "warning",
+      "text": "Unable to load glyph range 0, 0-255. Rendering codepoint U+0037 locally instead. Error: AJAXError:  (404): https://tiles.openfreemap.org/fonts/Open Sans Bold/0-255.pbf"
+    },
+    {
+      "type": "warning",
+      "text": "Unable to load glyph range 0, 0-255. Rendering codepoint U+0038 locally instead. Error: AJAXError:  (404): https://tiles.openfreemap.org/fonts/Open Sans Bold/0-255.pbf"
+    },
+    {
+      "type": "warning",
+      "text": "Unable to load glyph range 0, 0-255. Rendering codepoint U+0036 locally instead. Error: AJAXError:  (404): https://tiles.openfreemap.org/fonts/Open Sans Bold/0-255.pbf"
+    }
+  ],
+  "exceptions": [],
+  "failedRequests": [],
+  "httpErrors": [
+    {
+      "status": 404,
+      "url": "https://tiles.openfreemap.org/fonts/Open%20Sans%20Bold/0-255.pbf",
+      "type": "Fetch"
+    },
+    {
+      "status": 404,
+      "url": "https://tiles.openfreemap.org/fonts/Open%20Sans%20Bold/0-255.pbf",
+      "type": "Fetch"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/beb659c5-3d50-425a-8ff4-0cf841e1b06c.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/a211f9f3-311d-418f-89df-cc06c216e433.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/013d5f6c-a34e-47fd-81a6-6a5077cb7f59.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/226a2244-b910-43a4-99dd-3c9702ac5c2e.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/eab7fef9-451f-48ab-a534-83ab39e4d7f5.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/f41280b5-269a-4f7e-8978-654461a1d32a.jpeg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/ed98baf5-5d4b-4acf-9a1e-4f288fa30e5c.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/cd81cb3b-039d-4672-bec7-b1ef14420930.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/98a76df2-1db6-42ff-9067-135278775d0e.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/40dffcd0-32b0-49b0-a102-4a5ceb05ff79.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/b1955644-c891-44fd-8357-2277bb1ca9d5.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/7520e39c-1281-4d99-a267-1dbeacae9f4a.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/2a460433-b7d2-4544-bb46-702055b8e6c6.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/1218dccb-10eb-4839-8b70-e327efdc45a8.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/db71f462-db6e-4183-8693-d6470618e405.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/14e1657f-8077-4866-9cc0-459da6b9df49.png",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/20c69359-5db8-4cd8-996e-79927a5e2f1c.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/6cf30dbd-3cfa-4c18-950d-7613917685eb.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/6185eae5-05e5-4603-8f2a-13f50a0e8705.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/ee797033-f5d3-4b90-97cb-456220ed7b7c.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/4e61f5c0-41e0-4c80-b01e-f658e7427c3a.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/00bc4aec-5114-40de-85b6-80b1d9bc8ad8.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/593ea320-508e-47f6-978a-ecbd2abd6fef.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/a0d5a915-1414-492f-9949-a1c55758b106.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/2bb6aeb7-c8cc-4cef-ba6e-c14f2937e982.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/edf6e0a3-5827-4675-8c69-8734c755e4a6.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/47e59eb7-dc58-4f85-8bba-eefa11b0def7.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/28da051d-9adf-42c9-8997-c4ff826876ab.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/94ab8d67-226e-4d6f-81c1-35043fa38538.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/eb57de0a-e6cb-4816-8884-24fdf0edbc6b.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/3cfb1c59-9ecb-4abf-b3d1-36c0d4915b23.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/c92138d1-a132-4eeb-8a4d-8f4c14149c3b.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/a3b085f5-f92b-4860-af13-b303fdfaaea4.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/99b9e906-1c71-4b4b-ba06-ed5de6ea8184.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/0fa420e8-2e73-4f51-b240-e19fd721ac07.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/94a506e3-6c6f-4dd1-8a78-3fba69a7be12.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/fe3b8e38-4e13-4e93-afe8-137a6fa7d0c0.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/2c1390a0-41ac-4d16-b74f-a6e9bdf2baa7.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/3fc24770-f5ab-4ab2-b9b0-d4791325653c.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/a1bc0e4d-2ff5-432b-b1fe-dc127a65341d.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/eb76f5ab-4254-43e6-a367-bb8bbb45f02b.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/7a3362f4-66dd-45d0-b2a8-a773fa6cb3cd.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/e1f74031-1bc5-4794-9932-e5d2ee29f621.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/bdf72cce-e4a0-4713-bfa9-2a36f424377c.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/5a23b169-fd16-44cd-a764-81338388b3c9.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/565582a9-0d58-4896-9edd-94183a95ac00.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/ba90c697-5a53-4f91-8ada-dc9b9fb27917.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/d5131625-df0d-40e3-9089-46726f48e743.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/c92a1339-9e2d-4864-92b6-0ec46355c5eb.jpeg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/63bc38f4-7f85-430d-93e7-75e3c4cd8b76.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://park.auralith.ru/storage/photos/d997723d-c889-4975-a7cc-913392abf40c.jpg",
+      "type": "Image"
+    },
+    {
+      "status": 404,
+      "url": "https://tiles.openfreemap.org/fonts/Open%20Sans%20Bold/0-255.pbf",
+      "type": "Fetch"
+    }
+  ],
+  "routeRequests": [
+    {
+      "url": "https://park.auralith.ru/api/routes/driving?from_latitude=55.75222&from_longitude=37.61556&to_latitude=55.765&to_longitude=37.635",
+      "status": 200,
+      "durationMs": 741,
+      "observedAt": "2026-06-11T08:07:33.985Z"
+    },
+    {
+      "url": "https://park.auralith.ru/api/routes/driving?from_latitude=55.752254510306905&from_longitude=37.61556518875512&to_latitude=55.765&to_longitude=37.635",
+      "status": 200,
+      "durationMs": 4157,
+      "observedAt": "2026-06-11T08:07:42.320Z"
+    }
+  ],
+  "scenarios": {
+    "desktopHome": {
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "bodySize": {
+        "width": 1440,
+        "height": 48
+      },
+      "horizontalOverflow": false,
+      "overflow": [],
+      "smallTouchTargets": [
+        {
+          "text": "Закрыть",
+          "tag": "BUTTON",
+          "width": 38,
+          "height": 38
+        },
+        {
+          "text": "Включить пробки",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Настройки карты",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Переключить слой карты",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Светлая",
+          "tag": "BUTTON",
+          "width": 151,
+          "height": 39
+        },
+        {
+          "text": "Тёмная",
+          "tag": "BUTTON",
+          "width": 151,
+          "height": 39
+        },
+        {
+          "text": "Спутник",
+          "tag": "BUTTON",
+          "width": 151,
+          "height": 39
+        },
+        {
+          "text": "Открыть профиль",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Приблизить",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Отдалить",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Определить мое местоположение",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Закрыть поиск",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Закрыть список",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Все",
+          "tag": "BUTTON",
+          "width": 120,
+          "height": 36
+        },
+        {
+          "text": "Выбранные",
+          "tag": "BUTTON",
+          "width": 120,
+          "height": 36
+        },
+        {
+          "text": "Сброс",
+          "tag": "BUTTON",
+          "width": 120,
+          "height": 36
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Дворовая Бауманская\n                        Москва, Спартаковская улица",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Дворовая\n                        Москва, 3-й Дорожный проезд, 7 к1\n    ",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Лукинская\n                        Москва, Лукинская улица\n             ",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка во дворе\n                        Москва, Старая Басманная улица, 32\n   ",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Басманная Дикси\n                        Москва, Старая Басманная улица,",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Басманная\n                        Москва, Новая Басманная улица, 30\n   ",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка у Метро Серпуховская\n                        Москва, Большая Серпуховск",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка у РЭУ\n                        Большая Серпуховская ул. 19/37с4\n        ",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка во дворе\n                        Москва, улица Павла Андреева, 4\n      ",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Серпуховская\n                        Большая Серпуховская ул. 44\n      ",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Дворовая\n                        Москва, Большая Серпуховская улица, 58",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка возле м. Аминьевская\n                        Москва, Аминьевское шоссе\n",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка возле Бауманки\n                        Москва, Третье транспортное коль",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Москва, Новая Басманная улица, 29с3\n                        Москва, Новая Басман",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Дворовая\n                        Москва, улица Большая Ордынка\n        ",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка у Пятницкого шоссе\n                        Пятницкое шоссе (дублёр), 25",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка на Митинской улице\n                        Митинская улица (дублер), 31",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        }
+      ],
+      "title": "Auralith Maps",
+      "bodyClass": "app-shell is-active is-map-ready",
+      "mapCanvasCount": 1
+    },
+    "desktopList": {
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "bodySize": {
+        "width": 1440,
+        "height": 48
+      },
+      "horizontalOverflow": false,
+      "overflow": [],
+      "smallTouchTargets": [
+        {
+          "text": "Закрыть",
+          "tag": "BUTTON",
+          "width": 38,
+          "height": 38
+        },
+        {
+          "text": "Включить пробки",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Настройки карты",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Переключить слой карты",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Светлая",
+          "tag": "BUTTON",
+          "width": 151,
+          "height": 39
+        },
+        {
+          "text": "Тёмная",
+          "tag": "BUTTON",
+          "width": 151,
+          "height": 39
+        },
+        {
+          "text": "Спутник",
+          "tag": "BUTTON",
+          "width": 151,
+          "height": 39
+        },
+        {
+          "text": "Открыть профиль",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Приблизить",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Отдалить",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Определить мое местоположение",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Закрыть поиск",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Закрыть список",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Все",
+          "tag": "BUTTON",
+          "width": 120,
+          "height": 36
+        },
+        {
+          "text": "Выбранные",
+          "tag": "BUTTON",
+          "width": 120,
+          "height": 36
+        },
+        {
+          "text": "Сброс",
+          "tag": "BUTTON",
+          "width": 120,
+          "height": 36
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Дворовая Бауманская\n                        Москва, Спартаковская улица",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Дворовая\n                        Москва, 3-й Дорожный проезд, 7 к1\n    ",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Лукинская\n                        Москва, Лукинская улица\n             ",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка во дворе\n                        Москва, Старая Басманная улица, 32\n   ",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Басманная Дикси\n                        Москва, Старая Басманная улица,",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Басманная\n                        Москва, Новая Басманная улица, 30\n   ",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка у Метро Серпуховская\n                        Москва, Большая Серпуховск",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка у РЭУ\n                        Большая Серпуховская ул. 19/37с4\n        ",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка во дворе\n                        Москва, улица Павла Андреева, 4\n      ",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Серпуховская\n                        Большая Серпуховская ул. 44\n      ",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Дворовая\n                        Москва, Большая Серпуховская улица, 58",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка возле м. Аминьевская\n                        Москва, Аминьевское шоссе\n",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка возле Бауманки\n                        Москва, Третье транспортное коль",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Москва, Новая Басманная улица, 29с3\n                        Москва, Новая Басман",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Дворовая\n                        Москва, улица Большая Ордынка\n        ",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка у Пятницкого шоссе\n                        Пятницкое шоссе (дублёр), 25",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка на Митинской улице\n                        Митинская улица (дублер), 31",
+          "tag": "BUTTON",
+          "width": 276,
+          "height": 35
+        }
+      ],
+      "items": 306
+    },
+    "login": {
+      "status": 200,
+      "authenticated": true,
+      "isAdmin": true,
+      "favoriteCount": 4,
+      "personalPlaceCount": 1
+    },
+    "adminDesktop": {
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "bodySize": {
+        "width": 1440,
+        "height": 1000
+      },
+      "horizontalOverflow": false,
+      "overflow": [],
+      "smallTouchTargets": [
+        {
+          "text": "☀\n                        Светлая",
+          "tag": "BUTTON",
+          "width": 101,
+          "height": 40
+        },
+        {
+          "text": "☾\n                        Тёмная",
+          "tag": "BUTTON",
+          "width": 101,
+          "height": 40
+        },
+        {
+          "text": "Проверено",
+          "tag": "BUTTON",
+          "width": 94,
+          "height": 38
+        },
+        {
+          "text": "Не проверено",
+          "tag": "BUTTON",
+          "width": 111,
+          "height": 38
+        },
+        {
+          "text": "Временная",
+          "tag": "BUTTON",
+          "width": 95,
+          "height": 38
+        },
+        {
+          "text": "Скрыть",
+          "tag": "BUTTON",
+          "width": 71,
+          "height": 38
+        },
+        {
+          "text": "Выбрать все",
+          "tag": "INPUT",
+          "width": 13,
+          "height": 13
+        },
+        {
+          "text": "Выбрать точку «Парковка Дворовая Бауманская»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 121,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 77,
+          "height": 38
+        },
+        {
+          "text": "Выбрать точку «Парковка Дворовая»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 121,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 77,
+          "height": 38
+        },
+        {
+          "text": "Выбрать точку «Парковка Дворовая»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 121,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 77,
+          "height": 38
+        },
+        {
+          "text": "Выбрать точку «Парковка Лукинская»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 121,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 77,
+          "height": 38
+        },
+        {
+          "text": "Выбрать точку «Парковка во дворе»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 121,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 77,
+          "height": 38
+        },
+        {
+          "text": "Выбрать точку «Парковка Басманная Дикси»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 121,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 77,
+          "height": 38
+        },
+        {
+          "text": "Выбрать точку «Парковка Басманная»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 121,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 77,
+          "height": 38
+        },
+        {
+          "text": "Выбрать точку «Не подтверждать»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 121,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 77,
+          "height": 38
+        },
+        {
+          "text": "Выбрать точку «Парковка у Метро Серпуховская»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 121,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 77,
+          "height": 38
+        },
+        {
+          "text": "Выбрать точку «Парковка возле м. Аминьевская»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 121,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 77,
+          "height": 38
+        },
+        {
+          "text": "Выбрать точку «Парковка во дворе»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 121,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 77,
+          "height": 38
+        },
+        {
+          "text": "Выбрать точку «Парковка у РЭУ»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 121,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 77,
+          "height": 38
+        },
+        {
+          "text": "Выбрать точку «Парковка Серпуховская»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 121,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 77,
+          "height": 38
+        },
+        {
+          "text": "Выбрать точку «Парковка Дворовая»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 121,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 77,
+          "height": 38
+        },
+        {
+          "text": "Выбрать точку «Парковка возле Бауманки»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        }
+      ],
+      "data": {
+        "spotsStatus": 200,
+        "usersStatus": 200,
+        "usersCount": 3
+      },
+      "spotCount": 308,
+      "userCount": 3,
+      "darkTheme": "dark"
+    },
+    "adminMobile": {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "bodySize": {
+        "width": 390,
+        "height": 844
+      },
+      "horizontalOverflow": false,
+      "overflow": [],
+      "smallTouchTargets": [
+        {
+          "text": "☀\n                        Светлая",
+          "tag": "BUTTON",
+          "width": 162,
+          "height": 40
+        },
+        {
+          "text": "☾\n                        Тёмная",
+          "tag": "BUTTON",
+          "width": 162,
+          "height": 40
+        },
+        {
+          "text": "Проверено",
+          "tag": "BUTTON",
+          "width": 111,
+          "height": 38
+        },
+        {
+          "text": "Не проверено",
+          "tag": "BUTTON",
+          "width": 111,
+          "height": 38
+        },
+        {
+          "text": "Временная",
+          "tag": "BUTTON",
+          "width": 111,
+          "height": 38
+        },
+        {
+          "text": "Скрыть",
+          "tag": "BUTTON",
+          "width": 111,
+          "height": 38
+        },
+        {
+          "text": "Выбрать все",
+          "tag": "INPUT",
+          "width": 13,
+          "height": 13
+        },
+        {
+          "text": "Выбрать точку «Парковка Дворовая Бауманская»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Парковка Дворовая»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Парковка Дворовая»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Парковка Лукинская»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Парковка во дворе»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Парковка Басманная Дикси»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Парковка Басманная»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Не подтверждать»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Парковка у Метро Серпуховская»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Парковка возле м. Аминьевская»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Парковка во дворе»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Парковка у РЭУ»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Парковка Серпуховская»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Парковка Дворовая»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Парковка возле Бауманки»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Парковка у Пятницкого шоссе»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Парковка на Шепелюгинской улице»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Парковка у Пятницкого шоссе»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Парковка на Митинской улице»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Парковка напротив ладьи»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Дворовая парковка со шлагбаумом»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Москва, Новая Басманная улица, 29с3»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Городская парковка у соцобъекта»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Москва, Большая Декабрьская улица, 8с4»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Москва, Локомотивный пр., 4»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Москва, 2-я Брестская улица, 37с1»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Москва, 2-я Брестская улица, 37с1 (2)»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Москва, Головинское шоссе, 8к2А»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Москва, Ленинградское шоссе, 92/1»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Москва, Ленинградское шоссе, 96к1»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Москва, улица Усиевича, 23с4»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Москва, Новосущёвский переулок, 4»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Москва, Садовая-Триумфальная улица, 2с2»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Москва, проспект Мира, 39с2»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Москва, Чистопрудный бульвар, 12к2»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Москва, переулок Сивцев Вражек, 45с1»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Москва, Проточный переулок, 3-5с1»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Москва, Садовая-Сухаревская улица, 13/15»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Москва, Народная улица, 12с2»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Москва, Пятницкая улица, 25с1Д»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Москва, улица Чаянова, 18»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Москва, Новокузнецкая улица, 42с2»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Выбрать точку «Москва, улица Маршала Василевского, 13к1»",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        }
+      ]
+    },
+    "photos": [
+      {
+        "url": "https://park.auralith.ru/storage/parking-spots/cfd5870b-1826-4b12-a8d8-5c1cfafe780f.jpg",
+        "ok": true,
+        "width": 1600,
+        "height": 721,
+        "ratio": 2.219,
+        "durationMs": 14
+      },
+      {
+        "url": "https://park.auralith.ru/storage/parking-spots/5c78534d-ef70-48e0-a66b-ab0b45d62403.jpg",
+        "ok": true,
+        "width": 1600,
+        "height": 721,
+        "ratio": 2.219,
+        "durationMs": 9
+      },
+      {
+        "url": "https://park.auralith.ru/storage/parking-spots/cb626cb0-a116-41ad-ae19-3dc2eb7d9781.jpg",
+        "ok": true,
+        "width": 721,
+        "height": 1600,
+        "ratio": 0.451,
+        "durationMs": 7
+      },
+      {
+        "url": "https://park.auralith.ru/storage/parking-spots/L6fS8nwmMLkkBcRgAziqGhXUOZvjFnXT1vPDIvt1.png",
+        "ok": true,
+        "width": 1805,
+        "height": 499,
+        "ratio": 3.617,
+        "durationMs": 33
+      },
+      {
+        "url": "https://park.auralith.ru/storage/parking-spots/XdDnNogxPq9AsSxDuLSYoc5UOPVcBMmkOBe6sHxn.png",
+        "ok": true,
+        "width": 1558,
+        "height": 512,
+        "ratio": 3.043,
+        "durationMs": 35
+      },
+      {
+        "url": "https://park.auralith.ru/storage/parking-spots/vykfsIRe0kKkY4pxPQuoQISqHP7u02KoFuJukl7I.png",
+        "ok": true,
+        "width": 1725,
+        "height": 625,
+        "ratio": 2.76,
+        "durationMs": 34
+      },
+      {
+        "url": "https://park.auralith.ru/storage/parking-spots/3qcLSnptzwhniRGIodnLZd04xD9ZV9A5hQu8pxYv.png",
+        "ok": true,
+        "width": 1533,
+        "height": 584,
+        "ratio": 2.625,
+        "durationMs": 39
+      },
+      {
+        "url": "https://park.auralith.ru/storage/parking-spots/C1edssOr19qPQkk12DIe9KU0904OBN2HX2ecdwCi.jpg",
+        "ok": true,
+        "width": 810,
+        "height": 518,
+        "ratio": 1.564,
+        "durationMs": 8
+      },
+      {
+        "url": "https://park.auralith.ru/storage/parking-spots/mqhWhnvSeXmPMtGTw6vKGplHZn5ePOeFgvFamwA7.png",
+        "ok": true,
+        "width": 1823,
+        "height": 487,
+        "ratio": 3.743,
+        "durationMs": 37
+      },
+      {
+        "url": "https://park.auralith.ru/storage/parking-spots/iICWTcd503DcQloUlMSTaZlWLGwlgRgS4oIA6abl.png",
+        "ok": true,
+        "width": 1578,
+        "height": 574,
+        "ratio": 2.749,
+        "durationMs": 38
+      },
+      {
+        "url": "https://park.auralith.ru/storage/parking-spots/xaOCgem9BuRz1LSrmTBz2xCDsQcJi52aJ9EAGMBh.png",
+        "ok": true,
+        "width": 1607,
+        "height": 597,
+        "ratio": 2.692,
+        "durationMs": 42
+      },
+      {
+        "url": "https://park.auralith.ru/storage/parking-spots/2OK8VihrmEmucjTMXVwXt2I1t1jF40VFD2lgn080.png",
+        "ok": true,
+        "width": 1581,
+        "height": 517,
+        "ratio": 3.058,
+        "durationMs": 43
+      },
+      {
+        "url": "https://park.auralith.ru/storage/parking-spots/HHJcEFwtUHi6kE2lYFsqhFy7ZTIA3HDhEDNwulmW.png",
+        "ok": true,
+        "width": 1447,
+        "height": 566,
+        "ratio": 2.557,
+        "durationMs": 41
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/beb659c5-3d50-425a-8ff4-0cf841e1b06c.jpg",
+        "ok": false,
+        "durationMs": 94
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/a211f9f3-311d-418f-89df-cc06c216e433.jpg",
+        "ok": false,
+        "durationMs": 77
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/013d5f6c-a34e-47fd-81a6-6a5077cb7f59.jpg",
+        "ok": false,
+        "durationMs": 114
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/226a2244-b910-43a4-99dd-3c9702ac5c2e.jpg",
+        "ok": false,
+        "durationMs": 100
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/eab7fef9-451f-48ab-a534-83ab39e4d7f5.jpg",
+        "ok": false,
+        "durationMs": 103
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/f41280b5-269a-4f7e-8978-654461a1d32a.jpeg",
+        "ok": false,
+        "durationMs": 132
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/ed98baf5-5d4b-4acf-9a1e-4f288fa30e5c.jpg",
+        "ok": false,
+        "durationMs": 98
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/cd81cb3b-039d-4672-bec7-b1ef14420930.jpg",
+        "ok": false,
+        "durationMs": 96
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/98a76df2-1db6-42ff-9067-135278775d0e.jpg",
+        "ok": false,
+        "durationMs": 204
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/40dffcd0-32b0-49b0-a102-4a5ceb05ff79.jpg",
+        "ok": false,
+        "durationMs": 120
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/b1955644-c891-44fd-8357-2277bb1ca9d5.jpg",
+        "ok": false,
+        "durationMs": 83
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/7520e39c-1281-4d99-a267-1dbeacae9f4a.jpg",
+        "ok": false,
+        "durationMs": 83
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/2a460433-b7d2-4544-bb46-702055b8e6c6.jpg",
+        "ok": false,
+        "durationMs": 85
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/1218dccb-10eb-4839-8b70-e327efdc45a8.jpg",
+        "ok": false,
+        "durationMs": 92
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/db71f462-db6e-4183-8693-d6470618e405.jpg",
+        "ok": false,
+        "durationMs": 90
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/14e1657f-8077-4866-9cc0-459da6b9df49.png",
+        "ok": false,
+        "durationMs": 134
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/20c69359-5db8-4cd8-996e-79927a5e2f1c.jpg",
+        "ok": false,
+        "durationMs": 111
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/6cf30dbd-3cfa-4c18-950d-7613917685eb.jpg",
+        "ok": false,
+        "durationMs": 92
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/6185eae5-05e5-4603-8f2a-13f50a0e8705.jpg",
+        "ok": false,
+        "durationMs": 82
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/ee797033-f5d3-4b90-97cb-456220ed7b7c.jpg",
+        "ok": false,
+        "durationMs": 112
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/4e61f5c0-41e0-4c80-b01e-f658e7427c3a.jpg",
+        "ok": false,
+        "durationMs": 85
+      },
+      {
+        "url": "https://park.auralith.ru/storage/parking-spots/pz9Rcyn0Mf8OXHKQTr13M9ldiBWxBng5lCmGCM6u.jpg",
+        "ok": true,
+        "width": 1816,
+        "height": 4032,
+        "ratio": 0.45,
+        "durationMs": 32
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/00bc4aec-5114-40de-85b6-80b1d9bc8ad8.jpg",
+        "ok": false,
+        "durationMs": 103
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/593ea320-508e-47f6-978a-ecbd2abd6fef.jpg",
+        "ok": false,
+        "durationMs": 100
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/a0d5a915-1414-492f-9949-a1c55758b106.jpg",
+        "ok": false,
+        "durationMs": 111
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/2bb6aeb7-c8cc-4cef-ba6e-c14f2937e982.jpg",
+        "ok": false,
+        "durationMs": 119
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/edf6e0a3-5827-4675-8c69-8734c755e4a6.jpg",
+        "ok": false,
+        "durationMs": 120
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/47e59eb7-dc58-4f85-8bba-eefa11b0def7.jpg",
+        "ok": false,
+        "durationMs": 118
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/28da051d-9adf-42c9-8997-c4ff826876ab.jpg",
+        "ok": false,
+        "durationMs": 163
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/94ab8d67-226e-4d6f-81c1-35043fa38538.jpg",
+        "ok": false,
+        "durationMs": 111
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/eb57de0a-e6cb-4816-8884-24fdf0edbc6b.jpg",
+        "ok": false,
+        "durationMs": 76
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/3cfb1c59-9ecb-4abf-b3d1-36c0d4915b23.jpg",
+        "ok": false,
+        "durationMs": 79
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/c92138d1-a132-4eeb-8a4d-8f4c14149c3b.jpg",
+        "ok": false,
+        "durationMs": 93
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/a3b085f5-f92b-4860-af13-b303fdfaaea4.jpg",
+        "ok": false,
+        "durationMs": 91
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/99b9e906-1c71-4b4b-ba06-ed5de6ea8184.jpg",
+        "ok": false,
+        "durationMs": 83
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/0fa420e8-2e73-4f51-b240-e19fd721ac07.jpg",
+        "ok": false,
+        "durationMs": 100
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/94a506e3-6c6f-4dd1-8a78-3fba69a7be12.jpg",
+        "ok": false,
+        "durationMs": 87
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/fe3b8e38-4e13-4e93-afe8-137a6fa7d0c0.jpg",
+        "ok": false,
+        "durationMs": 99
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/2c1390a0-41ac-4d16-b74f-a6e9bdf2baa7.jpg",
+        "ok": false,
+        "durationMs": 111
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/3fc24770-f5ab-4ab2-b9b0-d4791325653c.jpg",
+        "ok": false,
+        "durationMs": 124
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/a1bc0e4d-2ff5-432b-b1fe-dc127a65341d.jpg",
+        "ok": false,
+        "durationMs": 117
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/eb76f5ab-4254-43e6-a367-bb8bbb45f02b.jpg",
+        "ok": false,
+        "durationMs": 131
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/7a3362f4-66dd-45d0-b2a8-a773fa6cb3cd.jpg",
+        "ok": false,
+        "durationMs": 113
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/e1f74031-1bc5-4794-9932-e5d2ee29f621.jpg",
+        "ok": false,
+        "durationMs": 125
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/bdf72cce-e4a0-4713-bfa9-2a36f424377c.jpg",
+        "ok": false,
+        "durationMs": 82
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/5a23b169-fd16-44cd-a764-81338388b3c9.jpg",
+        "ok": false,
+        "durationMs": 80
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/565582a9-0d58-4896-9edd-94183a95ac00.jpg",
+        "ok": false,
+        "durationMs": 81
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/ba90c697-5a53-4f91-8ada-dc9b9fb27917.jpg",
+        "ok": false,
+        "durationMs": 102
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/d5131625-df0d-40e3-9089-46726f48e743.jpg",
+        "ok": false,
+        "durationMs": 86
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/c92a1339-9e2d-4864-92b6-0ec46355c5eb.jpeg",
+        "ok": false,
+        "durationMs": 98
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/63bc38f4-7f85-430d-93e7-75e3c4cd8b76.jpg",
+        "ok": false,
+        "durationMs": 85
+      },
+      {
+        "url": "https://park.auralith.ru/storage/photos/d997723d-c889-4975-a7cc-913392abf40c.jpg",
+        "ok": false,
+        "durationMs": 81
+      }
+    ],
+    "mobileHome": {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "bodySize": {
+        "width": 390,
+        "height": 48
+      },
+      "horizontalOverflow": false,
+      "overflow": [],
+      "smallTouchTargets": [
+        {
+          "text": "Закрыть",
+          "tag": "BUTTON",
+          "width": 38,
+          "height": 38
+        },
+        {
+          "text": "На карте",
+          "tag": "BUTTON",
+          "width": 97,
+          "height": 40
+        },
+        {
+          "text": "Сохранить",
+          "tag": "BUTTON",
+          "width": 97,
+          "height": 40
+        },
+        {
+          "text": "Поехать",
+          "tag": "BUTTON",
+          "width": 135,
+          "height": 40
+        },
+        {
+          "text": "Включить пробки",
+          "tag": "BUTTON",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "text": "Настройки карты",
+          "tag": "BUTTON",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "text": "Переключить слой карты",
+          "tag": "BUTTON",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "text": "Светлая",
+          "tag": "BUTTON",
+          "width": 151,
+          "height": 39
+        },
+        {
+          "text": "Тёмная",
+          "tag": "BUTTON",
+          "width": 151,
+          "height": 39
+        },
+        {
+          "text": "Спутник",
+          "tag": "BUTTON",
+          "width": 151,
+          "height": 39
+        },
+        {
+          "text": "Открыть профиль",
+          "tag": "BUTTON",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "text": "Приблизить",
+          "tag": "BUTTON",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "text": "Отдалить",
+          "tag": "BUTTON",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "text": "Определить мое местоположение",
+          "tag": "BUTTON",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "text": "Закрыть поиск",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Закрыть список",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Все",
+          "tag": "BUTTON",
+          "width": 108,
+          "height": 36
+        },
+        {
+          "text": "Выбранные",
+          "tag": "BUTTON",
+          "width": 108,
+          "height": 36
+        },
+        {
+          "text": "Сброс",
+          "tag": "BUTTON",
+          "width": 108,
+          "height": 36
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Дворовая Бауманская\n                        Москва, Спартаковская улица",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Дворовая\n                        Москва, 3-й Дорожный проезд, 7 к1\n    ",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Лукинская\n                        Москва, Лукинская улица\n             ",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка во дворе\n                        Москва, Старая Басманная улица, 32\n   ",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Басманная Дикси\n                        Москва, Старая Басманная улица,",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Басманная\n                        Москва, Новая Басманная улица, 30\n   ",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка у Метро Серпуховская\n                        Москва, Большая Серпуховск",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка у РЭУ\n                        Большая Серпуховская ул. 19/37с4\n        ",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка во дворе\n                        Москва, улица Павла Андреева, 4\n      ",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Серпуховская\n                        Большая Серпуховская ул. 44\n      ",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Дворовая\n                        Москва, Большая Серпуховская улица, 58",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка возле м. Аминьевская\n                        Москва, Аминьевское шоссе\n",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка возле Бауманки\n                        Москва, Третье транспортное коль",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Москва, Новая Басманная улица, 29с3\n                        Москва, Новая Басман",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Дворовая\n                        Москва, улица Большая Ордынка\n        ",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        }
+      ]
+    },
+    "mobileList": {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "bodySize": {
+        "width": 390,
+        "height": 48
+      },
+      "horizontalOverflow": false,
+      "overflow": [],
+      "smallTouchTargets": [
+        {
+          "text": "Закрыть",
+          "tag": "BUTTON",
+          "width": 38,
+          "height": 38
+        },
+        {
+          "text": "На карте",
+          "tag": "BUTTON",
+          "width": 97,
+          "height": 40
+        },
+        {
+          "text": "Сохранить",
+          "tag": "BUTTON",
+          "width": 97,
+          "height": 40
+        },
+        {
+          "text": "Поехать",
+          "tag": "BUTTON",
+          "width": 135,
+          "height": 40
+        },
+        {
+          "text": "Включить пробки",
+          "tag": "BUTTON",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "text": "Настройки карты",
+          "tag": "BUTTON",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "text": "Переключить слой карты",
+          "tag": "BUTTON",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "text": "Светлая",
+          "tag": "BUTTON",
+          "width": 151,
+          "height": 39
+        },
+        {
+          "text": "Тёмная",
+          "tag": "BUTTON",
+          "width": 151,
+          "height": 39
+        },
+        {
+          "text": "Спутник",
+          "tag": "BUTTON",
+          "width": 151,
+          "height": 39
+        },
+        {
+          "text": "Открыть профиль",
+          "tag": "BUTTON",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "text": "Приблизить",
+          "tag": "BUTTON",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "text": "Отдалить",
+          "tag": "BUTTON",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "text": "Определить мое местоположение",
+          "tag": "BUTTON",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "text": "Закрыть поиск",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Закрыть список",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Все",
+          "tag": "BUTTON",
+          "width": 108,
+          "height": 36
+        },
+        {
+          "text": "Выбранные",
+          "tag": "BUTTON",
+          "width": 108,
+          "height": 36
+        },
+        {
+          "text": "Сброс",
+          "tag": "BUTTON",
+          "width": 108,
+          "height": 36
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Дворовая Бауманская\n                        Москва, Спартаковская улица",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Дворовая\n                        Москва, 3-й Дорожный проезд, 7 к1\n    ",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Лукинская\n                        Москва, Лукинская улица\n             ",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка во дворе\n                        Москва, Старая Басманная улица, 32\n   ",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Басманная Дикси\n                        Москва, Старая Басманная улица,",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Басманная\n                        Москва, Новая Басманная улица, 30\n   ",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка у Метро Серпуховская\n                        Москва, Большая Серпуховск",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка у РЭУ\n                        Большая Серпуховская ул. 19/37с4\n        ",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка во дворе\n                        Москва, улица Павла Андреева, 4\n      ",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Серпуховская\n                        Большая Серпуховская ул. 44\n      ",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Дворовая\n                        Москва, Большая Серпуховская улица, 58",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка возле м. Аминьевская\n                        Москва, Аминьевское шоссе\n",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка возле Бауманки\n                        Москва, Третье транспортное коль",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Москва, Новая Басманная улица, 29с3\n                        Москва, Новая Басман",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        },
+        {
+          "text": "Парковка Дворовая\n                        Москва, улица Большая Ордынка\n        ",
+          "tag": "BUTTON",
+          "width": 242,
+          "height": 35
+        },
+        {
+          "text": "Выбрать для экспорта",
+          "tag": "BUTTON",
+          "width": 22,
+          "height": 22
+        }
+      ]
+    },
+    "pwaUi": {
+      "manifestHref": "https://park.auralith.ru/site.webmanifest",
+      "serviceWorkerSupported": true,
+      "standalone": false,
+      "installButtonDisabled": false,
+      "installButtonVisible": true,
+      "installNote": "Установите Auralith Maps как отдельное приложение.",
+      "registration": {
+        "scope": "https://park.auralith.ru/",
+        "activeState": "activated",
+        "scriptURL": "https://park.auralith.ru/sw.js"
+      },
+      "manifest": {
+        "url": "https://park.auralith.ru/site.webmanifest",
+        "errors": [],
+        "data": "{\n    \"name\": \"Auralith Maps\",\n    \"short_name\": \"Auralith Maps\",\n    \"description\": \"Навигатор и карта парковок Auralith Maps.\",\n    \"start_url\": \"/\",\n    \"scope\": \"/\",\n    \"display\": \"standalone\",\n    \"background_color\": \"#061018\",\n    \"theme_color\": \"#061018\",\n    \"orientation\": \"portrait\",\n    \"icons\": [\n        {\n            \"src\": \"/images/ChatGPT%20Image%20Jun%201%2C%202026%2C%2002_33_28%20PM.png?v=20260604\",\n            \"sizes\": \"192x192 512x512 1254x1254\",\n            \"type\": \"image/png\",\n            \"purpose\": \"any maskable\"\n        },\n        {\n            \"src\": \"/images/ChatGPT%20Image%20Jun%201%2C%202026%2C%2002_33_28%20PM.png?v=20260604\",\n            \"sizes\": \"512x512 1254x1254\",\n            \"type\": \"image/png\",\n            \"purpose\": \"any maskable\"\n        }\n    ]\n}\n",
+        "parsed": {
+          "scope": "https://park.auralith.ru/"
+        },
+        "manifest": {
+          "backgroundColor": "rgba(6,16,24,1)",
+          "description": "Навигатор и карта парковок Auralith Maps.",
+          "display": "kStandalone",
+          "icons": [
+            {
+              "url": "https://park.auralith.ru/images/ChatGPT%20Image%20Jun%201%2C%202026%2C%2002_33_28%20PM.png?v=20260604",
+              "sizes": "192x192 512x512 1254x1254",
+              "type": "image/png"
+            },
+            {
+              "url": "https://park.auralith.ru/images/ChatGPT%20Image%20Jun%201%2C%202026%2C%2002_33_28%20PM.png?v=20260604",
+              "sizes": "512x512 1254x1254",
+              "type": "image/png"
+            }
+          ],
+          "id": "https://park.auralith.ru/",
+          "name": "Auralith Maps",
+          "orientation": "PORTRAIT",
+          "preferRelatedApplications": false,
+          "scope": "https://park.auralith.ru/",
+          "startUrl": "https://park.auralith.ru/",
+          "themeColor": "rgba(6,16,24,1)"
+        }
+      },
+      "installabilityErrors": {
+        "installabilityErrors": []
+      }
+    },
+    "navigationBuild": {
+      "navigationMode": true,
+      "following": true,
+      "message": "",
+      "guidanceVisible": true,
+      "speedVisible": true,
+      "routePanelVisible": true,
+      "instruction": "Съезжайте с Кремль улица",
+      "maneuverDistance": "0 м",
+      "speed": "0",
+      "speedLimit": "60"
+    },
+    "gpsMovement": [
+      {
+        "index": 0,
+        "elapsedMs": 4301,
+        "latitude": 55.75222,
+        "longitude": 37.61556,
+        "heading": 55,
+        "speed": "30",
+        "instruction": "Съезжайте с Кремль улица",
+        "maneuverDistance": "0 м",
+        "following": true,
+        "marker": "translate(-50%, -100%) translate(210px, 556px) rotateX(0deg) rotateZ(0deg)"
+      },
+      {
+        "index": 1,
+        "elapsedMs": 3080,
+        "latitude": 55.7541,
+        "longitude": 37.6185,
+        "heading": 50,
+        "speed": "40",
+        "instruction": "Съезжайте с Кремль улица",
+        "maneuverDistance": "0 м",
+        "following": true,
+        "marker": "translate(-50%, -100%) translate(210px, 555px) rotateX(0deg) rotateZ(0deg)"
+      },
+      {
+        "index": 2,
+        "elapsedMs": 3115,
+        "latitude": 55.7562,
+        "longitude": 37.622,
+        "heading": 45,
+        "speed": "50",
+        "instruction": "Съезжайте с Кремль улица",
+        "maneuverDistance": "0 м",
+        "following": true,
+        "marker": "translate(-50%, -100%) translate(210px, 555px) rotateX(0deg) rotateZ(0deg)"
+      }
+    ],
+    "offRoute": {
+      "observedForMs": 18337,
+      "navigationMode": true,
+      "following": true,
+      "instruction": "Поверните направо на Кремлевская набережная",
+      "maneuverDistance": "207 м",
+      "speed": "50",
+      "routeRequestTriggered": false
+    },
+    "gpsUnavailable": {
+      "observedForMs": 6015,
+      "navigationMode": true,
+      "following": true,
+      "statusText": "",
+      "speed": "50",
+      "instruction": "Поверните направо на Кремлевская набережная"
+    }
+  },
+  "finishedAt": "2026-06-11T08:08:17.159Z"
+}

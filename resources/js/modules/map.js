@@ -588,7 +588,7 @@ function addSpeedCameraSourceAndLayer() {
         minzoom: 13,
         layout: {
             'text-field': ['get', 'label'],
-            'text-font': ['Open Sans Regular'],
+            'text-font': ['Noto Sans Regular'],
             'text-size': ['interpolate', ['linear'], ['zoom'], 13, 10, 16, 12],
             'text-offset': [0, 1.55],
             'text-anchor': 'top',
@@ -1421,7 +1421,7 @@ function addParkingLayers() {
         filter: ['has', 'point_count'],
         layout: {
             'text-field': ['get', 'point_count_abbreviated'],
-            'text-font': ['Open Sans Bold'],
+            'text-font': ['Noto Sans Bold'],
             'text-size': ['step', ['get', 'point_count'], 15, 10, 16, 35, 18],
             'text-allow-overlap': true,
             'text-ignore-placement': true,
@@ -1495,7 +1495,7 @@ function addPersonalPlacesSourceAndLayer() {
         minzoom: 13,
         layout: {
             'text-field': ['get', 'title'],
-            'text-font': ['Open Sans Semibold'],
+            'text-font': ['Noto Sans Bold'],
             'text-size': 11,
             'text-offset': [0, 1.4],
             'text-anchor': 'top',

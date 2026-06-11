@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Services\ParkingSpotPhotoService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -9,13 +10,7 @@ class ParkingSpotResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $photos = collect($this->photo_urls ?? [])
-            ->filter()
-            ->values();
-
-        if ($photos->isEmpty() && $this->photo_url) {
-            $photos = collect([$this->photo_url]);
-        }
+        $photos = app(ParkingSpotPhotoService::class)->resolveForSpot($this->resource, $request);
 
         return [
             'id' => $this->id,
@@ -24,8 +19,8 @@ class ParkingSpotResource extends JsonResource
             'latitude' => (float) $this->latitude,
             'longitude' => (float) $this->longitude,
             'description' => $this->description,
-            'photo_url' => $this->normalizePhotoUrl($this->photo_url, $request),
-            'photo_urls' => $photos->map(fn (string $photo) => $this->normalizePhotoUrl($photo, $request))->filter()->values()->all(),
+            'photo_url' => $photos['photo_url'],
+            'photo_urls' => $photos['photo_urls'],
             'access_instructions' => $this->access_instructions,
             'landmarks' => $this->landmarks,
             'parking_notes' => $this->parking_notes,
@@ -47,32 +42,5 @@ class ParkingSpotResource extends JsonResource
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
-    }
-
-    private function normalizePhotoUrl(?string $photo, Request $request): ?string
-    {
-        if (! $photo) {
-            return null;
-        }
-
-        $photo = trim($photo);
-
-        if (str_starts_with($photo, 'http://') || str_starts_with($photo, 'https://')) {
-            $parts = parse_url($photo);
-            $appIp = config('app.ip');
-            $appDomain = config('app.domain');
-            $host = $parts['host'] ?? null;
-            $path = $parts['path'] ?? '';
-
-            if ($host && in_array($host, array_filter([$appIp, $appDomain, $request->getHost()]), true)) {
-                $query = isset($parts['query']) ? '?'.$parts['query'] : '';
-
-                return $request->getSchemeAndHttpHost().$path.$query;
-            }
-
-            return $photo;
-        }
-
-        return $request->getSchemeAndHttpHost().'/'.ltrim($photo, '/');
     }
 }

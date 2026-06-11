@@ -18,7 +18,7 @@ import {
     uploadParkingPhoto,
 } from './parking-api';
 import { addParkingSpotToMap, buildRouteToSpot, clearActiveRoute, clearPendingSelection, clearRouteManeuverHint, focusNavigationPosition, focusSpot, focusSpots, focusUserLocation, getMapCenterLocation, renderSpeedCameras, replaceParkingSpotsOnMap, replacePersonalPlacesOnMap, restoreActiveRoute, setMapPickingMode, setRouteDestinationPickingMode, startRouteNavigation, updateActiveRouteProgress, updateRouteManeuverHint } from './map';
-import { getCompassEventPriority, getHeadingDifference, getRouteSnappedNavigationLocation, normalizeCompassHeading, pickUpcomingSpeedCamera, shouldFollowNavigationPosition, shouldFollowUserLocation, shouldRecenterNavigationFromLocate, smoothCompassHeading } from './navigation-logic';
+import { getCompassEventPriority, getHeadingDifference, getNavigationRerouteDecision, getRouteSnappedNavigationLocation, normalizeCompassHeading, pickUpcomingSpeedCamera, selectUpcomingRouteInstruction, shouldFollowNavigationPosition, shouldFollowUserLocation, shouldRecenterNavigationFromLocate, smoothCompassHeading } from './navigation-logic';
 
 const STATUS_LABELS = {
     verified: 'Проверено',
@@ -88,6 +88,9 @@ const state = {
     navigationRouteRefreshTimer: null,
     navigationRouteRefreshInFlight: false,
     navigationLastRerouteAt: 0,
+    navigationOffRouteSince: 0,
+    navigationGpsAvailable: true,
+    navigationGpsErrorAt: 0,
     navigationPreserveZoom: false,
     navigatorDestination: null,
     navigatorPicking: false,
@@ -541,6 +544,7 @@ export function initParkingUi() {
         `;
         card.querySelector('.spot-card__close').addEventListener('click', () => card.classList.add('hidden'));
         card.classList.remove('hidden');
+        bindPhotoFallbacks();
         bindPhotoCarouselCounter();
     }
 
@@ -571,6 +575,35 @@ export function initParkingUi() {
 
         carousel.addEventListener('scroll', () => window.requestAnimationFrame(updateCounter), { passive: true });
         updateCounter();
+    }
+
+    function bindPhotoFallbacks() {
+        card.querySelectorAll('.photo-slide img').forEach((image) => {
+            image.addEventListener('error', () => {
+                const failedUrl = image.getAttribute('src');
+                image.closest('.photo-slide')?.remove();
+                state.lightboxPhotos = state.lightboxPhotos.filter((photo) => photo !== failedUrl);
+
+                const slides = [...card.querySelectorAll('.photo-slide')];
+                slides.forEach((slide, index) => {
+                    slide.dataset.photoIndex = String(index);
+                });
+
+                if (slides.length === 0) {
+                    const container = card.querySelector('.spot-card__photo');
+                    if (container) {
+                        container.innerHTML = '<div class="spot-card__photo-placeholder"><span>Фото недоступно</span></div>';
+                    }
+                    return;
+                }
+
+                const counter = card.querySelector('.photo-counter');
+                if (counter) {
+                    counter.textContent = `1 / ${slides.length}`;
+                    counter.classList.toggle('hidden', slides.length < 2);
+                }
+            }, { once: true });
+        });
     }
 
     function renderList() {
@@ -1726,7 +1759,7 @@ export function initParkingUi() {
 
     function resetFailedRouteBuildState() {
         state.navigationSessionId += 1;
-        document.body.classList.remove('is-navigation-mode', 'is-navigation-following', 'is-navigation-detached');
+        document.body.classList.remove('is-navigation-mode', 'is-navigation-following', 'is-navigation-detached', 'is-navigation-gps-unavailable');
         releaseNavigationWakeLock();
         stopNavigationLocationWatch();
         stopNavigationLocationPolling();
@@ -1745,6 +1778,9 @@ export function initParkingUi() {
         state.navigationRoute = null;
         state.navigationRouteRefreshInFlight = false;
         state.navigationLastRerouteAt = 0;
+        state.navigationOffRouteSince = 0;
+        state.navigationGpsAvailable = true;
+        state.navigationGpsErrorAt = 0;
         state.navigationPreserveZoom = false;
         clearNavigationState();
     }
@@ -1866,6 +1902,10 @@ export function initParkingUi() {
                 <div class="navigation-guidance__main">
                     <strong data-navigation-maneuver-distance></strong>
                     <span data-navigation-instruction></span>
+                </div>
+                <div class="navigation-gps-alert hidden" role="status">
+                    <strong>GPS недоступен</strong>
+                    <span>Скорость и позиция временно не обновляются</span>
                 </div>
                 <div class="navigation-compass" aria-label="Компас направления">
                     <div class="navigation-compass__dial" aria-hidden="true">
@@ -2001,20 +2041,32 @@ export function initParkingUi() {
         const maneuverDistance = Number(instruction?.remainingMeters ?? instruction?.distanceMeters);
         const arrival = getArrivalTime(remainingDuration);
         const isFollowing = document.body.classList.contains('is-navigation-following');
-        const isSpeeding = state.currentSpeedKmh > state.speedLimitKmh + 15;
+        const isSpeeding = state.navigationGpsAvailable && state.currentSpeedKmh > state.speedLimitKmh + 15;
 
         if (isFollowing && hasReachedNavigationDestination(remainingDistance)) {
             stopNavigationMode();
             return;
         }
 
-        setText('[data-navigation-maneuver-distance]', Number.isFinite(maneuverDistance) ? formatDistance(maneuverDistance) : formatDistance(remainingDistance));
-        setText('[data-navigation-instruction]', formatNavigationInstructionText(instruction?.text || ''));
+        setText(
+            '[data-navigation-maneuver-distance]',
+            !state.navigationGpsAvailable
+                ? '—'
+                : Number.isFinite(maneuverDistance)
+                ? (maneuverDistance <= 8 ? 'Сейчас' : formatDistance(maneuverDistance))
+                : formatDistance(remainingDistance),
+        );
+        setText(
+            '[data-navigation-instruction]',
+            state.navigationGpsAvailable
+                ? formatNavigationInstructionText(instruction?.text || '')
+                : 'Ожидание сигнала GPS',
+        );
         setText('[data-navigation-traffic]', getTrafficLabel(state.navigationRoute));
         setText('[data-navigation-duration]', formatDuration(remainingDuration));
         setText('[data-navigation-distance]', formatDistance(remainingDistance));
         setText('[data-navigation-arrival]', `Прибытие ${arrival}`);
-        setText('[data-navigation-speed]', String(Math.round(state.currentSpeedKmh)));
+        setText('[data-navigation-speed]', state.navigationGpsAvailable ? String(Math.round(state.currentSpeedKmh)) : '—');
         setText('[data-navigation-speed-limit]', String(state.speedLimitKmh));
         setText('[data-navigation-bottom-duration]', formatDuration(remainingDuration));
         setText('[data-navigation-bottom-distance]', formatDistance(remainingDistance));
@@ -2030,7 +2082,7 @@ export function initParkingUi() {
         const maneuverIconSvg = getManeuverIconSvg(instruction);
         if (arrow) arrow.innerHTML = maneuverIconSvg;
 
-        if (instruction && document.body.classList.contains('is-navigation-following')) {
+        if (instruction && state.navigationGpsAvailable && document.body.classList.contains('is-navigation-following')) {
             updateRouteManeuverHint(instruction, state.navigationRoute, {
                 iconSvg: maneuverIconSvg,
                 distanceText: Number.isFinite(maneuverDistance) ? formatDistance(maneuverDistance) : '',
@@ -2042,7 +2094,10 @@ export function initParkingUi() {
         }
 
         updateNavigationCompass();
-        document.querySelector('.navigation-speedometer')?.classList.toggle('is-speeding', isSpeeding);
+        const speedometer = document.querySelector('.navigation-speedometer');
+        speedometer?.classList.toggle('is-speeding', isSpeeding);
+        speedometer?.classList.toggle('is-gps-unavailable', !state.navigationGpsAvailable);
+        document.querySelector('.navigation-gps-alert')?.classList.toggle('hidden', state.navigationGpsAvailable);
         renderCameraAlert();
     }
 
@@ -2180,6 +2235,7 @@ export function initParkingUi() {
         document.body.classList.remove('is-navigation-mode');
         document.body.classList.remove('is-navigation-following');
         document.body.classList.remove('is-navigation-detached');
+        document.body.classList.remove('is-navigation-gps-unavailable');
         releaseNavigationWakeLock();
         stopNavigationLocationWatch();
         stopNavigationLocationPolling();
@@ -2197,6 +2253,9 @@ export function initParkingUi() {
         state.navigationRoute = null;
         state.navigationRouteRefreshInFlight = false;
         state.navigationLastRerouteAt = 0;
+        state.navigationOffRouteSince = 0;
+        state.navigationGpsAvailable = true;
+        state.navigationGpsErrorAt = 0;
         state.navigationPreserveZoom = false;
         stopNavigationMetricsTimer();
         clearActiveRoute();
@@ -2469,7 +2528,7 @@ export function initParkingUi() {
             {
                 enableHighAccuracy: true,
                 maximumAge: 0,
-                timeout: 10000,
+                timeout: 7000,
             },
         );
     }
@@ -2492,11 +2551,11 @@ export function initParkingUi() {
                 handleNavigationLocationError,
                 {
                     enableHighAccuracy: true,
-                    maximumAge: 1000,
-                    timeout: 3500,
+                    maximumAge: 500,
+                    timeout: 2200,
                 },
             );
-        }, 2500);
+        }, 1500);
     }
 
     function stopNavigationLocationPolling() {
@@ -2564,7 +2623,10 @@ export function initParkingUi() {
             compassHeadingUpdatedAt: state.deviceHeadingUpdatedAt,
             updatedAt: Date.now(),
         };
+        state.navigationGpsAvailable = true;
+        state.navigationGpsErrorAt = 0;
         state.currentSpeedKmh = getGpsSpeedKmh(coords);
+        document.body.classList.remove('is-navigation-gps-unavailable');
         state.userLocation = getRouteSnappedNavigationLocation(rawLocation, state.navigationRoute, {
             previousLocation: state.userLocation,
             speedKmh: state.currentSpeedKmh,
@@ -2596,16 +2658,10 @@ export function initParkingUi() {
             return;
         }
 
-        state.userLocation = {
-            ...state.userLocation,
-            updatedAt: Date.now(),
-            ...getNavigationMarkerPatch(state.userLocation, state.userLocation.heading),
-        };
-        focusUserLocation(state.userLocation, { focus: false });
-        updateActiveRouteProgress(state.userLocation, state.navigationRoute);
-        if (!isNavigationViewportHeld()) {
-            focusNavigationPosition(state.userLocation, state.navigationRoute, { preserveZoom: true, duration: 180 });
-        }
+        state.navigationGpsAvailable = false;
+        state.navigationGpsErrorAt = Date.now();
+        state.currentSpeedKmh = 0;
+        document.body.classList.add('is-navigation-gps-unavailable');
         updateNavigationMetrics();
         saveNavigationState();
     }
@@ -2633,6 +2689,7 @@ export function initParkingUi() {
 
         try {
             state.navigationRouteRefreshInFlight = true;
+            state.navigationLastRerouteAt = Date.now();
             const route = await buildRouteToSpot(state.userLocation, state.navigationSpot, { camera: 'none' });
 
             if (sessionId !== state.navigationSessionId || !document.body.classList.contains('is-navigation-mode')) {
@@ -2642,7 +2699,7 @@ export function initParkingUi() {
 
             state.navigationRoute = route;
             state.speedLimitKmh = estimateSpeedLimitKmh(route, state.userLocation);
-            state.navigationLastRerouteAt = Date.now();
+            state.navigationOffRouteSince = 0;
             updateActiveRouteProgress(state.userLocation, route);
             if (!document.body.classList.contains('is-navigation-detached') && !isNavigationViewportHeld()) {
                 focusNavigationPosition(state.userLocation, route, { preserveZoom: state.navigationPreserveZoom });
@@ -2661,12 +2718,19 @@ export function initParkingUi() {
         if (!state.navigationRoute || !state.userLocation || state.navigationRouteRefreshInFlight) return;
 
         const now = Date.now();
-        if (now - state.navigationLastRerouteAt < 25000) return;
-
         const distanceFromRoute = getDistanceToRouteMeters(state.navigationRoute, state.userLocation);
         const isDrivingAgainstRoute = isGpsHeadingAgainstRoute(state.navigationRoute, state.userLocation);
+        const decision = getNavigationRerouteDecision({
+            distanceFromRouteMeters: distanceFromRoute,
+            isDrivingAgainstRoute,
+            offRouteSince: state.navigationOffRouteSince,
+            lastRerouteAt: state.navigationLastRerouteAt,
+            now,
+        });
 
-        if (distanceFromRoute > 80 || isDrivingAgainstRoute) {
+        state.navigationOffRouteSince = decision.offRouteSince;
+
+        if (decision.shouldRefresh) {
             refreshNavigationRoute();
         }
     }
@@ -2894,6 +2958,16 @@ export function initParkingUi() {
             ${hasManyPhotos ? `<div class="photo-lightbox__counter">${state.lightboxIndex + 1} / ${state.lightboxPhotos.length}</div>` : ''}
         `;
         document.body.append(lightbox);
+        lightbox.querySelector('.photo-lightbox__stage img')?.addEventListener('error', () => {
+            state.lightboxPhotos.splice(state.lightboxIndex, 1);
+            if (state.lightboxPhotos.length === 0) {
+                closeLightbox();
+                return;
+            }
+
+            state.lightboxIndex = Math.min(state.lightboxIndex, state.lightboxPhotos.length - 1);
+            renderLightbox();
+        }, { once: true });
     }
 
     function upsertSpot(spot) {
@@ -3326,15 +3400,7 @@ function getNextRouteInstruction(route, userLocation) {
     }
 
     const progress = getRouteProgressMeters(route.geometry.coordinates, userLocation);
-    const next = instructions.find((instruction) => (
-        Number(instruction.distanceFromStartMeters) + Math.max(Number(instruction.distanceMeters) || 0, 35) >= progress + 20
-    )) ?? instructions.at(-1);
-    const remainingMeters = Math.max(0, Number(next.distanceFromStartMeters) - progress);
-
-    return {
-        ...next,
-        remainingMeters,
-    };
+    return selectUpcomingRouteInstruction(instructions, progress);
 }
 
 function getManeuverIconSvg(instruction) {

@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Http\Resources\ParkingSpotResource;
 use App\Models\ParkingSpot;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -113,6 +115,9 @@ class ParkingSpotApiTest extends TestCase
 
     public function test_it_imports_python_like_json_parking_spots(): void
     {
+        Storage::fake('public');
+        Storage::disk('public')->put('photos/5a23b169-fd16-44cd-a764-81338388b3c9.jpg', 'photo');
+
         config(['auralith.admin_email' => 'admin@example.com']);
         $admin = User::factory()->create(['email' => 'admin@example.com']);
 
@@ -147,6 +152,32 @@ JSON;
             'source' => 'imported',
             'status' => 'active',
         ]);
+    }
+
+    public function test_it_omits_missing_local_photos_but_keeps_available_and_external_photos(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('parking-spots/available.jpg', 'photo');
+
+        $spot = ParkingSpot::create([
+            'title' => 'Photo spot',
+            'latitude' => 55.7558,
+            'longitude' => 37.6173,
+            'status' => 'active',
+            'photo_urls' => [
+                '/storage/photos/missing.jpg',
+                '/storage/parking-spots/available.jpg',
+                'https://cdn.example.com/parking.jpg',
+            ],
+        ]);
+
+        $data = ParkingSpotResource::make($spot)->resolve(Request::create('/api/parking-spots/'.$spot->id));
+
+        $this->assertSame(url('/storage/parking-spots/available.jpg'), $data['photo_url']);
+        $this->assertSame([
+            url('/storage/parking-spots/available.jpg'),
+            'https://cdn.example.com/parking.jpg',
+        ], $data['photo_urls']);
     }
 
     public function test_import_requires_admin_user(): void

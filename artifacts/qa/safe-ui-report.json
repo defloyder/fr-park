@@ -1,0 +1,94 @@
+{
+  "admin": {
+    "initialRows": 308,
+    "searchedRows": 6,
+    "verifiedRows": 14,
+    "selectedText": "Выбрано: 1",
+    "editor": {
+      "visible": true,
+      "id": "317",
+      "title": "Парковка Дворовая Бауманская",
+      "address": "Москва, Спартаковская улица",
+      "status": "verified",
+      "photoCount": 2
+    },
+    "map": {
+      "visible": true,
+      "iframeSrc": "https://park.auralith.ru/?embed=1"
+    },
+    "users": 3,
+    "protectedRootAdmins": 1,
+    "export": {
+      "status": 200,
+      "contentType": "application/json",
+      "bytes": 345808
+    }
+  },
+  "spotCardDesktop": {
+    "title": "Парковка Дворовая Бауманская",
+    "frame": {
+      "width": 394,
+      "height": 168
+    },
+    "images": [
+      {
+        "src": "https://park.auralith.ru/storage/parking-spots/cfd5870b-1826-4b12-a8d8-5c1cfafe780f.jpg",
+        "complete": true,
+        "naturalWidth": 1600,
+        "naturalHeight": 721,
+        "renderedWidth": 394,
+        "renderedHeight": 168,
+        "objectFit": "cover"
+      },
+      {
+        "src": "https://park.auralith.ru/storage/parking-spots/5c78534d-ef70-48e0-a66b-ab0b45d62403.jpg",
+        "complete": true,
+        "naturalWidth": 1600,
+        "naturalHeight": 721,
+        "renderedWidth": 394,
+        "renderedHeight": 168,
+        "objectFit": "cover"
+      }
+    ],
+    "cardOverflow": false
+  },
+  "spotCardMobile": {
+    "frame": {
+      "width": 350,
+      "height": 86
+    },
+    "card": {
+      "top": 455,
+      "bottom": 768,
+      "height": 313
+    },
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "horizontalOverflow": false,
+    "verticalScrollInsideCard": false
+  },
+  "addForm": {
+    "requiredFields": [
+      "title",
+      "latitude",
+      "longitude"
+    ],
+    "cameraCapture": "environment",
+    "cameraAccept": "image/*",
+    "multipleFiles": true,
+    "fileAccept": "image/jpeg,image/png,image/webp,image/*",
+    "visible": true
+  },
+  "offline": {
+    "readyState": "complete",
+    "title": "Auralith Maps",
+    "serviceWorkerControlled": true,
+    "stylesheets": 1,
+    "mapCanvas": true,
+    "mapFallbackVisible": true,
+    "parkingItems": 0,
+    "bodyTextLength": 1115
+  }
+}

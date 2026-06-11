@@ -298,8 +298,8 @@ body:has(.pick-panel:not(.hidden)) .map-control-stack {
 
 .map-control-button {
     display: grid;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     place-items: center;
     color: var(--text-strong);
     background: rgba(248, 252, 255, 0.94);
@@ -805,11 +805,11 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-settings__option:
 }
 
 .copy-address-button {
-    width: 42px;
-    min-width: 42px;
-    height: 42px;
-    min-height: 42px;
-    flex: 0 0 42px;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    flex: 0 0 44px;
     padding: 0;
     border-radius: 14px;
 }
@@ -1020,6 +1020,7 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-settings__option:
 
 .spot-list__content {
     display: grid;
+    min-height: 44px;
     grid-column: 2 / 4;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
@@ -1032,7 +1033,7 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-settings__option:
 }
 
 .spot-list__item:has(.export-check) {
-    grid-template-columns: 34px 24px minmax(0, 1fr) auto;
+    grid-template-columns: 44px 14px minmax(0, 1fr) auto;
 }
 
 .spot-list__item:has(.export-check) .spot-list__content {
@@ -1041,8 +1042,8 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-settings__option:
 
 .export-check {
     display: grid;
-    width: 22px;
-    height: 22px;
+    width: 44px;
+    height: 44px;
     place-items: center;
     padding: 0;
     background: rgba(255, 255, 255, 0.22);
@@ -2276,6 +2277,33 @@ body.is-navigation-mode .navigation-guidance {
     min-width: 0;
 }
 
+.navigation-gps-alert {
+    display: grid;
+    grid-column: 1 / -1;
+    gap: 2px;
+    padding: 8px 10px;
+    color: #9f1239;
+    background: rgba(255, 228, 230, 0.94);
+    border: 1px solid rgba(244, 63, 94, 0.28);
+    border-radius: 12px;
+}
+
+.navigation-gps-alert.hidden {
+    display: none !important;
+}
+
+.navigation-gps-alert strong {
+    color: inherit;
+    font-size: 0.78rem;
+}
+
+.navigation-gps-alert span {
+    color: rgba(136, 19, 55, 0.82);
+    font-size: 0.68rem;
+    font-weight: 750;
+    line-height: 1.25;
+}
+
 .navigation-guidance strong {
     display: block;
     overflow: hidden;
@@ -2455,6 +2483,14 @@ body.is-navigation-mode .navigation-guidance {
     font-size: 2rem;
     font-weight: 950;
     line-height: 0.95;
+}
+
+.navigation-speedometer.is-gps-unavailable {
+    border-color: rgba(244, 63, 94, 0.34);
+}
+
+.navigation-speedometer.is-gps-unavailable strong {
+    color: #be123c;
 }
 
 .navigation-speedometer span {
@@ -3760,14 +3796,14 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
 
     .map-control-stack {
         right: max(8px, var(--safe-right));
-        width: 46px;
+        width: 54px;
         padding: 5px;
         border-radius: 19px;
     }
 
     .map-control-button {
-        width: 36px;
-        height: 36px;
+        width: 44px;
+        height: 44px;
         border-radius: 13px;
     }
 
@@ -3886,7 +3922,7 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
     .spot-card__actions {
         position: sticky;
         bottom: 0;
-        grid-template-columns: 38px 38px minmax(118px, 0.72fr);
+        grid-template-columns: 44px 44px minmax(118px, 0.72fr);
         align-items: center;
         justify-content: start;
         padding-top: 4px;
@@ -3894,10 +3930,10 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
 
     .spot-card__actions .favorite-button,
     .spot-card__actions .edit-button {
-        width: 38px;
-        min-width: 38px;
-        height: 38px;
-        min-height: 38px;
+        width: 44px;
+        min-width: 44px;
+        height: 44px;
+        min-height: 44px;
         border-radius: 12px;
     }
 
@@ -4311,7 +4347,7 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
 }
 
 .spot-card__actions {
-    grid-template-columns: 38px 38px minmax(0, 1fr);
+    grid-template-columns: 44px 44px minmax(0, 1fr);
     justify-content: start;
     align-items: center;
     gap: 7px;
@@ -4319,16 +4355,16 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
 
 .spot-card__actions .favorite-button,
 .spot-card__actions .edit-button {
-    width: 38px;
-    min-width: 38px;
-    height: 38px;
-    min-height: 38px;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
     border-radius: 12px;
 }
 
 .spot-card__actions .route-button {
     grid-column: 3;
-    min-height: 42px;
+    min-height: 44px;
     max-width: none;
     border-radius: 14px;
     font-size: 0.82rem;
@@ -4408,20 +4444,20 @@ body[data-map-layer="light"]:not(.is-navigation-mode) .spot-detail {
     }
 
     .spot-card__actions {
-        grid-template-columns: 34px 34px minmax(0, 1fr);
+        grid-template-columns: 44px 44px minmax(0, 1fr);
     }
 
     .spot-card__actions .favorite-button,
     .spot-card__actions .edit-button {
-        width: 34px;
-        min-width: 34px;
-        height: 34px;
-        min-height: 34px;
+        width: 44px;
+        min-width: 44px;
+        height: 44px;
+        min-height: 44px;
     }
 
     .spot-card__actions .route-button {
         grid-column: 3;
-        min-height: 38px;
+        min-height: 44px;
         max-width: none;
         font-size: 0.76rem;
     }

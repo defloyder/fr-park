@@ -1,6 +1,8 @@
-const CACHE_NAME = 'auralith-navigation-v5';
+const CACHE_NAME = 'auralith-navigation-v6';
 const SHELL_URLS = [
-    '/',
+    '/offline.html',
+    '/site.webmanifest',
+    '/images/auralith-mark.svg',
 ];
 
 self.addEventListener('install', (event) => {
@@ -31,7 +33,7 @@ self.addEventListener('fetch', (event) => {
     const url = new URL(request.url);
 
     if (request.mode === 'navigate') {
-        event.respondWith(networkFirst(request, '/'));
+        event.respondWith(networkFirst(request, '/offline.html'));
         return;
     }
 
@@ -39,7 +41,7 @@ self.addEventListener('fetch', (event) => {
         url.pathname.startsWith('/build/')
         || url.pathname.startsWith('/images/')
         || url.pathname === '/site.webmanifest'
-        || url.pathname === '/'
+        || url.pathname === '/offline.html'
     )) {
         event.respondWith(staleWhileRevalidate(request));
         return;
@@ -58,14 +60,13 @@ async function networkFirst(request, fallbackUrl) {
     const cache = await caches.open(CACHE_NAME);
 
     try {
-        const response = await fetch(request);
-        cache.put(request, response.clone());
-        cache.put(fallbackUrl, response.clone());
-        return response;
+        return await fetch(request);
     } catch {
-        return await cache.match(request)
-            || await cache.match(fallbackUrl)
-            || new Response('', { status: 503, statusText: 'Offline' });
+        return await cache.match(fallbackUrl)
+            || new Response('Приложение недоступно без подключения к сети.', {
+                status: 503,
+                headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+            });
     }
 }
 
@@ -74,10 +75,15 @@ async function staleWhileRevalidate(request) {
     const cached = await cache.match(request);
     const fetched = fetch(request)
         .then((response) => {
-            cache.put(request, response.clone());
+            if (response.ok || response.type === 'opaque') {
+                cache.put(request, response.clone());
+            }
             return response;
         })
         .catch(() => null);
 
-    return cached || await fetched || new Response('', { status: 503, statusText: 'Offline' });
+    return cached || await fetched || new Response('Ресурс недоступен без подключения к сети.', {
+        status: 503,
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    });
 }

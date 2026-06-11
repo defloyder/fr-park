@@ -7,9 +7,10 @@ use App\Http\Requests\StoreParkingSpotRequest;
 use App\Http\Requests\UpdateParkingSpotRequest;
 use App\Http\Resources\ParkingSpotResource;
 use App\Models\ParkingSpot;
+use App\Services\ParkingSpotPhotoService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
@@ -19,6 +20,8 @@ use Illuminate\Validation\ValidationException;
 
 class ParkingSpotController extends Controller
 {
+    public function __construct(private ParkingSpotPhotoService $photoService) {}
+
     public function index(): AnonymousResourceCollection
     {
         $spots = ParkingSpot::query()
@@ -62,7 +65,6 @@ class ParkingSpotController extends Controller
         return ParkingSpotResource::make($parkingSpot->refresh());
     }
 
-    
     public function destroy(ParkingSpot $parkingSpot): Response
     {
         $parkingSpot->delete();
@@ -213,6 +215,7 @@ class ParkingSpotController extends Controller
                     'row' => $index + 1,
                     'message' => 'Элемент должен быть объектом.',
                 ];
+
                 continue;
             }
 
@@ -236,6 +239,7 @@ class ParkingSpotController extends Controller
                     'row' => $index + 1,
                     'message' => $validator->errors()->first(),
                 ];
+
                 continue;
             }
 
@@ -252,6 +256,7 @@ class ParkingSpotController extends Controller
                     'title' => $data['title'],
                     'reason' => 'duplicate',
                 ];
+
                 continue;
             }
 
@@ -348,13 +353,7 @@ class ParkingSpotController extends Controller
 
     private function formatSpotForExport(ParkingSpot $spot): array
     {
-        $photos = collect($spot->photo_urls ?? [])
-            ->filter()
-            ->values();
-
-        if ($photos->isEmpty() && $spot->photo_url) {
-            $photos = collect([$spot->photo_url]);
-        }
+        $photos = $this->photoService->resolveForSpot($spot, request());
 
         return [
             'id' => $spot->id,
@@ -367,9 +366,9 @@ class ParkingSpotController extends Controller
             'lat' => (float) $spot->latitude,
             'lng' => (float) $spot->longitude,
             'description' => $spot->description,
-            'photo_url' => $this->normalizePhotoUrl($spot->photo_url, request()),
-            'photo_urls' => $photos->map(fn (string $photo) => $this->normalizePhotoUrl($photo, request()))->filter()->values()->all(),
-            'photos' => $photos->map(fn (string $photo) => $this->normalizePhotoUrl($photo, request()))->filter()->values()->all(),
+            'photo_url' => $photos['photo_url'],
+            'photo_urls' => $photos['photo_urls'],
+            'photos' => $photos['photo_urls'],
             'access_instructions' => $spot->access_instructions,
             'landmarks' => $spot->landmarks,
             'parking_notes' => $spot->parking_notes,
@@ -380,32 +379,5 @@ class ParkingSpotController extends Controller
             'created_at' => $spot->created_at?->toISOString(),
             'updated_at' => $spot->updated_at?->toISOString(),
         ];
-    }
-
-    private function normalizePhotoUrl(?string $photo, Request $request): ?string
-    {
-        if (! $photo) {
-            return null;
-        }
-
-        $photo = trim($photo);
-
-        if (Str::startsWith($photo, ['http://', 'https://'])) {
-            $parts = parse_url($photo);
-            $appIp = config('app.ip');
-            $appDomain = config('app.domain');
-            $host = $parts['host'] ?? null;
-            $path = $parts['path'] ?? '';
-
-            if ($host && in_array($host, array_filter([$appIp, $appDomain, $request->getHost()]), true)) {
-                $query = isset($parts['query']) ? '?'.$parts['query'] : '';
-
-                return $request->getSchemeAndHttpHost().$path.$query;
-            }
-
-            return $photo;
-        }
-
-        return $request->getSchemeAndHttpHost().'/'.ltrim($photo, '/');
     }
 }

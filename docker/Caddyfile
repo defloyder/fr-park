@@ -5,6 +5,15 @@
 (app) {
     root * /app/public
     encode zstd br gzip
+    header {
+        Content-Security-Policy "default-src 'self'; base-uri 'self'; connect-src 'self' https: wss:; font-src 'self' data: https://tiles.openfreemap.org; frame-ancestors 'self'; img-src 'self' data: blob: https:; manifest-src 'self'; object-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:"
+        Permissions-Policy "camera=(self), geolocation=(self), screen-wake-lock=(self)"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        -Server
+    }
     php_server
     file_server
 }

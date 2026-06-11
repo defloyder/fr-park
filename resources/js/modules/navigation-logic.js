@@ -1,5 +1,7 @@
 export const DEFAULT_PASSED_CAMERA_DISTANCE_METERS = 25;
 export const COMPASS_HEADING_MAX_AGE_MS = 2500;
+export const DEFAULT_REROUTE_CONFIRMATION_MS = 1500;
+export const DEFAULT_REROUTE_COOLDOWN_MS = 8000;
 
 export function shouldRecenterNavigationFromLocate({ isNavigationMode = false, hasRoute = false } = {}) {
     return Boolean(isNavigationMode && hasRoute);
@@ -110,6 +112,68 @@ export function getFreshCompassHeading(userLocation, now = Date.now(), maxAgeMs 
     }
 
     return now - updatedAt <= maxAgeMs ? normalizeDegrees(heading) : null;
+}
+
+export function selectUpcomingRouteInstruction(
+    instructions,
+    currentProgressMeters,
+    { passedToleranceMeters = 8 } = {},
+) {
+    const progress = Number(currentProgressMeters);
+    const normalized = (Array.isArray(instructions) ? instructions : [])
+        .map((instruction) => ({
+            ...instruction,
+            distanceFromStartMeters: Number(instruction?.distanceFromStartMeters),
+        }))
+        .filter((instruction) => Number.isFinite(instruction.distanceFromStartMeters))
+        .sort((first, second) => first.distanceFromStartMeters - second.distanceFromStartMeters);
+
+    if (normalized.length === 0) {
+        return null;
+    }
+
+    if (!Number.isFinite(progress)) {
+        return {
+            ...normalized[0],
+            remainingMeters: normalized[0].distanceFromStartMeters,
+        };
+    }
+
+    const next = normalized.find((instruction) => (
+        instruction.distanceFromStartMeters >= progress - passedToleranceMeters
+    )) ?? normalized.at(-1);
+
+    return {
+        ...next,
+        remainingMeters: Math.max(0, next.distanceFromStartMeters - progress),
+    };
+}
+
+export function getNavigationRerouteDecision({
+    distanceFromRouteMeters,
+    isDrivingAgainstRoute = false,
+    offRouteSince = 0,
+    lastRerouteAt = 0,
+    now = Date.now(),
+    routeDistanceThresholdMeters = 80,
+    confirmationMs = DEFAULT_REROUTE_CONFIRMATION_MS,
+    cooldownMs = DEFAULT_REROUTE_COOLDOWN_MS,
+} = {}) {
+    const deviated = Number(distanceFromRouteMeters) > routeDistanceThresholdMeters
+        || Boolean(isDrivingAgainstRoute);
+
+    if (!deviated) {
+        return { shouldRefresh: false, offRouteSince: 0 };
+    }
+
+    const deviationStartedAt = Number(offRouteSince) || Number(now);
+    const isConfirmed = Number(now) - deviationStartedAt >= confirmationMs;
+    const cooldownElapsed = Number(now) - Number(lastRerouteAt || 0) >= cooldownMs;
+
+    return {
+        shouldRefresh: isConfirmed && cooldownElapsed,
+        offRouteSince: isConfirmed && cooldownElapsed ? 0 : deviationStartedAt,
+    };
 }
 
 export function getRouteSnappedNavigationLocation(

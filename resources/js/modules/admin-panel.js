@@ -297,6 +297,15 @@ export function initAdminPanel() {
                 renderEditorPhotos();
             });
         });
+
+        photoPreview.querySelectorAll('.admin-photo-preview img').forEach((image, index) => {
+            image.addEventListener('error', () => {
+                editorPhotos.splice(index, 1);
+                editor.elements.photo_urls.value = editorPhotos.join(', ');
+                renderEditorPhotos();
+                setMessage('Недоступная фотография удалена из формы.', true);
+            }, { once: true });
+        });
     }
 
     function getEditorPhotos() {
