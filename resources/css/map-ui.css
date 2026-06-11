@@ -39,7 +39,7 @@ body {
 body {
     color: var(--text-strong);
     background: var(--page-bg);
-    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family: "Instrument Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 button,
@@ -75,6 +75,8 @@ h2 {
 .export-toolbar.hidden,
 .export-selection-count.hidden,
 .import-panel.hidden,
+.danger-button.hidden,
+.form-message.hidden,
 .profile-panel .auth-form.hidden,
 .profile-panel .profile-user.hidden,
 .profile-panel .favorite-panel.hidden,
@@ -239,7 +241,7 @@ body[data-map-layer="satellite"] .map-screen > .map-canvas::after {
     min-width: 0;
     align-items: baseline;
     gap: 16px;
-    font-family: Orbitron, Inter, ui-sans-serif, system-ui, sans-serif;
+    font-family: "Instrument Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-size: 15px;
     font-weight: 600;
     letter-spacing: 0.42em;
@@ -279,7 +281,7 @@ body.is-navigation-mode .brand-mark--maps__text-accent {
 }
 
 .map-control-stack--secondary {
-    top: calc(390px + var(--safe-top));
+    top: calc(318px + var(--safe-top));
 }
 
 body:has(.spot-list:not(.hidden)) .map-control-stack,
@@ -585,8 +587,10 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-settings__option:
     top: calc(72px + var(--safe-top));
     left: 14px;
     right: 14px;
-    padding: 14px 16px;
-    border-radius: 18px;
+    width: fit-content;
+    max-width: min(420px, calc(100vw - 28px));
+    padding: 10px 13px;
+    border-radius: 14px;
 }
 
 .pick-panel {
@@ -605,6 +609,24 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-settings__option:
     color: var(--text-muted);
     font-size: 0.9rem;
     font-weight: 750;
+}
+
+.status-panel[data-state="loading"]::before {
+    display: inline-block;
+    width: 13px;
+    height: 13px;
+    margin-right: 8px;
+    vertical-align: -2px;
+    content: "";
+    border: 2px solid rgba(32, 200, 255, 0.28);
+    border-top-color: var(--sky);
+    border-radius: 50%;
+    animation: app-spin 720ms linear infinite;
+}
+
+.status-panel[data-state="error"] {
+    color: #be123c;
+    border-color: rgba(244, 63, 94, 0.34);
 }
 
 .pick-panel div {
@@ -635,8 +657,17 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-settings__option:
 .bottom-sheet {
     top: calc(72px + var(--safe-top));
     display: grid;
+    grid-auto-rows: max-content;
+    align-content: start;
     gap: 12px;
     padding: 16px;
+}
+
+.spot-list,
+.search-panel,
+.profile-panel {
+    bottom: auto;
+    max-height: calc(100svh - 164px);
 }
 
 .spot-card {
@@ -646,7 +677,9 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-settings__option:
 }
 
 .bottom-sheet {
+    top: auto;
     bottom: calc(82px + var(--safe-bottom));
+    max-height: calc(100svh - 112px);
 }
 
 .panel-header,
@@ -1239,6 +1272,8 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-settings__option:
 .install-app-panel,
 .profile-user {
     display: grid;
+    grid-auto-rows: max-content;
+    align-content: start;
     align-items: center;
     gap: 12px;
 }
@@ -1298,6 +1333,18 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-settings__option:
 
 .install-app-panel {
     grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.install-app-panel strong,
+.install-app-panel span {
+    display: block;
+    line-height: 1.35;
+}
+
+.install-app-panel span {
+    margin-top: 3px;
+    color: var(--text-muted);
+    font-size: 0.82rem;
 }
 
 .install-app-panel > div,
@@ -1494,7 +1541,7 @@ body[data-map-layer="light"]:not(.is-navigation-mode) .spot-card__address,
 body[data-map-layer="light"]:not(.is-navigation-mode) .spot-card__description,
 body[data-map-layer="light"]:not(.is-navigation-mode) .spot-detail p,
 body[data-map-layer="light"]:not(.is-navigation-mode) .profile-user span,
-body[data-map-layer="light"]:not(.is-navigation-mode) .install-app-panel p,
+body[data-map-layer="light"]:not(.is-navigation-mode) .install-app-panel span,
 body[data-map-layer="light"]:not(.is-navigation-mode) .search-field,
 body[data-map-layer="light"]:not(.is-navigation-mode) .spot-form label,
 body[data-map-layer="light"]:not(.is-navigation-mode) .auth-form label {
@@ -1656,42 +1703,6 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .route-picker__note {
 
     .photo-dropzone [data-action="take-photo"] {
         display: inline-flex;
-    }
-}
-
-/* Keep primary controls comfortably tappable on phones and in-car mounts. */
-.icon-button,
-.spot-card__close,
-.route-picker__close,
-.photo-lightbox__close,
-.navigator-panel .panel-close,
-.field-icon-button {
-    width: 44px;
-    min-width: 44px;
-    height: 44px;
-    min-height: 44px;
-    flex-basis: 44px;
-}
-
-.layer-switcher__option,
-.map-settings__option,
-.auth-tab,
-.export-toolbar .ghost-button,
-.photo-dropzone__actions .ghost-button,
-.navigator-panel__actions .ghost-button,
-.navigator-panel__actions .route-button {
-    min-height: 46px;
-}
-
-@media (hover: none), (pointer: coarse), (max-width: 720px) {
-    button,
-    [role="button"] {
-        min-height: 44px;
-        touch-action: manipulation;
-    }
-
-    button[aria-label] {
-        min-width: 44px;
     }
 }
 
@@ -2098,13 +2109,13 @@ body[data-map-layer="light"]:not(.is-navigation-mode) .navigator-place small {
 .route-option__logo--yandex {
     color: #071126;
     background: linear-gradient(135deg, #ffffff, #dbeafe 48%, #a78bfa);
-    font-family: Inter, system-ui, sans-serif;
+    font-family: "Instrument Sans", system-ui, sans-serif;
 }
 
 .route-option__logo--2gis {
     color: #071126;
     background: linear-gradient(135deg, #a7f3d0, #67e8f9 52%, #bfdbfe);
-    font-family: Inter, system-ui, sans-serif;
+    font-family: "Instrument Sans", system-ui, sans-serif;
 }
 
 .route-option__logo--auralith {
@@ -2795,7 +2806,7 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
 
 .maplibregl-ctrl-attrib {
     color: rgba(7, 17, 31, 0.78);
-    font-family: Inter, system-ui, sans-serif;
+    font-family: "Instrument Sans", system-ui, sans-serif;
 }
 
 .map-marker,
@@ -3457,8 +3468,8 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
 }
 
 .import-panel {
-    margin-top: 18px;
-    padding-top: 16px;
+    margin-top: 0;
+    padding-top: 12px;
     border-top: 1px solid var(--admin-line);
 }
 
@@ -3833,14 +3844,17 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
     .map-control-stack {
         right: max(8px, var(--safe-right));
         width: 54px;
-        padding: 5px;
-        border-radius: 19px;
+        gap: 4px;
+        padding: 4px;
+        border-radius: 17px;
     }
 
     .map-control-button {
         width: 44px;
+        min-width: 44px;
         height: 44px;
-        border-radius: 13px;
+        min-height: 44px;
+        border-radius: 12px;
     }
 
     .map-control-button svg {
@@ -3858,10 +3872,21 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
         bottom: calc(74px + var(--safe-bottom));
         left: 50%;
         width: min(420px, calc(100vw - 20px));
-        max-height: none;
+        max-height: calc(100svh - 142px);
         padding: 14px;
         border-radius: 20px;
         transform: translateX(-50%);
+    }
+
+    .spot-list,
+    .search-panel,
+    .profile-panel {
+        bottom: auto;
+    }
+
+    .bottom-sheet {
+        top: auto;
+        bottom: calc(74px + var(--safe-bottom));
     }
 
     .profile-panel {
@@ -4109,13 +4134,17 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
     }
 
     .install-app-panel {
-        grid-template-columns: minmax(0, 1fr);
-        align-items: start;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        padding: 10px;
+        gap: 8px;
     }
 
     .install-app-panel .ghost-button {
-        width: 100%;
+        width: auto;
         min-width: 0;
+        min-height: 40px;
+        padding: 0 11px;
     }
 
     .spot-card__meta {
@@ -4288,7 +4317,7 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
     }
 
     body.is-navigation-mode .map-control-stack--secondary {
-        top: calc(398px + var(--safe-top));
+        top: calc(318px + var(--safe-top));
     }
 
     .admin-shell {
@@ -4503,11 +4532,26 @@ body[data-map-layer="light"]:not(.is-navigation-mode) .spot-detail {
     }
 }
 
+body[data-map-layer="dark"]:not(.is-navigation-mode) .map-control-stack,
+body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-control-stack {
+    color: #f8fbff;
+    background: linear-gradient(145deg, rgba(8, 20, 42, 0.88), rgba(15, 32, 62, 0.78));
+    border-color: rgba(105, 188, 255, 0.32);
+    box-shadow: 0 16px 34px rgba(0, 8, 24, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+body[data-map-layer="dark"]:not(.is-navigation-mode) .map-control-button,
+body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-control-button {
+    color: #f8fbff;
+    background: rgba(238, 246, 255, 0.10);
+    border-color: rgba(162, 213, 255, 0.22);
+}
+
+.navigator-panel .panel-close,
 .icon-button,
 .spot-card__close,
 .route-picker__close,
 .photo-lightbox__close,
-.navigator-panel .panel-close,
 .field-icon-button {
     width: 44px;
     min-width: 44px;
@@ -4516,24 +4560,10 @@ body[data-map-layer="light"]:not(.is-navigation-mode) .spot-detail {
     flex-basis: 44px;
 }
 
+.photo-dropzone__actions .ghost-button,
 .layer-switcher__option,
 .map-settings__option,
-.auth-tab,
-.export-toolbar .ghost-button,
-.photo-dropzone__actions .ghost-button,
 .navigator-panel__actions .ghost-button,
 .navigator-panel__actions .route-button {
     min-height: 46px;
-}
-
-@media (hover: none), (pointer: coarse), (max-width: 720px) {
-    button,
-    [role="button"] {
-        min-height: 44px;
-        touch-action: manipulation;
-    }
-
-    button[aria-label] {
-        min-width: 44px;
-    }
 }

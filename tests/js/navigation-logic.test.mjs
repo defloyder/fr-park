@@ -508,7 +508,9 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
         'building-footprint',
         'rail-line',
         'road-path',
-        'poi-labels',
+        'transit-labels',
+        'road-lane-major-left',
+        'road-lane-major-right',
     ]) {
         assert.match(mapSource, new RegExp(`id: '${layerId}'`));
     }

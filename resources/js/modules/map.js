@@ -3,6 +3,7 @@ import { fetchDrivingRoute as fetchYandexDrivingRoute, fetchParkingSpots, revers
 import { getClosestRouteProjection, isManualMapInteraction } from './navigation-logic';
 
 let map = null;
+let parkingSpotsLoadPromise = null;
 let spotsCache = [];
 let pendingMarker = null;
 let addressRequestId = 0;
@@ -380,7 +381,7 @@ const MAP_STYLE = {
             },
             paint: {
                 'line-color': '#D3D0C8',
-                'line-width': ['interpolate', ['linear'], ['zoom'], 8, 2, 13, 7, 17, 22],
+                'line-width': ['interpolate', ['linear'], ['zoom'], 8, 2, 13, 8, 16, 20, 18, 36],
                 'line-opacity': 0.94,
             },
         },
@@ -397,7 +398,7 @@ const MAP_STYLE = {
             },
             paint: {
                 'line-color': '#FCFCFA',
-                'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.8, 15, 3.8, 18, 9],
+                'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.9, 15, 4.4, 18, 11],
                 'line-opacity': 0.94,
             },
         },
@@ -424,7 +425,7 @@ const MAP_STYLE = {
                     '#FFF1CF',
                     '#FFFDF8',
                 ],
-                'line-width': ['interpolate', ['linear'], ['zoom'], 8, 1.2, 13, 5, 17, 17],
+                'line-width': ['interpolate', ['linear'], ['zoom'], 8, 1.2, 13, 6, 16, 16, 18, 30],
                 'line-opacity': 0.96,
             },
         },
@@ -444,6 +445,44 @@ const MAP_STYLE = {
                 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 0, 15, 0.8, 17, 1.2, 19, 1.6],
                 'line-dasharray': [1.1, 1.25],
                 'line-opacity': ['interpolate', ['linear'], ['zoom'], 14, 0, 15, 0.38, 17, 0.62],
+            },
+        },
+        {
+            id: 'road-lane-major-left',
+            type: 'line',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'transportation',
+            minzoom: 15,
+            filter: ['in', ['get', 'class'], ['literal', ['motorway', 'trunk', 'primary', 'secondary', 'tertiary']]],
+            layout: {
+                'line-cap': 'butt',
+                'line-join': 'round',
+            },
+            paint: {
+                'line-color': 'rgba(120, 116, 104, 0.42)',
+                'line-width': ['interpolate', ['linear'], ['zoom'], 15, 0.55, 18, 1.15],
+                'line-offset': ['interpolate', ['linear'], ['zoom'], 15, -1.4, 17, -4.2, 19, -8.5],
+                'line-dasharray': [1.1, 1.45],
+                'line-opacity': ['interpolate', ['linear'], ['zoom'], 15, 0.18, 17, 0.56, 19, 0.72],
+            },
+        },
+        {
+            id: 'road-lane-major-right',
+            type: 'line',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'transportation',
+            minzoom: 15,
+            filter: ['in', ['get', 'class'], ['literal', ['motorway', 'trunk', 'primary', 'secondary', 'tertiary']]],
+            layout: {
+                'line-cap': 'butt',
+                'line-join': 'round',
+            },
+            paint: {
+                'line-color': 'rgba(120, 116, 104, 0.42)',
+                'line-width': ['interpolate', ['linear'], ['zoom'], 15, 0.55, 18, 1.15],
+                'line-offset': ['interpolate', ['linear'], ['zoom'], 15, 1.4, 17, 4.2, 19, 8.5],
+                'line-dasharray': [1.1, 1.45],
+                'line-opacity': ['interpolate', ['linear'], ['zoom'], 15, 0.18, 17, 0.56, 19, 0.72],
             },
         },
         {
@@ -496,15 +535,49 @@ const MAP_STYLE = {
                 'text-field': ['coalesce', ['get', 'name:ru'], ['get', 'name']],
                 'text-font': ['Noto Sans Regular'],
                 'text-size': ['interpolate', ['linear'], ['zoom'], 12, 10, 16, 13],
-                'text-rotation-alignment': 'viewport',
+                'text-rotation-alignment': 'map',
                 'text-pitch-alignment': 'viewport',
                 'text-keep-upright': true,
+                'symbol-spacing': ['interpolate', ['linear'], ['zoom'], 12, 460, 17, 260],
                 'text-allow-overlap': false,
             },
             paint: {
                 'text-color': '#364152',
                 'text-halo-color': 'rgba(255, 255, 255, 0.96)',
                 'text-halo-width': 2.2,
+                'text-opacity': 1,
+            },
+        },
+        {
+            id: 'transit-labels',
+            type: 'symbol',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'poi',
+            minzoom: 13,
+            filter: [
+                'match',
+                ['coalesce', ['get', 'class'], ['get', 'subclass']],
+                ['subway', 'railway', 'station', 'train_station', 'halt', 'bus_stop', 'tram_stop', 'platform', 'public_transport'],
+                true,
+                false,
+            ],
+            layout: {
+                'icon-image': POI_ICON_IMAGE_IDS.metro,
+                'icon-size': ['interpolate', ['linear'], ['zoom'], 13, 0.72, 17, 1],
+                'text-field': ['coalesce', ['get', 'name:ru'], ['get', 'name'], 'Метро'],
+                'text-font': ['Noto Sans Bold'],
+                'text-size': ['interpolate', ['linear'], ['zoom'], 13, 10, 16, 12, 18, 13],
+                'text-radial-offset': 0.72,
+                'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
+                'text-max-width': 10,
+                'icon-allow-overlap': false,
+                'text-allow-overlap': false,
+            },
+            paint: {
+                'icon-opacity': 0.98,
+                'text-color': '#2563EB',
+                'text-halo-color': 'rgba(255, 255, 255, 0.98)',
+                'text-halo-width': 2,
                 'text-opacity': 1,
             },
         },
@@ -518,9 +591,6 @@ const MAP_STYLE = {
                 'match',
                 ['coalesce', ['get', 'class'], ['get', 'subclass']],
                 [
-                    'subway',
-                    'railway',
-                    'station',
                     'attraction',
                     'monument',
                     'museum',
@@ -534,8 +604,6 @@ const MAP_STYLE = {
                 'icon-image': [
                     'match',
                     ['coalesce', ['get', 'class'], ['get', 'subclass']],
-                    ['subway', 'railway', 'station'],
-                    POI_ICON_IMAGE_IDS.metro,
                     ['hospital'],
                     POI_ICON_IMAGE_IDS.hospital,
                     ['fuel'],
@@ -551,8 +619,6 @@ const MAP_STYLE = {
                     [
                         'match',
                         ['coalesce', ['get', 'class'], ['get', 'subclass']],
-                        ['subway', 'railway', 'station'],
-                        'Метро',
                         ['hospital'],
                         'Больница',
                         ['fuel'],
@@ -573,12 +639,6 @@ const MAP_STYLE = {
                 'icon-ignore-placement': false,
                 'text-allow-overlap': false,
                 'text-ignore-placement': false,
-                'symbol-sort-key': [
-                    'case',
-                    ['match', ['coalesce', ['get', 'class'], ['get', 'subclass']], ['subway', 'railway', 'station'], true, false],
-                    0,
-                    1,
-                ],
             },
             paint: {
                 'icon-opacity': 0.92,
@@ -610,29 +670,6 @@ const MAP_STYLE = {
                 'text-opacity': 0.82,
             },
         },
-        {
-            id: 'poi-labels',
-            type: 'symbol',
-            source: ROAD_SOURCE_ID,
-            'source-layer': 'poi',
-            minzoom: 15,
-            layout: {
-                'text-field': ['coalesce', ['get', 'name:ru'], ['get', 'name']],
-                'text-font': ['Noto Sans Regular'],
-                'text-size': ['interpolate', ['linear'], ['zoom'], 15, 9, 18, 11.5],
-                'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
-                'text-radial-offset': 0.45,
-                'text-max-width': 8,
-                'text-allow-overlap': false,
-                'text-ignore-placement': false,
-            },
-            paint: {
-                'text-color': '#5B6573',
-                'text-halo-color': 'rgba(255, 255, 255, 0.96)',
-                'text-halo-width': 1.6,
-                'text-opacity': 0.86,
-            },
-        },
     ],
 };
 
@@ -652,7 +689,7 @@ export async function initParkingMap() {
     }
 
     if (!isWebGlSupported()) {
-        reportMapError('Карта не поддерживается в этом браузере. Попробуйте Chrome или Safari.');
+        reportMapError('Карта не поддерживается в этом браузере. Попробуйте Chrome или Safari.', true);
         return;
     }
 
@@ -660,12 +697,14 @@ export async function initParkingMap() {
         initMapLibreMap();
     } catch (error) {
         console.error('Map init failed', error);
-        reportMapError('Не удалось загрузить карту. Проверьте соединение и обновите страницу.');
+        reportMapError('Не удалось загрузить карту. Проверьте соединение и обновите страницу.', true);
     }
 }
 
-function reportMapError(message) {
-    window.dispatchEvent(new CustomEvent('parking:error', { detail: message }));
+function reportMapError(message, mapUnavailable = false) {
+    window.dispatchEvent(new CustomEvent('parking:error', {
+        detail: { message, mapUnavailable },
+    }));
 }
 
 function isWebGlSupported() {
@@ -737,7 +776,7 @@ function initMapLibreMap() {
             window.dispatchEvent(new CustomEvent('map:ready'));
         } catch (error) {
             console.error('Map layers failed', error);
-            reportMapError('Не удалось отрисовать карту. Обновите страницу.');
+            reportMapError('Не удалось отрисовать карту. Обновите страницу.', true);
             return;
         }
 
@@ -749,13 +788,29 @@ function initMapLibreMap() {
     });
 
     window.addEventListener('resize', () => map?.resize());
+    window.addEventListener('online', () => {
+        if (map?.getSource(SOURCE_ID)) {
+            scheduleParkingSpotsLoad();
+        }
+    });
 }
 
 function scheduleParkingSpotsLoad() {
+    if (parkingSpotsLoadPromise) {
+        return;
+    }
+
     const run = () => {
-        loadParkingSpots().catch(() => {
-            reportMapError('Не удалось загрузить точки. Проверьте соединение и попробуйте снова.');
-        });
+        parkingSpotsLoadPromise = loadParkingSpots()
+            .catch(() => {
+                const message = navigator.onLine
+                    ? 'Не удалось загрузить парковки. Повторим попытку после восстановления соединения.'
+                    : 'Нет подключения к интернету. Карта доступна, парковки загрузятся после восстановления сети.';
+                reportMapError(message);
+            })
+            .finally(() => {
+                parkingSpotsLoadPromise = null;
+            });
     };
 
     if ('requestIdleCallback' in window) {
@@ -767,6 +822,7 @@ function scheduleParkingSpotsLoad() {
 }
 
 async function loadParkingSpots() {
+    window.dispatchEvent(new CustomEvent('parking:loading'));
     const response = await fetchParkingSpots();
     renderParkingSpots(response.data);
     window.dispatchEvent(new CustomEvent('parking:loaded', { detail: response.data }));
@@ -1047,24 +1103,32 @@ function updateVectorRoadLayerTheme(layerId) {
             'line-opacity': isSatellite ? 0 : 0.82,
         },
         'road-casing-minor': {
-            'line-color': isDark ? 'rgba(255, 255, 255, 0.28)' : '#D8D8D2',
+            'line-color': isDark ? '#64748B' : '#D8D8D2',
             'line-opacity': isSatellite ? 0 : 0.9,
         },
         'road-casing-major': {
-            'line-color': isDark ? 'rgba(255, 255, 255, 0.48)' : '#D3D0C8',
+            'line-color': isDark ? '#718096' : '#D3D0C8',
             'line-opacity': isSatellite ? 0 : 0.94,
         },
         'road-minor': {
-            'line-color': isDark ? '#1F2937' : '#FFFFFF',
+            'line-color': isDark ? '#2A3546' : '#FFFFFF',
             'line-opacity': isSatellite ? 0 : 0.94,
         },
         'road-major': {
-            'line-color': isDark ? '#0B1220' : '#FFF1CF',
+            'line-color': isDark ? '#354052' : '#FFF1CF',
             'line-opacity': isSatellite ? 0 : 0.96,
         },
         'road-lane-major': {
-            'line-color': isDark ? 'rgba(226, 232, 240, 0.48)' : 'rgba(71, 85, 105, 0.42)',
+            'line-color': isDark ? 'rgba(255, 255, 255, 0.72)' : 'rgba(71, 85, 105, 0.42)',
             'line-opacity': isSatellite ? 0 : ['interpolate', ['linear'], ['zoom'], 14, 0, 15, 0.38, 17, 0.62],
+        },
+        'road-lane-major-left': {
+            'line-color': isDark ? 'rgba(255, 255, 255, 0.62)' : 'rgba(71, 85, 105, 0.38)',
+            'line-opacity': isSatellite ? 0 : ['interpolate', ['linear'], ['zoom'], 15, 0.18, 17, 0.56, 19, 0.72],
+        },
+        'road-lane-major-right': {
+            'line-color': isDark ? 'rgba(255, 255, 255, 0.62)' : 'rgba(71, 85, 105, 0.38)',
+            'line-opacity': isSatellite ? 0 : ['interpolate', ['linear'], ['zoom'], 15, 0.18, 17, 0.56, 19, 0.72],
         },
         'road-lane-minor': {
             'line-color': isDark ? 'rgba(226, 232, 240, 0.32)' : 'rgba(71, 85, 105, 0.28)',
@@ -1086,10 +1150,11 @@ function updateVectorRoadLayerTheme(layerId) {
             'text-halo-color': isDark ? 'rgba(9, 15, 27, 0.92)' : 'rgba(255, 255, 255, 0.94)',
             'text-opacity': isSatellite ? 0 : 0.94,
         },
-        'poi-labels': {
-            'text-color': isDark ? '#C7D2E0' : '#5B6573',
-            'text-halo-color': isDark ? 'rgba(9, 15, 27, 0.92)' : 'rgba(255, 255, 255, 0.96)',
-            'text-opacity': isSatellite ? 0 : 0.86,
+        'transit-labels': {
+            'icon-opacity': isSatellite ? 0 : 0.98,
+            'text-color': isDark ? '#7DD3FC' : '#2563EB',
+            'text-halo-color': isDark ? 'rgba(8, 15, 28, 0.96)' : 'rgba(255, 255, 255, 0.98)',
+            'text-opacity': isSatellite ? 0 : 1,
         },
         'house-number': {
             'text-color': isDark ? '#DDE8F7' : '#334155',
@@ -1665,7 +1730,7 @@ function addParkingLayers() {
             'icon-image': ['concat', 'parking-marker-', ['get', 'status']],
             'icon-anchor': 'bottom',
             'icon-size': ['interpolate', ['linear'], ['zoom'], 12, 0.74, 16, 0.92, 18, 1.04],
-            'icon-rotate': ['get', 'heading'],
+            'icon-rotate': ['coalesce', ['to-number', ['get', 'heading']], 0],
             'icon-pitch-alignment': 'viewport',
             'icon-rotation-alignment': 'viewport',
             'icon-allow-overlap': true,
@@ -1787,9 +1852,9 @@ function addUserLocationSourceAndLayer() {
                 ['linear'],
                 ['zoom'],
                 10,
-                ['/', ['get', 'accuracy'], 18],
+                ['/', ['coalesce', ['to-number', ['get', 'accuracy']], 20], 18],
                 16,
-                ['/', ['get', 'accuracy'], 2.8],
+                ['/', ['coalesce', ['to-number', ['get', 'accuracy']], 20], 2.8],
             ],
             'circle-color': 'rgba(33, 168, 255, 0.16)',
             'circle-stroke-color': 'rgba(33, 168, 255, 0.34)',
@@ -1805,7 +1870,7 @@ function addUserLocationSourceAndLayer() {
         layout: {
             'icon-image': ['get', 'iconImage'],
             'icon-size': ['interpolate', ['linear'], ['zoom'], 12, 0.58, 16, 0.74, 18, 0.86],
-            'icon-rotate': ['get', 'heading'],
+            'icon-rotate': ['coalesce', ['to-number', ['get', 'heading']], 0],
             'icon-pitch-alignment': 'viewport',
             'icon-rotation-alignment': 'viewport',
             'icon-allow-overlap': true,
@@ -1821,7 +1886,7 @@ function addUserLocationSourceAndLayer() {
         layout: {
             'icon-image': ['get', 'iconImage'],
             'icon-size': ['interpolate', ['linear'], ['zoom'], 12, 0.56, 16, 0.72, 18, 0.84],
-            'icon-rotate': ['get', 'heading'],
+            'icon-rotate': ['coalesce', ['to-number', ['get', 'heading']], 0],
             'icon-pitch-alignment': 'viewport',
             'icon-rotation-alignment': 'map',
             'icon-allow-overlap': true,
@@ -3267,6 +3332,7 @@ function buildFeatureCollection(spots) {
                 status: getAvailabilityStatus(spot),
                 markerColor: getMarkerColor(spot),
                 markerHalo: getMarkerHalo(spot),
+                heading: Number.isFinite(Number(spot.heading)) ? Number(spot.heading) : 0,
             },
             geometry: {
                 type: 'Point',

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'auralith-navigation-v7';
+const CACHE_NAME = 'auralith-navigation-v8';
 const SHELL_URLS = [
     '/offline.html',
     '/site.webmanifest',

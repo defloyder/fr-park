@@ -315,9 +315,17 @@ export function initParkingUi() {
 
     loadAccountSession();
 
+    window.addEventListener('parking:loading', () => {
+        showStatus('Загружаем парковки...', 'loading');
+    });
+
     window.addEventListener('parking:error', (event) => {
-        fallback?.classList.remove('hidden');
-        showStatus(event.detail);
+        const detail = typeof event.detail === 'string'
+            ? { message: event.detail, mapUnavailable: true }
+            : event.detail ?? {};
+
+        fallback?.classList.toggle('hidden', !detail.mapUnavailable);
+        showStatus(detail.message ?? 'Произошла ошибка загрузки.', 'error');
     });
 
     window.addEventListener('parking:selected', (event) => {
@@ -3179,13 +3187,15 @@ export function initParkingUi() {
         photoDropzone.querySelector('span').textContent = 'можно несколько файлов';
     }
 
-    function showStatus(message) {
+    function showStatus(message, state = 'info') {
         statusPanel.textContent = message;
+        statusPanel.dataset.state = state;
         statusPanel.classList.remove('hidden');
     }
 
     function hideStatus() {
         statusPanel.classList.add('hidden');
+        delete statusPanel.dataset.state;
     }
 
     function showNavigatorMessage(message, isError = false) {
