@@ -511,6 +511,12 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
         'transit-labels',
         'road-lane-major-left',
         'road-lane-major-right',
+        'road-lane-major-outer-left',
+        'road-lane-major-outer-right',
+        'road-center-double-left',
+        'road-center-double-right',
+        'road-oneway-divider',
+        'road-direction-arrows',
     ]) {
         assert.match(mapSource, new RegExp(`id: '${layerId}'`));
     }
