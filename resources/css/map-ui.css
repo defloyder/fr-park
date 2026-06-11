@@ -1659,6 +1659,42 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .route-picker__note {
     }
 }
 
+/* Keep primary controls comfortably tappable on phones and in-car mounts. */
+.icon-button,
+.spot-card__close,
+.route-picker__close,
+.photo-lightbox__close,
+.navigator-panel .panel-close,
+.field-icon-button {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    flex-basis: 44px;
+}
+
+.layer-switcher__option,
+.map-settings__option,
+.auth-tab,
+.export-toolbar .ghost-button,
+.photo-dropzone__actions .ghost-button,
+.navigator-panel__actions .ghost-button,
+.navigator-panel__actions .route-button {
+    min-height: 46px;
+}
+
+@media (hover: none), (pointer: coarse), (max-width: 720px) {
+    button,
+    [role="button"] {
+        min-height: 44px;
+        touch-action: manipulation;
+    }
+
+    button[aria-label] {
+        min-width: 44px;
+    }
+}
+
 .route-picker {
     position: fixed;
     right: 18px;
@@ -4464,5 +4500,40 @@ body[data-map-layer="light"]:not(.is-navigation-mode) .spot-detail {
 
     .spot-card__actions:not(:has(.edit-button)) .route-button {
         grid-column: 2 / 4;
+    }
+}
+
+.icon-button,
+.spot-card__close,
+.route-picker__close,
+.photo-lightbox__close,
+.navigator-panel .panel-close,
+.field-icon-button {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    flex-basis: 44px;
+}
+
+.layer-switcher__option,
+.map-settings__option,
+.auth-tab,
+.export-toolbar .ghost-button,
+.photo-dropzone__actions .ghost-button,
+.navigator-panel__actions .ghost-button,
+.navigator-panel__actions .route-button {
+    min-height: 46px;
+}
+
+@media (hover: none), (pointer: coarse), (max-width: 720px) {
+    button,
+    [role="button"] {
+        min-height: 44px;
+        touch-action: manipulation;
+    }
+
+    button[aria-label] {
+        min-width: 44px;
     }
 }

@@ -7,6 +7,8 @@ import {
     getHeadingDifference,
     getNavigationRerouteDecision,
     getRouteSnappedNavigationLocation,
+    getSpeedTransitionDurationMs,
+    interpolateSpeedKmh,
     isManualMapInteraction,
     normalizeCompassHeading,
     pickUpcomingSpeedCamera,
@@ -372,6 +374,22 @@ test('route refresh resets deviation state after returning to route', () => {
     assert.deepEqual(decision, { shouldRefresh: false, offRouteSince: 0 });
 });
 
+test('speed HUD transition passes through each real integer value', () => {
+    const duration = getSpeedTransitionDurationMs(30, 40);
+    const values = Array.from({ length: 11 }, (_, index) => (
+        Math.round(interpolateSpeedKmh(30, 40, duration * index / 10, duration))
+    ));
+
+    assert.deepEqual(values, [30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40]);
+    assert.equal(getSpeedTransitionDurationMs(40, 40), 0);
+
+    const formSource = readFileSync(new URL('../../resources/js/modules/parking-form.js', import.meta.url), 'utf8');
+    assert.match(formSource, /setNavigationSpeedTarget\(getGpsSpeedKmh\(coords\)\)/);
+    assert.match(formSource, /setTimeout\(animate, stepIntervalMs\)/);
+    assert.match(formSource, /current \+ direction/);
+    assert.match(formSource, /state\.displayedSpeedKmh/);
+});
+
 test('speed camera at zero meters is hidden and next server-projected camera is selected', () => {
     const camera = pickUpcomingSpeedCamera(
         [
@@ -434,7 +452,9 @@ test('GPS failure clears live navigation values and exposes a warning', () => {
     const errorHandler = formSource.match(/function handleNavigationLocationError[\s\S]*?function isNavigationViewportHeld/)?.[0] ?? '';
 
     assert.match(errorHandler, /state\.navigationGpsAvailable = false/);
+    assert.match(errorHandler, /clearTimeout\(state\.navigationSpeedAnimationTimer\)/);
     assert.match(errorHandler, /state\.currentSpeedKmh = 0/);
+    assert.match(formSource, /state\.displayedSpeedKmh = 0/);
     assert.doesNotMatch(errorHandler, /updatedAt: Date\.now/);
     assert.match(formSource, /GPS недоступен/);
     assert.match(formSource, /Ожидание сигнала GPS/);
@@ -450,11 +470,15 @@ test('map labels only request font stacks available from OpenFreeMap', () => {
 
 test('offline PWA fallback is readable and does not reuse dynamic map HTML', () => {
     const workerSource = readFileSync(new URL('../../public/sw.js', import.meta.url), 'utf8');
+    const appSource = readFileSync(new URL('../../resources/js/app.js', import.meta.url), 'utf8');
     const offlineSource = readFileSync(new URL('../../public/offline.html', import.meta.url), 'utf8');
 
     assert.match(workerSource, /networkFirst\(request, '\/offline\.html'\)/);
+    assert.match(workerSource, /fetch\(request, \{ cache: 'no-store' \}\)/);
     assert.match(workerSource, /charset=utf-8/);
     assert.doesNotMatch(workerSource, /cache\.put\(fallbackUrl/);
+    assert.match(appSource, /updateViaCache: 'none'/);
+    assert.match(appSource, /registration\.update\(\)/);
     assert.match(offlineSource, /<meta charset="utf-8">/);
     assert.match(offlineSource, /Нет подключения к сети/);
 });
@@ -466,4 +490,32 @@ test('primary mobile controls keep at least 44 pixel touch targets', () => {
     assert.match(cssSource, /\.export-check\s*\{[^}]*width: 44px;[^}]*height: 44px;/);
     assert.match(cssSource, /\.spot-list__content\s*\{[^}]*min-height: 44px;/);
     assert.doesNotMatch(cssSource, /\.spot-card__actions \.(?:favorite-button|edit-button)\s*\{[^}]*min-height: (?:34|38)px;/);
+    assert.match(cssSource, /\.navigator-panel \.panel-close,[\s\S]*?min-height: 44px;/);
+    assert.match(cssSource, /\.photo-dropzone__actions \.ghost-button,[\s\S]*?min-height: 46px;/);
+});
+
+test('light map style exposes detailed green areas and a clear road hierarchy', () => {
+    const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
+
+    for (const layerId of [
+        'landcover-wood',
+        'landcover-grass',
+        'landcover-wetland',
+        'landuse-green',
+        'landuse-residential',
+        'landuse-civic',
+        'waterway-line',
+        'building-footprint',
+        'rail-line',
+        'road-path',
+        'poi-labels',
+    ]) {
+        assert.match(mapSource, new RegExp(`id: '${layerId}'`));
+    }
+
+    assert.match(mapSource, /'background-color': '#F4F3ED'/);
+    assert.match(mapSource, /'fill-color': '#BFDDAE'/);
+    assert.match(mapSource, /'fill-color': '#D8ECCB'/);
+    assert.match(mapSource, /'fill-extrusion-color': '#D2D8D3'/);
+    assert.match(mapSource, /'motorway',\s*'#FFDFA3'/);
 });

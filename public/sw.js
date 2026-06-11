@@ -1,4 +1,4 @@
-const CACHE_NAME = 'auralith-navigation-v6';
+const CACHE_NAME = 'auralith-navigation-v7';
 const SHELL_URLS = [
     '/offline.html',
     '/site.webmanifest',
@@ -60,7 +60,7 @@ async function networkFirst(request, fallbackUrl) {
     const cache = await caches.open(CACHE_NAME);
 
     try {
-        return await fetch(request);
+        return await fetch(request, { cache: 'no-store' });
     } catch {
         return await cache.match(fallbackUrl)
             || new Response('Приложение недоступно без подключения к сети.', {

@@ -1,0 +1,1087 @@
+{
+  "startedAt": "2026-06-11T09:32:18.684Z",
+  "baseUrl": "https://park.auralith.ru",
+  "browser": {
+    "protocolVersion": "1.3",
+    "product": "Edg/149.0.4022.52",
+    "revision": "@ebf9b65f6b0d1b9609ca9b578ef4a30e51e17fe8",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0",
+    "jsVersion": "14.9.20.6"
+  },
+  "console": [],
+  "exceptions": [],
+  "failedRequests": [
+    {
+      "errorText": "",
+      "type": "Stylesheet",
+      "canceled": false
+    },
+    {
+      "errorText": "",
+      "type": "Stylesheet",
+      "canceled": false
+    },
+    {
+      "errorText": "",
+      "type": "Stylesheet",
+      "canceled": false
+    },
+    {
+      "errorText": "",
+      "type": "Stylesheet",
+      "canceled": false
+    }
+  ],
+  "httpErrors": [],
+  "routeRequests": [
+    {
+      "url": "https://park.auralith.ru/api/routes/driving?from_latitude=55.75222&from_longitude=37.61556&to_latitude=55.765&to_longitude=37.635",
+      "status": 200,
+      "durationMs": 187,
+      "observedAt": "2026-06-11T09:33:17.702Z"
+    },
+    {
+      "url": "https://park.auralith.ru/api/routes/driving?from_latitude=55.7541&from_longitude=37.6185&to_latitude=55.765&to_longitude=37.635",
+      "status": 200,
+      "durationMs": 763,
+      "observedAt": "2026-06-11T09:33:27.909Z"
+    }
+  ],
+  "scenarios": {
+    "desktopHome": {
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "bodySize": {
+        "width": 1440,
+        "height": 48
+      },
+      "horizontalOverflow": false,
+      "overflow": [],
+      "smallTouchTargets": [
+        {
+          "text": "Закрыть",
+          "tag": "BUTTON",
+          "width": 38,
+          "height": 38
+        },
+        {
+          "text": "Светлая",
+          "tag": "BUTTON",
+          "width": 151,
+          "height": 39
+        },
+        {
+          "text": "Тёмная",
+          "tag": "BUTTON",
+          "width": 151,
+          "height": 39
+        },
+        {
+          "text": "Спутник",
+          "tag": "BUTTON",
+          "width": 151,
+          "height": 39
+        },
+        {
+          "text": "Закрыть поиск",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Закрыть список",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Закрыть профиль",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Вход",
+          "tag": "BUTTON",
+          "width": 186,
+          "height": 38
+        },
+        {
+          "text": "Регистрация",
+          "tag": "BUTTON",
+          "width": 186,
+          "height": 38
+        },
+        {
+          "text": "Закрыть форму",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Выбрать точку на карте",
+          "tag": "BUTTON",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "text": "Выбрать фото",
+          "tag": "BUTTON",
+          "width": 350,
+          "height": 37
+        }
+      ],
+      "title": "Auralith Maps",
+      "bodyClass": "app-shell is-active is-map-ready",
+      "mapCanvasCount": 1
+    },
+    "desktopList": {
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "bodySize": {
+        "width": 1440,
+        "height": 48
+      },
+      "horizontalOverflow": false,
+      "overflow": [],
+      "smallTouchTargets": [
+        {
+          "text": "Закрыть",
+          "tag": "BUTTON",
+          "width": 38,
+          "height": 38
+        },
+        {
+          "text": "Светлая",
+          "tag": "BUTTON",
+          "width": 151,
+          "height": 39
+        },
+        {
+          "text": "Тёмная",
+          "tag": "BUTTON",
+          "width": 151,
+          "height": 39
+        },
+        {
+          "text": "Спутник",
+          "tag": "BUTTON",
+          "width": 151,
+          "height": 39
+        },
+        {
+          "text": "Закрыть поиск",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Закрыть список",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Закрыть профиль",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Вход",
+          "tag": "BUTTON",
+          "width": 186,
+          "height": 38
+        },
+        {
+          "text": "Регистрация",
+          "tag": "BUTTON",
+          "width": 186,
+          "height": 38
+        },
+        {
+          "text": "Закрыть форму",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Выбрать точку на карте",
+          "tag": "BUTTON",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "text": "Выбрать фото",
+          "tag": "BUTTON",
+          "width": 350,
+          "height": 37
+        }
+      ],
+      "items": 306
+    },
+    "login": {
+      "status": 200,
+      "authenticated": true,
+      "isAdmin": true,
+      "favoriteCount": 4,
+      "personalPlaceCount": 1
+    },
+    "adminDesktop": {
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "bodySize": {
+        "width": 1440,
+        "height": 1000
+      },
+      "horizontalOverflow": false,
+      "overflow": [],
+      "smallTouchTargets": [
+        {
+          "text": "☀\n                        Светлая",
+          "tag": "BUTTON",
+          "width": 101,
+          "height": 40
+        },
+        {
+          "text": "☾\n                        Тёмная",
+          "tag": "BUTTON",
+          "width": 101,
+          "height": 40
+        },
+        {
+          "text": "Проверено",
+          "tag": "BUTTON",
+          "width": 94,
+          "height": 38
+        },
+        {
+          "text": "Не проверено",
+          "tag": "BUTTON",
+          "width": 111,
+          "height": 38
+        },
+        {
+          "text": "Временная",
+          "tag": "BUTTON",
+          "width": 94,
+          "height": 38
+        },
+        {
+          "text": "Скрыть",
+          "tag": "BUTTON",
+          "width": 69,
+          "height": 38
+        },
+        {
+          "text": "Выбрать все",
+          "tag": "INPUT",
+          "width": 13,
+          "height": 13
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 118,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 74,
+          "height": 38
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 118,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 74,
+          "height": 38
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 118,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 74,
+          "height": 38
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 118,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 74,
+          "height": 38
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 118,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 74,
+          "height": 38
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 118,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 74,
+          "height": 38
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 118,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 74,
+          "height": 38
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 118,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 74,
+          "height": 38
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 118,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 74,
+          "height": 38
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 118,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 74,
+          "height": 38
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 118,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 74,
+          "height": 38
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 118,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 74,
+          "height": 38
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 118,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 74,
+          "height": 38
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 118,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 74,
+          "height": 38
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 118,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 74,
+          "height": 38
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 118,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 74,
+          "height": 38
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 118,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 74,
+          "height": 38
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 118,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 74,
+          "height": 38
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 118,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 74,
+          "height": 38
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 118,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 74,
+          "height": 38
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 118,
+          "height": 38
+        },
+        {
+          "text": "Удалить",
+          "tag": "BUTTON",
+          "width": 74,
+          "height": 38
+        },
+        {
+          "text": "Редактировать",
+          "tag": "BUTTON",
+          "width": 118,
+          "height": 38
+        }
+      ],
+      "data": {
+        "spotsStatus": 200,
+        "usersStatus": 200,
+        "usersCount": 3
+      },
+      "spotCount": 308,
+      "userCount": 3,
+      "darkTheme": "dark"
+    },
+    "adminMobile": {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "bodySize": {
+        "width": 390,
+        "height": 844
+      },
+      "horizontalOverflow": false,
+      "overflow": [],
+      "smallTouchTargets": [
+        {
+          "text": "☀\n                        Светлая",
+          "tag": "BUTTON",
+          "width": 162,
+          "height": 40
+        },
+        {
+          "text": "☾\n                        Тёмная",
+          "tag": "BUTTON",
+          "width": 162,
+          "height": 40
+        },
+        {
+          "text": "Проверено",
+          "tag": "BUTTON",
+          "width": 111,
+          "height": 38
+        },
+        {
+          "text": "Не проверено",
+          "tag": "BUTTON",
+          "width": 111,
+          "height": 38
+        },
+        {
+          "text": "Временная",
+          "tag": "BUTTON",
+          "width": 111,
+          "height": 38
+        },
+        {
+          "text": "Скрыть",
+          "tag": "BUTTON",
+          "width": 111,
+          "height": 38
+        },
+        {
+          "text": "Выбрать все",
+          "tag": "INPUT",
+          "width": 13,
+          "height": 13
+        }
+      ]
+    },
+    "photos": [
+      {
+        "url": "https://park.auralith.ru/storage/parking-spots/cfd5870b-1826-4b12-a8d8-5c1cfafe780f.jpg",
+        "ok": true,
+        "width": 1600,
+        "height": 721,
+        "ratio": 2.219,
+        "durationMs": 42
+      },
+      {
+        "url": "https://park.auralith.ru/storage/parking-spots/5c78534d-ef70-48e0-a66b-ab0b45d62403.jpg",
+        "ok": true,
+        "width": 1600,
+        "height": 721,
+        "ratio": 2.219,
+        "durationMs": 70
+      },
+      {
+        "url": "https://park.auralith.ru/storage/parking-spots/cb626cb0-a116-41ad-ae19-3dc2eb7d9781.jpg",
+        "ok": true,
+        "width": 721,
+        "height": 1600,
+        "ratio": 0.451,
+        "durationMs": 188
+      },
+      {
+        "url": "https://park.auralith.ru/storage/parking-spots/L6fS8nwmMLkkBcRgAziqGhXUOZvjFnXT1vPDIvt1.png",
+        "ok": true,
+        "width": 1805,
+        "height": 499,
+        "ratio": 3.617,
+        "durationMs": 741
+      },
+      {
+        "url": "https://park.auralith.ru/storage/parking-spots/XdDnNogxPq9AsSxDuLSYoc5UOPVcBMmkOBe6sHxn.png",
+        "ok": true,
+        "width": 1558,
+        "height": 512,
+        "ratio": 3.043,
+        "durationMs": 700
+      },
+      {
+        "url": "https://park.auralith.ru/storage/parking-spots/vykfsIRe0kKkY4pxPQuoQISqHP7u02KoFuJukl7I.png",
+        "ok": true,
+        "width": 1725,
+        "height": 625,
+        "ratio": 2.76,
+        "durationMs": 264
+      },
+      {
+        "url": "https://park.auralith.ru/storage/parking-spots/3qcLSnptzwhniRGIodnLZd04xD9ZV9A5hQu8pxYv.png",
+        "ok": true,
+        "width": 1533,
+        "height": 584,
+        "ratio": 2.625,
+        "durationMs": 804
+      },
+      {
+        "url": "https://park.auralith.ru/storage/parking-spots/C1edssOr19qPQkk12DIe9KU0904OBN2HX2ecdwCi.jpg",
+        "ok": true,
+        "width": 810,
+        "height": 518,
+        "ratio": 1.564,
+        "durationMs": 175
+      },
+      {
+        "url": "https://park.auralith.ru/storage/parking-spots/mqhWhnvSeXmPMtGTw6vKGplHZn5ePOeFgvFamwA7.png",
+        "ok": true,
+        "width": 1823,
+        "height": 487,
+        "ratio": 3.743,
+        "durationMs": 996
+      },
+      {
+        "url": "https://park.auralith.ru/storage/parking-spots/iICWTcd503DcQloUlMSTaZlWLGwlgRgS4oIA6abl.png",
+        "ok": true,
+        "width": 1578,
+        "height": 574,
+        "ratio": 2.749,
+        "durationMs": 1506
+      },
+      {
+        "url": "https://park.auralith.ru/storage/parking-spots/xaOCgem9BuRz1LSrmTBz2xCDsQcJi52aJ9EAGMBh.png",
+        "ok": true,
+        "width": 1607,
+        "height": 597,
+        "ratio": 2.692,
+        "durationMs": 2085
+      },
+      {
+        "url": "https://park.auralith.ru/storage/parking-spots/2OK8VihrmEmucjTMXVwXt2I1t1jF40VFD2lgn080.png",
+        "ok": true,
+        "width": 1581,
+        "height": 517,
+        "ratio": 3.058,
+        "durationMs": 5192
+      },
+      {
+        "url": "https://park.auralith.ru/storage/parking-spots/HHJcEFwtUHi6kE2lYFsqhFy7ZTIA3HDhEDNwulmW.png",
+        "ok": true,
+        "width": 1447,
+        "height": 566,
+        "ratio": 2.557,
+        "durationMs": 2056
+      },
+      {
+        "url": "https://park.auralith.ru/storage/parking-spots/pz9Rcyn0Mf8OXHKQTr13M9ldiBWxBng5lCmGCM6u.jpg",
+        "ok": true,
+        "width": 1816,
+        "height": 4032,
+        "ratio": 0.45,
+        "durationMs": 1012
+      }
+    ],
+    "mobileHome": {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "bodySize": {
+        "width": 390,
+        "height": 48
+      },
+      "horizontalOverflow": false,
+      "overflow": [],
+      "smallTouchTargets": [
+        {
+          "text": "Закрыть",
+          "tag": "BUTTON",
+          "width": 38,
+          "height": 38
+        },
+        {
+          "text": "На карте",
+          "tag": "BUTTON",
+          "width": 97,
+          "height": 40
+        },
+        {
+          "text": "Сохранить",
+          "tag": "BUTTON",
+          "width": 97,
+          "height": 40
+        },
+        {
+          "text": "Поехать",
+          "tag": "BUTTON",
+          "width": 135,
+          "height": 40
+        },
+        {
+          "text": "Светлая",
+          "tag": "BUTTON",
+          "width": 151,
+          "height": 39
+        },
+        {
+          "text": "Тёмная",
+          "tag": "BUTTON",
+          "width": 151,
+          "height": 39
+        },
+        {
+          "text": "Спутник",
+          "tag": "BUTTON",
+          "width": 151,
+          "height": 39
+        },
+        {
+          "text": "Закрыть поиск",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Закрыть список",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Все",
+          "tag": "BUTTON",
+          "width": 108,
+          "height": 36
+        },
+        {
+          "text": "Выбранные",
+          "tag": "BUTTON",
+          "width": 108,
+          "height": 36
+        },
+        {
+          "text": "Сброс",
+          "tag": "BUTTON",
+          "width": 108,
+          "height": 36
+        },
+        {
+          "text": "Закрыть профиль",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Выйти",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Закрыть форму",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Выбрать точку на карте",
+          "tag": "BUTTON",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "text": "Выбрать фото",
+          "tag": "BUTTON",
+          "width": 153,
+          "height": 37
+        },
+        {
+          "text": "Сфотографировать",
+          "tag": "BUTTON",
+          "width": 153,
+          "height": 37
+        }
+      ]
+    },
+    "mobileList": {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "bodySize": {
+        "width": 390,
+        "height": 48
+      },
+      "horizontalOverflow": false,
+      "overflow": [],
+      "smallTouchTargets": [
+        {
+          "text": "Закрыть",
+          "tag": "BUTTON",
+          "width": 38,
+          "height": 38
+        },
+        {
+          "text": "На карте",
+          "tag": "BUTTON",
+          "width": 97,
+          "height": 40
+        },
+        {
+          "text": "Сохранить",
+          "tag": "BUTTON",
+          "width": 97,
+          "height": 40
+        },
+        {
+          "text": "Поехать",
+          "tag": "BUTTON",
+          "width": 135,
+          "height": 40
+        },
+        {
+          "text": "Светлая",
+          "tag": "BUTTON",
+          "width": 151,
+          "height": 39
+        },
+        {
+          "text": "Тёмная",
+          "tag": "BUTTON",
+          "width": 151,
+          "height": 39
+        },
+        {
+          "text": "Спутник",
+          "tag": "BUTTON",
+          "width": 151,
+          "height": 39
+        },
+        {
+          "text": "Закрыть поиск",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Закрыть список",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Все",
+          "tag": "BUTTON",
+          "width": 108,
+          "height": 36
+        },
+        {
+          "text": "Выбранные",
+          "tag": "BUTTON",
+          "width": 108,
+          "height": 36
+        },
+        {
+          "text": "Сброс",
+          "tag": "BUTTON",
+          "width": 108,
+          "height": 36
+        },
+        {
+          "text": "Закрыть профиль",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Выйти",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Закрыть форму",
+          "tag": "BUTTON",
+          "width": 40,
+          "height": 40
+        },
+        {
+          "text": "Выбрать точку на карте",
+          "tag": "BUTTON",
+          "width": 36,
+          "height": 36
+        },
+        {
+          "text": "Выбрать фото",
+          "tag": "BUTTON",
+          "width": 153,
+          "height": 37
+        },
+        {
+          "text": "Сфотографировать",
+          "tag": "BUTTON",
+          "width": 153,
+          "height": 37
+        }
+      ]
+    },
+    "pwaUi": {
+      "manifestHref": "https://park.auralith.ru/site.webmanifest",
+      "serviceWorkerSupported": true,
+      "standalone": false,
+      "installButtonDisabled": false,
+      "installButtonVisible": true,
+      "installNote": "Установите Auralith Maps как отдельное приложение.",
+      "registration": {
+        "scope": "https://park.auralith.ru/",
+        "activeState": "activated",
+        "scriptURL": "https://park.auralith.ru/sw.js"
+      },
+      "manifest": {
+        "url": "https://park.auralith.ru/site.webmanifest",
+        "errors": [],
+        "data": "{\n    \"name\": \"Auralith Maps\",\n    \"short_name\": \"Auralith Maps\",\n    \"description\": \"Навигатор и карта парковок Auralith Maps.\",\n    \"start_url\": \"/\",\n    \"scope\": \"/\",\n    \"display\": \"standalone\",\n    \"background_color\": \"#061018\",\n    \"theme_color\": \"#061018\",\n    \"orientation\": \"portrait\",\n    \"icons\": [\n        {\n            \"src\": \"/images/ChatGPT%20Image%20Jun%201%2C%202026%2C%2002_33_28%20PM.png?v=20260604\",\n            \"sizes\": \"192x192 512x512 1254x1254\",\n            \"type\": \"image/png\",\n            \"purpose\": \"any maskable\"\n        },\n        {\n            \"src\": \"/images/ChatGPT%20Image%20Jun%201%2C%202026%2C%2002_33_28%20PM.png?v=20260604\",\n            \"sizes\": \"512x512 1254x1254\",\n            \"type\": \"image/png\",\n            \"purpose\": \"any maskable\"\n        }\n    ]\n}\n",
+        "parsed": {
+          "scope": "https://park.auralith.ru/"
+        },
+        "manifest": {
+          "backgroundColor": "rgba(6,16,24,1)",
+          "description": "Навигатор и карта парковок Auralith Maps.",
+          "display": "kStandalone",
+          "icons": [
+            {
+              "url": "https://park.auralith.ru/images/ChatGPT%20Image%20Jun%201%2C%202026%2C%2002_33_28%20PM.png?v=20260604",
+              "sizes": "192x192 512x512 1254x1254",
+              "type": "image/png"
+            },
+            {
+              "url": "https://park.auralith.ru/images/ChatGPT%20Image%20Jun%201%2C%202026%2C%2002_33_28%20PM.png?v=20260604",
+              "sizes": "512x512 1254x1254",
+              "type": "image/png"
+            }
+          ],
+          "id": "https://park.auralith.ru/",
+          "name": "Auralith Maps",
+          "orientation": "PORTRAIT",
+          "preferRelatedApplications": false,
+          "scope": "https://park.auralith.ru/",
+          "startUrl": "https://park.auralith.ru/",
+          "themeColor": "rgba(6,16,24,1)"
+        }
+      },
+      "installabilityErrors": {
+        "installabilityErrors": []
+      }
+    },
+    "navigationBuild": {
+      "navigationMode": true,
+      "following": true,
+      "message": "",
+      "guidanceVisible": true,
+      "speedVisible": true,
+      "routePanelVisible": true,
+      "instruction": "Съезжайте с Кремль улица",
+      "maneuverDistance": "Сейчас",
+      "speed": "0",
+      "speedLimit": "60"
+    },
+    "gpsMovement": [
+      {
+        "index": 0,
+        "elapsedMs": 3023,
+        "latitude": 55.75222,
+        "longitude": 37.61556,
+        "heading": 55,
+        "speed": "30",
+        "instruction": "Съезжайте с Кремль улица",
+        "maneuverDistance": "Сейчас",
+        "following": true,
+        "marker": "translate(-50%, -100%) translate(210px, 556px) rotateX(0deg) rotateZ(0deg)"
+      },
+      {
+        "index": 1,
+        "elapsedMs": 3014,
+        "latitude": 55.7541,
+        "longitude": 37.6185,
+        "heading": 50,
+        "speed": "40",
+        "instruction": "Съезжайте с Кремль улица",
+        "maneuverDistance": "Сейчас",
+        "following": true,
+        "marker": "translate(-50%, -100%) translate(195px, 667px) rotateX(0deg) rotateZ(0deg)"
+      },
+      {
+        "index": 2,
+        "elapsedMs": 3018,
+        "latitude": 55.7562,
+        "longitude": 37.622,
+        "heading": 45,
+        "speed": "50",
+        "instruction": "Съезжайте с Кремль улица",
+        "maneuverDistance": "Сейчас",
+        "following": true,
+        "marker": "translate(-50%, -100%) translate(195px, 687px) rotateX(0deg) rotateZ(0deg)"
+      }
+    ],
+    "offRoute": {
+      "observedForMs": 18216,
+      "navigationMode": true,
+      "following": true,
+      "instruction": "Ожидание сигнала GPS",
+      "maneuverDistance": "—",
+      "speed": "—",
+      "routeRequestTriggered": false
+    },
+    "gpsUnavailable": {
+      "observedForMs": 6017,
+      "navigationMode": true,
+      "following": true,
+      "statusText": "",
+      "speed": "—",
+      "instruction": "Ожидание сигнала GPS"
+    }
+  },
+  "finishedAt": "2026-06-11T09:34:00.056Z"
+}

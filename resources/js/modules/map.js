@@ -106,7 +106,7 @@ const MAP_STYLE = {
             id: 'vector-background',
             type: 'background',
             paint: {
-                'background-color': '#EEF4F1',
+                'background-color': '#F4F3ED',
             },
         },
         {
@@ -115,8 +115,24 @@ const MAP_STYLE = {
             source: ROAD_SOURCE_ID,
             'source-layer': 'water',
             paint: {
-                'fill-color': '#B9E4F2',
+                'fill-color': '#B9E3F2',
                 'fill-opacity': 1,
+            },
+        },
+        {
+            id: 'waterway-line',
+            type: 'line',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'waterway',
+            minzoom: 10,
+            layout: {
+                'line-cap': 'round',
+                'line-join': 'round',
+            },
+            paint: {
+                'line-color': '#9BD6EA',
+                'line-width': ['interpolate', ['linear'], ['zoom'], 10, 0.6, 15, 2.2, 18, 4.6],
+                'line-opacity': 0.9,
             },
         },
         {
@@ -125,8 +141,8 @@ const MAP_STYLE = {
             source: ROAD_SOURCE_ID,
             'source-layer': 'park',
             paint: {
-                'fill-color': '#CFE9CE',
-                'fill-opacity': 0.78,
+                'fill-color': '#CBE7BF',
+                'fill-opacity': 0.96,
             },
         },
         {
@@ -136,8 +152,103 @@ const MAP_STYLE = {
             'source-layer': 'landuse',
             minzoom: 10,
             paint: {
-                'fill-color': '#E2EBDF',
-                'fill-opacity': 0.48,
+                'fill-color': '#ECEDE7',
+                'fill-opacity': 0.62,
+            },
+        },
+        {
+            id: 'landcover-wood',
+            type: 'fill',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'landcover',
+            minzoom: 7,
+            filter: ['in', ['get', 'class'], ['literal', ['wood', 'forest']]],
+            paint: {
+                'fill-color': '#BFDDAE',
+                'fill-opacity': ['interpolate', ['linear'], ['zoom'], 7, 0.72, 13, 0.9],
+            },
+        },
+        {
+            id: 'landcover-grass',
+            type: 'fill',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'landcover',
+            minzoom: 9,
+            filter: ['in', ['get', 'class'], ['literal', ['grass', 'meadow', 'scrub']]],
+            paint: {
+                'fill-color': '#D8ECCB',
+                'fill-opacity': 0.82,
+            },
+        },
+        {
+            id: 'landcover-wetland',
+            type: 'fill',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'landcover',
+            minzoom: 10,
+            filter: ['in', ['get', 'class'], ['literal', ['wetland', 'reed']]],
+            paint: {
+                'fill-color': '#CBE5CE',
+                'fill-opacity': 0.68,
+            },
+        },
+        {
+            id: 'landuse-green',
+            type: 'fill',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'landuse',
+            minzoom: 10,
+            filter: ['in', ['get', 'class'], ['literal', [
+                'park',
+                'garden',
+                'grass',
+                'cemetery',
+                'recreation_ground',
+                'pitch',
+                'golf_course',
+                'allotments',
+            ]]],
+            paint: {
+                'fill-color': [
+                    'match',
+                    ['get', 'class'],
+                    'cemetery',
+                    '#D5E6C9',
+                    ['pitch', 'recreation_ground'],
+                    '#D9EFC8',
+                    '#CFE8BE',
+                ],
+                'fill-opacity': 0.9,
+            },
+        },
+        {
+            id: 'landuse-residential',
+            type: 'fill',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'landuse',
+            minzoom: 11,
+            filter: ['in', ['get', 'class'], ['literal', ['residential', 'suburb', 'neighbourhood']]],
+            paint: {
+                'fill-color': '#F0EFEB',
+                'fill-opacity': 0.7,
+            },
+        },
+        {
+            id: 'landuse-civic',
+            type: 'fill',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'landuse',
+            minzoom: 12,
+            filter: ['in', ['get', 'class'], ['literal', ['hospital', 'school', 'university', 'college']]],
+            paint: {
+                'fill-color': [
+                    'match',
+                    ['get', 'class'],
+                    'hospital',
+                    '#F6DDD9',
+                    '#E8E3F5',
+                ],
+                'fill-opacity': 0.78,
             },
         },
         {
@@ -153,13 +264,25 @@ const MAP_STYLE = {
             },
         },
         {
+            id: 'building-footprint',
+            type: 'fill',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'building',
+            minzoom: 12.5,
+            paint: {
+                'fill-color': '#D9DDD8',
+                'fill-outline-color': '#C7CDC7',
+                'fill-opacity': ['interpolate', ['linear'], ['zoom'], 12.5, 0.3, 15, 0.78],
+            },
+        },
+        {
             id: 'building-3d',
             type: 'fill-extrusion',
             source: ROAD_SOURCE_ID,
             'source-layer': 'building',
             minzoom: 14,
             paint: {
-                'fill-extrusion-color': 'rgba(70, 86, 104, 0.58)',
+                'fill-extrusion-color': '#D2D8D3',
                 'fill-extrusion-height': [
                     'interpolate',
                     ['linear'],
@@ -170,8 +293,61 @@ const MAP_STYLE = {
                     ['to-number', ['get', 'render_height'], ['get', 'height'], 14],
                 ],
                 'fill-extrusion-base': ['to-number', ['get', 'render_min_height'], ['get', 'min_height'], 0],
-                'fill-extrusion-opacity': 0.82,
+                'fill-extrusion-opacity': 0.78,
                 'fill-extrusion-vertical-gradient': true,
+            },
+        },
+        {
+            id: 'rail-casing',
+            type: 'line',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'transportation',
+            minzoom: 11,
+            filter: ['in', ['get', 'class'], ['literal', ['rail', 'transit']]],
+            layout: {
+                'line-cap': 'round',
+                'line-join': 'round',
+            },
+            paint: {
+                'line-color': '#FFFFFF',
+                'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.8, 16, 4.4],
+                'line-opacity': 0.9,
+            },
+        },
+        {
+            id: 'rail-line',
+            type: 'line',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'transportation',
+            minzoom: 11,
+            filter: ['in', ['get', 'class'], ['literal', ['rail', 'transit']]],
+            layout: {
+                'line-cap': 'butt',
+                'line-join': 'round',
+            },
+            paint: {
+                'line-color': '#A7ADB3',
+                'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.8, 16, 1.8],
+                'line-dasharray': [2, 1.5],
+                'line-opacity': 0.82,
+            },
+        },
+        {
+            id: 'road-path',
+            type: 'line',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'transportation',
+            minzoom: 13,
+            filter: ['in', ['get', 'class'], ['literal', ['path', 'track']]],
+            layout: {
+                'line-cap': 'round',
+                'line-join': 'round',
+            },
+            paint: {
+                'line-color': '#C9CDC5',
+                'line-width': ['interpolate', ['linear'], ['zoom'], 13, 0.7, 17, 2.2],
+                'line-dasharray': [1.5, 1.2],
+                'line-opacity': 0.82,
             },
         },
         {
@@ -180,15 +356,15 @@ const MAP_STYLE = {
             source: ROAD_SOURCE_ID,
             'source-layer': 'transportation',
             minzoom: 11,
-            filter: ['in', ['get', 'class'], ['literal', ['minor', 'service', 'track', 'path']]],
+            filter: ['in', ['get', 'class'], ['literal', ['minor', 'service']]],
             layout: {
                 'line-cap': 'round',
                 'line-join': 'round',
             },
             paint: {
-                'line-color': 'rgba(15, 23, 42, 0.32)',
+                'line-color': '#D8D8D2',
                 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.4, 15, 5, 18, 12],
-                'line-opacity': 0.72,
+                'line-opacity': 0.9,
             },
         },
         {
@@ -203,9 +379,9 @@ const MAP_STYLE = {
                 'line-join': 'round',
             },
             paint: {
-                'line-color': 'rgba(2, 6, 23, 0.42)',
+                'line-color': '#D3D0C8',
                 'line-width': ['interpolate', ['linear'], ['zoom'], 8, 2, 13, 7, 17, 22],
-                'line-opacity': 0.82,
+                'line-opacity': 0.94,
             },
         },
         {
@@ -214,13 +390,13 @@ const MAP_STYLE = {
             source: ROAD_SOURCE_ID,
             'source-layer': 'transportation',
             minzoom: 11,
-            filter: ['in', ['get', 'class'], ['literal', ['minor', 'service', 'track', 'path']]],
+            filter: ['in', ['get', 'class'], ['literal', ['minor', 'service']]],
             layout: {
                 'line-cap': 'round',
                 'line-join': 'round',
             },
             paint: {
-                'line-color': '#FFFFFF',
+                'line-color': '#FCFCFA',
                 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.8, 15, 3.8, 18, 9],
                 'line-opacity': 0.94,
             },
@@ -237,7 +413,17 @@ const MAP_STYLE = {
                 'line-join': 'round',
             },
             paint: {
-                'line-color': '#FFF8DF',
+                'line-color': [
+                    'match',
+                    ['get', 'class'],
+                    'motorway',
+                    '#FFDFA3',
+                    'trunk',
+                    '#FFE8B9',
+                    'primary',
+                    '#FFF1CF',
+                    '#FFFDF8',
+                ],
                 'line-width': ['interpolate', ['linear'], ['zoom'], 8, 1.2, 13, 5, 17, 17],
                 'line-opacity': 0.96,
             },
@@ -254,7 +440,7 @@ const MAP_STYLE = {
                 'line-join': 'round',
             },
             paint: {
-                'line-color': 'rgba(71, 85, 105, 0.42)',
+                'line-color': 'rgba(120, 116, 104, 0.4)',
                 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 0, 15, 0.8, 17, 1.2, 19, 1.6],
                 'line-dasharray': [1.1, 1.25],
                 'line-opacity': ['interpolate', ['linear'], ['zoom'], 14, 0, 15, 0.38, 17, 0.62],
@@ -272,7 +458,7 @@ const MAP_STYLE = {
                 'line-join': 'round',
             },
             paint: {
-                'line-color': 'rgba(71, 85, 105, 0.28)',
+                'line-color': 'rgba(130, 132, 126, 0.25)',
                 'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.45, 18, 0.8],
                 'line-dasharray': [0.8, 1.4],
                 'line-opacity': ['interpolate', ['linear'], ['zoom'], 16, 0.18, 18, 0.36],
@@ -293,10 +479,10 @@ const MAP_STYLE = {
                 'text-allow-overlap': false,
             },
             paint: {
-                'text-color': '#334155',
-                'text-halo-color': 'rgba(255, 255, 255, 0.88)',
-                'text-halo-width': 1.6,
-                'text-opacity': 0.9,
+                'text-color': '#475569',
+                'text-halo-color': 'rgba(255, 255, 255, 0.94)',
+                'text-halo-width': 1.8,
+                'text-opacity': 0.96,
             },
         },
         {
@@ -316,9 +502,9 @@ const MAP_STYLE = {
                 'text-allow-overlap': false,
             },
             paint: {
-                'text-color': '#111827',
-                'text-halo-color': 'rgba(255, 255, 255, 0.92)',
-                'text-halo-width': 2,
+                'text-color': '#364152',
+                'text-halo-color': 'rgba(255, 255, 255, 0.96)',
+                'text-halo-width': 2.2,
                 'text-opacity': 1,
             },
         },
@@ -396,9 +582,9 @@ const MAP_STYLE = {
             },
             paint: {
                 'icon-opacity': 0.92,
-                'text-color': '#EAF2FF',
-                'text-halo-color': 'rgba(9, 15, 27, 0.92)',
-                'text-halo-width': 1.6,
+                'text-color': '#334155',
+                'text-halo-color': 'rgba(255, 255, 255, 0.96)',
+                'text-halo-width': 1.8,
                 'text-opacity': 0.94,
             },
         },
@@ -418,10 +604,33 @@ const MAP_STYLE = {
                 'text-ignore-placement': false,
             },
             paint: {
-                'text-color': '#DDE8F7',
-                'text-halo-color': 'rgba(9, 15, 27, 0.92)',
+                'text-color': '#64748B',
+                'text-halo-color': 'rgba(255, 255, 255, 0.94)',
                 'text-halo-width': 1.4,
                 'text-opacity': 0.82,
+            },
+        },
+        {
+            id: 'poi-labels',
+            type: 'symbol',
+            source: ROAD_SOURCE_ID,
+            'source-layer': 'poi',
+            minzoom: 15,
+            layout: {
+                'text-field': ['coalesce', ['get', 'name:ru'], ['get', 'name']],
+                'text-font': ['Noto Sans Regular'],
+                'text-size': ['interpolate', ['linear'], ['zoom'], 15, 9, 18, 11.5],
+                'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
+                'text-radial-offset': 0.45,
+                'text-max-width': 8,
+                'text-allow-overlap': false,
+                'text-ignore-placement': false,
+            },
+            paint: {
+                'text-color': '#5B6573',
+                'text-halo-color': 'rgba(255, 255, 255, 0.96)',
+                'text-halo-width': 1.6,
+                'text-opacity': 0.86,
             },
         },
     ],
@@ -545,7 +754,7 @@ function initMapLibreMap() {
 function scheduleParkingSpotsLoad() {
     const run = () => {
         loadParkingSpots().catch(() => {
-            reportMapError('ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð·Ð°Ð³Ñ€ÑƒÐ·Ð¸Ñ‚ÑŒ Ñ‚Ð¾Ñ‡ÐºÐ¸. ÐŸÑ€Ð¾Ð²ÐµÑ€ÑŒÑ‚Ðµ ÑÐ¾ÐµÐ´Ð¸Ð½ÐµÐ½Ð¸Ðµ Ð¸ Ð¿Ð¾Ð¿Ñ€Ð¾Ð±ÑƒÐ¹Ñ‚Ðµ ÑÐ½Ð¾Ð²Ð°.');
+            reportMapError('Не удалось загрузить точки. Проверьте соединение и попробуйте снова.');
         });
     };
 
@@ -769,43 +978,88 @@ function updateVectorRoadLayerTheme(layerId) {
     const opacity = isSatellite ? 0 : 1;
     const paint = {
         'vector-background': {
-            'background-color': isSatellite ? 'rgba(0, 0, 0, 0)' : (isDark ? '#111827' : '#EEF4F1'),
+            'background-color': isSatellite ? 'rgba(0, 0, 0, 0)' : (isDark ? '#111827' : '#F4F3ED'),
             'background-opacity': isSatellite ? 0 : 1,
         },
         'water-fill': {
-            'fill-color': isDark ? '#0F2A3A' : '#B9E4F2',
+            'fill-color': isDark ? '#0F2A3A' : '#B9E3F2',
             'fill-opacity': isSatellite ? 0 : 1,
         },
+        'waterway-line': {
+            'line-color': isDark ? '#28556A' : '#9BD6EA',
+            'line-opacity': isSatellite ? 0 : 0.9,
+        },
         'park-fill': {
-            'fill-color': isDark ? '#173525' : '#CFE9CE',
-            'fill-opacity': isSatellite ? 0 : 0.78,
+            'fill-color': isDark ? '#173525' : '#CBE7BF',
+            'fill-opacity': isSatellite ? 0 : 0.96,
         },
         'landuse-fill': {
-            'fill-color': isDark ? '#182235' : '#E2EBDF',
-            'fill-opacity': isSatellite ? 0 : 0.48,
+            'fill-color': isDark ? '#182235' : '#ECEDE7',
+            'fill-opacity': isSatellite ? 0 : 0.62,
+        },
+        'landcover-wood': {
+            'fill-color': isDark ? '#173522' : '#BFDDAE',
+            'fill-opacity': isSatellite ? 0 : 0.88,
+        },
+        'landcover-grass': {
+            'fill-color': isDark ? '#1D3826' : '#D8ECCB',
+            'fill-opacity': isSatellite ? 0 : 0.82,
+        },
+        'landcover-wetland': {
+            'fill-color': isDark ? '#183C36' : '#CBE5CE',
+            'fill-opacity': isSatellite ? 0 : 0.68,
+        },
+        'landuse-green': {
+            'fill-color': isDark ? '#1A3A24' : '#CFE8BE',
+            'fill-opacity': isSatellite ? 0 : 0.9,
+        },
+        'landuse-residential': {
+            'fill-color': isDark ? '#172132' : '#F0EFEB',
+            'fill-opacity': isSatellite ? 0 : 0.7,
+        },
+        'landuse-civic': {
+            'fill-color': isDark ? '#2B2638' : '#E8E3F5',
+            'fill-opacity': isSatellite ? 0 : 0.78,
         },
         'boundary-line': {
             'line-color': isDark ? 'rgba(226, 232, 240, 0.18)' : 'rgba(71, 85, 105, 0.26)',
             'line-opacity': isSatellite ? 0 : 1,
         },
+        'building-footprint': {
+            'fill-color': isDark ? '#273548' : '#D9DDD8',
+            'fill-outline-color': isDark ? '#33445A' : '#C7CDC7',
+            'fill-opacity': isSatellite ? 0 : (isDark ? 0.7 : 0.78),
+        },
         'building-3d': {
-            'fill-extrusion-color': isDark ? 'rgba(116, 139, 163, 0.58)' : 'rgba(178, 201, 214, 0.46)',
-            'fill-extrusion-opacity': isSatellite ? 0 : (isDark ? 0.82 : 0.56),
+            'fill-extrusion-color': isDark ? '#33445A' : '#D2D8D3',
+            'fill-extrusion-opacity': isSatellite ? 0 : (isDark ? 0.82 : 0.78),
+        },
+        'rail-casing': {
+            'line-color': isDark ? '#273244' : '#FFFFFF',
+            'line-opacity': isSatellite ? 0 : 0.9,
+        },
+        'rail-line': {
+            'line-color': isDark ? '#8290A3' : '#A7ADB3',
+            'line-opacity': isSatellite ? 0 : 0.82,
+        },
+        'road-path': {
+            'line-color': isDark ? '#526174' : '#C9CDC5',
+            'line-opacity': isSatellite ? 0 : 0.82,
         },
         'road-casing-minor': {
-            'line-color': isDark ? 'rgba(255, 255, 255, 0.34)' : 'rgba(15, 23, 42, 0.32)',
-            'line-opacity': isSatellite ? 0 : 0.72,
+            'line-color': isDark ? 'rgba(255, 255, 255, 0.28)' : '#D8D8D2',
+            'line-opacity': isSatellite ? 0 : 0.9,
         },
         'road-casing-major': {
-            'line-color': isDark ? 'rgba(255, 255, 255, 0.58)' : 'rgba(2, 6, 23, 0.42)',
-            'line-opacity': isSatellite ? 0 : 0.82,
+            'line-color': isDark ? 'rgba(255, 255, 255, 0.48)' : '#D3D0C8',
+            'line-opacity': isSatellite ? 0 : 0.94,
         },
         'road-minor': {
             'line-color': isDark ? '#1F2937' : '#FFFFFF',
             'line-opacity': isSatellite ? 0 : 0.94,
         },
         'road-major': {
-            'line-color': isDark ? '#0B1220' : '#FFF8DF',
+            'line-color': isDark ? '#0B1220' : '#FFF1CF',
             'line-opacity': isSatellite ? 0 : 0.96,
         },
         'road-lane-major': {
@@ -817,20 +1071,25 @@ function updateVectorRoadLayerTheme(layerId) {
             'line-opacity': isSatellite ? 0 : ['interpolate', ['linear'], ['zoom'], 16, 0.18, 18, 0.36],
         },
         'road-name': {
-            'text-color': isDark ? '#F8FAFC' : '#111827',
-            'text-halo-color': isDark ? 'rgba(8, 13, 24, 0.92)' : 'rgba(255, 255, 255, 0.92)',
+            'text-color': isDark ? '#F8FAFC' : '#364152',
+            'text-halo-color': isDark ? 'rgba(8, 13, 24, 0.92)' : 'rgba(255, 255, 255, 0.96)',
             'text-opacity': isSatellite ? 0 : 1,
         },
         'place-label': {
-            'text-color': isDark ? '#DDE8F7' : '#334155',
-            'text-halo-color': isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.88)',
-            'text-opacity': isSatellite ? 0 : 0.9,
+            'text-color': isDark ? '#DDE8F7' : '#475569',
+            'text-halo-color': isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.94)',
+            'text-opacity': isSatellite ? 0 : 0.96,
         },
         'poi-icons': {
             'icon-opacity': isSatellite ? 0 : 0.92,
             'text-color': isDark ? '#EAF2FF' : '#0F172A',
             'text-halo-color': isDark ? 'rgba(9, 15, 27, 0.92)' : 'rgba(255, 255, 255, 0.94)',
             'text-opacity': isSatellite ? 0 : 0.94,
+        },
+        'poi-labels': {
+            'text-color': isDark ? '#C7D2E0' : '#5B6573',
+            'text-halo-color': isDark ? 'rgba(9, 15, 27, 0.92)' : 'rgba(255, 255, 255, 0.96)',
+            'text-opacity': isSatellite ? 0 : 0.86,
         },
         'house-number': {
             'text-color': isDark ? '#DDE8F7' : '#334155',

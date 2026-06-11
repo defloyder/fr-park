@@ -2,6 +2,8 @@ export const DEFAULT_PASSED_CAMERA_DISTANCE_METERS = 25;
 export const COMPASS_HEADING_MAX_AGE_MS = 2500;
 export const DEFAULT_REROUTE_CONFIRMATION_MS = 1500;
 export const DEFAULT_REROUTE_COOLDOWN_MS = 8000;
+export const MIN_SPEED_TRANSITION_MS = 180;
+export const MAX_SPEED_TRANSITION_MS = 1400;
 
 export function shouldRecenterNavigationFromLocate({ isNavigationMode = false, hasRoute = false } = {}) {
     return Boolean(isNavigationMode && hasRoute);
@@ -174,6 +176,37 @@ export function getNavigationRerouteDecision({
         shouldRefresh: isConfirmed && cooldownElapsed,
         offRouteSince: isConfirmed && cooldownElapsed ? 0 : deviationStartedAt,
     };
+}
+
+export function getSpeedTransitionDurationMs(fromSpeedKmh, toSpeedKmh) {
+    const difference = Math.abs(Number(toSpeedKmh) - Number(fromSpeedKmh));
+
+    if (!Number.isFinite(difference) || difference < 0.5) {
+        return 0;
+    }
+
+    return Math.max(
+        MIN_SPEED_TRANSITION_MS,
+        Math.min(MAX_SPEED_TRANSITION_MS, difference * 90),
+    );
+}
+
+export function interpolateSpeedKmh(fromSpeedKmh, toSpeedKmh, elapsedMs, durationMs) {
+    const from = Number(fromSpeedKmh);
+    const to = Number(toSpeedKmh);
+    const duration = Number(durationMs);
+
+    if (!Number.isFinite(from) || !Number.isFinite(to)) {
+        return 0;
+    }
+
+    if (!Number.isFinite(duration) || duration <= 0) {
+        return to;
+    }
+
+    const progress = Math.max(0, Math.min(1, Number(elapsedMs) / duration));
+
+    return from + ((to - from) * progress);
 }
 
 export function getRouteSnappedNavigationLocation(

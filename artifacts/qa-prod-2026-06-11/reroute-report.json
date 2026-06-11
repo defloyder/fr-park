@@ -1,0 +1,31 @@
+{
+  "startedAt": "2026-06-11T09:36:16.078Z",
+  "before": {
+    "following": true,
+    "speed": "—",
+    "instruction": "Ожидание сигнала GPS"
+  },
+  "request": {
+    "observedAfterMs": 3125,
+    "url": "https://park.auralith.ru/api/routes/driving?from_latitude=55.77&from_longitude=37.59&to_latitude=55.765&to_longitude=37.635"
+  },
+  "response": {
+    "status": 200,
+    "requestDurationMs": 528,
+    "observedAfterMs": 3653
+  },
+  "afterDeviation": {
+    "following": true,
+    "speed": "—",
+    "instruction": "Ожидание сигнала GPS",
+    "maneuverDistance": "—"
+  },
+  "afterGpsError": {
+    "observedForMs": 7022,
+    "following": true,
+    "speed": "—",
+    "instruction": "Ожидание сигнала GPS",
+    "statusText": ""
+  },
+  "finishedAt": "2026-06-11T09:36:33.912Z"
+}
