@@ -38,6 +38,9 @@ class RoadDetailApiTest extends TestCase
                         ],
                         'tags' => [
                             'highway' => 'primary',
+                            'lanes' => '3',
+                            'lanes:forward' => '2',
+                            'lanes:backward' => '1',
                             'maxspeed' => '60',
                             'parking:condition:right' => 'no_stopping',
                             'turn:lanes' => 'left|through|through;right',
@@ -54,6 +57,12 @@ class RoadDetailApiTest extends TestCase
             ->assertJsonFragment(['detailType' => 'crossing'])
             ->assertJsonFragment(['detailType' => 'speed_bump'])
             ->assertJsonFragment(['detailType' => 'maxspeed', 'maxspeed' => '60'])
+            ->assertJsonFragment([
+                'detailType' => 'road_geometry',
+                'roadClass' => 'primary',
+                'laneCount' => 3,
+                'directionBoundary' => 1,
+            ])
             ->assertJsonFragment(['detailType' => 'turn_lanes'])
             ->assertJsonFragment(['turnLanes' => [['left'], ['through'], ['through', 'right']]])
             ->assertJsonFragment(['detailType' => 'parking_restriction', 'side' => 'right']);

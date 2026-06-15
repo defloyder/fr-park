@@ -509,12 +509,10 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
         'rail-line',
         'road-path',
         'transit-labels',
-        'road-lane-major-left',
-        'road-lane-major-right',
-        'road-lane-major-outer-left',
-        'road-lane-major-outer-right',
-        'road-center-double-left',
-        'road-center-double-right',
+        'detailed-road-casing',
+        'detailed-road-surface',
+        'detailed-road-direction-left',
+        'detailed-road-direction-right',
         'road-turn-lane-arrows',
         'road-crossing-markings',
         'road-speed-bump-markings',
@@ -529,6 +527,9 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
     assert.doesNotMatch(mapSource, /id: 'road-direction-arrows'/);
     assert.doesNotMatch(mapSource, /id: 'road-lane-direction-arrows'/);
     assert.doesNotMatch(mapSource, /id: 'road-oneway-divider'/);
+    assert.doesNotMatch(mapSource, /id: 'road-lane-major-left'/);
+    assert.match(mapSource, /createDetailedRoadLaneLayers/);
+    assert.match(mapSource, /detailType'], 'road_geometry'/);
     assert.match(mapSource, /turnLanes/);
     assert.match(mapSource, /'background-color': '#F4F3ED'/);
     assert.match(mapSource, /'fill-color': '#BFDDAE'/);

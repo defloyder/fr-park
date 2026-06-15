@@ -81,26 +81,6 @@ const ROAD_CLASS_WIDTH_FACTOR = [
     0.72,
     0.58,
 ];
-const ROAD_MULTI_LANE_FACTOR = [
-    'match',
-    ['get', 'class'],
-    'motorway',
-    1,
-    'trunk',
-    0.95,
-    'primary',
-    0.85,
-    0.72,
-];
-const ROAD_OUTER_LANE_FACTOR = [
-    'match',
-    ['get', 'class'],
-    'motorway',
-    1,
-    'trunk',
-    0.95,
-    0.85,
-];
 const ROUTE_TRAFFIC_LINE_COLOR = [
     'match',
     ['get', 'traffic'],
@@ -433,19 +413,19 @@ const MAP_STYLE = {
                     8,
                     ['*', 2, ROAD_CLASS_WIDTH_FACTOR],
                     13,
-                    ['*', 9, ROAD_CLASS_WIDTH_FACTOR],
+                    ['*', 7, ROAD_CLASS_WIDTH_FACTOR],
                     15,
-                    ['*', 18, ROAD_CLASS_WIDTH_FACTOR],
+                    ['*', 11, ROAD_CLASS_WIDTH_FACTOR],
                     16,
-                    ['*', 34, ROAD_CLASS_WIDTH_FACTOR],
+                    ['*', 15, ROAD_CLASS_WIDTH_FACTOR],
                     17,
-                    ['*', 54, ROAD_CLASS_WIDTH_FACTOR],
+                    ['*', 21, ROAD_CLASS_WIDTH_FACTOR],
                     18,
-                    ['*', 96, ROAD_CLASS_WIDTH_FACTOR],
+                    ['*', 31, ROAD_CLASS_WIDTH_FACTOR],
                     19,
-                    ['*', 188, ROAD_CLASS_WIDTH_FACTOR],
+                    ['*', 49, ROAD_CLASS_WIDTH_FACTOR],
                     20,
-                    ['*', 320, ROAD_CLASS_WIDTH_FACTOR],
+                    ['*', 78, ROAD_CLASS_WIDTH_FACTOR],
                 ],
                 'line-opacity': 0.94,
             },
@@ -497,229 +477,21 @@ const MAP_STYLE = {
                     8,
                     ['*', 1.2, ROAD_CLASS_WIDTH_FACTOR],
                     13,
-                    ['*', 7, ROAD_CLASS_WIDTH_FACTOR],
+                    ['*', 5, ROAD_CLASS_WIDTH_FACTOR],
                     15,
-                    ['*', 14, ROAD_CLASS_WIDTH_FACTOR],
+                    ['*', 8, ROAD_CLASS_WIDTH_FACTOR],
                     16,
-                    ['*', 28, ROAD_CLASS_WIDTH_FACTOR],
+                    ['*', 12, ROAD_CLASS_WIDTH_FACTOR],
                     17,
-                    ['*', 48, ROAD_CLASS_WIDTH_FACTOR],
+                    ['*', 18, ROAD_CLASS_WIDTH_FACTOR],
                     18,
-                    ['*', 88, ROAD_CLASS_WIDTH_FACTOR],
+                    ['*', 27, ROAD_CLASS_WIDTH_FACTOR],
                     19,
-                    ['*', 176, ROAD_CLASS_WIDTH_FACTOR],
+                    ['*', 44, ROAD_CLASS_WIDTH_FACTOR],
                     20,
-                    ['*', 304, ROAD_CLASS_WIDTH_FACTOR],
+                    ['*', 72, ROAD_CLASS_WIDTH_FACTOR],
                 ],
                 'line-opacity': 0.96,
-            },
-        },
-        {
-            id: 'road-lane-major',
-            type: 'line',
-            source: ROAD_SOURCE_ID,
-            'source-layer': 'transportation',
-            minzoom: 14,
-            filter: [
-                'all',
-                ['in', ['get', 'class'], ['literal', ['motorway', 'trunk', 'primary', 'secondary', 'tertiary']]],
-                ['in', ['to-string', ['get', 'oneway']], ['literal', ['1', '-1']]],
-            ],
-            layout: {
-                'line-cap': 'butt',
-                'line-join': 'round',
-            },
-            paint: {
-                'line-color': 'rgba(255, 255, 255, 0.88)',
-                'line-width': ['interpolate', ['linear'], ['zoom'], 14, 0.55, 16, 0.9, 19, 1.35, 20, 1.6],
-                'line-dasharray': [5.4, 4.2],
-                'line-opacity': ['interpolate', ['linear'], ['zoom'], 14, 0.18, 15, 0.72, 17, 0.92],
-            },
-        },
-        {
-            id: 'road-lane-major-left',
-            type: 'line',
-            source: ROAD_SOURCE_ID,
-            'source-layer': 'transportation',
-            minzoom: 15,
-            filter: ['in', ['get', 'class'], ['literal', ['motorway', 'trunk', 'primary', 'secondary']]],
-            layout: {
-                'line-cap': 'butt',
-                'line-join': 'round',
-            },
-            paint: {
-                'line-color': 'rgba(255, 255, 255, 0.82)',
-                'line-width': ['interpolate', ['linear'], ['zoom'], 15, 0.75, 18, 1.35],
-                'line-offset': [
-                    'interpolate',
-                    ['linear'],
-                    ['zoom'],
-                    15,
-                    ['*', -3.2, ROAD_MULTI_LANE_FACTOR],
-                    17,
-                    ['*', -10, ROAD_MULTI_LANE_FACTOR],
-                    19,
-                    ['*', -38, ROAD_MULTI_LANE_FACTOR],
-                    20,
-                    ['*', -65, ROAD_MULTI_LANE_FACTOR],
-                ],
-                'line-dasharray': [5.4, 4.2],
-                'line-opacity': ['interpolate', ['linear'], ['zoom'], 15, 0.42, 17, 0.82, 19, 0.94],
-            },
-        },
-        {
-            id: 'road-lane-major-right',
-            type: 'line',
-            source: ROAD_SOURCE_ID,
-            'source-layer': 'transportation',
-            minzoom: 15,
-            filter: ['in', ['get', 'class'], ['literal', ['motorway', 'trunk', 'primary', 'secondary']]],
-            layout: {
-                'line-cap': 'butt',
-                'line-join': 'round',
-            },
-            paint: {
-                'line-color': 'rgba(255, 255, 255, 0.82)',
-                'line-width': ['interpolate', ['linear'], ['zoom'], 15, 0.75, 18, 1.35],
-                'line-offset': [
-                    'interpolate',
-                    ['linear'],
-                    ['zoom'],
-                    15,
-                    ['*', 3.2, ROAD_MULTI_LANE_FACTOR],
-                    17,
-                    ['*', 10, ROAD_MULTI_LANE_FACTOR],
-                    19,
-                    ['*', 38, ROAD_MULTI_LANE_FACTOR],
-                    20,
-                    ['*', 65, ROAD_MULTI_LANE_FACTOR],
-                ],
-                'line-dasharray': [5.4, 4.2],
-                'line-opacity': ['interpolate', ['linear'], ['zoom'], 15, 0.42, 17, 0.82, 19, 0.94],
-            },
-        },
-        {
-            id: 'road-lane-major-outer-left',
-            type: 'line',
-            source: ROAD_SOURCE_ID,
-            'source-layer': 'transportation',
-            minzoom: 16,
-            filter: ['in', ['get', 'class'], ['literal', ['motorway', 'trunk', 'primary']]],
-            layout: {
-                'line-cap': 'butt',
-                'line-join': 'round',
-            },
-            paint: {
-                'line-color': 'rgba(255, 255, 255, 0.78)',
-                'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.72, 19, 1.25],
-                'line-offset': [
-                    'interpolate',
-                    ['linear'],
-                    ['zoom'],
-                    16,
-                    ['*', -8, ROAD_OUTER_LANE_FACTOR],
-                    18,
-                    ['*', -26, ROAD_OUTER_LANE_FACTOR],
-                    19,
-                    ['*', -68, ROAD_OUTER_LANE_FACTOR],
-                    20,
-                    ['*', -110, ROAD_OUTER_LANE_FACTOR],
-                ],
-                'line-dasharray': [5.4, 4.2],
-                'line-opacity': ['interpolate', ['linear'], ['zoom'], 16, 0.44, 18, 0.86],
-            },
-        },
-        {
-            id: 'road-lane-major-outer-right',
-            type: 'line',
-            source: ROAD_SOURCE_ID,
-            'source-layer': 'transportation',
-            minzoom: 16,
-            filter: ['in', ['get', 'class'], ['literal', ['motorway', 'trunk', 'primary']]],
-            layout: {
-                'line-cap': 'butt',
-                'line-join': 'round',
-            },
-            paint: {
-                'line-color': 'rgba(255, 255, 255, 0.78)',
-                'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.72, 19, 1.25],
-                'line-offset': [
-                    'interpolate',
-                    ['linear'],
-                    ['zoom'],
-                    16,
-                    ['*', 8, ROAD_OUTER_LANE_FACTOR],
-                    18,
-                    ['*', 26, ROAD_OUTER_LANE_FACTOR],
-                    19,
-                    ['*', 68, ROAD_OUTER_LANE_FACTOR],
-                    20,
-                    ['*', 110, ROAD_OUTER_LANE_FACTOR],
-                ],
-                'line-dasharray': [5.4, 4.2],
-                'line-opacity': ['interpolate', ['linear'], ['zoom'], 16, 0.44, 18, 0.86],
-            },
-        },
-        {
-            id: 'road-center-double-left',
-            type: 'line',
-            source: ROAD_SOURCE_ID,
-            'source-layer': 'transportation',
-            minzoom: 15,
-            filter: [
-                'all',
-                ['in', ['get', 'class'], ['literal', ['motorway', 'trunk', 'primary', 'secondary', 'tertiary']]],
-                ['!', ['in', ['to-string', ['get', 'oneway']], ['literal', ['1', '-1']]]],
-            ],
-            layout: {
-                'line-cap': 'butt',
-                'line-join': 'round',
-            },
-            paint: {
-                'line-color': 'rgba(255, 255, 255, 0.92)',
-                'line-width': ['interpolate', ['linear'], ['zoom'], 15, 0.85, 18, 1.45],
-                'line-offset': ['interpolate', ['linear'], ['zoom'], 15, -1.25, 18, -2.2],
-                'line-opacity': ['interpolate', ['linear'], ['zoom'], 15, 0.58, 17, 0.94],
-            },
-        },
-        {
-            id: 'road-center-double-right',
-            type: 'line',
-            source: ROAD_SOURCE_ID,
-            'source-layer': 'transportation',
-            minzoom: 15,
-            filter: [
-                'all',
-                ['in', ['get', 'class'], ['literal', ['motorway', 'trunk', 'primary', 'secondary', 'tertiary']]],
-                ['!', ['in', ['to-string', ['get', 'oneway']], ['literal', ['1', '-1']]]],
-            ],
-            layout: {
-                'line-cap': 'butt',
-                'line-join': 'round',
-            },
-            paint: {
-                'line-color': 'rgba(255, 255, 255, 0.92)',
-                'line-width': ['interpolate', ['linear'], ['zoom'], 15, 0.85, 18, 1.45],
-                'line-offset': ['interpolate', ['linear'], ['zoom'], 15, 1.25, 18, 2.2],
-                'line-opacity': ['interpolate', ['linear'], ['zoom'], 15, 0.58, 17, 0.94],
-            },
-        },
-        {
-            id: 'road-lane-minor',
-            type: 'line',
-            source: ROAD_SOURCE_ID,
-            'source-layer': 'transportation',
-            minzoom: 16,
-            filter: ['in', ['get', 'class'], ['literal', ['minor', 'service']]],
-            layout: {
-                'line-cap': 'butt',
-                'line-join': 'round',
-            },
-            paint: {
-                'line-color': 'rgba(130, 132, 126, 0.25)',
-                'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.45, 18, 0.8],
-                'line-dasharray': [0.8, 1.4],
-                'line-opacity': ['interpolate', ['linear'], ['zoom'], 16, 0.18, 18, 0.36],
             },
         },
         {
@@ -1340,37 +1112,21 @@ function updateVectorRoadLayerTheme(layerId) {
             'line-color': isDark ? '#354052' : '#FFF1CF',
             'line-opacity': isSatellite ? 0 : 0.96,
         },
-        'road-lane-major': {
-            'line-color': isDark ? 'rgba(255, 255, 255, 0.92)' : 'rgba(71, 85, 105, 0.62)',
-            'line-opacity': isSatellite ? 0 : ['interpolate', ['linear'], ['zoom'], 14, 0.18, 15, 0.72, 17, 0.92],
+        'detailed-road-casing': {
+            'line-color': isDark ? '#718096' : '#B6BCC5',
+            'line-opacity': isSatellite ? 0.88 : 0.98,
         },
-        'road-lane-major-left': {
-            'line-color': isDark ? 'rgba(255, 255, 255, 0.86)' : 'rgba(71, 85, 105, 0.56)',
-            'line-opacity': isSatellite ? 0 : ['interpolate', ['linear'], ['zoom'], 15, 0.42, 17, 0.82, 19, 0.94],
+        'detailed-road-surface': {
+            'line-color': isDark ? '#52627C' : '#E5E8ED',
+            'line-opacity': isSatellite ? 0.78 : 1,
         },
-        'road-lane-major-right': {
-            'line-color': isDark ? 'rgba(255, 255, 255, 0.86)' : 'rgba(71, 85, 105, 0.56)',
-            'line-opacity': isSatellite ? 0 : ['interpolate', ['linear'], ['zoom'], 15, 0.42, 17, 0.82, 19, 0.94],
+        'detailed-road-direction-left': {
+            'line-color': isDark ? 'rgba(255, 255, 255, 0.92)' : 'rgba(100, 116, 139, 0.9)',
+            'line-opacity': isSatellite ? 0.82 : 1,
         },
-        'road-lane-major-outer-left': {
-            'line-color': isDark ? 'rgba(255, 255, 255, 0.78)' : 'rgba(71, 85, 105, 0.50)',
-            'line-opacity': isSatellite ? 0 : ['interpolate', ['linear'], ['zoom'], 16, 0.44, 18, 0.86],
-        },
-        'road-lane-major-outer-right': {
-            'line-color': isDark ? 'rgba(255, 255, 255, 0.78)' : 'rgba(71, 85, 105, 0.50)',
-            'line-opacity': isSatellite ? 0 : ['interpolate', ['linear'], ['zoom'], 16, 0.44, 18, 0.86],
-        },
-        'road-center-double-left': {
-            'line-color': isDark ? 'rgba(255, 255, 255, 0.94)' : 'rgba(71, 85, 105, 0.72)',
-            'line-opacity': isSatellite ? 0 : ['interpolate', ['linear'], ['zoom'], 15, 0.58, 17, 0.94],
-        },
-        'road-center-double-right': {
-            'line-color': isDark ? 'rgba(255, 255, 255, 0.94)' : 'rgba(71, 85, 105, 0.72)',
-            'line-opacity': isSatellite ? 0 : ['interpolate', ['linear'], ['zoom'], 15, 0.58, 17, 0.94],
-        },
-        'road-lane-minor': {
-            'line-color': isDark ? 'rgba(226, 232, 240, 0.32)' : 'rgba(71, 85, 105, 0.28)',
-            'line-opacity': isSatellite ? 0 : ['interpolate', ['linear'], ['zoom'], 16, 0.18, 18, 0.36],
+        'detailed-road-direction-right': {
+            'line-color': isDark ? 'rgba(255, 255, 255, 0.92)' : 'rgba(100, 116, 139, 0.9)',
+            'line-opacity': isSatellite ? 0.82 : 1,
         },
         'road-name': {
             'text-color': isDark ? '#F8FAFC' : '#364152',
@@ -1400,6 +1156,15 @@ function updateVectorRoadLayerTheme(layerId) {
             'text-opacity': isSatellite ? 0 : 0.82,
         },
     };
+
+    for (let boundary = 1; boundary <= 9; boundary += 1) {
+        paint[`detailed-road-lane-${boundary}`] = {
+            'line-color': isDark ? 'rgba(255, 255, 255, 0.76)' : 'rgba(100, 116, 139, 0.64)',
+            'line-opacity': isSatellite
+                ? 0.68
+                : ['interpolate', ['linear'], ['zoom'], 16, 0.64, 18, 0.9],
+        };
+    }
 
     Object.entries(paint).forEach(([layerIdToUpdate, properties]) => {
         if (!map.getLayer(layerIdToUpdate)) return;
@@ -1610,6 +1375,77 @@ function addRoadDetailSourceAndLayers() {
 
     const layers = [
         {
+            id: 'detailed-road-casing',
+            type: 'line',
+            minzoom: 16,
+            filter: ['==', ['get', 'detailType'], 'road_geometry'],
+            layout: {
+                'line-cap': 'round',
+                'line-join': 'round',
+                'line-sort-key': ['to-number', ['get', 'layer'], 0],
+            },
+            paint: {
+                'line-color': '#B6BCC5',
+                'line-width': createRoadSurfaceWidthExpression([2, 2.5, 3, 4, 5]),
+                'line-opacity': 0.98,
+            },
+        },
+        {
+            id: 'detailed-road-surface',
+            type: 'line',
+            minzoom: 16,
+            filter: ['==', ['get', 'detailType'], 'road_geometry'],
+            layout: {
+                'line-cap': 'round',
+                'line-join': 'round',
+                'line-sort-key': ['to-number', ['get', 'layer'], 0],
+            },
+            paint: {
+                'line-color': '#E5E8ED',
+                'line-width': createRoadSurfaceWidthExpression(),
+                'line-opacity': 1,
+            },
+        },
+        ...createDetailedRoadLaneLayers(),
+        {
+            id: 'detailed-road-direction-left',
+            type: 'line',
+            minzoom: 16,
+            filter: [
+                'all',
+                ['==', ['get', 'detailType'], 'road_geometry'],
+                ['has', 'directionBoundary'],
+            ],
+            layout: {
+                'line-cap': 'butt',
+                'line-join': 'round',
+            },
+            paint: {
+                'line-color': 'rgba(255, 255, 255, 0.94)',
+                'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.8, 18, 1.2, 20, 2.2],
+                'line-offset': createRoadDirectionOffsetExpression(-1),
+            },
+        },
+        {
+            id: 'detailed-road-direction-right',
+            type: 'line',
+            minzoom: 16,
+            filter: [
+                'all',
+                ['==', ['get', 'detailType'], 'road_geometry'],
+                ['has', 'directionBoundary'],
+            ],
+            layout: {
+                'line-cap': 'butt',
+                'line-join': 'round',
+            },
+            paint: {
+                'line-color': 'rgba(255, 255, 255, 0.94)',
+                'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.8, 18, 1.2, 20, 2.2],
+                'line-offset': createRoadDirectionOffsetExpression(1),
+            },
+        },
+        {
             id: 'road-turn-lane-arrows',
             type: 'symbol',
             minzoom: 16,
@@ -1617,7 +1453,7 @@ function addRoadDetailSourceAndLayers() {
             layout: {
                 'symbol-placement': 'line-center',
                 'icon-image': ['get', 'iconId'],
-                'icon-size': ['interpolate', ['linear'], ['zoom'], 16, 0.46, 18, 0.7, 20, 0.92],
+                'icon-size': ['interpolate', ['exponential', 2], ['zoom'], 16, 0.28, 18, 0.46, 20, 1.52],
                 'icon-rotation-alignment': 'map',
                 'icon-pitch-alignment': 'map',
                 'icon-keep-upright': false,
@@ -1723,6 +1559,103 @@ function addRoadDetailSourceAndLayers() {
 
     map.on('moveend', scheduleRoadDetailLoad);
     map.on('zoomend', scheduleRoadDetailLoad);
+    updateVectorRoadLayerTheme(getSavedBaseMapLayer());
+}
+
+function createDetailedRoadLaneLayers() {
+    return Array.from({ length: 9 }, (_, index) => {
+        const boundary = index + 1;
+
+        return {
+            id: `detailed-road-lane-${boundary}`,
+            type: 'line',
+            minzoom: 16,
+            filter: [
+                'all',
+                ['==', ['get', 'detailType'], 'road_geometry'],
+                ['>', ['to-number', ['get', 'laneCount'], 1], boundary],
+                ['!=', ['coalesce', ['get', 'directionBoundary'], -1], boundary],
+            ],
+            layout: {
+                'line-cap': 'butt',
+                'line-join': 'round',
+            },
+            paint: {
+                'line-color': 'rgba(255, 255, 255, 0.8)',
+                'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.55, 18, 0.9, 20, 1.7],
+                'line-offset': createRoadLaneOffsetExpression(boundary),
+                'line-dasharray': [4, 4],
+                'line-opacity': ['interpolate', ['linear'], ['zoom'], 16, 0.64, 18, 0.9],
+            },
+        };
+    });
+}
+
+function createRoadSurfaceWidthExpression(extraWidths = [0, 0, 0, 0, 0]) {
+    return [
+        'interpolate',
+        ['exponential', 2],
+        ['zoom'],
+        ...roadDetailZoomStops().flatMap(([zoom, laneWidth], index) => [
+            zoom,
+            [
+                '+',
+                ['*', ['to-number', ['get', 'laneCount'], 1], laneWidth],
+                extraWidths[index] ?? 0,
+            ],
+        ]),
+    ];
+}
+
+function createRoadLaneOffsetExpression(boundary) {
+    const laneDelta = [
+        '-',
+        boundary,
+        ['/', ['to-number', ['get', 'laneCount'], 1], 2],
+    ];
+
+    return [
+        'interpolate',
+        ['exponential', 2],
+        ['zoom'],
+        ...roadDetailZoomStops().flatMap(([zoom, laneWidth]) => [
+            zoom,
+            ['*', laneDelta, laneWidth],
+        ]),
+    ];
+}
+
+function createRoadDirectionOffsetExpression(side) {
+    const directionDelta = [
+        '-',
+        ['to-number', ['get', 'directionBoundary'], 0],
+        ['/', ['to-number', ['get', 'laneCount'], 1], 2],
+    ];
+    const gaps = [0.8, 1.1, 1.5, 2.2, 3];
+
+    return [
+        'interpolate',
+        ['exponential', 2],
+        ['zoom'],
+        ...roadDetailZoomStops().flatMap(([zoom, laneWidth], index) => [
+            zoom,
+            [
+                '+',
+                ['*', directionDelta, laneWidth],
+                side * gaps[index],
+            ],
+        ]),
+    ];
+}
+
+function roadDetailZoomStops() {
+    return [
+        [16, 2.8],
+        [17, 5.4],
+        [18, 10.8],
+        [19, 21.5],
+        [20, 43],
+    ];
 }
 
 function scheduleRoadDetailLoad() {

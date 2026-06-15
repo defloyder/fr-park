@@ -27,6 +27,9 @@ class RoadDetailService
             (
               .roadNodes;
               way(bn.roadNodes);
+              way["highway"~"^(motorway|trunk|primary|secondary|tertiary|motorway_link|trunk_link|primary_link|secondary_link|tertiary_link)$"]["lanes"]{$bbox};
+              way["highway"~"^(motorway|trunk|primary|secondary|tertiary|motorway_link|trunk_link|primary_link|secondary_link|tertiary_link)$"]["lanes:forward"]{$bbox};
+              way["highway"~"^(motorway|trunk|primary|secondary|tertiary|motorway_link|trunk_link|primary_link|secondary_link|tertiary_link)$"]["lanes:backward"]{$bbox};
               way["highway"]["turn:lanes"]{$bbox};
               way["highway"]["turn:lanes:forward"]{$bbox};
               way["highway"]["turn:lanes:backward"]{$bbox};
@@ -38,7 +41,7 @@ class RoadDetailService
               way["highway"]["parking:right"~"no_parking|no_stopping|no"]{$bbox};
               way["highway"]["parking:both"~"no_parking|no_stopping|no"]{$bbox};
             );
-            out body geom 700;
+            out body geom;
             OVERPASS;
 
         $payload = Cache::remember(
@@ -108,6 +111,30 @@ class RoadDetailService
 
         $features = [];
         $maxspeed = $this->normalizeMaxspeed($tags['maxspeed'] ?? '');
+        $laneCount = $this->laneCount($tags);
+
+        if ($laneCount !== null) {
+            $directionBoundary = $this->directionBoundary($tags, $laneCount);
+            $roadCoordinates = (string) ($tags['oneway'] ?? '') === '-1'
+                ? array_reverse($coordinates)
+                : $coordinates;
+            $roadProperties = [
+                'detailType' => 'road_geometry',
+                'roadClass' => $this->normalizeRoadClass($tags['highway'] ?? ''),
+                'laneCount' => $laneCount,
+                'oneway' => $this->isOneway($tags),
+                'directionBoundary' => $directionBoundary,
+                'bridge' => isset($tags['bridge']) && $tags['bridge'] !== 'no',
+                'tunnel' => isset($tags['tunnel']) && $tags['tunnel'] !== 'no',
+                'layer' => max(-5, min(5, (int) ($tags['layer'] ?? 0))),
+            ];
+            $features[] = $this->feature(
+                $id.'-geometry',
+                'LineString',
+                $roadCoordinates,
+                array_filter($roadProperties, fn ($value) => $value !== null),
+            );
+        }
 
         if ($maxspeed !== '') {
             $features[] = $this->feature($id.'-speed', 'LineString', $coordinates, [
@@ -208,6 +235,58 @@ class RoadDetailService
             'reverse' => 'reverse',
             default => '',
         };
+    }
+
+    private function laneCount(array $tags): ?int
+    {
+        $lanes = $this->positiveInteger($tags['lanes'] ?? null);
+
+        if ($lanes === null) {
+            $forward = $this->positiveInteger($tags['lanes:forward'] ?? null);
+            $backward = $this->positiveInteger($tags['lanes:backward'] ?? null);
+            $lanes = ($forward !== null || $backward !== null)
+                ? ($forward ?? 0) + ($backward ?? 0)
+                : null;
+        }
+
+        return $lanes === null ? null : max(1, min(10, $lanes));
+    }
+
+    private function directionBoundary(array $tags, int $laneCount): ?int
+    {
+        if ($this->isOneway($tags)) {
+            return null;
+        }
+
+        $backward = $this->positiveInteger($tags['lanes:backward'] ?? null);
+        if ($backward !== null && $backward < $laneCount) {
+            return $backward;
+        }
+
+        $forward = $this->positiveInteger($tags['lanes:forward'] ?? null);
+        if ($forward !== null && $forward < $laneCount) {
+            return $laneCount - $forward;
+        }
+
+        return (int) floor($laneCount / 2);
+    }
+
+    private function positiveInteger(mixed $value): ?int
+    {
+        return preg_match('/^\d{1,2}$/', trim((string) $value)) === 1
+            ? max(1, (int) $value)
+            : null;
+    }
+
+    private function isOneway(array $tags): bool
+    {
+        return in_array(mb_strtolower((string) ($tags['oneway'] ?? '')), ['yes', '1', '-1', 'true'], true)
+            || ($tags['highway'] ?? '') === 'motorway';
+    }
+
+    private function normalizeRoadClass(mixed $value): string
+    {
+        return str_replace('_link', '', mb_strtolower(trim((string) $value)));
     }
 
     private function hasParkingRestriction(array $tags, string $side): bool
