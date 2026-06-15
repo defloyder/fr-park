@@ -49,8 +49,10 @@ const roadDetailFeatureStore = new Map();
 const roadDetailInflight = new Map();
 const ROAD_DETAIL_CACHE_LIMIT = 32;
 const ROAD_DETAIL_STORE_LIMIT = 2800;
-const ROAD_DETAIL_TILE_STEP_LAT = 0.024;
-const ROAD_DETAIL_TILE_STEP_LON = 0.036;
+const ROAD_DETAIL_TILE_STEP_LAT = 0.018;
+const ROAD_DETAIL_TILE_STEP_LON = 0.028;
+const ROAD_DETAIL_MIN_LAT_SPAN = 0.026;
+const ROAD_DETAIL_MIN_LON_SPAN = 0.042;
 const POI_ICON_IMAGE_IDS = {
     metro: 'poi-metro',
     landmark: 'poi-landmark',
@@ -486,11 +488,11 @@ const MAP_STYLE = {
                     'match',
                     ['get', 'class'],
                     'motorway',
-                    '#FFDFA3',
+                    '#E3E7EC',
                     'trunk',
-                    '#FFE8B9',
+                    '#E8EBEF',
                     'primary',
-                    '#FFF1CF',
+                    '#F0F1F2',
                     '#FFFDF8',
                 ],
                 'line-width': [
@@ -1132,15 +1134,15 @@ function updateVectorRoadLayerTheme(layerId) {
             'line-opacity': isSatellite ? 0 : 0.94,
         },
         'road-major': {
-            'line-color': isDark ? '#354052' : '#FFF1CF',
+            'line-color': isDark ? '#354052' : '#ECEFF2',
             'line-opacity': isSatellite ? 0 : ROAD_BASE_FADE_OPACITY(0.96),
         },
         'detailed-road-underlay': {
-            'line-color': isDark ? '#4A5A72' : '#D1D5DB',
+            'line-color': isDark ? '#647894' : '#E1E5EA',
             'line-opacity': isSatellite ? 0.8 : 0.98,
         },
         'detailed-road-casing': {
-            'line-color': isDark ? '#94A3B8' : '#B6BCC5',
+            'line-color': isDark ? '#7185A1' : '#D7DCE2',
             'line-opacity': isSatellite ? 0.88 : 0.98,
         },
         'detailed-road-shoulder': {
@@ -1429,7 +1431,7 @@ function addRoadDetailSourceAndLayers() {
             minzoom: 16,
             filter: ['==', ['get', 'detailType'], 'road_geometry'],
             layout: {
-                'line-cap': 'round',
+                'line-cap': 'butt',
                 'line-join': 'round',
                 'line-sort-key': ['-', ['to-number', ['get', 'layer'], 0], 0.5],
             },
@@ -1518,7 +1520,6 @@ function addRoadDetailSourceAndLayers() {
                 'line-color': 'rgba(255, 255, 255, 0.72)',
                 'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.6, 18, 0.95, 20, 1.6],
                 'line-offset': createRoadEdgeOffsetExpression(-1),
-                'line-trim-offset': [0.06, 0.94],
                 'line-opacity': 0.88,
             },
         },
@@ -1539,7 +1540,6 @@ function addRoadDetailSourceAndLayers() {
                 'line-color': 'rgba(255, 255, 255, 0.72)',
                 'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.6, 18, 0.95, 20, 1.6],
                 'line-offset': createRoadEdgeOffsetExpression(1),
-                'line-trim-offset': [0.06, 0.94],
                 'line-opacity': 0.88,
             },
         },
@@ -1620,7 +1620,7 @@ function addRoadDetailSourceAndLayers() {
             filter: ['==', ['get', 'detailType'], 'turn_lanes'],
             layout: {
                 'icon-image': ['get', 'iconId'],
-                'icon-size': ['interpolate', ['linear'], ['zoom'], 16.5, 0.58, 18, 0.74, 20, 0.92],
+                'icon-size': ['interpolate', ['linear'], ['zoom'], 16.5, 0.66, 18, 0.86, 20, 1.06],
                 'icon-rotate': ['coalesce', ['get', 'bearing'], 0],
                 'icon-rotation-alignment': 'map',
                 'icon-pitch-alignment': 'map',
@@ -1638,19 +1638,9 @@ function addRoadDetailSourceAndLayers() {
             filter: ['==', ['get', 'detailType'], 'parking_restriction'],
             layout: {
                 'icon-image': ROAD_PARKING_RESTRICTION_IMAGE_ID,
-                'icon-size': ['interpolate', ['linear'], ['zoom'], 16, 0.58, 18, 0.78, 20, 0.96],
-                'icon-rotate': ['coalesce', ['get', 'bearing'], 0],
-                'icon-rotation-alignment': 'map',
-                'icon-pitch-alignment': 'map',
-                'icon-offset': [
-                    'match',
-                    ['get', 'side'],
-                    'left',
-                    ['literal', [-10, 0]],
-                    'right',
-                    ['literal', [10, 0]],
-                    ['literal', [0, 0]],
-                ],
+                'icon-size': ['interpolate', ['linear'], ['zoom'], 16, 0.46, 18, 0.62, 20, 0.78],
+                'icon-rotation-alignment': 'viewport',
+                'icon-pitch-alignment': 'viewport',
                 'icon-allow-overlap': false,
                 'icon-ignore-placement': false,
             },
@@ -1760,7 +1750,6 @@ function createDetailedRoadLaneLayers() {
                 'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.6, 18, 0.95, 20, 1.6],
                 'line-offset': createRoadLaneOffsetExpression(boundary),
                 'line-dasharray': [5, 4],
-                'line-trim-offset': [0.16, 0.84],
                 'line-opacity': ['interpolate', ['linear'], ['zoom'], 16, 0.78, 18, 0.94],
             },
         };
@@ -1901,8 +1890,8 @@ function splitRoadDetailFeatures(features = []) {
 function snapRoadDetailBounds(bounds) {
     const centerLat = (bounds.south + bounds.north) / 2;
     const centerLon = (bounds.west + bounds.east) / 2;
-    const latSpan = bounds.north - bounds.south;
-    const lonSpan = bounds.east - bounds.west;
+    const latSpan = Math.max(bounds.north - bounds.south, ROAD_DETAIL_MIN_LAT_SPAN);
+    const lonSpan = Math.max(bounds.east - bounds.west, ROAD_DETAIL_MIN_LON_SPAN);
     const snappedLat = Math.round(centerLat / ROAD_DETAIL_TILE_STEP_LAT) * ROAD_DETAIL_TILE_STEP_LAT;
     const snappedLon = Math.round(centerLon / ROAD_DETAIL_TILE_STEP_LON) * ROAD_DETAIL_TILE_STEP_LON;
 
@@ -1961,12 +1950,26 @@ function featureIntersectsBounds(feature, bounds) {
         coordinates.forEach((line) => points.push(...line));
     }
 
-    return points.some(([lon, lat]) => (
-        lat >= bounds.south
-        && lat <= bounds.north
-        && lon >= bounds.west
-        && lon <= bounds.east
-    ));
+    if (points.length === 0) {
+        return false;
+    }
+
+    const featureBounds = points.reduce((result, [lon, lat]) => ({
+        south: Math.min(result.south, lat),
+        north: Math.max(result.north, lat),
+        west: Math.min(result.west, lon),
+        east: Math.max(result.east, lon),
+    }), {
+        south: Infinity,
+        north: -Infinity,
+        west: Infinity,
+        east: -Infinity,
+    });
+
+    return featureBounds.north >= bounds.south
+        && featureBounds.south <= bounds.north
+        && featureBounds.east >= bounds.west
+        && featureBounds.west <= bounds.east;
 }
 
 function buildRoadDetailDisplayCollection(viewBounds, padding = 0.014) {
@@ -2000,7 +2003,7 @@ function refreshRoadDetailDisplay() {
 
 function scheduleRoadDetailLoad() {
     window.clearTimeout(roadDetailLoadTimer);
-    roadDetailLoadTimer = window.setTimeout(loadRoadDetails, 520);
+    roadDetailLoadTimer = window.setTimeout(loadRoadDetails, 180);
 }
 
 async function loadRoadDetails() {
@@ -2176,9 +2179,10 @@ function createTurnLaneMarkingSvg(lanes, { width, height, viewWidth = 82, viewHe
     const laneHeight = viewHeight / Math.max(1, lanes.length);
     const paths = lanes.flatMap((turns, laneIndex) => {
         const centerY = laneHeight * (laneIndex + 0.5);
-        const primaryTurn = Array.isArray(turns) ? turns[0] : null;
 
-        return primaryTurn ? [createTurnLanePath(primaryTurn, centerY)] : [];
+        return Array.isArray(turns)
+            ? turns.map((turn) => createTurnLanePath(turn, centerY)).filter(Boolean)
+            : [];
     }).join('');
 
     return `
@@ -2341,10 +2345,19 @@ function addSvgImage(name, svg, { width = 40, height = 48 } = {}) {
     const promise = new Promise((resolve, reject) => {
         const image = new Image(width, height);
         image.onload = () => {
-            if (!map.hasImage(name)) {
-                map.addImage(name, image, { pixelRatio: 1 });
+            try {
+                if (!map?.hasImage(name)) {
+                    map?.addImage(name, image, { pixelRatio: 1 });
+                }
+                resolve();
+            } catch (error) {
+                if (map?.hasImage(name) || String(error?.message ?? '').includes('already exists')) {
+                    resolve();
+                    return;
+                }
+
+                reject(error);
             }
-            resolve();
         };
         image.onerror = reject;
         image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;

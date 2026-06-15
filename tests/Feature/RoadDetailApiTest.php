@@ -89,6 +89,36 @@ class RoadDetailApiTest extends TestCase
                             'maxspeed' => '100',
                         ],
                     ],
+                    [
+                        'type' => 'way',
+                        'id' => 24,
+                        'nodes' => [30, 31, 32],
+                        'geometry' => [
+                            ['lat' => 55.754, 'lon' => 37.610],
+                            ['lat' => 55.755, 'lon' => 37.611],
+                            ['lat' => 55.756, 'lon' => 37.612],
+                        ],
+                        'tags' => [
+                            'highway' => 'motorway',
+                            'lanes' => '4',
+                            'oneway' => 'yes',
+                        ],
+                    ],
+                    [
+                        'type' => 'way',
+                        'id' => 25,
+                        'nodes' => [31, 33, 34],
+                        'geometry' => [
+                            ['lat' => 55.755, 'lon' => 37.611],
+                            ['lat' => 55.7556, 'lon' => 37.6123],
+                            ['lat' => 55.7560, 'lon' => 37.6135],
+                        ],
+                        'tags' => [
+                            'highway' => 'motorway_link',
+                            'lanes' => '1',
+                            'oneway' => 'yes',
+                        ],
+                    ],
                 ],
             ]),
         ]);
@@ -109,6 +139,7 @@ class RoadDetailApiTest extends TestCase
             ])
             ->assertJsonFragment(['detailType' => 'turn_lanes'])
             ->assertJsonFragment(['turnLanes' => [['left'], ['through'], ['through', 'right']]])
+            ->assertJsonFragment(['detailType' => 'turn_lanes', 'inferred' => true])
             ->assertJsonFragment(['detailType' => 'road_gore'])
             ->assertJsonFragment(['detailType' => 'parking_restriction', 'side' => 'right'])
             ->assertJsonFragment([
@@ -123,5 +154,17 @@ class RoadDetailApiTest extends TestCase
     {
         $this->getJson('/api/map/road-details?south=55&west=37&north=56&east=38')
             ->assertUnprocessable();
+    }
+
+    public function test_overpass_failure_returns_an_available_geojson_response(): void
+    {
+        Cache::flush();
+        Http::fake(fn () => Http::failedConnection());
+
+        $this->getJson('/api/map/road-details?south=55.74&west=37.60&north=55.76&east=37.62')
+            ->assertOk()
+            ->assertJsonPath('type', 'FeatureCollection')
+            ->assertJsonPath('features', [])
+            ->assertJsonPath('unavailable', true);
     }
 }

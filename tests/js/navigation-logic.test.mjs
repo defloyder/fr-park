@@ -523,8 +523,7 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
         'road-speed-bump-markings',
         'road-traffic-signals',
         'road-maxspeed-markings',
-        'road-no-parking-left',
-        'road-no-parking-right',
+        'road-parking-restrictions',
     ]) {
         assert.match(mapSource, new RegExp(`id: '${layerId}'`));
     }
@@ -540,5 +539,9 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
     assert.match(mapSource, /'fill-color': '#BFDDAE'/);
     assert.match(mapSource, /'fill-color': '#D8ECCB'/);
     assert.match(mapSource, /'fill-extrusion-color': '#D2D8D3'/);
-    assert.match(mapSource, /'motorway',\s*'#FFDFA3'/);
+    assert.match(mapSource, /'motorway',\s*'#E3E7EC'/);
+    assert.doesNotMatch(mapSource, /line-trim-offset/);
+    assert.match(mapSource, /includes\('already exists'\)/);
+    assert.match(mapSource, /ROAD_DETAIL_MIN_LAT_SPAN/);
+    assert.match(mapSource, /ROAD_DETAIL_MIN_LON_SPAN/);
 });

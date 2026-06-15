@@ -19,38 +19,39 @@ class RoadDetailService
 
         $query = <<<OVERPASS
             [out:json][timeout:8];
-            way["highway"~"^(motorway|trunk|primary|secondary|tertiary|motorway_link|trunk_link|primary_link|secondary_link|tertiary_link)$"]{$bbox};
-            out body geom;
+            (
+              way["highway"="motorway"]{$bbox};
+              way["highway"="trunk"]{$bbox};
+              way["highway"="primary"]{$bbox};
+              way["highway"="secondary"]{$bbox};
+              way["highway"="tertiary"]{$bbox};
+              way["highway"="motorway_link"]{$bbox};
+              way["highway"="trunk_link"]{$bbox};
+              way["highway"="primary_link"]{$bbox};
+              way["highway"="secondary_link"]{$bbox};
+              way["highway"="tertiary_link"]{$bbox};
+            )->.roads;
+            (.roads; >;);
+            out body qt;
             OVERPASS;
 
-        $cacheKey = 'road-details:features:v6:'.sha1(json_encode($this->quantizeBounds($bounds)));
-        $missKey = 'road-details:miss:v6:'.sha1(json_encode($this->quantizeBounds($bounds)));
+        $cacheKey = 'road-details:features:v7:'.sha1(json_encode($this->quantizeBounds($bounds)));
 
-        if (Cache::has($missKey)) {
-            return [];
-        }
+        return Cache::remember(
+            $cacheKey,
+            now()->addMinutes(45),
+            function () use ($query) {
+                $payload = $this->fetchOverpass($query);
 
-        try {
-            return Cache::remember(
-                $cacheKey,
-                now()->addMinutes(45),
-                function () use ($query) {
-                    $payload = $this->fetchOverpass($query);
-
-                    return array_slice(
+                return array_slice(
+                    $this->prioritizeFeatures(
                         $this->toGeoJsonFeatures((array) data_get($payload, 'elements', [])),
-                        0,
-                        900,
-                    );
-                },
-            );
-        } catch (\Throwable $exception) {
-            Cache::put($missKey, true, now()->addSeconds(30));
-
-            report($exception);
-
-            return [];
-        }
+                    ),
+                    0,
+                    1200,
+                );
+            },
+        );
     }
 
     private function quantizeBounds(array $bounds): array
@@ -70,16 +71,17 @@ class RoadDetailService
         $lastException = null;
 
         foreach ([
+            'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+            'https://z.overpass-api.de/api/interpreter',
             'https://overpass-api.de/api/interpreter',
-            'https://overpass.kumi.systems/api/interpreter',
         ] as $endpoint) {
             try {
                 $request = Http::withHeaders([
                     'Accept' => 'application/json',
                     'User-Agent' => 'Auralith-Maps/1.0',
                 ])
-                    ->connectTimeout(4)
-                    ->timeout(10);
+                    ->connectTimeout(2)
+                    ->timeout(6);
 
                 if (app()->environment('local')) {
                     $request = $request->withoutVerifying();
@@ -100,6 +102,7 @@ class RoadDetailService
 
     private function toGeoJsonFeatures(array $elements): array
     {
+        $elements = $this->hydrateWayGeometry($elements);
         $nodeBearings = $this->nodeBearings($elements);
 
         $features = collect($elements)
@@ -107,7 +110,65 @@ class RoadDetailService
             ->values()
             ->all();
 
-        return array_merge($features, $this->roadGoreFeatures($elements));
+        return array_merge(
+            $features,
+            $this->roadGoreFeatures($elements),
+            $this->forkGuidanceFeatures($elements),
+        );
+    }
+
+    private function hydrateWayGeometry(array $elements): array
+    {
+        $nodeCoordinates = [];
+
+        foreach ($elements as $element) {
+            if (($element['type'] ?? null) !== 'node'
+                || ! is_numeric($element['lon'] ?? null)
+                || ! is_numeric($element['lat'] ?? null)) {
+                continue;
+            }
+
+            $nodeCoordinates[(string) ($element['id'] ?? '')] = [
+                'lon' => (float) $element['lon'],
+                'lat' => (float) $element['lat'],
+            ];
+        }
+
+        return array_map(function (array $element) use ($nodeCoordinates) {
+            if (($element['type'] ?? null) !== 'way' || ! empty($element['geometry'])) {
+                return $element;
+            }
+
+            $element['geometry'] = collect((array) ($element['nodes'] ?? []))
+                ->map(fn ($nodeId) => $nodeCoordinates[(string) $nodeId] ?? null)
+                ->filter()
+                ->values()
+                ->all();
+
+            return $element;
+        }, $elements);
+    }
+
+    private function prioritizeFeatures(array $features): array
+    {
+        $priority = [
+            'road_geometry' => 0,
+            'road_gore' => 1,
+            'turn_lanes' => 2,
+            'crossing' => 3,
+            'traffic_signal' => 4,
+            'speed_bump' => 5,
+            'maxspeed' => 6,
+            'parking_restriction' => 7,
+        ];
+
+        usort($features, fn (array $left, array $right) => (
+            ($priority[data_get($left, 'properties.detailType')] ?? 99)
+            <=>
+            ($priority[data_get($right, 'properties.detailType')] ?? 99)
+        ));
+
+        return $features;
     }
 
     private function elementFeatures(array $element, array $nodeBearings): array
@@ -305,7 +366,12 @@ class RoadDetailService
 
     private function parkingRestrictionFeatures(string $id, array $coordinates, string $side): array
     {
-        $ratios = [0.5];
+        $length = $this->lineLength($coordinates);
+        $ratios = match (true) {
+            $length > 420 => [0.24, 0.5, 0.76],
+            $length > 180 => [0.34, 0.68],
+            default => [0.5],
+        };
         $features = [];
 
         foreach ($ratios as $index => $ratio) {
@@ -315,10 +381,19 @@ class RoadDetailService
                 continue;
             }
 
+            $bearing = $this->lineBearingAt($coordinates, $ratio);
+            $radians = deg2rad($bearing);
+            $normal = $side === 'left'
+                ? [-cos($radians), sin($radians)]
+                : [cos($radians), -sin($radians)];
+            $point = $this->offsetCoordinate($point, [
+                $normal[0] * 5.2,
+                $normal[1] * 5.2,
+            ]);
+
             $features[] = $this->feature($id.'-'.$index, 'Point', $point, [
                 'detailType' => 'parking_restriction',
                 'side' => $side,
-                'bearing' => $this->lineBearingAt($coordinates, $ratio),
             ]);
         }
 
@@ -452,6 +527,18 @@ class RoadDetailService
         return $trimmed;
     }
 
+    private function lineLength(array $coordinates): float
+    {
+        $length = 0.0;
+
+        for ($index = 0; $index < count($coordinates) - 1; $index++) {
+            $vector = $this->meterVector($coordinates[$index], $coordinates[$index + 1]);
+            $length += hypot($vector[0], $vector[1]);
+        }
+
+        return $length;
+    }
+
     private function normalizeTurnLane(mixed $value): string
     {
         return match (mb_strtolower(trim((string) $value))) {
@@ -514,6 +601,149 @@ class RoadDetailService
         }
 
         return (int) floor($laneCount / 2);
+    }
+
+    private function forkGuidanceFeatures(array $elements): array
+    {
+        $ways = [];
+        $nodeWays = [];
+
+        foreach ($elements as $element) {
+            $tags = (array) ($element['tags'] ?? []);
+            $nodes = array_values((array) ($element['nodes'] ?? []));
+            $geometry = array_values((array) ($element['geometry'] ?? []));
+            $laneCount = $this->laneCount($tags);
+
+            if (($element['type'] ?? null) !== 'way'
+                || $laneCount === null
+                || count($nodes) < 3
+                || count($nodes) !== count($geometry)
+                || ! $this->isMajorRoad($tags['highway'] ?? '')) {
+                continue;
+            }
+
+            $coordinates = collect($geometry)
+                ->filter(fn ($point) => $this->validPoint($point))
+                ->map(fn ($point) => [(float) $point['lon'], (float) $point['lat']])
+                ->values()
+                ->all();
+
+            if (count($coordinates) !== count($nodes)) {
+                continue;
+            }
+
+            $wayIndex = count($ways);
+            $ways[] = [
+                'id' => (string) ($element['id'] ?? $wayIndex),
+                'nodes' => $nodes,
+                'coordinates' => $coordinates,
+                'tags' => $tags,
+                'laneCount' => $laneCount,
+                'isLink' => str_ends_with(mb_strtolower((string) ($tags['highway'] ?? '')), '_link'),
+                'layer' => max(-5, min(5, (int) ($tags['layer'] ?? 0))),
+            ];
+
+            foreach ($nodes as $nodeIndex => $nodeId) {
+                $nodeWays[(string) $nodeId][] = [$wayIndex, $nodeIndex];
+            }
+        }
+
+        $features = [];
+
+        foreach ($ways as $link) {
+            if (! $link['isLink']) {
+                continue;
+            }
+
+            $reverse = (string) ($link['tags']['oneway'] ?? '') === '-1';
+            $departureIndex = $reverse ? count($link['nodes']) - 1 : 0;
+            $nextIndex = $reverse ? $departureIndex - 1 : 1;
+            $nodeId = (string) $link['nodes'][$departureIndex];
+            $origin = $link['coordinates'][$departureIndex];
+            $linkVector = $this->meterVector($origin, $link['coordinates'][$nextIndex]);
+            $best = null;
+
+            foreach ($nodeWays[$nodeId] ?? [] as [$candidateIndex, $candidateNodeIndex]) {
+                $main = $ways[$candidateIndex] ?? null;
+
+                if ($main === null
+                    || $main['id'] === $link['id']
+                    || $main['isLink']
+                    || $main['layer'] !== $link['layer']
+                    || isset($main['tags']['turn:lanes'])
+                    || isset($main['tags']['turn:lanes:forward'])
+                    || isset($main['tags']['turn:lanes:backward'])) {
+                    continue;
+                }
+
+                $mainReverse = (string) ($main['tags']['oneway'] ?? '') === '-1';
+                $incomingIndex = $mainReverse ? $candidateNodeIndex + 1 : $candidateNodeIndex - 1;
+                $outgoingIndex = $mainReverse ? $candidateNodeIndex - 1 : $candidateNodeIndex + 1;
+
+                if (! isset($main['coordinates'][$incomingIndex], $main['coordinates'][$outgoingIndex])) {
+                    continue;
+                }
+
+                $mainVector = $this->meterVector($origin, $main['coordinates'][$outgoingIndex]);
+                $mainLength = hypot($mainVector[0], $mainVector[1]);
+                $linkLength = hypot($linkVector[0], $linkVector[1]);
+
+                if ($mainLength < 5 || $linkLength < 5) {
+                    continue;
+                }
+
+                $dot = max(-1, min(1, (
+                    $mainVector[0] * $linkVector[0] + $mainVector[1] * $linkVector[1]
+                ) / ($mainLength * $linkLength)));
+                $angle = rad2deg(acos($dot));
+
+                if ($angle < 8 || $angle > 78 || ($best !== null && $angle >= $best['angle'])) {
+                    continue;
+                }
+
+                $best = [
+                    'angle' => $angle,
+                    'main' => $main,
+                    'nodeIndex' => $candidateNodeIndex,
+                    'mainReverse' => $mainReverse,
+                    'cross' => $mainVector[0] * $linkVector[1] - $mainVector[1] * $linkVector[0],
+                ];
+            }
+
+            if ($best === null) {
+                continue;
+            }
+
+            $approach = $best['mainReverse']
+                ? array_reverse(array_slice($best['main']['coordinates'], $best['nodeIndex']))
+                : array_slice($best['main']['coordinates'], 0, $best['nodeIndex'] + 1);
+            $approach = $this->trimLineFromEnd($approach, 110);
+            $point = $this->pointAlongLine($approach, 0.68);
+
+            if ($point === null || count($approach) < 2) {
+                continue;
+            }
+
+            $laneCount = max(1, min(6, $best['main']['laneCount']));
+            $turn = $best['cross'] >= 0 ? 'slight_left' : 'slight_right';
+            $lanes = array_fill(0, $laneCount, ['through']);
+            $turnLaneIndex = $turn === 'slight_left' ? 0 : $laneCount - 1;
+            $lanes[$turnLaneIndex] = ['through', $turn];
+
+            $features[] = $this->feature(
+                "road-fork-guidance-{$best['main']['id']}-{$link['id']}",
+                'Point',
+                $point,
+                [
+                    'detailType' => 'turn_lanes',
+                    'turnLanes' => $lanes,
+                    'bearing' => fmod($this->lineBearingAt($approach, 0.68) - 90 + 360, 360),
+                    'inferred' => true,
+                ],
+            );
+        }
+
+        return array_slice($features, 0, 120);
     }
 
     private function positiveInteger(mixed $value): ?int
