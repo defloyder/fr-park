@@ -155,6 +155,16 @@ class RoadDetailApiTest extends TestCase
                 'laneCount' => 6,
                 'name' => 'МКАД, 33-й километр',
             ]);
+
+        $features = collect($response->json('features'));
+        $road = $features->firstWhere('id', 'way-20-geometry');
+        $marking = $features->firstWhere('id', 'way-20-marking-0');
+
+        $this->assertNotNull($road);
+        $this->assertNotNull($marking);
+        $this->assertNotSame([37.61, 55.75], $road['geometry']['coordinates'][0]);
+        $this->assertNotSame([37.61, 55.75], $marking['geometry']['coordinates'][0]);
+        $this->assertSame([37.611, 55.751], $marking['geometry']['coordinates'][1]);
     }
 
     public function test_road_detail_bounds_are_limited(): void

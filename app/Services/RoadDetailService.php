@@ -35,7 +35,7 @@ class RoadDetailService
             out body qt;
             OVERPASS;
 
-        $cacheKey = 'road-details:features:v8:'.sha1(json_encode($this->quantizeBounds($bounds)));
+        $cacheKey = 'road-details:features:v9:'.sha1(json_encode($this->quantizeBounds($bounds)));
 
         return Cache::remember(
             $cacheKey,
@@ -105,9 +105,15 @@ class RoadDetailService
         $elements = $this->hydrateWayGeometry($elements);
         $nodeBearings = $this->nodeBearings($elements);
         $junctionNodes = $this->junctionNodeIds($elements);
+        $connectedNodes = $this->connectedNodeIds($elements);
 
         $features = collect($elements)
-            ->flatMap(fn (array $element) => $this->elementFeatures($element, $nodeBearings, $junctionNodes))
+            ->flatMap(fn (array $element) => $this->elementFeatures(
+                $element,
+                $nodeBearings,
+                $junctionNodes,
+                $connectedNodes,
+            ))
             ->values()
             ->all();
 
@@ -173,7 +179,12 @@ class RoadDetailService
         return $features;
     }
 
-    private function elementFeatures(array $element, array $nodeBearings, array $junctionNodes): array
+    private function elementFeatures(
+        array $element,
+        array $nodeBearings,
+        array $junctionNodes,
+        array $connectedNodes,
+    ): array
     {
         $tags = (array) ($element['tags'] ?? []);
         $id = (string) ($element['type'] ?? 'osm').'-'.($element['id'] ?? uniqid());
@@ -234,18 +245,29 @@ class RoadDetailService
                 'tunnel' => isset($tags['tunnel']) && $tags['tunnel'] !== 'no',
                 'layer' => max(-5, min(5, (int) ($tags['layer'] ?? 0))),
             ];
-            $roadCoordinates = (string) ($tags['oneway'] ?? '') === '-1'
-                ? array_reverse($coordinates)
-                : $coordinates;
+            $reverseRoad = (string) ($tags['oneway'] ?? '') === '-1';
+            $roadCoordinates = $reverseRoad ? array_reverse($coordinates) : $coordinates;
+            $roadNodes = array_values((array) ($element['nodes'] ?? []));
+            $roadNodes = $reverseRoad ? array_reverse($roadNodes) : $roadNodes;
+            $surfaceCoordinates = $this->extendConnectedLineEnds(
+                $roadCoordinates,
+                $roadNodes,
+                $connectedNodes,
+                ($roadProperties['isLink'] ?? 0) === 1 ? 16 : 9,
+            );
 
             $features[] = $this->feature(
                 $id.'-geometry',
                 'LineString',
-                $roadCoordinates,
+                $surfaceCoordinates,
                 array_filter($roadProperties, fn ($value) => $value !== null),
             );
 
-            foreach ($this->roadMarkingSegments($element, $roadCoordinates, $junctionNodes) as $index => $segment) {
+            foreach ($this->roadMarkingSegments(
+                $roadNodes,
+                $roadCoordinates,
+                $junctionNodes,
+            ) as $index => $segment) {
                 $features[] = $this->feature(
                     $id.'-marking-'.$index,
                     'LineString',
@@ -326,9 +348,30 @@ class RoadDetailService
             ->all();
     }
 
-    private function roadMarkingSegments(array $element, array $coordinates, array $junctionNodes): array
+    private function connectedNodeIds(array $elements): array
     {
-        $nodes = array_values((array) ($element['nodes'] ?? []));
+        $usage = [];
+
+        foreach ($elements as $element) {
+            if (($element['type'] ?? null) !== 'way') {
+                continue;
+            }
+
+            foreach (array_unique((array) ($element['nodes'] ?? [])) as $nodeId) {
+                $usage[(string) $nodeId] = ($usage[(string) $nodeId] ?? 0) + 1;
+            }
+        }
+
+        return collect($usage)
+            ->filter(fn (int $value) => $value >= 2)
+            ->keys()
+            ->mapWithKeys(fn ($nodeId) => [(string) $nodeId => true])
+            ->all();
+    }
+
+    private function roadMarkingSegments(array $nodes, array $coordinates, array $junctionNodes): array
+    {
+        $nodes = array_values($nodes);
 
         if (count($nodes) !== count($coordinates)) {
             return [$coordinates];
@@ -351,11 +394,11 @@ class RoadDetailService
             $segment = array_slice($coordinates, $startIndex, $endIndex - $startIndex + 1);
 
             if (isset($junctionNodes[(string) $nodes[$startIndex]])) {
-                $segment = $this->trimLineFromStart($segment, 13);
+                $segment = $this->removeLineStart($segment, 13);
             }
 
             if (isset($junctionNodes[(string) $nodes[$endIndex]])) {
-                $segment = $this->trimLineFromEnd($segment, 13);
+                $segment = $this->removeLineEnd($segment, 13);
             }
 
             if (count($segment) >= 2 && $this->lineLength($segment) >= 6) {
@@ -364,6 +407,85 @@ class RoadDetailService
         }
 
         return $segments;
+    }
+
+    private function extendConnectedLineEnds(
+        array $coordinates,
+        array $nodes,
+        array $connectedNodes,
+        float $meters,
+    ): array
+    {
+        if (count($coordinates) < 2 || count($nodes) !== count($coordinates) || $meters <= 0) {
+            return $coordinates;
+        }
+
+        $extended = $coordinates;
+        $lastIndex = count($coordinates) - 1;
+
+        if (isset($connectedNodes[(string) $nodes[0]])) {
+            $extended[0] = $this->extendCoordinate($coordinates[0], $coordinates[1], $meters);
+        }
+
+        if (isset($connectedNodes[(string) $nodes[$lastIndex]])) {
+            $extended[$lastIndex] = $this->extendCoordinate(
+                $coordinates[$lastIndex],
+                $coordinates[$lastIndex - 1],
+                $meters,
+            );
+        }
+
+        return $extended;
+    }
+
+    private function extendCoordinate(array $origin, array $toward, float $meters): array
+    {
+        $vector = $this->meterVector($toward, $origin);
+        $length = max(0.001, hypot($vector[0], $vector[1]));
+
+        return $this->offsetCoordinate($origin, [
+            $vector[0] / $length * $meters,
+            $vector[1] / $length * $meters,
+        ]);
+    }
+
+    private function removeLineStart(array $coordinates, float $targetMeters): array
+    {
+        if (count($coordinates) < 2 || $targetMeters <= 0) {
+            return $coordinates;
+        }
+
+        $remaining = $targetMeters;
+
+        for ($index = 0; $index < count($coordinates) - 1; $index++) {
+            $start = $coordinates[$index];
+            $finish = $coordinates[$index + 1];
+            $vector = $this->meterVector($start, $finish);
+            $segmentLength = hypot($vector[0], $vector[1]);
+
+            if ($segmentLength <= 0.01) {
+                continue;
+            }
+
+            if ($segmentLength > $remaining) {
+                $ratio = $remaining / $segmentLength;
+                $trimmedStart = [
+                    $start[0] + ($finish[0] - $start[0]) * $ratio,
+                    $start[1] + ($finish[1] - $start[1]) * $ratio,
+                ];
+
+                return [$trimmedStart, ...array_slice($coordinates, $index + 1)];
+            }
+
+            $remaining -= $segmentLength;
+        }
+
+        return [];
+    }
+
+    private function removeLineEnd(array $coordinates, float $targetMeters): array
+    {
+        return array_reverse($this->removeLineStart(array_reverse($coordinates), $targetMeters));
     }
 
     private function deduplicatePointFeatures(array $features): array
@@ -624,11 +746,6 @@ class RoadDetailService
         }
 
         return $trimmed;
-    }
-
-    private function trimLineFromStart(array $coordinates, float $targetMeters): array
-    {
-        return array_reverse($this->trimLineFromEnd(array_reverse($coordinates), $targetMeters));
     }
 
     private function lineLength(array $coordinates): float
