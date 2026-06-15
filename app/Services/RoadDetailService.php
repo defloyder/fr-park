@@ -18,18 +18,13 @@ class RoadDetailService
         );
 
         $query = <<<OVERPASS
-            [out:json][timeout:10];
-            (
-              way["highway"~"^(motorway|trunk|primary|secondary|tertiary|motorway_link|trunk_link|primary_link|secondary_link|tertiary_link)$"]{$bbox};
-              node["highway"="traffic_signals"]{$bbox};
-              node["highway"="crossing"]{$bbox};
-              node["traffic_calming"~"^(bump|hump|table|cushion|yes)$"]{$bbox};
-            );
+            [out:json][timeout:8];
+            way["highway"~"^(motorway|trunk|primary|secondary|tertiary|motorway_link|trunk_link|primary_link|secondary_link|tertiary_link)$"]{$bbox};
             out body geom;
             OVERPASS;
 
-        $cacheKey = 'road-details:features:v3:'.sha1(json_encode($this->quantizeBounds($bounds)));
-        $missKey = 'road-details:miss:v3:'.sha1(json_encode($this->quantizeBounds($bounds)));
+        $cacheKey = 'road-details:features:v4:'.sha1(json_encode($this->quantizeBounds($bounds)));
+        $missKey = 'road-details:miss:v4:'.sha1(json_encode($this->quantizeBounds($bounds)));
 
         if (Cache::has($missKey)) {
             return [];
@@ -163,14 +158,12 @@ class RoadDetailService
 
         if ($laneCount !== null) {
             $directionBoundary = $this->directionBoundary($tags, $laneCount);
-            $roadCoordinates = (string) ($tags['oneway'] ?? '') === '-1'
-                ? array_reverse($coordinates)
-                : $coordinates;
             $roadProperties = [
                 'detailType' => 'road_geometry',
                 'roadClass' => $this->normalizeRoadClass($tags['highway'] ?? ''),
                 'laneCount' => $laneCount,
                 'oneway' => $this->isOneway($tags),
+                'isLink' => str_ends_with(mb_strtolower((string) ($tags['highway'] ?? '')), '_link') ? 1 : 0,
                 'directionBoundary' => $directionBoundary,
                 'name' => trim((string) ($tags['name'] ?? '')),
                 'ref' => trim((string) ($tags['ref'] ?? '')),
@@ -178,6 +171,14 @@ class RoadDetailService
                 'tunnel' => isset($tags['tunnel']) && $tags['tunnel'] !== 'no',
                 'layer' => max(-5, min(5, (int) ($tags['layer'] ?? 0))),
             ];
+            $roadCoordinates = (string) ($tags['oneway'] ?? '') === '-1'
+                ? array_reverse($coordinates)
+                : $coordinates;
+
+            if (($roadProperties['isLink'] ?? 0) === 1) {
+                $roadCoordinates = $this->extendLineEnds($roadCoordinates, 14);
+            }
+
             $features[] = $this->feature(
                 $id.'-geometry',
                 'LineString',
@@ -231,6 +232,10 @@ class RoadDetailService
 
     private function turnLaneFeatures(string $id, array $coordinates, array $tags): array
     {
+        if (str_ends_with(mb_strtolower((string) ($tags['highway'] ?? '')), '_link')) {
+            return [];
+        }
+
         $features = [];
         $definitions = [
             ['tag' => 'turn:lanes:forward', 'direction' => 'forward'],
@@ -552,6 +557,15 @@ class RoadDetailService
         $features = [];
 
         foreach ($branches as $nodeId => $nodeBranches) {
+            if (count($nodeBranches) === 2) {
+                $feature = $this->roadGoreFeature($nodeId, $nodeBranches[0], $nodeBranches[1]);
+                if ($feature !== null) {
+                    $features[] = $feature;
+                }
+
+                continue;
+            }
+
             if (count($nodeBranches) < 3) {
                 continue;
             }
@@ -566,7 +580,7 @@ class RoadDetailService
             }
         }
 
-        return array_slice($features, 0, 160);
+        return array_slice($features, 0, 220);
     }
 
     private function roadGoreFeature(string $nodeId, array $first, array $second): ?array
@@ -581,7 +595,7 @@ class RoadDetailService
         $firstLength = hypot($firstVector[0], $firstVector[1]);
         $secondLength = hypot($secondVector[0], $secondVector[1]);
 
-        if ($firstLength < 8 || $secondLength < 8) {
+        if ($firstLength < 6 || $secondLength < 6) {
             return null;
         }
 
@@ -590,7 +604,7 @@ class RoadDetailService
         $dot = max(-1, min(1, $firstUnit[0] * $secondUnit[0] + $firstUnit[1] * $secondUnit[1]));
         $angle = rad2deg(acos($dot));
 
-        if ($angle < 12 || $angle > 72) {
+        if ($angle < 6 || $angle > 88) {
             return null;
         }
 
@@ -601,8 +615,8 @@ class RoadDetailService
         $secondNormal = $cross > 0
             ? [$secondUnit[1], -$secondUnit[0]]
             : [-$secondUnit[1], $secondUnit[0]];
-        $length = min(48, max(24, min($firstLength, $secondLength) * 0.72));
-        $tipDistance = min(8, $length * 0.18);
+        $length = min(72, max(34, min($firstLength, $secondLength) * 0.9));
+        $tipDistance = min(14, $length * 0.16);
         $bisector = [$firstUnit[0] + $secondUnit[0], $firstUnit[1] + $secondUnit[1]];
         $bisectorLength = max(0.001, hypot($bisector[0], $bisector[1]));
         $bisector = [$bisector[0] / $bisectorLength, $bisector[1] / $bisectorLength];
@@ -649,6 +663,36 @@ class RoadDetailService
             $origin[0] + $offset[0] / max(1, 111320 * cos($latitudeRadians)),
             $origin[1] + $offset[1] / 110540,
         ];
+    }
+
+    private function extendLineEnds(array $coordinates, float $meters): array
+    {
+        if (count($coordinates) < 2 || $meters <= 0) {
+            return $coordinates;
+        }
+
+        $start = $coordinates[0];
+        $second = $coordinates[1];
+        $beforeLast = $coordinates[count($coordinates) - 2];
+        $finish = $coordinates[count($coordinates) - 1];
+        $startVector = $this->meterVector($second, $start);
+        $finishVector = $this->meterVector($beforeLast, $finish);
+        $startLength = max(0.001, hypot($startVector[0], $startVector[1]));
+        $finishLength = max(0.001, hypot($finishVector[0], $finishVector[1]));
+        $startUnit = [$startVector[0] / $startLength, $startVector[1] / $startLength];
+        $finishUnit = [$finishVector[0] / $finishLength, $finishVector[1] / $finishLength];
+
+        $extended = $coordinates;
+        $extended[0] = $this->offsetCoordinate($start, [
+            $startUnit[0] * $meters,
+            $startUnit[1] * $meters,
+        ]);
+        $extended[count($extended) - 1] = $this->offsetCoordinate($finish, [
+            $finishUnit[0] * $meters,
+            $finishUnit[1] * $meters,
+        ]);
+
+        return $extended;
     }
 
     private function validPoint(mixed $point): bool

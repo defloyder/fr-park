@@ -29,18 +29,22 @@ class RoadDetailController extends Controller
         }
 
         try {
-            return response()->json([
-                'type' => 'FeatureCollection',
-                'features' => $roadDetails->featuresForBounds($bounds),
-            ]);
+            return response()
+                ->json([
+                    'type' => 'FeatureCollection',
+                    'features' => $roadDetails->featuresForBounds($bounds),
+                ])
+                ->header('Cache-Control', 'public, max-age=300');
         } catch (\Throwable $exception) {
             Log::warning('Road detail lookup failed', ['message' => $exception->getMessage()]);
 
-            return response()->json([
-                'type' => 'FeatureCollection',
-                'features' => [],
-                'unavailable' => true,
-            ]);
+            return response()
+                ->json([
+                    'type' => 'FeatureCollection',
+                    'features' => [],
+                    'unavailable' => true,
+                ])
+                ->header('Cache-Control', 'public, max-age=30');
         }
     }
 }

@@ -45,6 +45,8 @@ const ROAD_PARKING_RESTRICTION_IMAGE_ID = 'road-parking-restriction';
 let roadDetailLoadTimer = null;
 let roadDetailRequestId = 0;
 let roadDetailAbortController = null;
+const roadDetailMemoryCache = new Map();
+const ROAD_DETAIL_CACHE_LIMIT = 18;
 const POI_ICON_IMAGE_IDS = {
     metro: 'poi-metro',
     landmark: 'poi-landmark',
@@ -84,6 +86,20 @@ const ROAD_CLASS_WIDTH_FACTOR = [
     0.72,
     0.58,
 ];
+const ROAD_BASE_FADE_OPACITY = (peak = 0.96) => [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    15.9,
+    peak,
+    16,
+    peak * 0.34,
+    17,
+    peak * 0.18,
+    18,
+    peak * 0.08,
+];
+
 const ROUTE_TRAFFIC_LINE_COLOR = [
     'match',
     ['get', 'traffic'],
@@ -430,7 +446,7 @@ const MAP_STYLE = {
                     20,
                     ['*', 136, ROAD_CLASS_WIDTH_FACTOR],
                 ],
-                'line-opacity': 0.94,
+                'line-opacity': ROAD_BASE_FADE_OPACITY(0.94),
             },
         },
         {
@@ -494,7 +510,7 @@ const MAP_STYLE = {
                     20,
                     ['*', 126, ROAD_CLASS_WIDTH_FACTOR],
                 ],
-                'line-opacity': 0.96,
+                'line-opacity': ROAD_BASE_FADE_OPACITY(0.96),
             },
         },
         {
@@ -1105,7 +1121,7 @@ function updateVectorRoadLayerTheme(layerId) {
         },
         'road-casing-major': {
             'line-color': isDark ? '#718096' : '#D3D0C8',
-            'line-opacity': isSatellite ? 0 : 0.94,
+            'line-opacity': isSatellite ? 0 : ROAD_BASE_FADE_OPACITY(0.94),
         },
         'road-minor': {
             'line-color': isDark ? '#2A3546' : '#FFFFFF',
@@ -1113,22 +1129,26 @@ function updateVectorRoadLayerTheme(layerId) {
         },
         'road-major': {
             'line-color': isDark ? '#354052' : '#FFF1CF',
-            'line-opacity': isSatellite ? 0 : 0.96,
+            'line-opacity': isSatellite ? 0 : ROAD_BASE_FADE_OPACITY(0.96),
+        },
+        'detailed-road-underlay': {
+            'line-color': isDark ? '#4A5A72' : '#D1D5DB',
+            'line-opacity': isSatellite ? 0.8 : 0.98,
         },
         'detailed-road-casing': {
-            'line-color': isDark ? '#718096' : '#B6BCC5',
+            'line-color': isDark ? '#94A3B8' : '#B6BCC5',
             'line-opacity': isSatellite ? 0.88 : 0.98,
         },
         'detailed-road-shoulder': {
-            'line-color': isDark ? '#46536A' : '#C7CDD7',
+            'line-color': isDark ? '#5A6B84' : '#C7CDD7',
             'line-opacity': isSatellite ? 0.74 : 0.98,
         },
         'detailed-road-surface': {
-            'line-color': isDark ? '#52627C' : '#E5E8ED',
+            'line-color': isDark ? '#6B7F9C' : '#E5E8ED',
             'line-opacity': isSatellite ? 0.78 : 1,
         },
         'detailed-road-gore-fill': {
-            'fill-color': isDark ? '#46536A' : '#C7CDD7',
+            'fill-color': isDark ? '#6B7F9C' : '#E5E8ED',
             'fill-opacity': isSatellite ? 0.7 : 0.98,
         },
         'detailed-road-gore-hatch': {
@@ -1406,12 +1426,28 @@ function addRoadDetailSourceAndLayers() {
 
     const layers = [
         {
+            id: 'detailed-road-underlay',
+            type: 'line',
+            minzoom: 16,
+            filter: ['==', ['get', 'detailType'], 'road_geometry'],
+            layout: {
+                'line-cap': 'round',
+                'line-join': 'round',
+                'line-sort-key': ['-', ['to-number', ['get', 'layer'], 0], 0.5],
+            },
+            paint: {
+                'line-color': '#D1D5DB',
+                'line-width': createRoadSurfaceWidthExpression([8, 12, 18, 26, 38]),
+                'line-opacity': 0.98,
+            },
+        },
+        {
             id: 'detailed-road-casing',
             type: 'line',
             minzoom: 16,
             filter: ['==', ['get', 'detailType'], 'road_geometry'],
             layout: {
-                'line-cap': 'butt',
+                'line-cap': 'round',
                 'line-join': 'round',
                 'line-sort-key': ['to-number', ['get', 'layer'], 0],
             },
@@ -1431,7 +1467,7 @@ function addRoadDetailSourceAndLayers() {
                 ['in', ['get', 'roadClass'], ['literal', ['motorway', 'trunk', 'primary']]],
             ],
             layout: {
-                'line-cap': 'butt',
+                'line-cap': 'round',
                 'line-join': 'round',
                 'line-sort-key': ['to-number', ['get', 'layer'], 0],
             },
@@ -1447,7 +1483,7 @@ function addRoadDetailSourceAndLayers() {
             minzoom: 16,
             filter: ['==', ['get', 'detailType'], 'road_geometry'],
             layout: {
-                'line-cap': 'butt',
+                'line-cap': 'round',
                 'line-join': 'round',
                 'line-sort-key': ['to-number', ['get', 'layer'], 0],
             },
@@ -1463,7 +1499,7 @@ function addRoadDetailSourceAndLayers() {
             minzoom: 16,
             filter: ['==', ['get', 'detailType'], 'road_gore'],
             paint: {
-                'fill-color': '#C7CDD7',
+                'fill-color': '#E5E8ED',
                 'fill-opacity': 0.98,
             },
         },
@@ -1481,15 +1517,20 @@ function addRoadDetailSourceAndLayers() {
             id: 'detailed-road-edge-left',
             type: 'line',
             minzoom: 16,
-            filter: ['==', ['get', 'detailType'], 'road_geometry'],
+            filter: [
+                'all',
+                ['==', ['get', 'detailType'], 'road_geometry'],
+                ['!=', ['to-number', ['get', 'isLink'], 0], 1],
+            ],
             layout: {
-                'line-cap': 'butt',
+                'line-cap': 'round',
                 'line-join': 'round',
             },
             paint: {
                 'line-color': 'rgba(255, 255, 255, 0.72)',
                 'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.6, 18, 0.95, 20, 1.6],
                 'line-offset': createRoadEdgeOffsetExpression(-1),
+                'line-trim-offset': [0.06, 0.94],
                 'line-opacity': 0.88,
             },
         },
@@ -1497,15 +1538,20 @@ function addRoadDetailSourceAndLayers() {
             id: 'detailed-road-edge-right',
             type: 'line',
             minzoom: 16,
-            filter: ['==', ['get', 'detailType'], 'road_geometry'],
+            filter: [
+                'all',
+                ['==', ['get', 'detailType'], 'road_geometry'],
+                ['!=', ['to-number', ['get', 'isLink'], 0], 1],
+            ],
             layout: {
-                'line-cap': 'butt',
+                'line-cap': 'round',
                 'line-join': 'round',
             },
             paint: {
                 'line-color': 'rgba(255, 255, 255, 0.72)',
                 'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.6, 18, 0.95, 20, 1.6],
                 'line-offset': createRoadEdgeOffsetExpression(1),
+                'line-trim-offset': [0.06, 0.94],
                 'line-opacity': 0.88,
             },
         },
@@ -1587,17 +1633,17 @@ function addRoadDetailSourceAndLayers() {
             filter: ['==', ['get', 'detailType'], 'turn_lanes'],
             layout: {
                 'symbol-placement': 'line',
-                'symbol-spacing': ['interpolate', ['linear'], ['zoom'], 16, 320, 17, 420],
+                'symbol-spacing': ['interpolate', ['linear'], ['zoom'], 16, 260, 17, 200],
                 'icon-image': ['get', 'iconId'],
-                'icon-size': ['interpolate', ['linear'], ['zoom'], 16, 0.18, 17, 0.22],
+                'icon-size': ['interpolate', ['exponential', 2], ['zoom'], 16, 0.22, 17, 0.28],
                 'icon-rotation-alignment': 'map',
                 'icon-pitch-alignment': 'map',
                 'icon-keep-upright': false,
-                'icon-allow-overlap': false,
-                'icon-ignore-placement': false,
+                'icon-allow-overlap': true,
+                'icon-ignore-placement': true,
             },
             paint: {
-                'icon-opacity': ['interpolate', ['linear'], ['zoom'], 16, 0.7, 17, 0.82],
+                'icon-opacity': ['interpolate', ['linear'], ['zoom'], 16, 0.7, 17.5, 0.88],
             },
         },
         {
@@ -1608,15 +1654,15 @@ function addRoadDetailSourceAndLayers() {
             layout: {
                 'symbol-placement': 'line-center',
                 'icon-image': ['get', 'iconId'],
-                'icon-size': ['interpolate', ['linear'], ['zoom'], 18, 0.24, 19, 0.28, 20, 0.32],
+                'icon-size': ['interpolate', ['exponential', 2], ['zoom'], 18, 0.26, 20, 0.32],
                 'icon-rotation-alignment': 'map',
                 'icon-pitch-alignment': 'map',
                 'icon-keep-upright': false,
-                'icon-allow-overlap': false,
-                'icon-ignore-placement': false,
+                'icon-allow-overlap': true,
+                'icon-ignore-placement': true,
             },
             paint: {
-                'icon-opacity': 0.9,
+                'icon-opacity': ['interpolate', ['linear'], ['zoom'], 18, 0.82, 20, 0.96],
             },
         },
         {
@@ -1739,7 +1785,7 @@ function createDetailedRoadLaneLayers() {
                 ['!=', ['coalesce', ['get', 'directionBoundary'], -1], boundary],
             ],
             layout: {
-                'line-cap': 'butt',
+                'line-cap': 'round',
                 'line-join': 'round',
             },
             paint: {
@@ -1747,6 +1793,7 @@ function createDetailedRoadLaneLayers() {
                 'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.55, 18, 0.9, 20, 1.7],
                 'line-offset': createRoadLaneOffsetExpression(boundary),
                 'line-dasharray': [4, 4],
+                'line-trim-offset': [0.12, 0.88],
                 'line-opacity': ['interpolate', ['linear'], ['zoom'], 16, 0.64, 18, 0.9],
             },
         };
@@ -1834,17 +1881,63 @@ function createRoadEdgeOffsetExpression(side) {
 
 function roadDetailZoomStops() {
     return [
-        [16, 2.8],
-        [17, 5.4],
-        [18, 10.8],
-        [19, 21.5],
-        [20, 43],
+        [16, 6.5],
+        [17, 12.5],
+        [18, 25],
+        [19, 50],
+        [20, 100],
     ];
+}
+
+function roadDetailCacheKey(bounds) {
+    return [
+        bounds.south,
+        bounds.west,
+        bounds.north,
+        bounds.east,
+    ].map((value) => Number(value).toFixed(4)).join(':');
+}
+
+function rememberRoadDetailCache(key, collection, stage = 'full') {
+    if (!key || !collection) return;
+
+    if (roadDetailMemoryCache.has(key)) {
+        roadDetailMemoryCache.delete(key);
+    }
+
+    roadDetailMemoryCache.set(key, { stage, collection });
+
+    if (roadDetailMemoryCache.size > ROAD_DETAIL_CACHE_LIMIT) {
+        const oldestKey = roadDetailMemoryCache.keys().next().value;
+        roadDetailMemoryCache.delete(oldestKey);
+    }
+}
+
+function splitRoadDetailFeatures(features = []) {
+    const base = [];
+    const markings = [];
+
+    features.forEach((feature) => {
+        const detailType = feature?.properties?.detailType;
+
+        if (detailType === 'road_geometry' || detailType === 'road_gore') {
+            base.push(feature);
+            return;
+        }
+
+        markings.push(feature);
+    });
+
+    return {
+        base: { type: 'FeatureCollection', features: base },
+        markings: { type: 'FeatureCollection', features: markings },
+        full: { type: 'FeatureCollection', features },
+    };
 }
 
 function scheduleRoadDetailLoad() {
     window.clearTimeout(roadDetailLoadTimer);
-    roadDetailLoadTimer = window.setTimeout(loadRoadDetails, 800);
+    roadDetailLoadTimer = window.setTimeout(loadRoadDetails, 220);
 }
 
 async function loadRoadDetails() {
@@ -1852,45 +1945,92 @@ async function loadRoadDetails() {
     if (!source) return;
 
     if (map.getZoom() < 16) {
-        roadDetailAbortController?.abort();
         source.setData(emptyFeatureCollection());
         return;
     }
 
     const bounds = getRoadDetailRequestBounds(map.getBounds());
+    const cacheKey = roadDetailCacheKey(bounds);
+    const cached = roadDetailMemoryCache.get(cacheKey);
     const requestId = ++roadDetailRequestId;
+
+    if (cached?.stage === 'full') {
+        source.setData(cached.collection);
+        prefetchNeighborRoadDetails(bounds, requestId);
+        return;
+    }
+
+    if (cached?.stage === 'base') {
+        source.setData(cached.collection);
+    }
 
     roadDetailAbortController?.abort();
     roadDetailAbortController = new AbortController();
 
     try {
         const collection = await fetchRoadDetails({
-            south: Number(bounds.south.toFixed(4)),
-            west: Number(bounds.west.toFixed(4)),
-            north: Number(bounds.north.toFixed(4)),
-            east: Number(bounds.east.toFixed(4)),
+            south: Number(bounds.south.toFixed(5)),
+            west: Number(bounds.west.toFixed(5)),
+            north: Number(bounds.north.toFixed(5)),
+            east: Number(bounds.east.toFixed(5)),
         }, { signal: roadDetailAbortController.signal });
+
         if (requestId !== roadDetailRequestId) return;
         if (collection?.unavailable) return;
 
-        const raw = collection?.type === 'FeatureCollection' ? collection : emptyFeatureCollection();
-        source.setData(withoutTurnLaneFeatures(raw));
+        const normalized = collection?.type === 'FeatureCollection'
+            ? collection
+            : emptyFeatureCollection();
+        const { base, markings, full } = splitRoadDetailFeatures(normalized.features ?? []);
 
-        const preparedCollection = await prepareRoadDetailIcons(raw);
+        source.setData(base.features.length > 0 ? base : normalized);
+        rememberRoadDetailCache(cacheKey, base.features.length > 0 ? base : normalized, 'base');
+
+        const preparedMarkings = await prepareRoadDetailIcons(markings);
+
         if (requestId !== roadDetailRequestId) return;
-        source.setData(preparedCollection);
+
+        const prepared = {
+            type: 'FeatureCollection',
+            features: [...(base.features ?? []), ...(preparedMarkings.features ?? [])],
+        };
+        source.setData(prepared);
+        rememberRoadDetailCache(cacheKey, prepared, 'full');
+        prefetchNeighborRoadDetails(bounds, requestId);
     } catch (error) {
         if (error?.name === 'AbortError') return;
+        // Keep the last loaded road details visible if the request fails.
     }
 }
 
-function withoutTurnLaneFeatures(collection) {
-    return {
-        ...collection,
-        features: (collection.features ?? []).filter((feature) => (
-            feature?.properties?.detailType !== 'turn_lanes'
-        )),
-    };
+function prefetchNeighborRoadDetails(bounds, requestId) {
+    const latSpan = bounds.north - bounds.south;
+    const lonSpan = bounds.east - bounds.west;
+    const neighbors = [
+        { south: bounds.north, north: bounds.north + latSpan, west: bounds.west, east: bounds.east },
+        { south: bounds.south - latSpan, north: bounds.south, west: bounds.west, east: bounds.east },
+        { south: bounds.south, north: bounds.north, west: bounds.east, east: bounds.east + lonSpan },
+        { south: bounds.south, north: bounds.north, west: bounds.west - lonSpan, east: bounds.west },
+    ];
+
+    neighbors.forEach((neighbor) => {
+        const key = roadDetailCacheKey(neighbor);
+        if (roadDetailMemoryCache.has(key)) return;
+
+        fetchRoadDetails({
+            south: Number(neighbor.south.toFixed(5)),
+            west: Number(neighbor.west.toFixed(5)),
+            north: Number(neighbor.north.toFixed(5)),
+            east: Number(neighbor.east.toFixed(5)),
+        }).then((collection) => {
+            if (requestId !== roadDetailRequestId || collection?.unavailable) return;
+
+            const normalized = collection?.type === 'FeatureCollection'
+                ? collection
+                : emptyFeatureCollection();
+            rememberRoadDetailCache(key, normalized, 'full');
+        }).catch(() => {});
+    });
 }
 
 function getRoadDetailRequestBounds(viewBounds) {
@@ -1931,27 +2071,7 @@ async function prepareRoadDetailIcons(collection) {
         'reverse',
     ];
     const iconCache = new Map();
-    const turnLaneFeatures = (collection.features ?? []).filter((feature) => (
-        feature?.properties?.detailType === 'turn_lanes'
-            && Array.isArray(feature.properties.turnLanes)
-    ));
-
-    await Promise.all([...new Set(turnLaneFeatures.map((feature) => {
-        const lanes = feature.properties.turnLanes.map((lane) => (
-            Array.isArray(lane) ? lane.filter((turn) => supportedTurns.includes(turn)) : []
-        ));
-
-        return JSON.stringify(lanes);
-    }))].map(async (signature) => {
-        const lanes = JSON.parse(signature);
-        const iconId = `${ROAD_TURN_LANE_IMAGE_PREFIX}${stableStringHash(signature)}`;
-        const dimensions = getTurnLaneIconDimensions(lanes);
-
-        iconCache.set(signature, iconId);
-        await addSvgImage(iconId, createTurnLaneMarkingSvg(lanes, dimensions), dimensions);
-    }));
-
-    const features = (collection.features ?? []).map((feature) => {
+    const features = await Promise.all((collection.features ?? []).map(async (feature) => {
         if (feature?.properties?.detailType !== 'turn_lanes'
             || !Array.isArray(feature.properties.turnLanes)) {
             return feature;
@@ -1961,15 +2081,23 @@ async function prepareRoadDetailIcons(collection) {
             Array.isArray(lane) ? lane.filter((turn) => supportedTurns.includes(turn)) : []
         ));
         const signature = JSON.stringify(lanes);
+        const iconId = `${ROAD_TURN_LANE_IMAGE_PREFIX}${stableStringHash(signature)}`;
+        const dimensions = getTurnLaneIconDimensions(lanes);
+
+        if (!iconCache.has(iconId)) {
+            iconCache.set(iconId, addSvgImage(iconId, createTurnLaneMarkingSvg(lanes, dimensions), dimensions));
+        }
+
+        await iconCache.get(iconId);
 
         return {
             ...feature,
             properties: {
                 ...feature.properties,
-                iconId: iconCache.get(signature),
+                iconId,
             },
         };
-    });
+    }));
 
     return { ...collection, features };
 }
