@@ -75,6 +75,20 @@ class RoadDetailApiTest extends TestCase
                             'oneway' => 'yes',
                         ],
                     ],
+                    [
+                        'type' => 'way',
+                        'id' => 23,
+                        'nodes' => [14, 15],
+                        'geometry' => [
+                            ['lat' => 55.752, 'lon' => 37.612],
+                            ['lat' => 55.753, 'lon' => 37.613],
+                        ],
+                        'tags' => [
+                            'highway' => 'motorway',
+                            'name' => 'MKAD',
+                            'maxspeed' => '100',
+                        ],
+                    ],
                 ],
             ]),
         ]);
@@ -96,7 +110,13 @@ class RoadDetailApiTest extends TestCase
             ->assertJsonFragment(['detailType' => 'turn_lanes'])
             ->assertJsonFragment(['turnLanes' => [['left'], ['through'], ['through', 'right']]])
             ->assertJsonFragment(['detailType' => 'road_gore'])
-            ->assertJsonFragment(['detailType' => 'parking_restriction', 'side' => 'right']);
+            ->assertJsonFragment(['detailType' => 'parking_restriction', 'side' => 'right'])
+            ->assertJsonFragment([
+                'detailType' => 'road_geometry',
+                'roadClass' => 'motorway',
+                'laneCount' => 4,
+                'name' => 'MKAD',
+            ]);
     }
 
     public function test_road_detail_bounds_are_limited(): void

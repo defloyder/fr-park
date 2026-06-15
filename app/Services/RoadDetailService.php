@@ -20,9 +20,7 @@ class RoadDetailService
         $query = <<<OVERPASS
             [out:json][timeout:12];
             (
-              way["highway"~"^(motorway|trunk|primary|secondary|tertiary|motorway_link|trunk_link|primary_link|secondary_link|tertiary_link)$"]["lanes"]{$bbox};
-              way["highway"~"^(motorway|trunk|primary|secondary|tertiary|motorway_link|trunk_link|primary_link|secondary_link|tertiary_link)$"]["lanes:forward"]{$bbox};
-              way["highway"~"^(motorway|trunk|primary|secondary|tertiary|motorway_link|trunk_link|primary_link|secondary_link|tertiary_link)$"]["lanes:backward"]{$bbox};
+              way["highway"~"^(motorway|trunk|primary|secondary|tertiary|motorway_link|trunk_link|primary_link|secondary_link|tertiary_link)$"]{$bbox};
               way["highway"]["turn:lanes"]{$bbox};
               way["highway"]["turn:lanes:forward"]{$bbox};
               way["highway"]["turn:lanes:backward"]{$bbox};
@@ -34,9 +32,14 @@ class RoadDetailService
             out body geom;
             OVERPASS;
 
-        try {
-            $cacheKey = 'road-details:overpass:'.sha1($query);
+        $cacheKey = 'road-details:overpass:'.sha1($query);
+        $missKey = 'road-details:miss:'.sha1($query);
 
+        if (Cache::has($missKey)) {
+            return [];
+        }
+
+        try {
             $payload = Cache::remember(
                 $cacheKey,
                 now()->addMinutes(30),
@@ -47,11 +50,7 @@ class RoadDetailService
 
             return array_slice($features, 0, 2500);
         } catch (\Throwable $exception) {
-            Cache::put(
-                'road-details:overpass:'.sha1($query),
-                ['elements' => [], '_unavailable' => true],
-                now()->addSeconds(90),
-            );
+            Cache::put($missKey, true, now()->addSeconds(45));
 
             report($exception);
 
@@ -68,13 +67,20 @@ class RoadDetailService
             'https://overpass.kumi.systems/api/interpreter',
         ] as $endpoint) {
             try {
-                return Http::withHeaders([
+                $request = Http::withHeaders([
                     'Accept' => 'application/json',
                     'User-Agent' => 'Auralith-Maps/1.0',
                 ])
                     ->connectTimeout(5)
-                    ->timeout(14)
-                    ->get($endpoint, ['data' => $query])
+                    ->timeout(14);
+
+                if (app()->environment('local')) {
+                    $request = $request->withoutVerifying();
+                }
+
+                return $request
+                    ->asForm()
+                    ->post($endpoint, ['data' => $query])
                     ->throw()
                     ->json();
             } catch (\Throwable $exception) {
@@ -466,6 +472,19 @@ class RoadDetailService
             $lanes = ($forward !== null || $backward !== null)
                 ? ($forward ?? 0) + ($backward ?? 0)
                 : null;
+        }
+
+        if ($lanes === null && $this->isMajorRoad($tags['highway'] ?? '')) {
+            $highway = mb_strtolower((string) ($tags['highway'] ?? ''));
+            $lanes = match (true) {
+                $highway === 'motorway' => 4,
+                $highway === 'trunk' => 3,
+                $highway === 'primary' => 3,
+                $highway === 'secondary' => 2,
+                $highway === 'tertiary' => 2,
+                str_ends_with($highway, '_link') => 2,
+                default => null,
+            };
         }
 
         return $lanes === null ? null : max(1, min(10, $lanes));

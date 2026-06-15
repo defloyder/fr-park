@@ -1694,7 +1694,8 @@ function addRoadDetailSourceAndLayers() {
 
     layers.forEach((layer) => {
         if (map.getLayer(layer.id)) return;
-        map.addLayer({ ...layer, source: ROAD_DETAIL_SOURCE_ID });
+        const beforeId = map.getLayer('road-name') ? 'road-name' : undefined;
+        map.addLayer({ ...layer, source: ROAD_DETAIL_SOURCE_ID }, beforeId);
     });
 
     map.on('moveend', scheduleRoadDetailLoad);
@@ -1849,9 +1850,8 @@ async function loadRoadDetails() {
         );
 
         if (requestId !== roadDetailRequestId) return;
-        if ((preparedCollection.features ?? []).length > 0 || !collection?.unavailable) {
-            source.setData(preparedCollection);
-        }
+        if (collection?.unavailable) return;
+        source.setData(preparedCollection);
     } catch {
         // Keep the last loaded road details visible if the request fails.
     }
