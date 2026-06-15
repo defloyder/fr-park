@@ -41,9 +41,38 @@ class RoadDetailApiTest extends TestCase
                             'lanes' => '3',
                             'lanes:forward' => '2',
                             'lanes:backward' => '1',
+                            'name' => 'Test avenue',
                             'maxspeed' => '60',
                             'parking:condition:right' => 'no_stopping',
                             'turn:lanes' => 'left|through|through;right',
+                        ],
+                    ],
+                    [
+                        'type' => 'way',
+                        'id' => 21,
+                        'nodes' => [10, 12],
+                        'geometry' => [
+                            ['lat' => 55.75, 'lon' => 37.61],
+                            ['lat' => 55.7507, 'lon' => 37.6115],
+                        ],
+                        'tags' => [
+                            'highway' => 'primary_link',
+                            'lanes' => '2',
+                            'oneway' => 'yes',
+                        ],
+                    ],
+                    [
+                        'type' => 'way',
+                        'id' => 22,
+                        'nodes' => [10, 13],
+                        'geometry' => [
+                            ['lat' => 55.75, 'lon' => 37.61],
+                            ['lat' => 55.75, 'lon' => 37.6085],
+                        ],
+                        'tags' => [
+                            'highway' => 'primary',
+                            'lanes' => '3',
+                            'oneway' => 'yes',
                         ],
                     ],
                 ],
@@ -62,9 +91,11 @@ class RoadDetailApiTest extends TestCase
                 'roadClass' => 'primary',
                 'laneCount' => 3,
                 'directionBoundary' => 1,
+                'name' => 'Test avenue',
             ])
             ->assertJsonFragment(['detailType' => 'turn_lanes'])
             ->assertJsonFragment(['turnLanes' => [['left'], ['through'], ['through', 'right']]])
+            ->assertJsonFragment(['detailType' => 'road_gore'])
             ->assertJsonFragment(['detailType' => 'parking_restriction', 'side' => 'right']);
     }
 

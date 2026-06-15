@@ -40,6 +40,7 @@ const ROAD_TURN_LANE_IMAGE_PREFIX = 'road-turn-lanes-';
 const ROAD_CROSSING_IMAGE_ID = 'road-crossing-marking';
 const ROAD_SPEED_BUMP_IMAGE_ID = 'road-speed-bump-marking';
 const ROAD_TRAFFIC_SIGNAL_IMAGE_ID = 'road-traffic-signal';
+const ROAD_GORE_HATCH_IMAGE_ID = 'road-gore-hatch';
 let roadDetailLoadTimer = null;
 let roadDetailRequestId = 0;
 const POI_ICON_IMAGE_IDS = {
@@ -413,19 +414,19 @@ const MAP_STYLE = {
                     8,
                     ['*', 2, ROAD_CLASS_WIDTH_FACTOR],
                     13,
-                    ['*', 7, ROAD_CLASS_WIDTH_FACTOR],
+                    ['*', 9, ROAD_CLASS_WIDTH_FACTOR],
                     15,
-                    ['*', 11, ROAD_CLASS_WIDTH_FACTOR],
+                    ['*', 18, ROAD_CLASS_WIDTH_FACTOR],
                     16,
-                    ['*', 15, ROAD_CLASS_WIDTH_FACTOR],
+                    ['*', 28, ROAD_CLASS_WIDTH_FACTOR],
                     17,
-                    ['*', 21, ROAD_CLASS_WIDTH_FACTOR],
+                    ['*', 42, ROAD_CLASS_WIDTH_FACTOR],
                     18,
-                    ['*', 31, ROAD_CLASS_WIDTH_FACTOR],
+                    ['*', 62, ROAD_CLASS_WIDTH_FACTOR],
                     19,
-                    ['*', 49, ROAD_CLASS_WIDTH_FACTOR],
+                    ['*', 92, ROAD_CLASS_WIDTH_FACTOR],
                     20,
-                    ['*', 78, ROAD_CLASS_WIDTH_FACTOR],
+                    ['*', 136, ROAD_CLASS_WIDTH_FACTOR],
                 ],
                 'line-opacity': 0.94,
             },
@@ -477,19 +478,19 @@ const MAP_STYLE = {
                     8,
                     ['*', 1.2, ROAD_CLASS_WIDTH_FACTOR],
                     13,
-                    ['*', 5, ROAD_CLASS_WIDTH_FACTOR],
+                    ['*', 7, ROAD_CLASS_WIDTH_FACTOR],
                     15,
-                    ['*', 8, ROAD_CLASS_WIDTH_FACTOR],
+                    ['*', 14, ROAD_CLASS_WIDTH_FACTOR],
                     16,
-                    ['*', 12, ROAD_CLASS_WIDTH_FACTOR],
+                    ['*', 23, ROAD_CLASS_WIDTH_FACTOR],
                     17,
-                    ['*', 18, ROAD_CLASS_WIDTH_FACTOR],
+                    ['*', 36, ROAD_CLASS_WIDTH_FACTOR],
                     18,
-                    ['*', 27, ROAD_CLASS_WIDTH_FACTOR],
+                    ['*', 55, ROAD_CLASS_WIDTH_FACTOR],
                     19,
-                    ['*', 44, ROAD_CLASS_WIDTH_FACTOR],
+                    ['*', 84, ROAD_CLASS_WIDTH_FACTOR],
                     20,
-                    ['*', 72, ROAD_CLASS_WIDTH_FACTOR],
+                    ['*', 126, ROAD_CLASS_WIDTH_FACTOR],
                 ],
                 'line-opacity': 0.96,
             },
@@ -1116,9 +1117,30 @@ function updateVectorRoadLayerTheme(layerId) {
             'line-color': isDark ? '#718096' : '#B6BCC5',
             'line-opacity': isSatellite ? 0.88 : 0.98,
         },
+        'detailed-road-shoulder': {
+            'line-color': isDark ? '#46536A' : '#C7CDD7',
+            'line-opacity': isSatellite ? 0.74 : 0.98,
+        },
         'detailed-road-surface': {
             'line-color': isDark ? '#52627C' : '#E5E8ED',
             'line-opacity': isSatellite ? 0.78 : 1,
+        },
+        'detailed-road-gore-fill': {
+            'fill-color': isDark ? '#46536A' : '#C7CDD7',
+            'fill-opacity': isSatellite ? 0.7 : 0.98,
+        },
+        'detailed-road-gore-hatch': {
+            'fill-opacity': isSatellite
+                ? 0.68
+                : ['interpolate', ['linear'], ['zoom'], 16, 0.62, 18, 0.92],
+        },
+        'detailed-road-edge-left': {
+            'line-color': isDark ? 'rgba(255, 255, 255, 0.84)' : 'rgba(100, 116, 139, 0.66)',
+            'line-opacity': isSatellite ? 0.76 : 0.94,
+        },
+        'detailed-road-edge-right': {
+            'line-color': isDark ? 'rgba(255, 255, 255, 0.84)' : 'rgba(100, 116, 139, 0.66)',
+            'line-opacity': isSatellite ? 0.76 : 0.94,
         },
         'detailed-road-direction-left': {
             'line-color': isDark ? 'rgba(255, 255, 255, 0.92)' : 'rgba(100, 116, 139, 0.9)',
@@ -1127,6 +1149,11 @@ function updateVectorRoadLayerTheme(layerId) {
         'detailed-road-direction-right': {
             'line-color': isDark ? 'rgba(255, 255, 255, 0.92)' : 'rgba(100, 116, 139, 0.9)',
             'line-opacity': isSatellite ? 0.82 : 1,
+        },
+        'detailed-road-labels': {
+            'text-color': isDark ? 'rgba(255, 255, 255, 0.94)' : '#475569',
+            'text-halo-color': isDark ? 'rgba(50, 65, 90, 0.94)' : 'rgba(255, 255, 255, 0.92)',
+            'text-opacity': isSatellite ? 0.82 : 1,
         },
         'road-name': {
             'text-color': isDark ? '#F8FAFC' : '#364152',
@@ -1362,6 +1389,7 @@ async function addRoadMarkingImages() {
         addSvgImage(ROAD_CROSSING_IMAGE_ID, createRoadCrossingSvg(), { width: 84, height: 34 }),
         addSvgImage(ROAD_SPEED_BUMP_IMAGE_ID, createRoadSpeedBumpSvg(), { width: 82, height: 32 }),
         addSvgImage(ROAD_TRAFFIC_SIGNAL_IMAGE_ID, createRoadTrafficSignalSvg(), { width: 30, height: 48 }),
+        addSvgImage(ROAD_GORE_HATCH_IMAGE_ID, createRoadGoreHatchSvg(), { width: 20, height: 20 }),
     ]);
 }
 
@@ -1386,7 +1414,27 @@ function addRoadDetailSourceAndLayers() {
             },
             paint: {
                 'line-color': '#B6BCC5',
-                'line-width': createRoadSurfaceWidthExpression([2, 2.5, 3, 4, 5]),
+                'line-width': createRoadSurfaceWidthExpression([6, 9, 13, 21, 32]),
+                'line-opacity': 0.98,
+            },
+        },
+        {
+            id: 'detailed-road-shoulder',
+            type: 'line',
+            minzoom: 16,
+            filter: [
+                'all',
+                ['==', ['get', 'detailType'], 'road_geometry'],
+                ['in', ['get', 'roadClass'], ['literal', ['motorway', 'trunk', 'primary']]],
+            ],
+            layout: {
+                'line-cap': 'round',
+                'line-join': 'round',
+                'line-sort-key': ['to-number', ['get', 'layer'], 0],
+            },
+            paint: {
+                'line-color': '#C7CDD7',
+                'line-width': createRoadSurfaceWidthExpression([4, 6, 9, 15, 24]),
                 'line-opacity': 0.98,
             },
         },
@@ -1404,6 +1452,58 @@ function addRoadDetailSourceAndLayers() {
                 'line-color': '#E5E8ED',
                 'line-width': createRoadSurfaceWidthExpression(),
                 'line-opacity': 1,
+            },
+        },
+        {
+            id: 'detailed-road-gore-fill',
+            type: 'fill',
+            minzoom: 16,
+            filter: ['==', ['get', 'detailType'], 'road_gore'],
+            paint: {
+                'fill-color': '#C7CDD7',
+                'fill-opacity': 0.98,
+            },
+        },
+        {
+            id: 'detailed-road-gore-hatch',
+            type: 'fill',
+            minzoom: 16,
+            filter: ['==', ['get', 'detailType'], 'road_gore'],
+            paint: {
+                'fill-pattern': ROAD_GORE_HATCH_IMAGE_ID,
+                'fill-opacity': ['interpolate', ['linear'], ['zoom'], 16, 0.62, 18, 0.92],
+            },
+        },
+        {
+            id: 'detailed-road-edge-left',
+            type: 'line',
+            minzoom: 16,
+            filter: ['==', ['get', 'detailType'], 'road_geometry'],
+            layout: {
+                'line-cap': 'round',
+                'line-join': 'round',
+            },
+            paint: {
+                'line-color': 'rgba(255, 255, 255, 0.88)',
+                'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.7, 18, 1.1, 20, 2],
+                'line-offset': createRoadEdgeOffsetExpression(-1),
+                'line-opacity': 0.94,
+            },
+        },
+        {
+            id: 'detailed-road-edge-right',
+            type: 'line',
+            minzoom: 16,
+            filter: ['==', ['get', 'detailType'], 'road_geometry'],
+            layout: {
+                'line-cap': 'round',
+                'line-join': 'round',
+            },
+            paint: {
+                'line-color': 'rgba(255, 255, 255, 0.88)',
+                'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.7, 18, 1.1, 20, 2],
+                'line-offset': createRoadEdgeOffsetExpression(1),
+                'line-opacity': 0.94,
             },
         },
         ...createDetailedRoadLaneLayers(),
@@ -1443,6 +1543,37 @@ function addRoadDetailSourceAndLayers() {
                 'line-color': 'rgba(255, 255, 255, 0.94)',
                 'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.8, 18, 1.2, 20, 2.2],
                 'line-offset': createRoadDirectionOffsetExpression(1),
+            },
+        },
+        {
+            id: 'detailed-road-labels',
+            type: 'symbol',
+            minzoom: 16,
+            filter: [
+                'all',
+                ['==', ['get', 'detailType'], 'road_geometry'],
+                ['any', ['!=', ['get', 'name'], ''], ['!=', ['get', 'ref'], '']],
+            ],
+            layout: {
+                'symbol-placement': 'line',
+                'symbol-spacing': ['interpolate', ['linear'], ['zoom'], 16, 420, 18, 280, 20, 210],
+                'text-field': [
+                    'case',
+                    ['!=', ['get', 'name'], ''],
+                    ['get', 'name'],
+                    ['get', 'ref'],
+                ],
+                'text-font': ['Noto Sans Regular'],
+                'text-size': ['interpolate', ['linear'], ['zoom'], 16, 9, 18, 12, 20, 15],
+                'text-rotation-alignment': 'map',
+                'text-pitch-alignment': 'map',
+                'text-keep-upright': true,
+                'text-allow-overlap': false,
+            },
+            paint: {
+                'text-color': 'rgba(255, 255, 255, 0.92)',
+                'text-halo-color': 'rgba(50, 65, 90, 0.94)',
+                'text-halo-width': 1.4,
             },
         },
         {
@@ -1648,6 +1779,28 @@ function createRoadDirectionOffsetExpression(side) {
     ];
 }
 
+function createRoadEdgeOffsetExpression(side) {
+    const insets = [0.7, 1, 1.5, 2.4, 4];
+
+    return [
+        'interpolate',
+        ['exponential', 2],
+        ['zoom'],
+        ...roadDetailZoomStops().flatMap(([zoom, laneWidth], index) => [
+            zoom,
+            [
+                '*',
+                side,
+                [
+                    '-',
+                    ['*', ['/', ['to-number', ['get', 'laneCount'], 1], 2], laneWidth],
+                    insets[index],
+                ],
+            ],
+        ]),
+    ];
+}
+
 function roadDetailZoomStops() {
     return [
         [16, 2.8],
@@ -1845,6 +1998,13 @@ function createRoadTrafficSignalSvg() {
   <circle cx="15" cy="20.5" r="4" fill="#FACC15"/>
   <circle cx="15" cy="31" r="4" fill="#22C55E"/>
   <path stroke="#FFFFFF" stroke-width="2" d="M15 40v7"/>
+</svg>`;
+}
+
+function createRoadGoreHatchSvg() {
+    return `
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">
+  <path d="M-5 5 5-5M0 20 20 0M15 25 25 15" stroke="#FFFFFF" stroke-width="3"/>
 </svg>`;
 }
 

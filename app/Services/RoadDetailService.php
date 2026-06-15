@@ -47,24 +47,48 @@ class RoadDetailService
         $payload = Cache::remember(
             'road-details:overpass:'.sha1($query),
             now()->addMinutes(30),
-            fn () => Http::timeout(20)
-                ->asForm()
-                ->post('https://overpass-api.de/api/interpreter', ['data' => $query])
-                ->throw()
-                ->json(),
+            fn () => $this->fetchOverpass($query),
         );
 
         return $this->toGeoJsonFeatures((array) data_get($payload, 'elements', []));
+    }
+
+    private function fetchOverpass(string $query): array
+    {
+        $lastException = null;
+
+        foreach ([
+            'https://overpass-api.de/api/interpreter',
+            'https://overpass.kumi.systems/api/interpreter',
+        ] as $endpoint) {
+            try {
+                return Http::withHeaders([
+                    'Accept' => 'application/json',
+                    'User-Agent' => 'Auralith-Maps/1.0',
+                ])
+                    ->connectTimeout(5)
+                    ->timeout(24)
+                    ->get($endpoint, ['data' => $query])
+                    ->throw()
+                    ->json();
+            } catch (\Throwable $exception) {
+                $lastException = $exception;
+            }
+        }
+
+        throw $lastException ?? new \RuntimeException('Overpass request failed.');
     }
 
     private function toGeoJsonFeatures(array $elements): array
     {
         $nodeBearings = $this->nodeBearings($elements);
 
-        return collect($elements)
+        $features = collect($elements)
             ->flatMap(fn (array $element) => $this->elementFeatures($element, $nodeBearings))
             ->values()
             ->all();
+
+        return array_merge($features, $this->roadGoreFeatures($elements));
     }
 
     private function elementFeatures(array $element, array $nodeBearings): array
@@ -124,6 +148,8 @@ class RoadDetailService
                 'laneCount' => $laneCount,
                 'oneway' => $this->isOneway($tags),
                 'directionBoundary' => $directionBoundary,
+                'name' => trim((string) ($tags['name'] ?? '')),
+                'ref' => trim((string) ($tags['ref'] ?? '')),
                 'bridge' => isset($tags['bridge']) && $tags['bridge'] !== 'no',
                 'tunnel' => isset($tags['tunnel']) && $tags['tunnel'] !== 'no',
                 'layer' => max(-5, min(5, (int) ($tags['layer'] ?? 0))),
@@ -206,10 +232,11 @@ class RoadDetailService
             }
 
             $direction = $definition['direction'];
+            $directedCoordinates = $direction === 'backward' ? array_reverse($coordinates) : $coordinates;
             $features[] = $this->feature(
                 $id.'-turn-lanes-'.$direction,
                 'LineString',
-                $direction === 'backward' ? array_reverse($coordinates) : $coordinates,
+                $this->trimLineFromEnd($directedCoordinates, 72),
                 [
                     'detailType' => 'turn_lanes',
                     'turnLanes' => $lanes,
@@ -218,6 +245,42 @@ class RoadDetailService
         }
 
         return $features;
+    }
+
+    private function trimLineFromEnd(array $coordinates, float $targetMeters): array
+    {
+        if (count($coordinates) < 2) {
+            return $coordinates;
+        }
+
+        $trimmed = [end($coordinates)];
+        $remaining = $targetMeters;
+
+        for ($index = count($coordinates) - 2; $index >= 0; $index--) {
+            $start = $coordinates[$index];
+            $finish = $coordinates[$index + 1];
+            $vector = $this->meterVector($finish, $start);
+            $segmentLength = hypot($vector[0], $vector[1]);
+
+            if ($segmentLength <= 0.01) {
+                continue;
+            }
+
+            if ($segmentLength >= $remaining) {
+                $ratio = $remaining / $segmentLength;
+                array_unshift($trimmed, [
+                    $finish[0] + ($start[0] - $finish[0]) * $ratio,
+                    $finish[1] + ($start[1] - $finish[1]) * $ratio,
+                ]);
+
+                return $trimmed;
+            }
+
+            array_unshift($trimmed, $start);
+            $remaining -= $segmentLength;
+        }
+
+        return $trimmed;
     }
 
     private function normalizeTurnLane(mixed $value): string
@@ -287,6 +350,167 @@ class RoadDetailService
     private function normalizeRoadClass(mixed $value): string
     {
         return str_replace('_link', '', mb_strtolower(trim((string) $value)));
+    }
+
+    private function roadGoreFeatures(array $elements): array
+    {
+        $branches = [];
+
+        foreach ($elements as $element) {
+            $tags = (array) ($element['tags'] ?? []);
+            $nodes = array_values((array) ($element['nodes'] ?? []));
+            $geometry = array_values((array) ($element['geometry'] ?? []));
+            $laneCount = $this->laneCount($tags);
+
+            if (($element['type'] ?? null) !== 'way'
+                || $laneCount === null
+                || ! $this->isMajorRoad($tags['highway'] ?? '')
+                || count($nodes) < 2
+                || count($nodes) !== count($geometry)) {
+                continue;
+            }
+
+            foreach ([[0, 1], [count($nodes) - 1, count($nodes) - 2]] as [$nodeIndex, $nextIndex]) {
+                $origin = $geometry[$nodeIndex] ?? null;
+                $next = $geometry[$nextIndex] ?? null;
+
+                if (! $this->validPoint($origin) || ! $this->validPoint($next)) {
+                    continue;
+                }
+
+                $branches[(string) $nodes[$nodeIndex]][] = [
+                    'wayId' => (string) ($element['id'] ?? ''),
+                    'origin' => [(float) $origin['lon'], (float) $origin['lat']],
+                    'next' => [(float) $next['lon'], (float) $next['lat']],
+                    'halfWidth' => max(3.2, min(18, $laneCount * 1.75)),
+                    'layer' => max(-5, min(5, (int) ($tags['layer'] ?? 0))),
+                ];
+            }
+        }
+
+        $features = [];
+
+        foreach ($branches as $nodeId => $nodeBranches) {
+            if (count($nodeBranches) < 3) {
+                continue;
+            }
+
+            for ($first = 0; $first < count($nodeBranches) - 1; $first++) {
+                for ($second = $first + 1; $second < count($nodeBranches); $second++) {
+                    $feature = $this->roadGoreFeature($nodeId, $nodeBranches[$first], $nodeBranches[$second]);
+                    if ($feature !== null) {
+                        $features[] = $feature;
+                    }
+                }
+            }
+        }
+
+        return array_slice($features, 0, 160);
+    }
+
+    private function roadGoreFeature(string $nodeId, array $first, array $second): ?array
+    {
+        if ($first['wayId'] === $second['wayId'] || $first['layer'] !== $second['layer']) {
+            return null;
+        }
+
+        $origin = $first['origin'];
+        $firstVector = $this->meterVector($origin, $first['next']);
+        $secondVector = $this->meterVector($origin, $second['next']);
+        $firstLength = hypot($firstVector[0], $firstVector[1]);
+        $secondLength = hypot($secondVector[0], $secondVector[1]);
+
+        if ($firstLength < 8 || $secondLength < 8) {
+            return null;
+        }
+
+        $firstUnit = [$firstVector[0] / $firstLength, $firstVector[1] / $firstLength];
+        $secondUnit = [$secondVector[0] / $secondLength, $secondVector[1] / $secondLength];
+        $dot = max(-1, min(1, $firstUnit[0] * $secondUnit[0] + $firstUnit[1] * $secondUnit[1]));
+        $angle = rad2deg(acos($dot));
+
+        if ($angle < 12 || $angle > 72) {
+            return null;
+        }
+
+        $cross = $firstUnit[0] * $secondUnit[1] - $firstUnit[1] * $secondUnit[0];
+        $firstNormal = $cross > 0
+            ? [-$firstUnit[1], $firstUnit[0]]
+            : [$firstUnit[1], -$firstUnit[0]];
+        $secondNormal = $cross > 0
+            ? [$secondUnit[1], -$secondUnit[0]]
+            : [-$secondUnit[1], $secondUnit[0]];
+        $length = min(48, max(24, min($firstLength, $secondLength) * 0.72));
+        $tipDistance = min(8, $length * 0.18);
+        $bisector = [$firstUnit[0] + $secondUnit[0], $firstUnit[1] + $secondUnit[1]];
+        $bisectorLength = max(0.001, hypot($bisector[0], $bisector[1]));
+        $bisector = [$bisector[0] / $bisectorLength, $bisector[1] / $bisectorLength];
+
+        $tip = $this->offsetCoordinate($origin, [
+            $bisector[0] * $tipDistance,
+            $bisector[1] * $tipDistance,
+        ]);
+        $firstEdge = $this->offsetCoordinate($origin, [
+            $firstUnit[0] * $length + $firstNormal[0] * $first['halfWidth'],
+            $firstUnit[1] * $length + $firstNormal[1] * $first['halfWidth'],
+        ]);
+        $secondEdge = $this->offsetCoordinate($origin, [
+            $secondUnit[0] * $length + $secondNormal[0] * $second['halfWidth'],
+            $secondUnit[1] * $length + $secondNormal[1] * $second['halfWidth'],
+        ]);
+
+        return $this->feature(
+            "road-gore-{$nodeId}-{$first['wayId']}-{$second['wayId']}",
+            'Polygon',
+            [[$tip, $firstEdge, $secondEdge, $tip]],
+            [
+                'detailType' => 'road_gore',
+                'layer' => $first['layer'],
+            ],
+        );
+    }
+
+    private function meterVector(array $origin, array $target): array
+    {
+        $latitudeRadians = deg2rad(($origin[1] + $target[1]) / 2);
+
+        return [
+            ($target[0] - $origin[0]) * 111320 * cos($latitudeRadians),
+            ($target[1] - $origin[1]) * 110540,
+        ];
+    }
+
+    private function offsetCoordinate(array $origin, array $offset): array
+    {
+        $latitudeRadians = deg2rad($origin[1]);
+
+        return [
+            $origin[0] + $offset[0] / max(1, 111320 * cos($latitudeRadians)),
+            $origin[1] + $offset[1] / 110540,
+        ];
+    }
+
+    private function validPoint(mixed $point): bool
+    {
+        return is_array($point)
+            && is_numeric($point['lon'] ?? null)
+            && is_numeric($point['lat'] ?? null);
+    }
+
+    private function isMajorRoad(mixed $value): bool
+    {
+        return in_array(mb_strtolower((string) $value), [
+            'motorway',
+            'trunk',
+            'primary',
+            'secondary',
+            'tertiary',
+            'motorway_link',
+            'trunk_link',
+            'primary_link',
+            'secondary_link',
+            'tertiary_link',
+        ], true);
     }
 
     private function hasParkingRestriction(array $tags, string $side): bool
