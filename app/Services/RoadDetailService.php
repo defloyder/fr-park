@@ -35,7 +35,7 @@ class RoadDetailService
             out body qt;
             OVERPASS;
 
-        $cacheKey = 'road-details:features:v12:'.sha1(json_encode($this->quantizeBounds($bounds)));
+        $cacheKey = 'road-details:features:v13:'.sha1(json_encode($this->quantizeBounds($bounds)));
 
         return Cache::remember(
             $cacheKey,
@@ -399,13 +399,14 @@ class RoadDetailService
                 ->values()
                 ->all();
             $identity = $this->roadPairIdentity($tags);
+            $roadClass = $this->normalizeRoadClass($tags['highway'] ?? '');
 
             if (($element['type'] ?? null) !== 'way'
                 || $identity === ''
                 || count($coordinates) < 2
                 || ! $this->isOneway($tags)
                 || str_ends_with(mb_strtolower((string) ($tags['highway'] ?? '')), '_link')
-                || ! $this->isMajorRoad($tags['highway'] ?? '')) {
+                || ! in_array($roadClass, ['motorway', 'trunk'], true)) {
                 continue;
             }
 

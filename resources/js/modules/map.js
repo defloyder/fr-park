@@ -738,7 +738,6 @@ function initMapLibreMap() {
         style: MAP_STYLE,
         fadeDuration: 0,
     });
-    window.__qaMap = map;
 
     map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
 
@@ -1586,7 +1585,7 @@ function createDetailedRoadSurfaceLayers() {
                 paint: {
                     'line-color': '#E5E8ED',
                     'line-width': createRoadMedianWidthExpression(),
-                    'line-offset': createRoadMedianOffsetExpression(),
+                    'line-offset': 0,
                     'line-opacity': 1,
                 },
             },
@@ -1748,7 +1747,7 @@ function createRoadSurfaceWidthExpression(extraWidths = [0, 0, 0, 0, 0]) {
         'interpolate',
         ['exponential', 2],
         ['zoom'],
-        ...roadDetailZoomStops().flatMap(([zoom, laneWidth]) => [
+        ...roadDetailZoomStops().flatMap(([zoom, laneWidth], index) => [
             zoom,
             [
                 '+',
@@ -1771,49 +1770,19 @@ function createRoadMedianWidthExpression() {
     ];
 }
 
-function createRoadMedianOffsetExpression() {
-    const overlapMeters = 1.25;
-
-    return [
-        'interpolate',
-        ['exponential', 2],
-        ['zoom'],
-        ...roadDetailZoomStops().flatMap(([zoom, laneWidth], index) => [
-            zoom,
-            [
-                '*',
-                -1,
-                [
-                    '-',
-                    [
-                        '+',
-                        ['*', ['/', ['to-number', ['get', 'laneCount'], 1], 2], laneWidth],
-                        ['/', createRoadMedianWidthAtZoom(laneWidth), 2],
-                    ],
-                    overlapMeters * laneWidth / 3.5,
-                ],
-            ],
-        ]),
-    ];
-}
-
 function createRoadMedianWidthAtZoom(laneWidth) {
-    const overlapMeters = 1.25;
-    const fillMeters = [
+    const overlapMeters = 7;
+    const totalWidthMeters = [
         'max',
-        overlapMeters,
+        ['*', ['to-number', ['get', 'laneCount'], 1], 3.5],
         [
             '+',
-            [
-                '-',
-                ['/', ['to-number', ['get', 'pairedCarriagewayDistance'], 0], 2],
-                ['*', ['to-number', ['get', 'laneCount'], 1], 1.75],
-            ],
-            overlapMeters,
+            ['to-number', ['get', 'pairedCarriagewayDistance'], 0],
+            overlapMeters * 2,
         ],
     ];
 
-    return ['*', fillMeters, laneWidth / 3.5];
+    return ['*', totalWidthMeters, laneWidth / 3.5];
 }
 
 function createRoadLaneOffsetExpression(boundary) {
