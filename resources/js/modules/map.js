@@ -92,19 +92,6 @@ const ROAD_CLASS_WIDTH_FACTOR = [
     0.72,
     0.58,
 ];
-const ROAD_DETAIL_CLASS_WIDTH_FACTOR = [
-    'match',
-    ['get', 'roadClass'],
-    'motorway',
-    1,
-    'trunk',
-    0.95,
-    'primary',
-    0.85,
-    'secondary',
-    0.72,
-    0.58,
-];
 const ROAD_MARKING_GROUND_FILTER = [
     'all',
     ['==', ['get', 'detailType'], 'road_marking_geometry'],
@@ -1199,6 +1186,26 @@ function updateVectorRoadLayerTheme(layerId) {
         };
     }
 
+    for (let roadLayer = -5; roadLayer <= 5; roadLayer += 1) {
+        const suffix = roadDetailLayerSuffix(roadLayer);
+        paint[`detailed-road-underlay-${suffix}`] = {
+            'line-color': isDark ? '#647894' : '#E1E5EA',
+            'line-opacity': isSatellite ? 0.8 : 0.98,
+        };
+        paint[`detailed-road-casing-${suffix}`] = {
+            'line-color': isDark ? '#7185A1' : '#D7DCE2',
+            'line-opacity': isSatellite ? 0.88 : 0.98,
+        };
+        paint[`detailed-road-shoulder-${suffix}`] = {
+            'line-color': isDark ? '#5A6B84' : '#C7CDD7',
+            'line-opacity': isSatellite ? 0.74 : 0.98,
+        };
+        paint[`detailed-road-surface-${suffix}`] = {
+            'line-color': isDark ? '#6B7F9C' : '#E5E8ED',
+            'line-opacity': isSatellite ? 0.78 : 1,
+        };
+    }
+
     Object.entries(paint).forEach(([layerIdToUpdate, properties]) => {
         if (!map.getLayer(layerIdToUpdate)) return;
 
@@ -1408,6 +1415,7 @@ function addRoadDetailSourceAndLayers() {
     }
 
     const layers = [
+        ...createDetailedRoadSurfaceLayers(),
         {
             id: 'detailed-road-edge-left',
             type: 'line',
@@ -1624,6 +1632,106 @@ function createDetailedRoadLaneLayers() {
     });
 }
 
+function createDetailedRoadSurfaceLayers() {
+    return Array.from({ length: 11 }, (_, index) => index - 5).flatMap((roadLayer) => {
+        const suffix = roadDetailLayerSuffix(roadLayer);
+        const layerFilter = [
+            'all',
+            ['==', ['get', 'detailType'], 'road_geometry'],
+            ['==', ['to-number', ['get', 'layer'], 0], roadLayer],
+        ];
+
+        return [
+            {
+                id: `detailed-road-underlay-${suffix}`,
+                type: 'line',
+                minzoom: 16,
+                filter: layerFilter,
+                layout: {
+                    'line-cap': 'square',
+                    'line-join': 'round',
+                },
+                paint: {
+                    'line-color': '#D1D5DB',
+                    'line-width': createRoadSurfaceWidthExpression([5, 7, 10, 15, 22]),
+                    'line-opacity': 1,
+                },
+            },
+            {
+                id: `detailed-road-casing-${suffix}`,
+                type: 'line',
+                minzoom: 16,
+                filter: layerFilter,
+                layout: {
+                    'line-cap': 'square',
+                    'line-join': 'round',
+                },
+                paint: {
+                    'line-color': '#B6BCC5',
+                    'line-width': createRoadSurfaceWidthExpression([3, 4, 6, 9, 14]),
+                    'line-opacity': 1,
+                },
+            },
+            {
+                id: `detailed-road-shoulder-${suffix}`,
+                type: 'line',
+                minzoom: 16,
+                filter: [
+                    'all',
+                    ...layerFilter.slice(1),
+                    ['in', ['get', 'roadClass'], ['literal', ['motorway', 'trunk', 'primary']]],
+                ],
+                layout: {
+                    'line-cap': 'square',
+                    'line-join': 'round',
+                },
+                paint: {
+                    'line-color': '#C7CDD7',
+                    'line-width': createRoadSurfaceWidthExpression([1.5, 2, 3, 5, 8]),
+                    'line-opacity': 1,
+                },
+            },
+            {
+                id: `detailed-road-surface-${suffix}`,
+                type: 'line',
+                minzoom: 16,
+                filter: layerFilter,
+                layout: {
+                    'line-cap': 'square',
+                    'line-join': 'round',
+                },
+                paint: {
+                    'line-color': '#E5E8ED',
+                    'line-width': createRoadSurfaceWidthExpression(),
+                    'line-opacity': 1,
+                },
+            },
+        ];
+    });
+}
+
+function roadDetailLayerSuffix(roadLayer) {
+    if (roadLayer < 0) return `neg${Math.abs(roadLayer)}`;
+    if (roadLayer > 0) return `pos${roadLayer}`;
+    return 'zero';
+}
+
+function createRoadSurfaceWidthExpression(extraWidths = [0, 0, 0, 0, 0]) {
+    return [
+        'interpolate',
+        ['exponential', 2],
+        ['zoom'],
+        ...roadDetailZoomStops().flatMap(([zoom, laneWidth], index) => [
+            zoom,
+            [
+                '+',
+                ['*', ['to-number', ['get', 'laneCount'], 1], laneWidth],
+                extraWidths[index] ?? 0,
+            ],
+        ]),
+    ];
+}
+
 function createRoadLaneOffsetExpression(boundary) {
     const laneDelta = [
         '-',
@@ -1633,11 +1741,11 @@ function createRoadLaneOffsetExpression(boundary) {
 
     return [
         'interpolate',
-        ['linear'],
+        ['exponential', 2],
         ['zoom'],
-        ...roadDetailWidthStops().flatMap(([zoom, roadWidth]) => [
+        ...roadDetailZoomStops().flatMap(([zoom, laneWidth]) => [
             zoom,
-            ['*', laneDelta, createRoadLaneWidthExpression(roadWidth)],
+            ['*', laneDelta, laneWidth],
         ]),
     ];
 }
@@ -1652,13 +1760,13 @@ function createRoadDirectionOffsetExpression(side) {
 
     return [
         'interpolate',
-        ['linear'],
+        ['exponential', 2],
         ['zoom'],
-        ...roadDetailWidthStops().flatMap(([zoom, roadWidth], index) => [
+        ...roadDetailZoomStops().flatMap(([zoom, laneWidth], index) => [
             zoom,
             [
                 '+',
-                ['*', directionDelta, createRoadLaneWidthExpression(roadWidth)],
+                ['*', directionDelta, laneWidth],
                 side * gaps[index],
             ],
         ]),
@@ -1670,16 +1778,16 @@ function createRoadEdgeOffsetExpression(side) {
 
     return [
         'interpolate',
-        ['linear'],
+        ['exponential', 2],
         ['zoom'],
-        ...roadDetailWidthStops().flatMap(([zoom, roadWidth], index) => [
+        ...roadDetailZoomStops().flatMap(([zoom, laneWidth], index) => [
             zoom,
             [
                 '*',
                 side,
                 [
                     '-',
-                    ['/', ['*', roadWidth, ROAD_DETAIL_CLASS_WIDTH_FACTOR], 2],
+                    ['*', ['/', ['to-number', ['get', 'laneCount'], 1], 2], laneWidth],
                     insets[index],
                 ],
             ],
@@ -1687,21 +1795,13 @@ function createRoadEdgeOffsetExpression(side) {
     ];
 }
 
-function createRoadLaneWidthExpression(roadWidth) {
+function roadDetailZoomStops() {
     return [
-        '/',
-        ['*', roadWidth, ROAD_DETAIL_CLASS_WIDTH_FACTOR],
-        ['max', 1, ['to-number', ['get', 'laneCount'], 1]],
-    ];
-}
-
-function roadDetailWidthStops() {
-    return [
-        [16, 23],
-        [17, 36],
-        [18, 55],
-        [19, 84],
-        [20, 126],
+        [16, 4.5],
+        [17, 8],
+        [18, 14],
+        [19, 26],
+        [20, 48],
     ];
 }
 

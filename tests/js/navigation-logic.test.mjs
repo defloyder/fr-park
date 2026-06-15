@@ -533,9 +533,12 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
     assert.doesNotMatch(mapSource, /id: 'detailed-road-surface'/);
     assert.doesNotMatch(mapSource, /id: 'detailed-road-gore-fill'/);
     assert.doesNotMatch(mapSource, /id: 'detailed-road-labels'/);
+    assert.match(mapSource, /createDetailedRoadSurfaceLayers/);
+    assert.match(mapSource, /detailed-road-underlay-\$\{suffix\}/);
+    assert.match(mapSource, /detailed-road-surface-\$\{suffix\}/);
+    assert.match(mapSource, /'line-cap': 'square'/);
     assert.match(mapSource, /createDetailedRoadLaneLayers/);
     assert.match(mapSource, /ROAD_MARKING_GROUND_FILTER/);
-    assert.match(mapSource, /ROAD_DETAIL_CLASS_WIDTH_FACTOR/);
     assert.match(mapSource, /detailType === 'road_geometry'/);
     assert.match(mapSource, /detailType'], 'road_marking_geometry'/);
     assert.match(mapSource, /turnLanes/);
