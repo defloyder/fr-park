@@ -23,8 +23,8 @@ class RoadDetailService
             out body geom;
             OVERPASS;
 
-        $cacheKey = 'road-details:features:v5:'.sha1(json_encode($this->quantizeBounds($bounds)));
-        $missKey = 'road-details:miss:v5:'.sha1(json_encode($this->quantizeBounds($bounds)));
+        $cacheKey = 'road-details:features:v6:'.sha1(json_encode($this->quantizeBounds($bounds)));
+        $missKey = 'road-details:miss:v6:'.sha1(json_encode($this->quantizeBounds($bounds)));
 
         if (Cache::has($missKey)) {
             return [];
@@ -176,7 +176,9 @@ class RoadDetailService
                 : $coordinates;
 
             if (($roadProperties['isLink'] ?? 0) === 1) {
-                $roadCoordinates = $this->extendLineEnds($roadCoordinates, 14);
+                $roadCoordinates = $this->extendLineEnds($roadCoordinates, 16);
+            } else {
+                $roadCoordinates = $this->extendLineEnds($roadCoordinates, 9);
             }
 
             $features[] = $this->feature(

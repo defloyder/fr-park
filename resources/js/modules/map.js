@@ -44,9 +44,13 @@ const ROAD_GORE_HATCH_IMAGE_ID = 'road-gore-hatch';
 const ROAD_PARKING_RESTRICTION_IMAGE_ID = 'road-parking-restriction';
 let roadDetailLoadTimer = null;
 let roadDetailRequestId = 0;
-let roadDetailAbortController = null;
 const roadDetailMemoryCache = new Map();
-const ROAD_DETAIL_CACHE_LIMIT = 18;
+const roadDetailFeatureStore = new Map();
+const roadDetailInflight = new Map();
+const ROAD_DETAIL_CACHE_LIMIT = 32;
+const ROAD_DETAIL_STORE_LIMIT = 2800;
+const ROAD_DETAIL_TILE_STEP_LAT = 0.024;
+const ROAD_DETAIL_TILE_STEP_LON = 0.036;
 const POI_ICON_IMAGE_IDS = {
     metro: 'poi-metro',
     landmark: 'poi-landmark',
@@ -1431,7 +1435,7 @@ function addRoadDetailSourceAndLayers() {
             },
             paint: {
                 'line-color': '#D1D5DB',
-                'line-width': createRoadSurfaceWidthExpression([8, 12, 18, 26, 38]),
+                'line-width': createRoadSurfaceWidthExpression([10, 14, 22, 32, 48]),
                 'line-opacity': 0.98,
             },
         },
@@ -1441,7 +1445,7 @@ function addRoadDetailSourceAndLayers() {
             minzoom: 16,
             filter: ['==', ['get', 'detailType'], 'road_geometry'],
             layout: {
-                'line-cap': 'round',
+                'line-cap': 'butt',
                 'line-join': 'round',
                 'line-sort-key': ['to-number', ['get', 'layer'], 0],
             },
@@ -1461,7 +1465,7 @@ function addRoadDetailSourceAndLayers() {
                 ['in', ['get', 'roadClass'], ['literal', ['motorway', 'trunk', 'primary']]],
             ],
             layout: {
-                'line-cap': 'round',
+                'line-cap': 'butt',
                 'line-join': 'round',
                 'line-sort-key': ['to-number', ['get', 'layer'], 0],
             },
@@ -1477,7 +1481,7 @@ function addRoadDetailSourceAndLayers() {
             minzoom: 16,
             filter: ['==', ['get', 'detailType'], 'road_geometry'],
             layout: {
-                'line-cap': 'round',
+                'line-cap': 'butt',
                 'line-join': 'round',
                 'line-sort-key': ['to-number', ['get', 'layer'], 0],
             },
@@ -1748,16 +1752,16 @@ function createDetailedRoadLaneLayers() {
                 ['!=', ['to-number', ['get', 'isLink'], 0], 1],
             ],
             layout: {
-                'line-cap': 'round',
+                'line-cap': 'butt',
                 'line-join': 'round',
             },
             paint: {
-                'line-color': 'rgba(255, 255, 255, 0.8)',
-                'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.55, 18, 0.9, 20, 1.7],
+                'line-color': 'rgba(255, 255, 255, 0.88)',
+                'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.6, 18, 0.95, 20, 1.6],
                 'line-offset': createRoadLaneOffsetExpression(boundary),
-                'line-dasharray': [4, 4],
-                'line-trim-offset': [0.22, 0.78],
-                'line-opacity': ['interpolate', ['linear'], ['zoom'], 16, 0.64, 18, 0.9],
+                'line-dasharray': [5, 4],
+                'line-trim-offset': [0.16, 0.84],
+                'line-opacity': ['interpolate', ['linear'], ['zoom'], 16, 0.78, 18, 0.94],
             },
         };
     });
@@ -1877,123 +1881,215 @@ function rememberRoadDetailCache(key, collection, stage = 'full') {
 }
 
 function splitRoadDetailFeatures(features = []) {
-    const base = [];
+    const geometry = [];
     const markings = [];
 
     features.forEach((feature) => {
         const detailType = feature?.properties?.detailType;
 
         if (detailType === 'road_geometry' || detailType === 'road_gore') {
-            base.push(feature);
+            geometry.push(feature);
             return;
         }
 
         markings.push(feature);
     });
 
+    return { geometry, markings };
+}
+
+function snapRoadDetailBounds(bounds) {
+    const centerLat = (bounds.south + bounds.north) / 2;
+    const centerLon = (bounds.west + bounds.east) / 2;
+    const latSpan = bounds.north - bounds.south;
+    const lonSpan = bounds.east - bounds.west;
+    const snappedLat = Math.round(centerLat / ROAD_DETAIL_TILE_STEP_LAT) * ROAD_DETAIL_TILE_STEP_LAT;
+    const snappedLon = Math.round(centerLon / ROAD_DETAIL_TILE_STEP_LON) * ROAD_DETAIL_TILE_STEP_LON;
+
     return {
-        base: { type: 'FeatureCollection', features: base },
-        markings: { type: 'FeatureCollection', features: markings },
-        full: { type: 'FeatureCollection', features },
+        south: snappedLat - latSpan / 2,
+        north: snappedLat + latSpan / 2,
+        west: snappedLon - lonSpan / 2,
+        east: snappedLon + lonSpan / 2,
     };
+}
+
+function roadDetailFeatureKey(feature) {
+    if (feature?.id !== undefined && feature?.id !== null) {
+        return String(feature.id);
+    }
+
+    return `${feature?.properties?.detailType ?? 'feature'}:${JSON.stringify(feature?.geometry?.coordinates ?? null)}`;
+}
+
+function ingestRoadDetailCollection(collection) {
+    (collection?.features ?? []).forEach((feature) => {
+        roadDetailFeatureStore.set(roadDetailFeatureKey(feature), feature);
+    });
+    pruneRoadDetailFeatureStore();
+}
+
+function pruneRoadDetailFeatureStore() {
+    if (roadDetailFeatureStore.size <= ROAD_DETAIL_STORE_LIMIT) {
+        return;
+    }
+
+    const removeCount = roadDetailFeatureStore.size - ROAD_DETAIL_STORE_LIMIT;
+
+    [...roadDetailFeatureStore.keys()]
+        .slice(0, removeCount)
+        .forEach((key) => roadDetailFeatureStore.delete(key));
+}
+
+function featureIntersectsBounds(feature, bounds) {
+    const geometry = feature?.geometry;
+    const coordinates = geometry?.coordinates;
+
+    if (!geometry || !coordinates) {
+        return false;
+    }
+
+    const points = [];
+
+    if (geometry.type === 'Point') {
+        points.push(coordinates);
+    } else if (geometry.type === 'LineString') {
+        points.push(...coordinates);
+    } else if (geometry.type === 'Polygon') {
+        coordinates.forEach((ring) => points.push(...ring));
+    } else if (geometry.type === 'MultiLineString') {
+        coordinates.forEach((line) => points.push(...line));
+    }
+
+    return points.some(([lon, lat]) => (
+        lat >= bounds.south
+        && lat <= bounds.north
+        && lon >= bounds.west
+        && lon <= bounds.east
+    ));
+}
+
+function buildRoadDetailDisplayCollection(viewBounds, padding = 0.014) {
+    const bounds = {
+        south: viewBounds.getSouth() - padding,
+        north: viewBounds.getNorth() + padding,
+        west: viewBounds.getWest() - padding,
+        east: viewBounds.getEast() + padding,
+    };
+    const features = [];
+
+    roadDetailFeatureStore.forEach((feature) => {
+        if (featureIntersectsBounds(feature, bounds)) {
+            features.push(feature);
+        }
+    });
+
+    return { type: 'FeatureCollection', features };
+}
+
+function refreshRoadDetailDisplay() {
+    const source = map?.getSource(ROAD_DETAIL_SOURCE_ID);
+
+    if (!source || !map || map.getZoom() < 16) {
+        return;
+    }
+
+    const display = buildRoadDetailDisplayCollection(map.getBounds());
+    source.setData(display.features.length > 0 ? display : emptyFeatureCollection());
 }
 
 function scheduleRoadDetailLoad() {
     window.clearTimeout(roadDetailLoadTimer);
-    roadDetailLoadTimer = window.setTimeout(loadRoadDetails, 220);
+    roadDetailLoadTimer = window.setTimeout(loadRoadDetails, 520);
 }
 
 async function loadRoadDetails() {
     const source = map?.getSource(ROAD_DETAIL_SOURCE_ID);
-    if (!source) return;
+
+    if (!source || !map) {
+        return;
+    }
 
     if (map.getZoom() < 16) {
+        roadDetailFeatureStore.clear();
+        roadDetailMemoryCache.clear();
+        roadDetailInflight.clear();
         source.setData(emptyFeatureCollection());
         return;
     }
 
-    const bounds = getRoadDetailRequestBounds(map.getBounds());
+    refreshRoadDetailDisplay();
+
+    const bounds = snapRoadDetailBounds(getRoadDetailRequestBounds(map.getBounds()));
     const cacheKey = roadDetailCacheKey(bounds);
     const cached = roadDetailMemoryCache.get(cacheKey);
-    const requestId = ++roadDetailRequestId;
 
     if (cached?.stage === 'full') {
-        source.setData(cached.collection);
-        prefetchNeighborRoadDetails(bounds, requestId);
+        ingestRoadDetailCollection(cached.collection);
+        refreshRoadDetailDisplay();
         return;
     }
 
-    if (cached?.stage === 'base') {
-        source.setData(cached.collection);
+    if (roadDetailInflight.has(cacheKey)) {
+        try {
+            await roadDetailInflight.get(cacheKey);
+        } catch {
+            // Keep the accumulated features visible.
+        }
+
+        refreshRoadDetailDisplay();
+        return;
     }
 
-    roadDetailAbortController?.abort();
-    roadDetailAbortController = new AbortController();
-
-    try {
+    const requestId = ++roadDetailRequestId;
+    const fetchPromise = (async () => {
         const collection = await fetchRoadDetails({
             south: Number(bounds.south.toFixed(5)),
             west: Number(bounds.west.toFixed(5)),
             north: Number(bounds.north.toFixed(5)),
             east: Number(bounds.east.toFixed(5)),
-        }, { signal: roadDetailAbortController.signal });
+        });
 
-        if (requestId !== roadDetailRequestId) return;
-        if (collection?.unavailable) return;
+        if (collection?.unavailable) {
+            return null;
+        }
 
         const normalized = collection?.type === 'FeatureCollection'
             ? collection
             : emptyFeatureCollection();
-        const { base, markings, full } = splitRoadDetailFeatures(normalized.features ?? []);
-
-        source.setData(base.features.length > 0 ? base : normalized);
-        rememberRoadDetailCache(cacheKey, base.features.length > 0 ? base : normalized, 'base');
-
-        const preparedMarkings = await prepareRoadDetailIcons(markings);
-
-        if (requestId !== roadDetailRequestId) return;
-
+        const { geometry, markings } = splitRoadDetailFeatures(normalized.features ?? []);
+        const preparedMarkings = await prepareRoadDetailIcons({
+            type: 'FeatureCollection',
+            features: markings,
+        });
         const prepared = {
             type: 'FeatureCollection',
-            features: [...(base.features ?? []), ...(preparedMarkings.features ?? [])],
+            features: [...geometry, ...(preparedMarkings.features ?? [])],
         };
-        source.setData(prepared);
+
         rememberRoadDetailCache(cacheKey, prepared, 'full');
-        prefetchNeighborRoadDetails(bounds, requestId);
-    } catch (error) {
-        if (error?.name === 'AbortError') return;
+        ingestRoadDetailCollection(prepared);
+
+        if (requestId === roadDetailRequestId) {
+            refreshRoadDetailDisplay();
+        }
+
+        return prepared;
+    })();
+
+    roadDetailInflight.set(cacheKey, fetchPromise);
+
+    try {
+        await fetchPromise;
+    } catch {
         // Keep the last loaded road details visible if the request fails.
+    } finally {
+        roadDetailInflight.delete(cacheKey);
+
+        if (requestId === roadDetailRequestId) {
+            refreshRoadDetailDisplay();
+        }
     }
-}
-
-function prefetchNeighborRoadDetails(bounds, requestId) {
-    const latSpan = bounds.north - bounds.south;
-    const lonSpan = bounds.east - bounds.west;
-    const neighbors = [
-        { south: bounds.north, north: bounds.north + latSpan, west: bounds.west, east: bounds.east },
-        { south: bounds.south - latSpan, north: bounds.south, west: bounds.west, east: bounds.east },
-        { south: bounds.south, north: bounds.north, west: bounds.east, east: bounds.east + lonSpan },
-        { south: bounds.south, north: bounds.north, west: bounds.west - lonSpan, east: bounds.west },
-    ];
-
-    neighbors.forEach((neighbor) => {
-        const key = roadDetailCacheKey(neighbor);
-        if (roadDetailMemoryCache.has(key)) return;
-
-        fetchRoadDetails({
-            south: Number(neighbor.south.toFixed(5)),
-            west: Number(neighbor.west.toFixed(5)),
-            north: Number(neighbor.north.toFixed(5)),
-            east: Number(neighbor.east.toFixed(5)),
-        }).then((collection) => {
-            if (requestId !== roadDetailRequestId || collection?.unavailable) return;
-
-            const normalized = collection?.type === 'FeatureCollection'
-                ? collection
-                : emptyFeatureCollection();
-            rememberRoadDetailCache(key, normalized, 'full');
-        }).catch(() => {});
-    });
 }
 
 function getRoadDetailRequestBounds(viewBounds) {
