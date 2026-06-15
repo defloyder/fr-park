@@ -162,7 +162,7 @@ class RoadDetailApiTest extends TestCase
 
         $this->assertNotNull($road);
         $this->assertNotNull($marking);
-        $this->assertNotSame([37.61, 55.75], $road['geometry']['coordinates'][0]);
+        $this->assertSame([37.61, 55.75], $road['geometry']['coordinates'][0]);
         $this->assertNotSame([37.61, 55.75], $marking['geometry']['coordinates'][0]);
         $this->assertSame([37.611, 55.751], $marking['geometry']['coordinates'][1]);
     }

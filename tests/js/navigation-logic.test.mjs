@@ -509,15 +509,10 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
         'rail-line',
         'road-path',
         'transit-labels',
-        'detailed-road-casing',
-        'detailed-road-shoulder',
-        'detailed-road-surface',
-        'detailed-road-gore-fill',
         'detailed-road-edge-left',
         'detailed-road-edge-right',
         'detailed-road-direction-left',
         'detailed-road-direction-right',
-        'detailed-road-labels',
         'road-turn-lane-arrows',
         'road-crossing-markings',
         'road-speed-bump-markings',
@@ -532,8 +527,16 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
     assert.doesNotMatch(mapSource, /id: 'road-lane-direction-arrows'/);
     assert.doesNotMatch(mapSource, /id: 'road-oneway-divider'/);
     assert.doesNotMatch(mapSource, /id: 'road-lane-major-left'/);
+    assert.doesNotMatch(mapSource, /id: 'detailed-road-underlay'/);
+    assert.doesNotMatch(mapSource, /id: 'detailed-road-casing'/);
+    assert.doesNotMatch(mapSource, /id: 'detailed-road-shoulder'/);
+    assert.doesNotMatch(mapSource, /id: 'detailed-road-surface'/);
+    assert.doesNotMatch(mapSource, /id: 'detailed-road-gore-fill'/);
+    assert.doesNotMatch(mapSource, /id: 'detailed-road-labels'/);
     assert.match(mapSource, /createDetailedRoadLaneLayers/);
-    assert.match(mapSource, /detailType'], 'road_geometry'/);
+    assert.match(mapSource, /ROAD_MARKING_GROUND_FILTER/);
+    assert.match(mapSource, /ROAD_DETAIL_CLASS_WIDTH_FACTOR/);
+    assert.match(mapSource, /detailType === 'road_geometry'/);
     assert.match(mapSource, /detailType'], 'road_marking_geometry'/);
     assert.match(mapSource, /turnLanes/);
     assert.match(mapSource, /'background-color': '#F4F3ED'/);
