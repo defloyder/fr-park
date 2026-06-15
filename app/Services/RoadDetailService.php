@@ -18,13 +18,9 @@ class RoadDetailService
         );
 
         $query = <<<OVERPASS
-            [out:json][timeout:12];
+            [out:json][timeout:10];
             (
               way["highway"~"^(motorway|trunk|primary|secondary|tertiary|motorway_link|trunk_link|primary_link|secondary_link|tertiary_link)$"]{$bbox};
-              way["highway"]["turn:lanes"]{$bbox};
-              way["highway"]["turn:lanes:forward"]{$bbox};
-              way["highway"]["turn:lanes:backward"]{$bbox};
-              way["highway"]["maxspeed"]{$bbox};
               node["highway"="traffic_signals"]{$bbox};
               node["highway"="crossing"]{$bbox};
               node["traffic_calming"~"^(bump|hump|table|cushion|yes)$"]{$bbox};
@@ -32,30 +28,46 @@ class RoadDetailService
             out body geom;
             OVERPASS;
 
-        $cacheKey = 'road-details:overpass:v2:'.sha1($query);
-        $missKey = 'road-details:miss:v2:'.sha1($query);
+        $cacheKey = 'road-details:features:v3:'.sha1(json_encode($this->quantizeBounds($bounds)));
+        $missKey = 'road-details:miss:v3:'.sha1(json_encode($this->quantizeBounds($bounds)));
 
         if (Cache::has($missKey)) {
             return [];
         }
 
         try {
-            $payload = Cache::remember(
+            return Cache::remember(
                 $cacheKey,
-                now()->addMinutes(30),
-                fn () => $this->fetchOverpass($query),
+                now()->addMinutes(45),
+                function () use ($query) {
+                    $payload = $this->fetchOverpass($query);
+
+                    return array_slice(
+                        $this->toGeoJsonFeatures((array) data_get($payload, 'elements', [])),
+                        0,
+                        900,
+                    );
+                },
             );
-
-            $features = $this->toGeoJsonFeatures((array) data_get($payload, 'elements', []));
-
-            return array_slice($features, 0, 2500);
         } catch (\Throwable $exception) {
-            Cache::put($missKey, true, now()->addSeconds(45));
+            Cache::put($missKey, true, now()->addSeconds(30));
 
             report($exception);
 
             return [];
         }
+    }
+
+    private function quantizeBounds(array $bounds): array
+    {
+        $precision = 4;
+
+        return [
+            'south' => round($bounds['south'], $precision),
+            'west' => round($bounds['west'], $precision),
+            'north' => round($bounds['north'], $precision),
+            'east' => round($bounds['east'], $precision),
+        ];
     }
 
     private function fetchOverpass(string $query): array
@@ -71,8 +83,8 @@ class RoadDetailService
                     'Accept' => 'application/json',
                     'User-Agent' => 'Auralith-Maps/1.0',
                 ])
-                    ->connectTimeout(5)
-                    ->timeout(14);
+                    ->connectTimeout(4)
+                    ->timeout(10);
 
                 if (app()->environment('local')) {
                     $request = $request->withoutVerifying();
@@ -259,7 +271,7 @@ class RoadDetailService
             $features[] = $this->feature(
                 $id.'-turn-lanes-'.$direction,
                 'LineString',
-                $this->trimLineFromEnd($directedCoordinates, 220),
+                $this->trimLineFromEnd($directedCoordinates, 70),
                 [
                     'detailType' => 'turn_lanes',
                     'turnLanes' => $lanes,
@@ -267,38 +279,12 @@ class RoadDetailService
             );
         }
 
-        if ($features !== []) {
-            return $features;
-        }
-
-        $laneCount = $this->laneCount($tags);
-        $highway = mb_strtolower((string) ($tags['highway'] ?? ''));
-
-        if ($laneCount === null || ! str_ends_with($highway, '_link')) {
-            return $features;
-        }
-
-        $directedCoordinates = (string) ($tags['oneway'] ?? '') === '-1'
-            ? array_reverse($coordinates)
-            : $coordinates;
-        $lanes = array_fill(0, $laneCount, ['through']);
-
-        $features[] = $this->feature(
-            $id.'-turn-lanes-fallback',
-            'LineString',
-            $this->trimLineFromEnd($directedCoordinates, 220),
-            [
-                'detailType' => 'turn_lanes',
-                'turnLanes' => $lanes,
-            ],
-        );
-
         return $features;
     }
 
     private function parkingRestrictionFeatures(string $id, array $coordinates, string $side): array
     {
-        $ratios = [0.28, 0.62];
+        $ratios = [0.5];
         $features = [];
 
         foreach ($ratios as $index => $ratio) {

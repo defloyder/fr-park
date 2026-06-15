@@ -44,6 +44,7 @@ const ROAD_GORE_HATCH_IMAGE_ID = 'road-gore-hatch';
 const ROAD_PARKING_RESTRICTION_IMAGE_ID = 'road-parking-restriction';
 let roadDetailLoadTimer = null;
 let roadDetailRequestId = 0;
+let roadDetailAbortController = null;
 const POI_ICON_IMAGE_IDS = {
     metro: 'poi-metro',
     landmark: 'poi-landmark',
@@ -1579,23 +1580,43 @@ function addRoadDetailSourceAndLayers() {
             },
         },
         {
-            id: 'road-turn-lane-arrows',
+            id: 'road-turn-lane-arrows-far',
             type: 'symbol',
             minzoom: 16,
+            maxzoom: 18,
             filter: ['==', ['get', 'detailType'], 'turn_lanes'],
             layout: {
                 'symbol-placement': 'line',
-                'symbol-spacing': ['interpolate', ['linear'], ['zoom'], 16, 180, 17, 130, 18, 88, 20, 52],
+                'symbol-spacing': ['interpolate', ['linear'], ['zoom'], 16, 320, 17, 420],
                 'icon-image': ['get', 'iconId'],
-                'icon-size': ['interpolate', ['exponential', 2], ['zoom'], 16, 0.34, 18, 0.52, 20, 1.42],
+                'icon-size': ['interpolate', ['linear'], ['zoom'], 16, 0.18, 17, 0.22],
                 'icon-rotation-alignment': 'map',
                 'icon-pitch-alignment': 'map',
                 'icon-keep-upright': false,
-                'icon-allow-overlap': true,
-                'icon-ignore-placement': true,
+                'icon-allow-overlap': false,
+                'icon-ignore-placement': false,
             },
             paint: {
-                'icon-opacity': ['interpolate', ['linear'], ['zoom'], 16, 0.76, 18, 0.96],
+                'icon-opacity': ['interpolate', ['linear'], ['zoom'], 16, 0.7, 17, 0.82],
+            },
+        },
+        {
+            id: 'road-turn-lane-arrows-near',
+            type: 'symbol',
+            minzoom: 18,
+            filter: ['==', ['get', 'detailType'], 'turn_lanes'],
+            layout: {
+                'symbol-placement': 'line-center',
+                'icon-image': ['get', 'iconId'],
+                'icon-size': ['interpolate', ['linear'], ['zoom'], 18, 0.24, 19, 0.28, 20, 0.32],
+                'icon-rotation-alignment': 'map',
+                'icon-pitch-alignment': 'map',
+                'icon-keep-upright': false,
+                'icon-allow-overlap': false,
+                'icon-ignore-placement': false,
+            },
+            paint: {
+                'icon-opacity': 0.9,
             },
         },
         {
@@ -1823,7 +1844,7 @@ function roadDetailZoomStops() {
 
 function scheduleRoadDetailLoad() {
     window.clearTimeout(roadDetailLoadTimer);
-    roadDetailLoadTimer = window.setTimeout(loadRoadDetails, 320);
+    roadDetailLoadTimer = window.setTimeout(loadRoadDetails, 800);
 }
 
 async function loadRoadDetails() {
@@ -1831,6 +1852,7 @@ async function loadRoadDetails() {
     if (!source) return;
 
     if (map.getZoom() < 16) {
+        roadDetailAbortController?.abort();
         source.setData(emptyFeatureCollection());
         return;
     }
@@ -1838,23 +1860,37 @@ async function loadRoadDetails() {
     const bounds = getRoadDetailRequestBounds(map.getBounds());
     const requestId = ++roadDetailRequestId;
 
+    roadDetailAbortController?.abort();
+    roadDetailAbortController = new AbortController();
+
     try {
         const collection = await fetchRoadDetails({
-            south: Number(bounds.south.toFixed(5)),
-            west: Number(bounds.west.toFixed(5)),
-            north: Number(bounds.north.toFixed(5)),
-            east: Number(bounds.east.toFixed(5)),
-        });
-        const preparedCollection = await prepareRoadDetailIcons(
-            collection?.type === 'FeatureCollection' ? collection : emptyFeatureCollection(),
-        );
-
+            south: Number(bounds.south.toFixed(4)),
+            west: Number(bounds.west.toFixed(4)),
+            north: Number(bounds.north.toFixed(4)),
+            east: Number(bounds.east.toFixed(4)),
+        }, { signal: roadDetailAbortController.signal });
         if (requestId !== roadDetailRequestId) return;
         if (collection?.unavailable) return;
+
+        const raw = collection?.type === 'FeatureCollection' ? collection : emptyFeatureCollection();
+        source.setData(withoutTurnLaneFeatures(raw));
+
+        const preparedCollection = await prepareRoadDetailIcons(raw);
+        if (requestId !== roadDetailRequestId) return;
         source.setData(preparedCollection);
-    } catch {
-        // Keep the last loaded road details visible if the request fails.
+    } catch (error) {
+        if (error?.name === 'AbortError') return;
     }
+}
+
+function withoutTurnLaneFeatures(collection) {
+    return {
+        ...collection,
+        features: (collection.features ?? []).filter((feature) => (
+            feature?.properties?.detailType !== 'turn_lanes'
+        )),
+    };
 }
 
 function getRoadDetailRequestBounds(viewBounds) {
@@ -1894,7 +1930,28 @@ async function prepareRoadDetailIcons(collection) {
         'merge_to_right',
         'reverse',
     ];
-    const features = await Promise.all((collection.features ?? []).map(async (feature) => {
+    const iconCache = new Map();
+    const turnLaneFeatures = (collection.features ?? []).filter((feature) => (
+        feature?.properties?.detailType === 'turn_lanes'
+            && Array.isArray(feature.properties.turnLanes)
+    ));
+
+    await Promise.all([...new Set(turnLaneFeatures.map((feature) => {
+        const lanes = feature.properties.turnLanes.map((lane) => (
+            Array.isArray(lane) ? lane.filter((turn) => supportedTurns.includes(turn)) : []
+        ));
+
+        return JSON.stringify(lanes);
+    }))].map(async (signature) => {
+        const lanes = JSON.parse(signature);
+        const iconId = `${ROAD_TURN_LANE_IMAGE_PREFIX}${stableStringHash(signature)}`;
+        const dimensions = getTurnLaneIconDimensions(lanes);
+
+        iconCache.set(signature, iconId);
+        await addSvgImage(iconId, createTurnLaneMarkingSvg(lanes, dimensions), dimensions);
+    }));
+
+    const features = (collection.features ?? []).map((feature) => {
         if (feature?.properties?.detailType !== 'turn_lanes'
             || !Array.isArray(feature.properties.turnLanes)) {
             return feature;
@@ -1904,19 +1961,15 @@ async function prepareRoadDetailIcons(collection) {
             Array.isArray(lane) ? lane.filter((turn) => supportedTurns.includes(turn)) : []
         ));
         const signature = JSON.stringify(lanes);
-        const iconId = `${ROAD_TURN_LANE_IMAGE_PREFIX}${stableStringHash(signature)}`;
-        const dimensions = getTurnLaneIconDimensions(lanes);
-
-        await addSvgImage(iconId, createTurnLaneMarkingSvg(lanes, dimensions), dimensions);
 
         return {
             ...feature,
             properties: {
                 ...feature.properties,
-                iconId,
+                iconId: iconCache.get(signature),
             },
         };
-    }));
+    });
 
     return { ...collection, features };
 }
