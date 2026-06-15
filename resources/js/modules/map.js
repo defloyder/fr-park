@@ -1509,8 +1509,7 @@ function addRoadDetailSourceAndLayers() {
             minzoom: 16,
             filter: [
                 'all',
-                ['==', ['get', 'detailType'], 'road_geometry'],
-                ['!=', ['to-number', ['get', 'isLink'], 0], 1],
+                ['==', ['get', 'detailType'], 'road_marking_geometry'],
             ],
             layout: {
                 'line-cap': 'round',
@@ -1529,8 +1528,7 @@ function addRoadDetailSourceAndLayers() {
             minzoom: 16,
             filter: [
                 'all',
-                ['==', ['get', 'detailType'], 'road_geometry'],
-                ['!=', ['to-number', ['get', 'isLink'], 0], 1],
+                ['==', ['get', 'detailType'], 'road_marking_geometry'],
             ],
             layout: {
                 'line-cap': 'round',
@@ -1550,7 +1548,7 @@ function addRoadDetailSourceAndLayers() {
             minzoom: 16,
             filter: [
                 'all',
-                ['==', ['get', 'detailType'], 'road_geometry'],
+                ['==', ['get', 'detailType'], 'road_marking_geometry'],
                 ['has', 'directionBoundary'],
             ],
             layout: {
@@ -1569,7 +1567,7 @@ function addRoadDetailSourceAndLayers() {
             minzoom: 16,
             filter: [
                 'all',
-                ['==', ['get', 'detailType'], 'road_geometry'],
+                ['==', ['get', 'detailType'], 'road_marking_geometry'],
                 ['has', 'directionBoundary'],
             ],
             layout: {
@@ -1617,18 +1615,19 @@ function addRoadDetailSourceAndLayers() {
             id: 'road-turn-lane-arrows',
             type: 'symbol',
             minzoom: 16.5,
-            filter: ['==', ['get', 'detailType'], 'turn_lanes'],
+            filter: ['==', ['get', 'detailType'], 'turn_lane_arrow'],
             layout: {
                 'icon-image': ['get', 'iconId'],
-                'icon-size': ['interpolate', ['linear'], ['zoom'], 16.5, 0.66, 18, 0.86, 20, 1.06],
+                'icon-size': ['interpolate', ['linear'], ['zoom'], 16.5, 0.46, 18, 0.64, 20, 0.82],
                 'icon-rotate': ['coalesce', ['get', 'bearing'], 0],
                 'icon-rotation-alignment': 'map',
                 'icon-pitch-alignment': 'map',
-                'icon-allow-overlap': true,
-                'icon-ignore-placement': true,
+                'icon-allow-overlap': false,
+                'icon-ignore-placement': false,
+                'icon-padding': 2,
             },
             paint: {
-                'icon-opacity': ['interpolate', ['linear'], ['zoom'], 16.5, 0.84, 18, 0.96],
+                'icon-opacity': ['interpolate', ['linear'], ['zoom'], 16.5, 0.78, 18, 0.94],
             },
         },
         {
@@ -1659,8 +1658,8 @@ function addRoadDetailSourceAndLayers() {
                 'icon-rotate': ['coalesce', ['get', 'bearing'], 0],
                 'icon-rotation-alignment': 'map',
                 'icon-pitch-alignment': 'map',
-                'icon-allow-overlap': true,
-                'icon-ignore-placement': true,
+                'icon-allow-overlap': false,
+                'icon-ignore-placement': false,
             },
         },
         {
@@ -1674,8 +1673,9 @@ function addRoadDetailSourceAndLayers() {
                 'icon-rotate': ['coalesce', ['get', 'bearing'], 0],
                 'icon-rotation-alignment': 'map',
                 'icon-pitch-alignment': 'map',
-                'icon-allow-overlap': true,
-                'icon-ignore-placement': true,
+                'icon-allow-overlap': false,
+                'icon-ignore-placement': false,
+                'icon-padding': 4,
             },
         },
         {
@@ -1686,8 +1686,9 @@ function addRoadDetailSourceAndLayers() {
             layout: {
                 'icon-image': ROAD_TRAFFIC_SIGNAL_IMAGE_ID,
                 'icon-size': ['interpolate', ['linear'], ['zoom'], 16, 0.54, 18, 0.78, 20, 1],
-                'icon-allow-overlap': true,
-                'icon-ignore-placement': true,
+                'icon-allow-overlap': false,
+                'icon-ignore-placement': false,
+                'icon-padding': 4,
             },
         },
         {
@@ -1736,10 +1737,9 @@ function createDetailedRoadLaneLayers() {
             minzoom: 16,
             filter: [
                 'all',
-                ['==', ['get', 'detailType'], 'road_geometry'],
+                ['==', ['get', 'detailType'], 'road_marking_geometry'],
                 ['>', ['to-number', ['get', 'laneCount'], 1], boundary],
                 ['!=', ['coalesce', ['get', 'directionBoundary'], -1], boundary],
-                ['!=', ['to-number', ['get', 'isLink'], 0], 1],
             ],
             layout: {
                 'line-cap': 'butt',
@@ -1876,7 +1876,9 @@ function splitRoadDetailFeatures(features = []) {
     features.forEach((feature) => {
         const detailType = feature?.properties?.detailType;
 
-        if (detailType === 'road_geometry' || detailType === 'road_gore') {
+        if (detailType === 'road_geometry'
+            || detailType === 'road_marking_geometry'
+            || detailType === 'road_gore') {
             geometry.push(feature);
             return;
         }
@@ -2133,112 +2135,104 @@ async function prepareRoadDetailIcons(collection) {
         'reverse',
     ];
     const iconCache = new Map();
-    const features = await Promise.all((collection.features ?? []).map(async (feature) => {
+    const features = await Promise.all((collection.features ?? []).flatMap((feature) => {
         if (feature?.properties?.detailType !== 'turn_lanes'
             || !Array.isArray(feature.properties.turnLanes)) {
-            return feature;
+            return [Promise.resolve(feature)];
         }
 
         const lanes = feature.properties.turnLanes.map((lane) => (
             Array.isArray(lane) ? lane.filter((turn) => supportedTurns.includes(turn)) : []
         ));
-        const signature = JSON.stringify(lanes);
-        const iconId = `${ROAD_TURN_LANE_IMAGE_PREFIX}${stableStringHash(signature)}`;
-        const dimensions = getTurnLaneIconDimensions(lanes);
+        const bearing = Number(feature.properties.bearing) || 0;
+        const laneCenter = (lanes.length - 1) / 2;
 
-        if (!iconCache.has(iconId)) {
-            iconCache.set(iconId, addSvgImage(iconId, createTurnLaneMarkingSvg(lanes, dimensions), dimensions));
-        }
+        return lanes.flatMap((turns, laneIndex) => {
+            if (turns.length === 0) {
+                return [];
+            }
 
-        await iconCache.get(iconId);
+            const signature = turns.join('-');
+            const iconId = `${ROAD_TURN_LANE_IMAGE_PREFIX}${stableStringHash(signature)}`;
+            const coordinate = offsetRoadMarkingCoordinate(
+                feature.geometry.coordinates,
+                bearing,
+                (laneIndex - laneCenter) * 3.45,
+            );
 
-        return {
-            ...feature,
-            properties: {
-                ...feature.properties,
-                iconId,
-            },
-        };
+            if (!iconCache.has(iconId)) {
+                iconCache.set(iconId, addSvgImage(
+                    iconId,
+                    createTurnLaneArrowSvg(turns),
+                    { width: 32, height: 72 },
+                ));
+            }
+
+            return [iconCache.get(iconId).then(() => ({
+                ...feature,
+                id: `${feature.id ?? 'turn-lane'}-${laneIndex}`,
+                geometry: {
+                    type: 'Point',
+                    coordinates: coordinate,
+                },
+                properties: {
+                    ...feature.properties,
+                    detailType: 'turn_lane_arrow',
+                    iconId,
+                    laneIndex,
+                },
+            }))];
+        });
     }));
 
     return { ...collection, features };
 }
 
-function getTurnLaneIconDimensions(lanes) {
-    const viewHeight = Math.max(26, lanes.length * 26);
-
-    return {
-        width: 118,
-        height: Math.round(viewHeight * (118 / 82)),
-        viewWidth: 82,
-        viewHeight,
-    };
-}
-
-function createTurnLaneMarkingSvg(lanes, { width, height, viewWidth = 82, viewHeight = height }) {
-    const laneHeight = viewHeight / Math.max(1, lanes.length);
-    const paths = lanes.flatMap((turns, laneIndex) => {
-        const centerY = laneHeight * (laneIndex + 0.5);
-
-        return Array.isArray(turns)
-            ? turns.map((turn) => createTurnLanePath(turn, centerY)).filter(Boolean)
-            : [];
-    }).join('');
-
+function createTurnLaneArrowSvg(turns) {
+    const paths = createTurnLaneArrowPaths(turns);
     return `
-<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${viewWidth} ${viewHeight}">
-  <g fill="none" stroke="#FFFFFF" stroke-width="5.6" stroke-linecap="round" stroke-linejoin="round">
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="72" viewBox="0 0 32 72">
+  <g fill="none" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
     ${paths}
   </g>
 </svg>`;
 }
 
-function createTurnLanePath(turn, centerY) {
-    const startX = 8;
-    const branchX = 47;
-    const endX = 70;
+function createTurnLaneArrowPaths(turns) {
+    const uniqueTurns = [...new Set(turns)];
+    const hasThrough = uniqueTurns.includes('through');
+    const paths = [hasThrough
+        ? '<path d="M16 64V10m-6 8 6-8 6 8"/>'
+        : '<path d="M16 64V38"/>'];
 
-    if (turn === 'through') {
-        return `<path d="M${startX} ${centerY}H${endX}m-9-8 9 8-9 8"/>`;
-    }
+    uniqueTurns.filter((turn) => turn !== 'through').forEach((turn) => {
+        const isLeft = turn.includes('left') || turn === 'reverse';
+        const side = isLeft ? -1 : 1;
+        const sharp = turn.includes('sharp') || turn === 'reverse';
+        const slight = turn.includes('slight') || turn.includes('merge');
+        const branchY = slight ? 32 : 38;
+        const endX = sharp ? 5 : (isLeft ? 6 : 26);
+        const endY = sharp ? 25 : (slight ? 20 : 32);
+        const arrowDirection = isLeft ? 1 : -1;
 
-    if (turn === 'left') {
-        return `<path d="M${startX} ${centerY}H${branchX}Q58 ${centerY} 58 ${centerY - 8}V${centerY - 11}m-6 6 6-6 6 6"/>`;
-    }
+        paths.push(
+            `<path d="M16 ${branchY}Q16 ${branchY - 8} ${endX + side * -5} ${endY}L${endX} ${endY}m${arrowDirection * 5} -5-5 5 5 5"/>`,
+        );
+    });
 
-    if (turn === 'right') {
-        return `<path d="M${startX} ${centerY}H${branchX}Q58 ${centerY} 58 ${centerY + 8}V${centerY + 11}m-6-6 6 6 6-6"/>`;
-    }
+    return paths.join('');
+}
 
-    if (turn === 'slight_left') {
-        return `<path d="M${startX} ${centerY}H42L${endX} ${centerY - 10}m-10-3 10 3-6 8"/>`;
-    }
+function offsetRoadMarkingCoordinate(coordinate, bearing, offsetMeters) {
+    const [longitude, latitude] = coordinate.map(Number);
+    const normal = (bearing + 90) * Math.PI / 180;
+    const east = Math.sin(normal) * offsetMeters;
+    const north = Math.cos(normal) * offsetMeters;
 
-    if (turn === 'slight_right') {
-        return `<path d="M${startX} ${centerY}H42L${endX} ${centerY + 10}m-6-8 6 8-10 3"/>`;
-    }
-
-    if (turn === 'sharp_left') {
-        return `<path d="M${startX} ${centerY}H48L60 ${centerY - 11}m-1 9 1-9-9 1"/>`;
-    }
-
-    if (turn === 'sharp_right') {
-        return `<path d="M${startX} ${centerY}H48L60 ${centerY + 11}m-9-1 9 1-1-9"/>`;
-    }
-
-    if (turn === 'merge_to_left') {
-        return `<path d="M${startX} ${centerY + 8}L${endX} ${centerY - 8}m-9-4 9 4-7 7"/>`;
-    }
-
-    if (turn === 'merge_to_right') {
-        return `<path d="M${startX} ${centerY - 8}L${endX} ${centerY + 8}m-7-7 7 7-9 4"/>`;
-    }
-
-    if (turn === 'reverse') {
-        return `<path d="M${startX} ${centerY}H48Q64 ${centerY} 64 ${centerY - 8}Q64 ${centerY - 12} 58 ${centerY - 12}H48m6-6-6 6 6 6"/>`;
-    }
-
-    return '';
+    return [
+        longitude + east / Math.max(1, 111320 * Math.cos(latitude * Math.PI / 180)),
+        latitude + north / 110540,
+    ];
 }
 
 function stableStringHash(value) {

@@ -12,7 +12,7 @@ class RoadDetailApiTest extends TestCase
     {
         Cache::flush();
         Http::fake([
-            'overpass-api.de/*' => Http::response([
+            '*' => Http::response([
                 'elements' => [
                     [
                         'type' => 'node',
@@ -85,7 +85,9 @@ class RoadDetailApiTest extends TestCase
                         ],
                         'tags' => [
                             'highway' => 'motorway',
-                            'name' => 'MKAD',
+                            'name' => 'МКАД, 33-й километр',
+                            'lanes' => '5',
+                            'oneway' => 'yes',
                             'maxspeed' => '100',
                         ],
                     ],
@@ -137,6 +139,11 @@ class RoadDetailApiTest extends TestCase
                 'directionBoundary' => 1,
                 'name' => 'Test avenue',
             ])
+            ->assertJsonFragment([
+                'detailType' => 'road_marking_geometry',
+                'roadClass' => 'primary',
+                'laneCount' => 3,
+            ])
             ->assertJsonFragment(['detailType' => 'turn_lanes'])
             ->assertJsonFragment(['turnLanes' => [['left'], ['through'], ['through', 'right']]])
             ->assertJsonFragment(['detailType' => 'turn_lanes', 'inferred' => true])
@@ -145,8 +152,8 @@ class RoadDetailApiTest extends TestCase
             ->assertJsonFragment([
                 'detailType' => 'road_geometry',
                 'roadClass' => 'motorway',
-                'laneCount' => 4,
-                'name' => 'MKAD',
+                'laneCount' => 6,
+                'name' => 'МКАД, 33-й километр',
             ]);
     }
 

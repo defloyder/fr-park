@@ -534,6 +534,7 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
     assert.doesNotMatch(mapSource, /id: 'road-lane-major-left'/);
     assert.match(mapSource, /createDetailedRoadLaneLayers/);
     assert.match(mapSource, /detailType'], 'road_geometry'/);
+    assert.match(mapSource, /detailType'], 'road_marking_geometry'/);
     assert.match(mapSource, /turnLanes/);
     assert.match(mapSource, /'background-color': '#F4F3ED'/);
     assert.match(mapSource, /'fill-color': '#BFDDAE'/);
@@ -544,4 +545,8 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
     assert.match(mapSource, /includes\('already exists'\)/);
     assert.match(mapSource, /ROAD_DETAIL_MIN_LAT_SPAN/);
     assert.match(mapSource, /ROAD_DETAIL_MIN_LON_SPAN/);
+    assert.match(mapSource, /detailType: 'turn_lane_arrow'/);
+    assert.match(mapSource, /offsetRoadMarkingCoordinate/);
+    assert.doesNotMatch(mapSource, /createTurnLaneMarkingSvg/);
+    assert.doesNotMatch(mapSource, /extendLineEnds/);
 });
