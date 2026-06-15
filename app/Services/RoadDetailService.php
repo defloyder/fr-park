@@ -44,11 +44,19 @@ class RoadDetailService
             out body geom;
             OVERPASS;
 
-        $payload = Cache::remember(
-            'road-details:overpass:'.sha1($query),
-            now()->addMinutes(30),
-            fn () => $this->fetchOverpass($query),
-        );
+        $cacheKey = 'road-details:overpass:'.sha1($query);
+
+        try {
+            $payload = Cache::remember(
+                $cacheKey,
+                now()->addMinutes(30),
+                fn () => $this->fetchOverpass($query),
+            );
+        } catch (\Throwable $exception) {
+            // Overpass can be rate-limited/unavailable; avoid a request storm.
+            Cache::put($cacheKey, ['elements' => [], '_unavailable' => true], now()->addSeconds(90));
+            throw $exception;
+        }
 
         return $this->toGeoJsonFeatures((array) data_get($payload, 'elements', []));
     }
@@ -163,31 +171,42 @@ class RoadDetailService
         }
 
         if ($maxspeed !== '') {
-            $features[] = $this->feature($id.'-speed', 'LineString', $coordinates, [
-                'detailType' => 'maxspeed',
-                'maxspeed' => $maxspeed,
-            ]);
+            $labelPoint = $this->pointAlongLine($coordinates, 0.5);
+
+            if ($labelPoint !== null) {
+                $features[] = $this->feature($id.'-speed', 'Point', $labelPoint, [
+                    'detailType' => 'maxspeed',
+                    'maxspeed' => $maxspeed,
+                    'bearing' => $this->lineBearingAt($coordinates, 0.5),
+                ]);
+            }
         }
 
         foreach ($this->turnLaneFeatures($id, $coordinates, $tags) as $feature) {
             $features[] = $feature;
         }
 
-        foreach (['left', 'right'] as $side) {
-            if ($this->hasParkingRestriction($tags, $side)) {
-                $features[] = $this->feature($id.'-parking-'.$side, 'LineString', $coordinates, [
-                    'detailType' => 'parking_restriction',
-                    'side' => $side,
-                ]);
-            }
-        }
+        $roadClass = $this->normalizeRoadClass($tags['highway'] ?? '');
 
-        if ($this->hasParkingRestriction($tags, 'both')) {
+        if (! in_array($roadClass, ['motorway', 'trunk'], true)) {
             foreach (['left', 'right'] as $side) {
-                $features[] = $this->feature($id.'-parking-both-'.$side, 'LineString', $coordinates, [
-                    'detailType' => 'parking_restriction',
-                    'side' => $side,
-                ]);
+                if ($this->hasParkingRestriction($tags, $side)) {
+                    $features = array_merge($features, $this->parkingRestrictionFeatures(
+                        $id.'-parking-'.$side,
+                        $coordinates,
+                        $side,
+                    ));
+                }
+            }
+
+            if ($this->hasParkingRestriction($tags, 'both')) {
+                foreach (['left', 'right'] as $side) {
+                    $features = array_merge($features, $this->parkingRestrictionFeatures(
+                        $id.'-parking-both-'.$side,
+                        $coordinates,
+                        $side,
+                    ));
+                }
             }
         }
 
@@ -236,7 +255,7 @@ class RoadDetailService
             $features[] = $this->feature(
                 $id.'-turn-lanes-'.$direction,
                 'LineString',
-                $this->trimLineFromEnd($directedCoordinates, 72),
+                $this->trimLineFromEnd($directedCoordinates, 220),
                 [
                     'detailType' => 'turn_lanes',
                     'turnLanes' => $lanes,
@@ -244,7 +263,146 @@ class RoadDetailService
             );
         }
 
+        if ($features !== []) {
+            return $features;
+        }
+
+        $laneCount = $this->laneCount($tags);
+        $highway = mb_strtolower((string) ($tags['highway'] ?? ''));
+
+        if ($laneCount === null || ! str_ends_with($highway, '_link')) {
+            return $features;
+        }
+
+        $directedCoordinates = (string) ($tags['oneway'] ?? '') === '-1'
+            ? array_reverse($coordinates)
+            : $coordinates;
+        $lanes = array_fill(0, $laneCount, ['through']);
+
+        $features[] = $this->feature(
+            $id.'-turn-lanes-fallback',
+            'LineString',
+            $this->trimLineFromEnd($directedCoordinates, 220),
+            [
+                'detailType' => 'turn_lanes',
+                'turnLanes' => $lanes,
+            ],
+        );
+
         return $features;
+    }
+
+    private function parkingRestrictionFeatures(string $id, array $coordinates, string $side): array
+    {
+        $ratios = [0.28, 0.62];
+        $features = [];
+
+        foreach ($ratios as $index => $ratio) {
+            $point = $this->pointAlongLine($coordinates, $ratio);
+
+            if ($point === null) {
+                continue;
+            }
+
+            $features[] = $this->feature($id.'-'.$index, 'Point', $point, [
+                'detailType' => 'parking_restriction',
+                'side' => $side,
+                'bearing' => $this->lineBearingAt($coordinates, $ratio),
+            ]);
+        }
+
+        return $features;
+    }
+
+    private function pointAlongLine(array $coordinates, float $targetRatio): ?array
+    {
+        if (count($coordinates) < 2) {
+            return null;
+        }
+
+        $targetRatio = max(0, min(1, $targetRatio));
+        $segmentLengths = [];
+        $totalLength = 0.0;
+
+        for ($index = 0; $index < count($coordinates) - 1; $index++) {
+            $vector = $this->meterVector($coordinates[$index], $coordinates[$index + 1]);
+            $length = hypot($vector[0], $vector[1]);
+            $segmentLengths[] = $length;
+            $totalLength += $length;
+        }
+
+        if ($totalLength <= 0.01) {
+            return $coordinates[0];
+        }
+
+        $targetDistance = $totalLength * $targetRatio;
+        $remaining = $targetDistance;
+
+        for ($index = 0; $index < count($segmentLengths); $index++) {
+            $segmentLength = $segmentLengths[$index];
+
+            if ($segmentLength <= 0.01) {
+                continue;
+            }
+
+            if ($remaining <= $segmentLength) {
+                $ratio = $remaining / $segmentLength;
+                $start = $coordinates[$index];
+                $finish = $coordinates[$index + 1];
+
+                return [
+                    $start[0] + ($finish[0] - $start[0]) * $ratio,
+                    $start[1] + ($finish[1] - $start[1]) * $ratio,
+                ];
+            }
+
+            $remaining -= $segmentLength;
+        }
+
+        return $coordinates[count($coordinates) - 1];
+    }
+
+    private function lineBearingAt(array $coordinates, float $targetRatio): float
+    {
+        if (count($coordinates) < 2) {
+            return 0;
+        }
+
+        $point = $this->pointAlongLine($coordinates, $targetRatio);
+
+        if ($point === null) {
+            return 0;
+        }
+
+        $targetDistance = 0.0;
+        $totalLength = 0.0;
+        $segmentLengths = [];
+
+        for ($index = 0; $index < count($coordinates) - 1; $index++) {
+            $vector = $this->meterVector($coordinates[$index], $coordinates[$index + 1]);
+            $length = hypot($vector[0], $vector[1]);
+            $segmentLengths[] = $length;
+            $totalLength += $length;
+        }
+
+        $sample = max(0.01, min($totalLength - 0.01, $totalLength * $targetRatio));
+        $remaining = $sample;
+
+        for ($index = 0; $index < count($segmentLengths); $index++) {
+            if ($remaining <= $segmentLengths[$index]) {
+                $start = $coordinates[$index];
+                $finish = $coordinates[$index + 1];
+
+                return $this->bearing($start[1], $start[0], $finish[1], $finish[0]);
+            }
+
+            $remaining -= $segmentLengths[$index];
+        }
+
+        $start = $coordinates[count($coordinates) - 2];
+        $finish = $coordinates[count($coordinates) - 1];
+
+        return $this->bearing($start[1], $start[0], $finish[1], $finish[0]);
     }
 
     private function trimLineFromEnd(array $coordinates, float $targetMeters): array
