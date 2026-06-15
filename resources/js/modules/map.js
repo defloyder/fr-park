@@ -92,13 +92,6 @@ const ROAD_CLASS_WIDTH_FACTOR = [
     0.72,
     0.58,
 ];
-const ROAD_MARKING_GROUND_FILTER = [
-    'all',
-    ['==', ['get', 'detailType'], 'road_marking_geometry'],
-    ['==', ['to-number', ['get', 'layer'], 0], 0],
-    ['!=', ['get', 'bridge'], true],
-    ['!=', ['get', 'tunnel'], true],
-];
 const ROAD_BASE_FADE_OPACITY = (peak = 0.96) => peak;
 
 const ROUTE_TRAFFIC_LINE_COLOR = [
@@ -745,6 +738,7 @@ function initMapLibreMap() {
         style: MAP_STYLE,
         fadeDuration: 0,
     });
+    window.__qaMap = map;
 
     map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
 
@@ -1132,22 +1126,6 @@ function updateVectorRoadLayerTheme(layerId) {
             'line-color': isDark ? '#354052' : '#ECEFF2',
             'line-opacity': isSatellite ? 0 : ROAD_BASE_FADE_OPACITY(0.96),
         },
-        'detailed-road-edge-left': {
-            'line-color': isDark ? 'rgba(255, 255, 255, 0.84)' : 'rgba(100, 116, 139, 0.66)',
-            'line-opacity': isSatellite ? 0.76 : 0.94,
-        },
-        'detailed-road-edge-right': {
-            'line-color': isDark ? 'rgba(255, 255, 255, 0.84)' : 'rgba(100, 116, 139, 0.66)',
-            'line-opacity': isSatellite ? 0.76 : 0.94,
-        },
-        'detailed-road-direction-left': {
-            'line-color': isDark ? 'rgba(255, 255, 255, 0.92)' : 'rgba(100, 116, 139, 0.9)',
-            'line-opacity': isSatellite ? 0.82 : 1,
-        },
-        'detailed-road-direction-right': {
-            'line-color': isDark ? 'rgba(255, 255, 255, 0.92)' : 'rgba(100, 116, 139, 0.9)',
-            'line-opacity': isSatellite ? 0.82 : 1,
-        },
         'road-name': {
             'text-color': isDark ? '#F8FAFC' : '#364152',
             'text-halo-color': isDark ? 'rgba(8, 13, 24, 0.92)' : 'rgba(255, 255, 255, 0.96)',
@@ -1177,17 +1155,12 @@ function updateVectorRoadLayerTheme(layerId) {
         },
     };
 
-    for (let boundary = 1; boundary <= 9; boundary += 1) {
-        paint[`detailed-road-lane-${boundary}`] = {
-            'line-color': isDark ? 'rgba(255, 255, 255, 0.76)' : 'rgba(100, 116, 139, 0.64)',
-            'line-opacity': isSatellite
-                ? 0.68
-                : ['interpolate', ['linear'], ['zoom'], 16, 0.64, 18, 0.9],
-        };
-    }
-
     for (let roadLayer = -5; roadLayer <= 5; roadLayer += 1) {
         const suffix = roadDetailLayerSuffix(roadLayer);
+        paint[`detailed-road-median-${suffix}`] = {
+            'line-color': isDark ? '#6B7F9C' : '#E5E8ED',
+            'line-opacity': isSatellite ? 0.78 : 1,
+        };
         paint[`detailed-road-underlay-${suffix}`] = {
             'line-color': isDark ? '#647894' : '#E1E5EA',
             'line-opacity': isSatellite ? 0.8 : 0.98,
@@ -1204,6 +1177,31 @@ function updateVectorRoadLayerTheme(layerId) {
             'line-color': isDark ? '#6B7F9C' : '#E5E8ED',
             'line-opacity': isSatellite ? 0.78 : 1,
         };
+        paint[`detailed-road-edge-left-${suffix}`] = {
+            'line-color': isDark ? 'rgba(255, 255, 255, 0.84)' : 'rgba(100, 116, 139, 0.66)',
+            'line-opacity': isSatellite ? 0.76 : 0.94,
+        };
+        paint[`detailed-road-edge-right-${suffix}`] = {
+            'line-color': isDark ? 'rgba(255, 255, 255, 0.84)' : 'rgba(100, 116, 139, 0.66)',
+            'line-opacity': isSatellite ? 0.76 : 0.94,
+        };
+        paint[`detailed-road-direction-left-${suffix}`] = {
+            'line-color': isDark ? 'rgba(255, 255, 255, 0.92)' : 'rgba(100, 116, 139, 0.9)',
+            'line-opacity': isSatellite ? 0.82 : 1,
+        };
+        paint[`detailed-road-direction-right-${suffix}`] = {
+            'line-color': isDark ? 'rgba(255, 255, 255, 0.92)' : 'rgba(100, 116, 139, 0.9)',
+            'line-opacity': isSatellite ? 0.82 : 1,
+        };
+
+        for (let boundary = 1; boundary <= 9; boundary += 1) {
+            paint[`detailed-road-lane-${boundary}-${suffix}`] = {
+                'line-color': isDark ? 'rgba(255, 255, 255, 0.76)' : 'rgba(100, 116, 139, 0.64)',
+                'line-opacity': isSatellite
+                    ? 0.68
+                    : ['interpolate', ['linear'], ['zoom'], 16, 0.64, 18, 0.9],
+            };
+        }
     }
 
     Object.entries(paint).forEach(([layerIdToUpdate, properties]) => {
@@ -1417,77 +1415,6 @@ function addRoadDetailSourceAndLayers() {
     const layers = [
         ...createDetailedRoadSurfaceLayers(),
         {
-            id: 'detailed-road-edge-left',
-            type: 'line',
-            minzoom: 16,
-            filter: ROAD_MARKING_GROUND_FILTER,
-            layout: {
-                'line-cap': 'butt',
-                'line-join': 'round',
-            },
-            paint: {
-                'line-color': 'rgba(255, 255, 255, 0.72)',
-                'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.6, 18, 0.95, 20, 1.6],
-                'line-offset': createRoadEdgeOffsetExpression(-1),
-                'line-opacity': 0.88,
-            },
-        },
-        {
-            id: 'detailed-road-edge-right',
-            type: 'line',
-            minzoom: 16,
-            filter: ROAD_MARKING_GROUND_FILTER,
-            layout: {
-                'line-cap': 'butt',
-                'line-join': 'round',
-            },
-            paint: {
-                'line-color': 'rgba(255, 255, 255, 0.72)',
-                'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.6, 18, 0.95, 20, 1.6],
-                'line-offset': createRoadEdgeOffsetExpression(1),
-                'line-opacity': 0.88,
-            },
-        },
-        ...createDetailedRoadLaneLayers(),
-        {
-            id: 'detailed-road-direction-left',
-            type: 'line',
-            minzoom: 16,
-            filter: [
-                'all',
-                ...ROAD_MARKING_GROUND_FILTER.slice(1),
-                ['has', 'directionBoundary'],
-            ],
-            layout: {
-                'line-cap': 'butt',
-                'line-join': 'round',
-            },
-            paint: {
-                'line-color': 'rgba(255, 255, 255, 0.94)',
-                'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.8, 18, 1.2, 20, 2.2],
-                'line-offset': createRoadDirectionOffsetExpression(-1),
-            },
-        },
-        {
-            id: 'detailed-road-direction-right',
-            type: 'line',
-            minzoom: 16,
-            filter: [
-                'all',
-                ...ROAD_MARKING_GROUND_FILTER.slice(1),
-                ['has', 'directionBoundary'],
-            ],
-            layout: {
-                'line-cap': 'butt',
-                'line-join': 'round',
-            },
-            paint: {
-                'line-color': 'rgba(255, 255, 255, 0.94)',
-                'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.8, 18, 1.2, 20, 2.2],
-                'line-offset': createRoadDirectionOffsetExpression(1),
-            },
-        },
-        {
             id: 'road-turn-lane-arrows',
             type: 'symbol',
             minzoom: 16.5,
@@ -1498,8 +1425,8 @@ function addRoadDetailSourceAndLayers() {
                 'icon-rotate': ['coalesce', ['get', 'bearing'], 0],
                 'icon-rotation-alignment': 'map',
                 'icon-pitch-alignment': 'map',
-                'icon-allow-overlap': false,
-                'icon-ignore-placement': false,
+                'icon-allow-overlap': true,
+                'icon-ignore-placement': true,
                 'icon-padding': 2,
             },
             paint: {
@@ -1603,17 +1530,18 @@ function addRoadDetailSourceAndLayers() {
     updateVectorRoadLayerTheme(getSavedBaseMapLayer());
 }
 
-function createDetailedRoadLaneLayers() {
+function createDetailedRoadLaneLayers(roadLayer, suffix) {
     return Array.from({ length: 9 }, (_, index) => {
         const boundary = index + 1;
 
         return {
-            id: `detailed-road-lane-${boundary}`,
+            id: `detailed-road-lane-${boundary}-${suffix}`,
             type: 'line',
             minzoom: 16,
             filter: [
                 'all',
-                ...ROAD_MARKING_GROUND_FILTER.slice(1),
+                ['==', ['get', 'detailType'], 'road_marking_geometry'],
+                ['==', ['to-number', ['get', 'layer'], 0], roadLayer],
                 ['>', ['to-number', ['get', 'laneCount'], 1], boundary],
                 ['!=', ['coalesce', ['get', 'directionBoundary'], -1], boundary],
             ],
@@ -1642,6 +1570,26 @@ function createDetailedRoadSurfaceLayers() {
         ];
 
         return [
+            {
+                id: `detailed-road-median-${suffix}`,
+                type: 'line',
+                minzoom: 16,
+                filter: [
+                    'all',
+                    ...layerFilter.slice(1),
+                    ['==', ['to-number', ['get', 'pairedCarriageway'], 0], 1],
+                ],
+                layout: {
+                    'line-cap': 'square',
+                    'line-join': 'round',
+                },
+                paint: {
+                    'line-color': '#E5E8ED',
+                    'line-width': createRoadMedianWidthExpression(),
+                    'line-offset': createRoadMedianOffsetExpression(),
+                    'line-opacity': 1,
+                },
+            },
             {
                 id: `detailed-road-underlay-${suffix}`,
                 type: 'line',
@@ -1706,8 +1654,87 @@ function createDetailedRoadSurfaceLayers() {
                     'line-opacity': 1,
                 },
             },
+            {
+                id: `detailed-road-edge-left-${suffix}`,
+                type: 'line',
+                minzoom: 16,
+                filter: createRoadMarkingLayerFilter(roadLayer),
+                layout: {
+                    'line-cap': 'butt',
+                    'line-join': 'round',
+                },
+                paint: {
+                    'line-color': 'rgba(255, 255, 255, 0.72)',
+                    'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.6, 18, 0.95, 20, 1.6],
+                    'line-offset': createRoadEdgeOffsetExpression(-1),
+                    'line-opacity': 0.88,
+                },
+            },
+            {
+                id: `detailed-road-edge-right-${suffix}`,
+                type: 'line',
+                minzoom: 16,
+                filter: createRoadMarkingLayerFilter(roadLayer),
+                layout: {
+                    'line-cap': 'butt',
+                    'line-join': 'round',
+                },
+                paint: {
+                    'line-color': 'rgba(255, 255, 255, 0.72)',
+                    'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.6, 18, 0.95, 20, 1.6],
+                    'line-offset': createRoadEdgeOffsetExpression(1),
+                    'line-opacity': 0.88,
+                },
+            },
+            ...createDetailedRoadLaneLayers(roadLayer, suffix),
+            {
+                id: `detailed-road-direction-left-${suffix}`,
+                type: 'line',
+                minzoom: 16,
+                filter: [
+                    'all',
+                    ...createRoadMarkingLayerFilter(roadLayer).slice(1),
+                    ['has', 'directionBoundary'],
+                ],
+                layout: {
+                    'line-cap': 'butt',
+                    'line-join': 'round',
+                },
+                paint: {
+                    'line-color': 'rgba(255, 255, 255, 0.94)',
+                    'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.8, 18, 1.2, 20, 2.2],
+                    'line-offset': createRoadDirectionOffsetExpression(-1),
+                },
+            },
+            {
+                id: `detailed-road-direction-right-${suffix}`,
+                type: 'line',
+                minzoom: 16,
+                filter: [
+                    'all',
+                    ...createRoadMarkingLayerFilter(roadLayer).slice(1),
+                    ['has', 'directionBoundary'],
+                ],
+                layout: {
+                    'line-cap': 'butt',
+                    'line-join': 'round',
+                },
+                paint: {
+                    'line-color': 'rgba(255, 255, 255, 0.94)',
+                    'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.8, 18, 1.2, 20, 2.2],
+                    'line-offset': createRoadDirectionOffsetExpression(1),
+                },
+            },
         ];
     });
+}
+
+function createRoadMarkingLayerFilter(roadLayer) {
+    return [
+        'all',
+        ['==', ['get', 'detailType'], 'road_marking_geometry'],
+        ['==', ['to-number', ['get', 'layer'], 0], roadLayer],
+    ];
 }
 
 function roadDetailLayerSuffix(roadLayer) {
@@ -1721,7 +1748,7 @@ function createRoadSurfaceWidthExpression(extraWidths = [0, 0, 0, 0, 0]) {
         'interpolate',
         ['exponential', 2],
         ['zoom'],
-        ...roadDetailZoomStops().flatMap(([zoom, laneWidth], index) => [
+        ...roadDetailZoomStops().flatMap(([zoom, laneWidth]) => [
             zoom,
             [
                 '+',
@@ -1730,6 +1757,63 @@ function createRoadSurfaceWidthExpression(extraWidths = [0, 0, 0, 0, 0]) {
             ],
         ]),
     ];
+}
+
+function createRoadMedianWidthExpression() {
+    return [
+        'interpolate',
+        ['exponential', 2],
+        ['zoom'],
+        ...roadDetailZoomStops().flatMap(([zoom, laneWidth]) => [
+            zoom,
+            createRoadMedianWidthAtZoom(laneWidth),
+        ]),
+    ];
+}
+
+function createRoadMedianOffsetExpression() {
+    const overlapMeters = 1.25;
+
+    return [
+        'interpolate',
+        ['exponential', 2],
+        ['zoom'],
+        ...roadDetailZoomStops().flatMap(([zoom, laneWidth], index) => [
+            zoom,
+            [
+                '*',
+                -1,
+                [
+                    '-',
+                    [
+                        '+',
+                        ['*', ['/', ['to-number', ['get', 'laneCount'], 1], 2], laneWidth],
+                        ['/', createRoadMedianWidthAtZoom(laneWidth), 2],
+                    ],
+                    overlapMeters * laneWidth / 3.5,
+                ],
+            ],
+        ]),
+    ];
+}
+
+function createRoadMedianWidthAtZoom(laneWidth) {
+    const overlapMeters = 1.25;
+    const fillMeters = [
+        'max',
+        overlapMeters,
+        [
+            '+',
+            [
+                '-',
+                ['/', ['to-number', ['get', 'pairedCarriagewayDistance'], 0], 2],
+                ['*', ['to-number', ['get', 'laneCount'], 1], 1.75],
+            ],
+            overlapMeters,
+        ],
+    ];
+
+    return ['*', fillMeters, laneWidth / 3.5];
 }
 
 function createRoadLaneOffsetExpression(boundary) {

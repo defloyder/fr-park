@@ -108,6 +108,22 @@ class RoadDetailApiTest extends TestCase
                     ],
                     [
                         'type' => 'way',
+                        'id' => 26,
+                        'nodes' => [17, 16],
+                        'geometry' => [
+                            ['lat' => 55.7531, 'lon' => 37.6127],
+                            ['lat' => 55.7521, 'lon' => 37.6117],
+                        ],
+                        'tags' => [
+                            'highway' => 'motorway',
+                            'name' => 'МКАД, 33-й километр',
+                            'lanes' => '5',
+                            'oneway' => 'yes',
+                            'maxspeed' => '100',
+                        ],
+                    ],
+                    [
+                        'type' => 'way',
                         'id' => 25,
                         'nodes' => [31, 33, 34],
                         'geometry' => [
@@ -159,9 +175,15 @@ class RoadDetailApiTest extends TestCase
         $features = collect($response->json('features'));
         $road = $features->firstWhere('id', 'way-20-geometry');
         $marking = $features->firstWhere('id', 'way-20-marking-0');
+        $mkad = $features->firstWhere('id', 'way-23-geometry');
+        $oppositeMkad = $features->firstWhere('id', 'way-26-geometry');
 
         $this->assertNotNull($road);
         $this->assertNotNull($marking);
+        $this->assertSame(1, $mkad['properties']['pairedCarriageway'] ?? null);
+        $this->assertSame(1, $oppositeMkad['properties']['pairedCarriageway'] ?? null);
+        $this->assertGreaterThan(20, $mkad['properties']['pairedCarriagewayDistance'] ?? 0);
+        $this->assertLessThan(25, $mkad['properties']['pairedCarriagewayDistance'] ?? INF);
         $this->assertSame([37.61, 55.75], $road['geometry']['coordinates'][0]);
         $this->assertNotSame([37.61, 55.75], $marking['geometry']['coordinates'][0]);
         $this->assertSame([37.611, 55.751], $marking['geometry']['coordinates'][1]);

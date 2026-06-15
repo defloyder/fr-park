@@ -35,7 +35,7 @@ class RoadDetailService
             out body qt;
             OVERPASS;
 
-        $cacheKey = 'road-details:features:v10:'.sha1(json_encode($this->quantizeBounds($bounds)));
+        $cacheKey = 'road-details:features:v12:'.sha1(json_encode($this->quantizeBounds($bounds)));
 
         return Cache::remember(
             $cacheKey,
@@ -105,9 +105,15 @@ class RoadDetailService
         $elements = $this->hydrateWayGeometry($elements);
         $nodeBearings = $this->nodeBearings($elements);
         $junctionNodes = $this->junctionNodeIds($elements);
+        $pairedCarriageways = $this->pairedCarriagewayIds($elements);
 
         $features = collect($elements)
-            ->flatMap(fn (array $element) => $this->elementFeatures($element, $nodeBearings, $junctionNodes))
+            ->flatMap(fn (array $element) => $this->elementFeatures(
+                $element,
+                $nodeBearings,
+                $junctionNodes,
+                $pairedCarriageways,
+            ))
             ->values()
             ->all();
 
@@ -173,7 +179,12 @@ class RoadDetailService
         return $features;
     }
 
-    private function elementFeatures(array $element, array $nodeBearings, array $junctionNodes): array
+    private function elementFeatures(
+        array $element,
+        array $nodeBearings,
+        array $junctionNodes,
+        array $pairedCarriageways,
+    ): array
     {
         $tags = (array) ($element['tags'] ?? []);
         $id = (string) ($element['type'] ?? 'osm').'-'.($element['id'] ?? uniqid());
@@ -227,6 +238,11 @@ class RoadDetailService
                 'laneCount' => $laneCount,
                 'oneway' => $this->isOneway($tags),
                 'isLink' => str_ends_with(mb_strtolower((string) ($tags['highway'] ?? '')), '_link') ? 1 : 0,
+                'pairedCarriageway' => isset($pairedCarriageways[(string) ($element['id'] ?? '')]) ? 1 : 0,
+                'pairedCarriagewayDistance' => round(
+                    (float) ($pairedCarriageways[(string) ($element['id'] ?? '')] ?? 0),
+                    2,
+                ),
                 'directionBoundary' => $directionBoundary,
                 'name' => trim((string) ($tags['name'] ?? '')),
                 'ref' => trim((string) ($tags['ref'] ?? '')),
@@ -356,11 +372,11 @@ class RoadDetailService
             $segment = array_slice($coordinates, $startIndex, $endIndex - $startIndex + 1);
 
             if (isset($junctionNodes[(string) $nodes[$startIndex]])) {
-                $segment = $this->removeLineStart($segment, 13);
+                $segment = $this->removeLineStart($segment, 4);
             }
 
             if (isset($junctionNodes[(string) $nodes[$endIndex]])) {
-                $segment = $this->removeLineEnd($segment, 13);
+                $segment = $this->removeLineEnd($segment, 4);
             }
 
             if (count($segment) >= 2 && $this->lineLength($segment) >= 6) {
@@ -369,6 +385,131 @@ class RoadDetailService
         }
 
         return $segments;
+    }
+
+    private function pairedCarriagewayIds(array $elements): array
+    {
+        $candidates = [];
+
+        foreach ($elements as $element) {
+            $tags = (array) ($element['tags'] ?? []);
+            $coordinates = collect((array) ($element['geometry'] ?? []))
+                ->filter(fn ($point) => $this->validPoint($point))
+                ->map(fn ($point) => [(float) $point['lon'], (float) $point['lat']])
+                ->values()
+                ->all();
+            $identity = $this->roadPairIdentity($tags);
+
+            if (($element['type'] ?? null) !== 'way'
+                || $identity === ''
+                || count($coordinates) < 2
+                || ! $this->isOneway($tags)
+                || str_ends_with(mb_strtolower((string) ($tags['highway'] ?? '')), '_link')
+                || ! $this->isMajorRoad($tags['highway'] ?? '')) {
+                continue;
+            }
+
+            $candidates[] = [
+                'id' => (string) ($element['id'] ?? ''),
+                'identity' => $identity,
+                'layer' => max(-5, min(5, (int) ($tags['layer'] ?? 0))),
+                'coordinates' => $coordinates,
+                'bearing' => $this->lineBearingAt($coordinates, 0.5),
+            ];
+        }
+
+        $paired = [];
+
+        foreach ($candidates as $index => $candidate) {
+            for ($otherIndex = $index + 1; $otherIndex < count($candidates); $otherIndex++) {
+                $other = $candidates[$otherIndex];
+
+                if ($candidate['identity'] !== $other['identity']
+                    || $candidate['layer'] !== $other['layer']
+                    || $this->bearingDifference($candidate['bearing'], $other['bearing']) < 135) {
+                    continue;
+                }
+
+                $distance = $this->lineDistance($candidate['coordinates'], $other['coordinates']);
+
+                if ($distance > 55) {
+                    continue;
+                }
+
+                $paired[$candidate['id']] = min($paired[$candidate['id']] ?? INF, $distance);
+                $paired[$other['id']] = min($paired[$other['id']] ?? INF, $distance);
+            }
+        }
+
+        return $paired;
+    }
+
+    private function roadPairIdentity(array $tags): string
+    {
+        if ($this->isMkad($tags)) {
+            return 'mkad';
+        }
+
+        $identity = mb_strtolower(trim(implode(' ', [
+            (string) ($tags['name'] ?? ''),
+            (string) ($tags['name:ru'] ?? ''),
+            (string) ($tags['ref'] ?? ''),
+        ])));
+
+        return preg_replace('/\s+/u', ' ', $identity) ?? '';
+    }
+
+    private function bearingDifference(float $first, float $second): float
+    {
+        $difference = abs($first - $second);
+
+        return min($difference, 360 - $difference);
+    }
+
+    private function lineDistance(array $first, array $second): float
+    {
+        $distance = INF;
+
+        foreach ($first as $firstPoint) {
+            for ($index = 0; $index < count($second) - 1; $index++) {
+                $distance = min(
+                    $distance,
+                    $this->pointSegmentDistance($firstPoint, $second[$index], $second[$index + 1]),
+                );
+            }
+        }
+
+        foreach ($second as $secondPoint) {
+            for ($index = 0; $index < count($first) - 1; $index++) {
+                $distance = min(
+                    $distance,
+                    $this->pointSegmentDistance($secondPoint, $first[$index], $first[$index + 1]),
+                );
+            }
+        }
+
+        return $distance;
+    }
+
+    private function pointSegmentDistance(array $point, array $start, array $finish): float
+    {
+        $segment = $this->meterVector($start, $finish);
+        $pointVector = $this->meterVector($start, $point);
+        $segmentLengthSquared = $segment[0] ** 2 + $segment[1] ** 2;
+
+        if ($segmentLengthSquared <= 0.0001) {
+            return hypot($pointVector[0], $pointVector[1]);
+        }
+
+        $ratio = max(0, min(
+            1,
+            ($pointVector[0] * $segment[0] + $pointVector[1] * $segment[1]) / $segmentLengthSquared,
+        ));
+
+        return hypot(
+            $pointVector[0] - $segment[0] * $ratio,
+            $pointVector[1] - $segment[1] * $ratio,
+        );
     }
 
     private function removeLineStart(array $coordinates, float $targetMeters): array
