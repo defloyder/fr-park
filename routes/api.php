@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\GeocodeController;
 use App\Http\Controllers\Api\ParkingSpotController;
+use App\Http\Controllers\Api\RoadDetailController;
 use App\Http\Controllers\Api\RouteController;
 use App\Http\Controllers\Api\SessionController;
 use App\Http\Controllers\Api\SpeedCameraController;
@@ -20,6 +21,10 @@ Route::get('geocode/reverse', [GeocodeController::class, 'reverse'])
 Route::get('routes/driving', [RouteController::class, 'driving'])
     ->middleware('throttle:60,1')
     ->name('routes.driving');
+
+Route::get('map/road-details', RoadDetailController::class)
+    ->middleware('throttle:30,1')
+    ->name('map.road-details');
 
 Route::post('navigation/speed-cameras', SpeedCameraController::class)
     ->middleware('throttle:30,1')

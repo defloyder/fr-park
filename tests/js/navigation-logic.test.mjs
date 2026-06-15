@@ -515,13 +515,21 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
         'road-lane-major-outer-right',
         'road-center-double-left',
         'road-center-double-right',
-        'road-oneway-divider',
-        'road-junction-arrows',
+        'road-turn-lane-arrows',
+        'road-crossing-markings',
+        'road-speed-bump-markings',
+        'road-traffic-signals',
+        'road-maxspeed-markings',
+        'road-no-parking-left',
+        'road-no-parking-right',
     ]) {
         assert.match(mapSource, new RegExp(`id: '${layerId}'`));
     }
 
     assert.doesNotMatch(mapSource, /id: 'road-direction-arrows'/);
+    assert.doesNotMatch(mapSource, /id: 'road-lane-direction-arrows'/);
+    assert.doesNotMatch(mapSource, /id: 'road-oneway-divider'/);
+    assert.match(mapSource, /turnLanes/);
     assert.match(mapSource, /'background-color': '#F4F3ED'/);
     assert.match(mapSource, /'fill-color': '#BFDDAE'/);
     assert.match(mapSource, /'fill-color': '#D8ECCB'/);

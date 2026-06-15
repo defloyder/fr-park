@@ -75,6 +75,25 @@ export async function fetchParkingSpots() {
     return _decrypt(encrypted, cryptoKey);
 }
 
+export async function fetchRoadDetails(bounds) {
+    const params = new URLSearchParams({
+        south: String(bounds.south),
+        west: String(bounds.west),
+        north: String(bounds.north),
+        east: String(bounds.east),
+    });
+    const response = await fetch(`/api/map/road-details?${params}`, {
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json' },
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to load road details');
+    }
+
+    return response.json();
+}
+
 export async function createParkingSpot(payload) {
     const response = await fetch('/api/parking-spots', {
         method: 'POST',
