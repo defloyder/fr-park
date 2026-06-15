@@ -18,15 +18,8 @@ class RoadDetailService
         );
 
         $query = <<<OVERPASS
-            [out:json][timeout:18];
+            [out:json][timeout:12];
             (
-              node["highway"="traffic_signals"]{$bbox};
-              node["highway"="crossing"]{$bbox};
-              node["traffic_calming"~"^(bump|hump|table|cushion|yes)$"]{$bbox};
-            )->.roadNodes;
-            (
-              .roadNodes;
-              way(bn.roadNodes);
               way["highway"~"^(motorway|trunk|primary|secondary|tertiary|motorway_link|trunk_link|primary_link|secondary_link|tertiary_link)$"]["lanes"]{$bbox};
               way["highway"~"^(motorway|trunk|primary|secondary|tertiary|motorway_link|trunk_link|primary_link|secondary_link|tertiary_link)$"]["lanes:forward"]{$bbox};
               way["highway"~"^(motorway|trunk|primary|secondary|tertiary|motorway_link|trunk_link|primary_link|secondary_link|tertiary_link)$"]["lanes:backward"]{$bbox};
@@ -34,31 +27,36 @@ class RoadDetailService
               way["highway"]["turn:lanes:forward"]{$bbox};
               way["highway"]["turn:lanes:backward"]{$bbox};
               way["highway"]["maxspeed"]{$bbox};
-              way["highway"]["parking:condition:left"~"no_parking|no_stopping|restricted"]{$bbox};
-              way["highway"]["parking:condition:right"~"no_parking|no_stopping|restricted"]{$bbox};
-              way["highway"]["parking:condition:both"~"no_parking|no_stopping|restricted"]{$bbox};
-              way["highway"]["parking:left"~"no_parking|no_stopping|no"]{$bbox};
-              way["highway"]["parking:right"~"no_parking|no_stopping|no"]{$bbox};
-              way["highway"]["parking:both"~"no_parking|no_stopping|no"]{$bbox};
             );
+            node["highway"="traffic_signals"]{$bbox};
+            node["highway"="crossing"]{$bbox};
+            node["traffic_calming"~"^(bump|hump|table|cushion|yes)$"]{$bbox};
             out body geom;
             OVERPASS;
 
-        $cacheKey = 'road-details:overpass:'.sha1($query);
-
         try {
+            $cacheKey = 'road-details:overpass:'.sha1($query);
+
             $payload = Cache::remember(
                 $cacheKey,
                 now()->addMinutes(30),
                 fn () => $this->fetchOverpass($query),
             );
-        } catch (\Throwable $exception) {
-            // Overpass can be rate-limited/unavailable; avoid a request storm.
-            Cache::put($cacheKey, ['elements' => [], '_unavailable' => true], now()->addSeconds(90));
-            throw $exception;
-        }
 
-        return $this->toGeoJsonFeatures((array) data_get($payload, 'elements', []));
+            $features = $this->toGeoJsonFeatures((array) data_get($payload, 'elements', []));
+
+            return array_slice($features, 0, 2500);
+        } catch (\Throwable $exception) {
+            Cache::put(
+                'road-details:overpass:'.sha1($query),
+                ['elements' => [], '_unavailable' => true],
+                now()->addSeconds(90),
+            );
+
+            report($exception);
+
+            return [];
+        }
     }
 
     private function fetchOverpass(string $query): array
@@ -75,7 +73,7 @@ class RoadDetailService
                     'User-Agent' => 'Auralith-Maps/1.0',
                 ])
                     ->connectTimeout(5)
-                    ->timeout(24)
+                    ->timeout(14)
                     ->get($endpoint, ['data' => $query])
                     ->throw()
                     ->json();

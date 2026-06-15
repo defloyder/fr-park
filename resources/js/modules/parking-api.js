@@ -88,7 +88,11 @@ export async function fetchRoadDetails(bounds) {
     });
 
     if (!response.ok) {
-        throw new Error('Failed to load road details');
+        return {
+            type: 'FeatureCollection',
+            features: [],
+            unavailable: true,
+        };
     }
 
     return response.json();

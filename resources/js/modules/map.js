@@ -401,7 +401,6 @@ const MAP_STYLE = {
             source: ROAD_SOURCE_ID,
             'source-layer': 'transportation',
             minzoom: 8,
-            maxzoom: 16,
             filter: ['in', ['get', 'class'], ['literal', ['motorway', 'trunk', 'primary', 'secondary', 'tertiary']]],
             layout: {
                 'line-cap': 'round',
@@ -456,7 +455,6 @@ const MAP_STYLE = {
             source: ROAD_SOURCE_ID,
             'source-layer': 'transportation',
             minzoom: 8,
-            maxzoom: 16,
             filter: ['in', ['get', 'class'], ['literal', ['motorway', 'trunk', 'primary', 'secondary', 'tertiary']]],
             layout: {
                 'line-cap': 'round',
@@ -1836,27 +1834,47 @@ async function loadRoadDetails() {
         return;
     }
 
-    const bounds = map.getBounds();
+    const bounds = getRoadDetailRequestBounds(map.getBounds());
     const requestId = ++roadDetailRequestId;
 
     try {
         const collection = await fetchRoadDetails({
-            south: Number(bounds.getSouth().toFixed(5)),
-            west: Number(bounds.getWest().toFixed(5)),
-            north: Number(bounds.getNorth().toFixed(5)),
-            east: Number(bounds.getEast().toFixed(5)),
+            south: Number(bounds.south.toFixed(5)),
+            west: Number(bounds.west.toFixed(5)),
+            north: Number(bounds.north.toFixed(5)),
+            east: Number(bounds.east.toFixed(5)),
         });
         const preparedCollection = await prepareRoadDetailIcons(
             collection?.type === 'FeatureCollection' ? collection : emptyFeatureCollection(),
         );
 
         if (requestId !== roadDetailRequestId) return;
-        source.setData(preparedCollection);
-    } catch {
-        if (requestId === roadDetailRequestId) {
-            source.setData(emptyFeatureCollection());
+        if ((preparedCollection.features ?? []).length > 0 || !collection?.unavailable) {
+            source.setData(preparedCollection);
         }
+    } catch {
+        // Keep the last loaded road details visible if the request fails.
     }
+}
+
+function getRoadDetailRequestBounds(viewBounds) {
+    const south = viewBounds.getSouth();
+    const west = viewBounds.getWest();
+    const north = viewBounds.getNorth();
+    const east = viewBounds.getEast();
+    const centerLat = (south + north) / 2;
+    const centerLon = (west + east) / 2;
+    const maxLatSpan = 0.07;
+    const maxLonSpan = 0.11;
+    const latSpan = Math.min(Math.abs(north - south), maxLatSpan);
+    const lonSpan = Math.min(Math.abs(east - west), maxLonSpan);
+
+    return {
+        south: centerLat - latSpan / 2,
+        west: centerLon - lonSpan / 2,
+        north: centerLat + latSpan / 2,
+        east: centerLon + lonSpan / 2,
+    };
 }
 
 function emptyFeatureCollection() {
