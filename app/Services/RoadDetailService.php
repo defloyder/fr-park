@@ -25,15 +25,15 @@ class RoadDetailService
               way["highway"]["turn:lanes:forward"]{$bbox};
               way["highway"]["turn:lanes:backward"]{$bbox};
               way["highway"]["maxspeed"]{$bbox};
+              node["highway"="traffic_signals"]{$bbox};
+              node["highway"="crossing"]{$bbox};
+              node["traffic_calming"~"^(bump|hump|table|cushion|yes)$"]{$bbox};
             );
-            node["highway"="traffic_signals"]{$bbox};
-            node["highway"="crossing"]{$bbox};
-            node["traffic_calming"~"^(bump|hump|table|cushion|yes)$"]{$bbox};
             out body geom;
             OVERPASS;
 
-        $cacheKey = 'road-details:overpass:'.sha1($query);
-        $missKey = 'road-details:miss:'.sha1($query);
+        $cacheKey = 'road-details:overpass:v2:'.sha1($query);
+        $missKey = 'road-details:miss:v2:'.sha1($query);
 
         if (Cache::has($missKey)) {
             return [];
