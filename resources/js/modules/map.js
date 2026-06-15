@@ -1149,12 +1149,7 @@ function updateVectorRoadLayerTheme(layerId) {
         },
         'detailed-road-gore-fill': {
             'fill-color': isDark ? '#6B7F9C' : '#E5E8ED',
-            'fill-opacity': isSatellite ? 0.7 : 0.98,
-        },
-        'detailed-road-gore-hatch': {
-            'fill-opacity': isSatellite
-                ? 0.68
-                : ['interpolate', ['linear'], ['zoom'], 16, 0.62, 18, 0.92],
+            'fill-opacity': isSatellite ? 0.72 : 0.94,
         },
         'detailed-road-edge-left': {
             'line-color': isDark ? 'rgba(255, 255, 255, 0.84)' : 'rgba(100, 116, 139, 0.66)',
@@ -1411,7 +1406,6 @@ async function addRoadMarkingImages() {
         addSvgImage(ROAD_CROSSING_IMAGE_ID, createRoadCrossingSvg(), { width: 84, height: 34 }),
         addSvgImage(ROAD_SPEED_BUMP_IMAGE_ID, createRoadSpeedBumpSvg(), { width: 82, height: 32 }),
         addSvgImage(ROAD_TRAFFIC_SIGNAL_IMAGE_ID, createRoadTrafficSignalSvg(), { width: 30, height: 48 }),
-        addSvgImage(ROAD_GORE_HATCH_IMAGE_ID, createRoadGoreHatchSvg(), { width: 20, height: 20 }),
         addSvgImage(ROAD_PARKING_RESTRICTION_IMAGE_ID, createRoadParkingRestrictionSvg(), { width: 28, height: 28 }),
     ]);
 }
@@ -1496,21 +1490,11 @@ function addRoadDetailSourceAndLayers() {
         {
             id: 'detailed-road-gore-fill',
             type: 'fill',
-            minzoom: 16,
+            minzoom: 16.5,
             filter: ['==', ['get', 'detailType'], 'road_gore'],
             paint: {
                 'fill-color': '#E5E8ED',
-                'fill-opacity': 0.98,
-            },
-        },
-        {
-            id: 'detailed-road-gore-hatch',
-            type: 'fill',
-            minzoom: 16,
-            filter: ['==', ['get', 'detailType'], 'road_gore'],
-            paint: {
-                'fill-pattern': ROAD_GORE_HATCH_IMAGE_ID,
-                'fill-opacity': ['interpolate', ['linear'], ['zoom'], 16, 0.62, 18, 0.92],
+                'fill-opacity': 0.94,
             },
         },
         {
@@ -1626,43 +1610,21 @@ function addRoadDetailSourceAndLayers() {
             },
         },
         {
-            id: 'road-turn-lane-arrows-far',
+            id: 'road-turn-lane-arrows',
             type: 'symbol',
-            minzoom: 16,
-            maxzoom: 18,
+            minzoom: 16.5,
             filter: ['==', ['get', 'detailType'], 'turn_lanes'],
             layout: {
-                'symbol-placement': 'line',
-                'symbol-spacing': ['interpolate', ['linear'], ['zoom'], 16, 260, 17, 200],
                 'icon-image': ['get', 'iconId'],
-                'icon-size': ['interpolate', ['exponential', 2], ['zoom'], 16, 0.22, 17, 0.28],
+                'icon-size': ['interpolate', ['linear'], ['zoom'], 16.5, 0.58, 18, 0.74, 20, 0.92],
+                'icon-rotate': ['coalesce', ['get', 'bearing'], 0],
                 'icon-rotation-alignment': 'map',
                 'icon-pitch-alignment': 'map',
-                'icon-keep-upright': false,
                 'icon-allow-overlap': true,
                 'icon-ignore-placement': true,
             },
             paint: {
-                'icon-opacity': ['interpolate', ['linear'], ['zoom'], 16, 0.7, 17.5, 0.88],
-            },
-        },
-        {
-            id: 'road-turn-lane-arrows-near',
-            type: 'symbol',
-            minzoom: 18,
-            filter: ['==', ['get', 'detailType'], 'turn_lanes'],
-            layout: {
-                'symbol-placement': 'line-center',
-                'icon-image': ['get', 'iconId'],
-                'icon-size': ['interpolate', ['exponential', 2], ['zoom'], 18, 0.26, 20, 0.32],
-                'icon-rotation-alignment': 'map',
-                'icon-pitch-alignment': 'map',
-                'icon-keep-upright': false,
-                'icon-allow-overlap': true,
-                'icon-ignore-placement': true,
-            },
-            paint: {
-                'icon-opacity': ['interpolate', ['linear'], ['zoom'], 18, 0.82, 20, 0.96],
+                'icon-opacity': ['interpolate', ['linear'], ['zoom'], 16.5, 0.84, 18, 0.96],
             },
         },
         {
@@ -1783,6 +1745,7 @@ function createDetailedRoadLaneLayers() {
                 ['==', ['get', 'detailType'], 'road_geometry'],
                 ['>', ['to-number', ['get', 'laneCount'], 1], boundary],
                 ['!=', ['coalesce', ['get', 'directionBoundary'], -1], boundary],
+                ['!=', ['to-number', ['get', 'isLink'], 0], 1],
             ],
             layout: {
                 'line-cap': 'round',
@@ -1793,7 +1756,7 @@ function createDetailedRoadLaneLayers() {
                 'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.55, 18, 0.9, 20, 1.7],
                 'line-offset': createRoadLaneOffsetExpression(boundary),
                 'line-dasharray': [4, 4],
-                'line-trim-offset': [0.12, 0.88],
+                'line-trim-offset': [0.22, 0.78],
                 'line-opacity': ['interpolate', ['linear'], ['zoom'], 16, 0.64, 18, 0.9],
             },
         };
@@ -2103,23 +2066,28 @@ async function prepareRoadDetailIcons(collection) {
 }
 
 function getTurnLaneIconDimensions(lanes) {
+    const viewHeight = Math.max(26, lanes.length * 26);
+
     return {
-        width: 82,
-        height: Math.max(26, lanes.length * 26),
+        width: 118,
+        height: Math.round(viewHeight * (118 / 82)),
+        viewWidth: 82,
+        viewHeight,
     };
 }
 
-function createTurnLaneMarkingSvg(lanes, { width, height }) {
-    const laneHeight = height / Math.max(1, lanes.length);
+function createTurnLaneMarkingSvg(lanes, { width, height, viewWidth = 82, viewHeight = height }) {
+    const laneHeight = viewHeight / Math.max(1, lanes.length);
     const paths = lanes.flatMap((turns, laneIndex) => {
         const centerY = laneHeight * (laneIndex + 0.5);
+        const primaryTurn = Array.isArray(turns) ? turns[0] : null;
 
-        return turns.map((turn) => createTurnLanePath(turn, centerY));
+        return primaryTurn ? [createTurnLanePath(primaryTurn, centerY)] : [];
     }).join('');
 
     return `
-<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-  <g fill="none" stroke="#FFFFFF" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round">
+<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${viewWidth} ${viewHeight}">
+  <g fill="none" stroke="#FFFFFF" stroke-width="5.6" stroke-linecap="round" stroke-linejoin="round">
     ${paths}
   </g>
 </svg>`;

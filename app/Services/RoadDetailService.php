@@ -23,8 +23,8 @@ class RoadDetailService
             out body geom;
             OVERPASS;
 
-        $cacheKey = 'road-details:features:v4:'.sha1(json_encode($this->quantizeBounds($bounds)));
-        $missKey = 'road-details:miss:v4:'.sha1(json_encode($this->quantizeBounds($bounds)));
+        $cacheKey = 'road-details:features:v5:'.sha1(json_encode($this->quantizeBounds($bounds)));
+        $missKey = 'road-details:miss:v5:'.sha1(json_encode($this->quantizeBounds($bounds)));
 
         if (Cache::has($missKey)) {
             return [];
@@ -273,13 +273,27 @@ class RoadDetailService
 
             $direction = $definition['direction'];
             $directedCoordinates = $direction === 'backward' ? array_reverse($coordinates) : $coordinates;
+            $approach = $this->trimLineFromEnd($directedCoordinates, 90);
+
+            if (count($approach) < 2) {
+                continue;
+            }
+
+            $point = $this->pointAlongLine($approach, 0.76);
+
+            if ($point === null) {
+                continue;
+            }
+
+            $travelBearing = $this->lineBearingAt($approach, 0.76);
             $features[] = $this->feature(
                 $id.'-turn-lanes-'.$direction,
-                'LineString',
-                $this->trimLineFromEnd($directedCoordinates, 70),
+                'Point',
+                $point,
                 [
                     'detailType' => 'turn_lanes',
                     'turnLanes' => $lanes,
+                    'bearing' => fmod($travelBearing - 90 + 360, 360),
                 ],
             );
         }
@@ -550,6 +564,7 @@ class RoadDetailService
                     'next' => [(float) $next['lon'], (float) $next['lat']],
                     'halfWidth' => max(3.2, min(18, $laneCount * 1.75)),
                     'layer' => max(-5, min(5, (int) ($tags['layer'] ?? 0))),
+                    'isLink' => str_ends_with(mb_strtolower((string) ($tags['highway'] ?? '')), '_link'),
                 ];
             }
         }
@@ -570,22 +585,85 @@ class RoadDetailService
                 continue;
             }
 
-            for ($first = 0; $first < count($nodeBranches) - 1; $first++) {
-                for ($second = $first + 1; $second < count($nodeBranches); $second++) {
-                    $feature = $this->roadGoreFeature($nodeId, $nodeBranches[$first], $nodeBranches[$second]);
-                    if ($feature !== null) {
-                        $features[] = $feature;
+            foreach ($nodeBranches as $index => $branch) {
+                if (! $branch['isLink']) {
+                    continue;
+                }
+
+                $bestMatch = null;
+                $bestAngle = null;
+
+                foreach ($nodeBranches as $otherIndex => $other) {
+                    if ($index === $otherIndex || $other['isLink']) {
+                        continue;
                     }
+
+                    $angle = $this->branchForkAngle($branch, $other);
+
+                    if ($angle === null || $angle < 18 || $angle > 72) {
+                        continue;
+                    }
+
+                    if ($bestAngle === null || $angle < $bestAngle) {
+                        $bestAngle = $angle;
+                        $bestMatch = $other;
+                    }
+                }
+
+                if ($bestMatch === null) {
+                    continue;
+                }
+
+                $feature = $this->roadGoreFeature($nodeId, $branch, $bestMatch);
+                if ($feature !== null) {
+                    $features[] = $feature;
                 }
             }
         }
 
-        return array_slice($features, 0, 220);
+        return array_slice($features, 0, 80);
+    }
+
+    private function branchForkAngle(array $first, array $second): ?float
+    {
+        if ($first['wayId'] === $second['wayId']) {
+            return null;
+        }
+
+        $firstVector = $this->meterVector($first['origin'], $first['next']);
+        $secondVector = $this->meterVector($second['origin'], $second['next']);
+        $firstLength = hypot($firstVector[0], $firstVector[1]);
+        $secondLength = hypot($secondVector[0], $secondVector[1]);
+
+        if ($firstLength < 6 || $secondLength < 6) {
+            return null;
+        }
+
+        $firstUnit = [$firstVector[0] / $firstLength, $firstVector[1] / $firstLength];
+        $secondUnit = [$secondVector[0] / $secondLength, $secondVector[1] / $secondLength];
+        $dot = max(-1, min(1, $firstUnit[0] * $secondUnit[0] + $firstUnit[1] * $secondUnit[1]));
+
+        return rad2deg(acos($dot));
+    }
+
+    private function shouldCreateRoadGore(array $first, array $second): bool
+    {
+        if ($first['wayId'] === $second['wayId'] || $first['layer'] !== $second['layer']) {
+            return false;
+        }
+
+        if (! $first['isLink'] && ! $second['isLink']) {
+            return false;
+        }
+
+        $angle = $this->branchForkAngle($first, $second);
+
+        return $angle !== null && $angle >= 18 && $angle <= 72;
     }
 
     private function roadGoreFeature(string $nodeId, array $first, array $second): ?array
     {
-        if ($first['wayId'] === $second['wayId'] || $first['layer'] !== $second['layer']) {
+        if (! $this->shouldCreateRoadGore($first, $second)) {
             return null;
         }
 
@@ -604,7 +682,7 @@ class RoadDetailService
         $dot = max(-1, min(1, $firstUnit[0] * $secondUnit[0] + $firstUnit[1] * $secondUnit[1]));
         $angle = rad2deg(acos($dot));
 
-        if ($angle < 6 || $angle > 88) {
+        if ($angle < 18 || $angle > 72) {
             return null;
         }
 
@@ -615,8 +693,8 @@ class RoadDetailService
         $secondNormal = $cross > 0
             ? [$secondUnit[1], -$secondUnit[0]]
             : [-$secondUnit[1], $secondUnit[0]];
-        $length = min(72, max(34, min($firstLength, $secondLength) * 0.9));
-        $tipDistance = min(14, $length * 0.16);
+        $length = min(64, max(30, min($firstLength, $secondLength) * 0.78));
+        $tipDistance = min(12, $length * 0.12);
         $bisector = [$firstUnit[0] + $secondUnit[0], $firstUnit[1] + $secondUnit[1]];
         $bisectorLength = max(0.001, hypot($bisector[0], $bisector[1]));
         $bisector = [$bisector[0] / $bisectorLength, $bisector[1] / $bisectorLength];
