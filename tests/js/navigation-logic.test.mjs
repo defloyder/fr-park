@@ -494,8 +494,23 @@ test('primary mobile controls keep at least 44 pixel touch targets', () => {
     assert.match(cssSource, /\.photo-dropzone__actions \.ghost-button,[\s\S]*?min-height: 46px;/);
 });
 
+test('map chrome uses inverse contrast for light and dark map themes', () => {
+    const cssSource = readFileSync(new URL('../../resources/css/map-ui.css', import.meta.url), 'utf8');
+
+    assert.match(cssSource, /body\[data-map-layer="light"\]:not\(\.is-navigation-mode\) \.top-panel,[\s\S]*?color: #f8fbff;/);
+    assert.match(cssSource, /body\[data-map-layer="light"\]:not\(\.is-navigation-mode\) \.brand-mark--maps__text-main,[\s\S]*?color: #f8fbff;/);
+    assert.match(cssSource, /body\[data-map-layer="dark"\]:not\(\.is-navigation-mode\) \.top-panel,[\s\S]*?color: #071126;/);
+    assert.match(cssSource, /body\[data-map-layer="dark"\]:not\(\.is-navigation-mode\) \.brand-mark--maps__text-main,[\s\S]*?color: #071126;/);
+    assert.match(cssSource, /body\[data-map-layer="dark"\]:not\(\.is-navigation-mode\) \.map-settings__panel,[\s\S]*?background: linear-gradient\(145deg, rgba\(255, 255, 255, 0\.95\)/);
+    assert.match(cssSource, /body\[data-map-layer="light"\]:not\(\.is-navigation-mode\) \.map-settings__panel,[\s\S]*?rgba\(9, 21, 46, 0\.94\)/);
+});
+
 test('light map style exposes detailed green areas and a clear road hierarchy', () => {
     const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
+    const baseRoadLayersSource = readFileSync(new URL('../../resources/js/maps/layers/base-road-detail-layers.js', import.meta.url), 'utf8');
+    const roadLayersSource = readFileSync(new URL('../../resources/js/maps/layers/road-detail-layers.js', import.meta.url), 'utf8');
+    const roadSourceSource = readFileSync(new URL('../../resources/js/maps/sources/road-detail-source.js', import.meta.url), 'utf8');
+    const addRoadDetailsSource = readFileSync(new URL('../../resources/js/utils/map/addRoadDetails.js', import.meta.url), 'utf8');
 
     for (const layerId of [
         'landcover-wood',
@@ -509,13 +524,29 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
         'rail-line',
         'road-path',
         'transit-labels',
-        'road-crossing-markings',
-        'road-speed-bump-markings',
-        'road-traffic-signals',
-        'road-maxspeed-markings',
-        'road-parking-restrictions',
     ]) {
         assert.match(mapSource, new RegExp(`id: '${layerId}'`));
+    }
+
+    for (const layerId of [
+        'gore_areas',
+        'gore_area_hatching',
+        'road_surfaces',
+        'road_centerlines',
+        'road_lanes',
+        'lane_markings_solid',
+        'lane_markings_dashed',
+        'lane_markings_bus',
+        'bus_lanes',
+        'crosswalks',
+        'stop_lines',
+        'traffic_calming',
+        'traffic_islands',
+        'parking_lanes',
+        'road_edges',
+        'turn_arrows',
+    ]) {
+        assert.match(roadLayersSource, new RegExp(`id: '${layerId}'`));
     }
 
     assert.doesNotMatch(mapSource, /id: 'road-direction-arrows'/);
@@ -527,44 +558,39 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
     assert.doesNotMatch(mapSource, /id: 'detailed-road-shoulder'/);
     assert.doesNotMatch(mapSource, /id: 'detailed-road-surface'/);
     assert.doesNotMatch(mapSource, /id: 'detailed-road-labels'/);
-    assert.match(mapSource, /createDetailedRoadSurfaceLayers/);
-    assert.match(mapSource, /detailed-road-median-\$\{suffix\}/);
-    assert.match(mapSource, /detailed-road-bridge-shadow-\$\{suffix\}/);
-    assert.match(mapSource, /detailed-road-underlay-\$\{suffix\}/);
-    assert.match(mapSource, /detailed-road-surface-\$\{suffix\}/);
-    assert.match(mapSource, /detailed-road-gore-fill-\$\{suffix\}/);
-    assert.match(mapSource, /detailed-road-gore-hatch-\$\{suffix\}/);
-    assert.match(mapSource, /detailed-road-edge-left-\$\{suffix\}/);
-    assert.match(mapSource, /detailed-road-bridge-rail-left-\$\{suffix\}/);
-    assert.match(mapSource, /detailed-road-direction-left-\$\{suffix\}/);
-    assert.match(mapSource, /detailed-road-lane-\$\{boundary\}-\$\{suffix\}/);
+    assert.match(mapSource, /const ENABLE_ROAD_DETAILS = true/);
+    assert.match(mapSource, /import \{ addRoadDetails \} from '\.\.\/utils\/map\/addRoadDetails'/);
+    assert.match(mapSource, /if \(ENABLE_ROAD_DETAILS\) \{\s*addRoadDetails\(map, \{ includeDataset: true \}\);\s*\}/);
+    assert.doesNotMatch(mapSource, /baseRoadSource: ROAD_SOURCE_ID/);
+    assert.doesNotMatch(mapSource, /createDetailedRoadSurfaceLayers/);
+    assert.doesNotMatch(mapSource, /createDetailedRoadLaneLayers/);
     assert.doesNotMatch(mapSource, /'line-cap': 'square'/);
-    assert.match(mapSource, /'line-cap': 'round'/);
-    assert.match(mapSource, /createDetailedRoadLaneLayers/);
-    assert.doesNotMatch(mapSource, /ROAD_MARKING_GROUND_FILTER/);
-    assert.match(mapSource, /pairedCarriageway/);
-    assert.match(mapSource, /detailType === 'road_geometry'/);
-    assert.match(mapSource, /detailType'], 'road_marking_geometry'/);
-    assert.match(mapSource, /turnLanes/);
     assert.match(mapSource, /'background-color': '#F4F3ED'/);
     assert.match(mapSource, /'fill-color': '#BFDDAE'/);
     assert.match(mapSource, /'fill-color': '#D8ECCB'/);
     assert.match(mapSource, /'fill-extrusion-color': '#D2D8D3'/);
-    assert.match(mapSource, /'motorway',\s*'#E3E7EC'/);
-    assert.doesNotMatch(mapSource, /line-trim-offset/);
-    assert.match(mapSource, /includes\('already exists'\)/);
-    assert.match(mapSource, /ROAD_DETAIL_MIN_LAT_SPAN/);
-    assert.match(mapSource, /ROAD_DETAIL_MIN_LON_SPAN/);
-    assert.match(mapSource, /detailType: 'turn_lane_arrow'/);
-    assert.match(mapSource, /createRoadTurnLaneArrowLayers/);
-    assert.match(mapSource, /'road-turn-lane-arrows'/);
-    assert.match(mapSource, /createTurnLaneIconOffsetExpression/);
-    assert.match(mapSource, /'icon-offset': iconOffset/);
-    assert.match(mapSource, /laneOffsetStep/);
+    assert.match(mapSource, /'motorway',\s*'#B9C4D1'/);
+    assert.match(roadSourceSource, /ROAD_DETAILS_SOURCE_ID = 'road-details'/);
+    assert.match(roadSourceSource, /ROAD_DETAILS_GEOJSON_URL = '\/data\/road-details\/road-details\.geojson'/);
+    assert.match(roadSourceSource, /pmtiles:\/\/road-details\.pmtiles/);
+    assert.match(addRoadDetailsSource, /createBaseRoadDetailLayers/);
+    assert.match(addRoadDetailsSource, /includeDataset = true/);
+    assert.match(addRoadDetailsSource, /road-detail-gore-hatch/);
+    assert.match(addRoadDetailsSource, /map\.getSource\(ROAD_DETAILS_SOURCE_ID\)/);
+    assert.match(addRoadDetailsSource, /map\.getLayer\(layer\.id\)/);
+    assert.match(addRoadDetailsSource, /map\.addLayer\(layer, beforeId\)/);
+    assert.match(baseRoadLayersSource, /'source-layer': sourceLayer/);
+    assert.match(baseRoadLayersSource, /ROAD_CLASSES/);
+    assert.match(baseRoadLayersSource, /line-offset/);
+    assert.match(roadLayersSource, /minzoom: 16/);
+    assert.match(roadLayersSource, /minzoom: 17/);
+    assert.match(roadLayersSource, /minzoom: 18/);
+    assert.match(roadLayersSource, /'line-offset': lineOffset/);
+    assert.match(roadLayersSource, /'line-dasharray'/);
+    assert.match(roadLayersSource, /'fill-pattern': 'road-detail-gore-hatch'/);
     assert.match(mapSource, /displayGeometry/);
     assert.match(mapSource, /smoothRouteLineCoordinates/);
     assert.match(mapSource, /'icon-allow-overlap': true/);
     assert.match(mapSource, /'icon-ignore-placement': true/);
     assert.doesNotMatch(mapSource, /createTurnLaneMarkingSvg/);
-    assert.doesNotMatch(mapSource, /extendLineEnds/);
 });

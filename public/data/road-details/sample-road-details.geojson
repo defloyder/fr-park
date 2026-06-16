@@ -1,0 +1,618 @@
+{
+  "type": "FeatureCollection",
+  "name": "sample-road-details",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [37.61062, 55.75752],
+          [37.61418, 55.75692],
+          [37.61758, 55.75628],
+          [37.62124, 55.75556]
+        ]
+      },
+      "properties": {
+        "feature_type": "road_centerline",
+        "road_id": "road_001",
+        "name": "Sample Avenue",
+        "class": "primary",
+        "oneway": true,
+        "lanes_total": 4,
+        "lanes_forward": 4,
+        "lanes_backward": 0,
+        "surface": "asphalt",
+        "maxspeed": 60,
+        "bridge": false,
+        "tunnel": false,
+        "z_order": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [37.61062, 55.75752],
+          [37.61418, 55.75692],
+          [37.61758, 55.75628],
+          [37.62124, 55.75556]
+        ]
+      },
+      "properties": {
+        "feature_type": "road_lane",
+        "road_id": "road_001",
+        "lane_id": "road_001_lane_1",
+        "lane_index": 1,
+        "direction": "forward",
+        "lane_type": "regular",
+        "turn": "through_left",
+        "width_m": 3.5,
+        "offset_m": -5.25,
+        "offset_px": -7.5
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [37.61062, 55.75752],
+          [37.61418, 55.75692],
+          [37.61758, 55.75628],
+          [37.62124, 55.75556]
+        ]
+      },
+      "properties": {
+        "feature_type": "road_lane",
+        "road_id": "road_001",
+        "lane_id": "road_001_lane_2",
+        "lane_index": 2,
+        "direction": "forward",
+        "lane_type": "regular",
+        "turn": "through",
+        "width_m": 3.5,
+        "offset_m": -1.75,
+        "offset_px": -2.5
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [37.61062, 55.75752],
+          [37.61418, 55.75692],
+          [37.61758, 55.75628],
+          [37.62124, 55.75556]
+        ]
+      },
+      "properties": {
+        "feature_type": "road_lane",
+        "road_id": "road_001",
+        "lane_id": "road_001_lane_3",
+        "lane_index": 3,
+        "direction": "forward",
+        "lane_type": "regular",
+        "turn": "through",
+        "width_m": 3.5,
+        "offset_m": 1.75,
+        "offset_px": 2.5
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [37.61062, 55.75752],
+          [37.61418, 55.75692],
+          [37.61758, 55.75628],
+          [37.62124, 55.75556]
+        ]
+      },
+      "properties": {
+        "feature_type": "road_lane",
+        "road_id": "road_001",
+        "lane_id": "road_001_lane_4",
+        "lane_index": 4,
+        "direction": "forward",
+        "lane_type": "bus",
+        "turn": "through_right",
+        "width_m": 3.5,
+        "offset_m": 5.25,
+        "offset_px": 7.5
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [37.61062, 55.75752],
+          [37.61418, 55.75692],
+          [37.61758, 55.75628],
+          [37.62124, 55.75556]
+        ]
+      },
+      "properties": {
+        "feature_type": "bus_lane",
+        "road_id": "road_001",
+        "lane_id": "road_001_lane_bus_1",
+        "direction": "forward",
+        "access": "bus,taxi,emergency",
+        "active_hours": "24/7",
+        "offset_m": 5.25,
+        "offset_px": 7.5
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [37.61062, 55.75752],
+          [37.61418, 55.75692],
+          [37.61758, 55.75628],
+          [37.62124, 55.75556]
+        ]
+      },
+      "properties": {
+        "feature_type": "parking_lane",
+        "road_id": "road_001",
+        "parking_id": "parking_001",
+        "parking_type": "parallel",
+        "orientation": "right",
+        "paid": true,
+        "capacity_estimate": 8,
+        "offset_m": 8.75,
+        "offset_px": 12
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [37.61062, 55.75752],
+          [37.61418, 55.75692],
+          [37.61758, 55.75628],
+          [37.62124, 55.75556]
+        ]
+      },
+      "properties": {
+        "feature_type": "road_edge",
+        "road_id": "road_001",
+        "edge_id": "road_001_edge_left",
+        "edge_type": "curb",
+        "offset_m": -7,
+        "offset_px": -10
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [37.61062, 55.75752],
+          [37.61418, 55.75692],
+          [37.61758, 55.75628],
+          [37.62124, 55.75556]
+        ]
+      },
+      "properties": {
+        "feature_type": "road_edge",
+        "road_id": "road_001",
+        "edge_id": "road_001_edge_right",
+        "edge_type": "curb",
+        "offset_m": 7,
+        "offset_px": 10
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [37.61062, 55.75752],
+          [37.61418, 55.75692],
+          [37.61758, 55.75628],
+          [37.62124, 55.75556]
+        ]
+      },
+      "properties": {
+        "feature_type": "lane_marking",
+        "road_id": "road_001",
+        "marking_id": "marking_001",
+        "marking_type": "dashed",
+        "color": "white",
+        "between_lanes": "1|2",
+        "width_m": 0.15,
+        "offset_m": -3.5,
+        "offset_px": -5
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [37.61062, 55.75752],
+          [37.61418, 55.75692],
+          [37.61758, 55.75628],
+          [37.62124, 55.75556]
+        ]
+      },
+      "properties": {
+        "feature_type": "lane_marking",
+        "road_id": "road_001",
+        "marking_id": "marking_002",
+        "marking_type": "dashed",
+        "color": "white",
+        "between_lanes": "2|3",
+        "width_m": 0.15,
+        "offset_m": 0,
+        "offset_px": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [37.61062, 55.75752],
+          [37.61418, 55.75692],
+          [37.61758, 55.75628],
+          [37.62124, 55.75556]
+        ]
+      },
+      "properties": {
+        "feature_type": "lane_marking",
+        "road_id": "road_001",
+        "marking_id": "marking_003",
+        "marking_type": "bus_lane_marking",
+        "color": "white",
+        "between_lanes": "3|4",
+        "width_m": 0.2,
+        "offset_m": 3.5,
+        "offset_px": 5
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [37.61734, 55.75672],
+          [37.61712, 55.75593]
+        ]
+      },
+      "properties": {
+        "feature_type": "crosswalk",
+        "crosswalk_id": "crosswalk_001",
+        "road_id": "road_001",
+        "crossing_type": "zebra",
+        "controlled": true,
+        "traffic_signals": true,
+        "width_m": 4
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [37.61672, 55.75675],
+          [37.6165, 55.75608]
+        ]
+      },
+      "properties": {
+        "feature_type": "stop_line",
+        "stop_line_id": "stop_001",
+        "road_id": "road_001",
+        "related_crosswalk_id": "crosswalk_001",
+        "width_m": 0.4
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [37.61916, 55.75617],
+          [37.61894, 55.7555]
+        ]
+      },
+      "properties": {
+        "feature_type": "traffic_calming",
+        "traffic_calming_id": "calming_001",
+        "road_id": "road_001",
+        "calming_type": "hump",
+        "width_m": 3,
+        "height": "standard"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [37.61542, 55.75672],
+            [37.61572, 55.75667],
+            [37.6158, 55.75653],
+            [37.6155, 55.75657],
+            [37.61542, 55.75672]
+          ]
+        ]
+      },
+      "properties": {
+        "feature_type": "traffic_island",
+        "island_id": "island_001",
+        "road_id": "road_001",
+        "island_type": "pedestrian_refuge",
+        "surface": "curb"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [37.6028, 55.7297],
+          [37.6074, 55.7303],
+          [37.6119, 55.7307],
+          [37.6165, 55.7312],
+          [37.6212, 55.7318]
+        ]
+      },
+      "properties": {
+        "feature_type": "road_centerline",
+        "road_id": "road_002",
+        "name": "Zhitnaya Street sample",
+        "class": "secondary",
+        "oneway": false,
+        "lanes_total": 4,
+        "lanes_forward": 2,
+        "lanes_backward": 2,
+        "surface": "asphalt",
+        "maxspeed": 60,
+        "bridge": false,
+        "tunnel": false,
+        "z_order": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [37.6028, 55.7297],
+          [37.6074, 55.7303],
+          [37.6119, 55.7307],
+          [37.6165, 55.7312],
+          [37.6212, 55.7318]
+        ]
+      },
+      "properties": {
+        "feature_type": "road_lane",
+        "road_id": "road_002",
+        "lane_id": "road_002_lane_1",
+        "lane_index": 1,
+        "direction": "forward",
+        "lane_type": "regular",
+        "turn": "through_left",
+        "width_m": 3.4,
+        "offset_m": -5.1,
+        "offset_px": -7.2
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [37.6028, 55.7297],
+          [37.6074, 55.7303],
+          [37.6119, 55.7307],
+          [37.6165, 55.7312],
+          [37.6212, 55.7318]
+        ]
+      },
+      "properties": {
+        "feature_type": "road_lane",
+        "road_id": "road_002",
+        "lane_id": "road_002_lane_2",
+        "lane_index": 2,
+        "direction": "forward",
+        "lane_type": "regular",
+        "turn": "through",
+        "width_m": 3.4,
+        "offset_m": -1.7,
+        "offset_px": -2.4
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [37.6028, 55.7297],
+          [37.6074, 55.7303],
+          [37.6119, 55.7307],
+          [37.6165, 55.7312],
+          [37.6212, 55.7318]
+        ]
+      },
+      "properties": {
+        "feature_type": "road_lane",
+        "road_id": "road_002",
+        "lane_id": "road_002_lane_3",
+        "lane_index": 3,
+        "direction": "backward",
+        "lane_type": "regular",
+        "turn": "through",
+        "width_m": 3.4,
+        "offset_m": 1.7,
+        "offset_px": 2.4
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [37.6028, 55.7297],
+          [37.6074, 55.7303],
+          [37.6119, 55.7307],
+          [37.6165, 55.7312],
+          [37.6212, 55.7318]
+        ]
+      },
+      "properties": {
+        "feature_type": "road_lane",
+        "road_id": "road_002",
+        "lane_id": "road_002_lane_4",
+        "lane_index": 4,
+        "direction": "backward",
+        "lane_type": "bus",
+        "turn": "through_right",
+        "width_m": 3.4,
+        "offset_m": 5.1,
+        "offset_px": 7.2
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [37.6028, 55.7297],
+          [37.6074, 55.7303],
+          [37.6119, 55.7307],
+          [37.6165, 55.7312],
+          [37.6212, 55.7318]
+        ]
+      },
+      "properties": {
+        "feature_type": "bus_lane",
+        "road_id": "road_002",
+        "lane_id": "road_002_lane_bus_1",
+        "direction": "backward",
+        "access": "bus,taxi,emergency",
+        "active_hours": "24/7",
+        "offset_m": 5.1,
+        "offset_px": 7.2
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [37.6028, 55.7297],
+          [37.6074, 55.7303],
+          [37.6119, 55.7307],
+          [37.6165, 55.7312],
+          [37.6212, 55.7318]
+        ]
+      },
+      "properties": {
+        "feature_type": "lane_marking",
+        "road_id": "road_002",
+        "marking_id": "marking_004",
+        "marking_type": "dashed",
+        "color": "white",
+        "between_lanes": "1|2",
+        "width_m": 0.15,
+        "offset_m": -3.4,
+        "offset_px": -4.8
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [37.6028, 55.7297],
+          [37.6074, 55.7303],
+          [37.6119, 55.7307],
+          [37.6165, 55.7312],
+          [37.6212, 55.7318]
+        ]
+      },
+      "properties": {
+        "feature_type": "lane_marking",
+        "road_id": "road_002",
+        "marking_id": "marking_005",
+        "marking_type": "solid",
+        "color": "white",
+        "between_lanes": "2|3",
+        "width_m": 0.18,
+        "offset_m": 0,
+        "offset_px": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [37.6028, 55.7297],
+          [37.6074, 55.7303],
+          [37.6119, 55.7307],
+          [37.6165, 55.7312],
+          [37.6212, 55.7318]
+        ]
+      },
+      "properties": {
+        "feature_type": "lane_marking",
+        "road_id": "road_002",
+        "marking_id": "marking_006",
+        "marking_type": "bus_lane_marking",
+        "color": "white",
+        "between_lanes": "3|4",
+        "width_m": 0.2,
+        "offset_m": 3.4,
+        "offset_px": 4.8
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [37.6115, 55.73115],
+          [37.61172, 55.73032]
+        ]
+      },
+      "properties": {
+        "feature_type": "crosswalk",
+        "crosswalk_id": "crosswalk_002",
+        "road_id": "road_002",
+        "crossing_type": "zebra",
+        "controlled": true,
+        "traffic_signals": true,
+        "width_m": 4
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [37.61095, 55.73102],
+          [37.61116, 55.73042]
+        ]
+      },
+      "properties": {
+        "feature_type": "stop_line",
+        "stop_line_id": "stop_002",
+        "road_id": "road_002",
+        "related_crosswalk_id": "crosswalk_002",
+        "width_m": 0.4
+      }
+    }
+  ]
+}

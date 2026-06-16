@@ -5,7 +5,10 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
-        "test:js": "node --test tests/js/*.test.mjs"
+        "test:js": "node --test tests/js/*.test.mjs",
+        "validate:road-details": "node scripts/geo/validate-road-details.mjs",
+        "build:road-details-osm": "node scripts/geo/build-road-details-from-osm.mjs",
+        "build:road-detail-tiles": "node scripts/geo/build-road-detail-tiles.mjs"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",
