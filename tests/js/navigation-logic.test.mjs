@@ -536,7 +536,8 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
     assert.match(mapSource, /detailed-road-edge-left-\$\{suffix\}/);
     assert.match(mapSource, /detailed-road-direction-left-\$\{suffix\}/);
     assert.match(mapSource, /detailed-road-lane-\$\{boundary\}-\$\{suffix\}/);
-    assert.match(mapSource, /'line-cap': 'square'/);
+    assert.doesNotMatch(mapSource, /'line-cap': 'square'/);
+    assert.match(mapSource, /'line-cap': 'round'/);
     assert.match(mapSource, /createDetailedRoadLaneLayers/);
     assert.doesNotMatch(mapSource, /ROAD_MARKING_GROUND_FILTER/);
     assert.match(mapSource, /pairedCarriageway/);
@@ -554,6 +555,9 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
     assert.match(mapSource, /ROAD_DETAIL_MIN_LON_SPAN/);
     assert.match(mapSource, /detailType: 'turn_lane_arrow'/);
     assert.match(mapSource, /offsetRoadMarkingCoordinate/);
+    assert.match(mapSource, /getRoadLaneWidthMeters/);
+    assert.match(mapSource, /displayGeometry/);
+    assert.match(mapSource, /smoothRouteLineCoordinates/);
     assert.match(mapSource, /'icon-allow-overlap': true/);
     assert.match(mapSource, /'icon-ignore-placement': true/);
     assert.doesNotMatch(mapSource, /createTurnLaneMarkingSvg/);

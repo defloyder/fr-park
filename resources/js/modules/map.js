@@ -1545,7 +1545,7 @@ function createDetailedRoadLaneLayers(roadLayer, suffix) {
                 ['!=', ['coalesce', ['get', 'directionBoundary'], -1], boundary],
             ],
             layout: {
-                'line-cap': 'butt',
+                'line-cap': 'round',
                 'line-join': 'round',
             },
             paint: {
@@ -1579,7 +1579,7 @@ function createDetailedRoadSurfaceLayers() {
                     ['==', ['to-number', ['get', 'pairedCarriageway'], 0], 1],
                 ],
                 layout: {
-                    'line-cap': 'square',
+                    'line-cap': 'round',
                     'line-join': 'round',
                 },
                 paint: {
@@ -1595,7 +1595,7 @@ function createDetailedRoadSurfaceLayers() {
                 minzoom: 16,
                 filter: layerFilter,
                 layout: {
-                    'line-cap': 'square',
+                    'line-cap': 'round',
                     'line-join': 'round',
                 },
                 paint: {
@@ -1610,7 +1610,7 @@ function createDetailedRoadSurfaceLayers() {
                 minzoom: 16,
                 filter: layerFilter,
                 layout: {
-                    'line-cap': 'square',
+                    'line-cap': 'round',
                     'line-join': 'round',
                 },
                 paint: {
@@ -1629,7 +1629,7 @@ function createDetailedRoadSurfaceLayers() {
                     ['in', ['get', 'roadClass'], ['literal', ['motorway', 'trunk', 'primary']]],
                 ],
                 layout: {
-                    'line-cap': 'square',
+                    'line-cap': 'round',
                     'line-join': 'round',
                 },
                 paint: {
@@ -1644,7 +1644,7 @@ function createDetailedRoadSurfaceLayers() {
                 minzoom: 16,
                 filter: layerFilter,
                 layout: {
-                    'line-cap': 'square',
+                    'line-cap': 'round',
                     'line-join': 'round',
                 },
                 paint: {
@@ -1659,7 +1659,7 @@ function createDetailedRoadSurfaceLayers() {
                 minzoom: 16,
                 filter: createRoadMarkingLayerFilter(roadLayer),
                 layout: {
-                    'line-cap': 'butt',
+                    'line-cap': 'round',
                     'line-join': 'round',
                 },
                 paint: {
@@ -1675,7 +1675,7 @@ function createDetailedRoadSurfaceLayers() {
                 minzoom: 16,
                 filter: createRoadMarkingLayerFilter(roadLayer),
                 layout: {
-                    'line-cap': 'butt',
+                    'line-cap': 'round',
                     'line-join': 'round',
                 },
                 paint: {
@@ -1696,7 +1696,7 @@ function createDetailedRoadSurfaceLayers() {
                     ['has', 'directionBoundary'],
                 ],
                 layout: {
-                    'line-cap': 'butt',
+                    'line-cap': 'round',
                     'line-join': 'round',
                 },
                 paint: {
@@ -1715,7 +1715,7 @@ function createDetailedRoadSurfaceLayers() {
                     ['has', 'directionBoundary'],
                 ],
                 layout: {
-                    'line-cap': 'butt',
+                    'line-cap': 'round',
                     'line-join': 'round',
                 },
                 paint: {
@@ -1751,7 +1751,7 @@ function createRoadSurfaceWidthExpression(extraWidths = [0, 0, 0, 0, 0]) {
             zoom,
             [
                 '+',
-                ['*', ['to-number', ['get', 'laneCount'], 1], laneWidth],
+                ['*', ['to-number', ['get', 'laneCount'], 1], createRoadLaneWidthAtZoom(laneWidth)],
                 extraWidths[index] ?? 0,
             ],
         ]),
@@ -1765,7 +1765,7 @@ function createRoadMedianWidthExpression() {
         ['zoom'],
         ...roadDetailZoomStops().flatMap(([zoom, laneWidth]) => [
             zoom,
-            createRoadMedianWidthAtZoom(laneWidth),
+            createRoadMedianWidthAtZoom(createRoadLaneWidthAtZoom(laneWidth)),
         ]),
     ];
 }
@@ -1782,7 +1782,7 @@ function createRoadMedianWidthAtZoom(laneWidth) {
         ],
     ];
 
-    return ['*', totalWidthMeters, laneWidth / 3.5];
+    return ['*', totalWidthMeters, ['/', laneWidth, 3.5]];
 }
 
 function createRoadLaneOffsetExpression(boundary) {
@@ -1798,7 +1798,7 @@ function createRoadLaneOffsetExpression(boundary) {
         ['zoom'],
         ...roadDetailZoomStops().flatMap(([zoom, laneWidth]) => [
             zoom,
-            ['*', laneDelta, laneWidth],
+            ['*', laneDelta, createRoadLaneWidthAtZoom(laneWidth)],
         ]),
     ];
 }
@@ -1819,7 +1819,7 @@ function createRoadDirectionOffsetExpression(side) {
             zoom,
             [
                 '+',
-                ['*', directionDelta, laneWidth],
+                ['*', directionDelta, createRoadLaneWidthAtZoom(laneWidth)],
                 side * gaps[index],
             ],
         ]),
@@ -1840,11 +1840,24 @@ function createRoadEdgeOffsetExpression(side) {
                 side,
                 [
                     '-',
-                    ['*', ['/', ['to-number', ['get', 'laneCount'], 1], 2], laneWidth],
+                    ['*', ['/', ['to-number', ['get', 'laneCount'], 1], 2], createRoadLaneWidthAtZoom(laneWidth)],
                     insets[index],
                 ],
             ],
         ]),
+    ];
+}
+
+function createRoadLaneWidthAtZoom(laneWidth) {
+    return [
+        '*',
+        laneWidth,
+        [
+            'case',
+            ['in', ['get', 'roadClass'], ['literal', ['motorway', 'trunk']]],
+            1.18,
+            1,
+        ],
     ];
 }
 
@@ -2158,7 +2171,10 @@ async function prepareRoadDetailIcons(collection) {
             Array.isArray(lane) ? lane.filter((turn) => supportedTurns.includes(turn)) : []
         ));
         const bearing = Number(feature.properties.bearing) || 0;
-        const laneCenter = (lanes.length - 1) / 2;
+        const laneCount = Math.max(1, Math.round(Number(feature.properties.laneCount) || lanes.length));
+        const laneCenter = (laneCount - 1) / 2;
+        const firstLaneIndex = Math.max(0, laneCount - lanes.length);
+        const laneWidthMeters = getRoadLaneWidthMeters(feature.properties);
 
         return lanes.flatMap((turns, laneIndex) => {
             if (turns.length === 0) {
@@ -2170,7 +2186,7 @@ async function prepareRoadDetailIcons(collection) {
             const coordinate = offsetRoadMarkingCoordinate(
                 feature.geometry.coordinates,
                 bearing,
-                (laneIndex - laneCenter) * 3.45,
+                ((firstLaneIndex + laneIndex) - laneCenter) * laneWidthMeters,
             );
 
             if (!iconCache.has(iconId)) {
@@ -2199,6 +2215,12 @@ async function prepareRoadDetailIcons(collection) {
     }));
 
     return { ...collection, features };
+}
+
+function getRoadLaneWidthMeters(properties = {}) {
+    return ['motorway', 'trunk'].includes(String(properties.roadClass ?? ''))
+        ? 4.1
+        : 3.45;
 }
 
 function createTurnLaneArrowSvg(turns) {
@@ -3150,7 +3172,15 @@ export function focusUserLocation({ latitude, longitude, accuracy = 0, heading =
         return;
     }
 
-    if (!renderedUserLocation || renderedUserLocation.headingMode !== nextLocation.headingMode) {
+    if (nextLocation.headingMode === 'navigation') {
+        if (userLocationRenderFrame) {
+            window.cancelAnimationFrame(userLocationRenderFrame);
+            userLocationRenderFrame = null;
+        }
+        renderedUserLocation = { ...nextLocation };
+        targetUserLocation = { ...nextLocation };
+        renderUserLocationFeature(renderedUserLocation);
+    } else if (!renderedUserLocation || renderedUserLocation.headingMode !== nextLocation.headingMode) {
         renderedUserLocation = { ...nextLocation };
         targetUserLocation = { ...nextLocation };
         renderUserLocationFeature(renderedUserLocation);
@@ -3370,16 +3400,21 @@ function sanitizeRoute(route, start, finish) {
         ? route.segments
             .map((segment) => ({
                 ...segment,
-                coordinates: sanitizeLineCoordinates(segment.coordinates ?? []),
+                coordinates: smoothRouteLineCoordinates(sanitizeLineCoordinates(segment.coordinates ?? [])),
             }))
             .filter((segment) => segment.coordinates.length > 1)
         : [];
+    const displayCoordinates = smoothRouteLineCoordinates(coordinates);
 
     return {
         ...route,
         geometry: {
             type: 'LineString',
             coordinates,
+        },
+        displayGeometry: {
+            type: 'LineString',
+            coordinates: displayCoordinates,
         },
         segments,
         distanceMeters: Number.isFinite(Number(route.distanceMeters))
@@ -3389,6 +3424,77 @@ function sanitizeRoute(route, start, finish) {
             ? Number(route.durationSeconds)
             : Math.max(60, getRouteDistanceMeters(coordinates) / 9),
     };
+}
+
+function smoothRouteLineCoordinates(coordinates) {
+    const sanitized = sanitizeLineCoordinates(coordinates);
+
+    if (sanitized.length < 3) {
+        return sanitized;
+    }
+
+    const densified = densifyRouteCoordinates(sanitized, 18);
+
+    return chaikinSmoothCoordinates(densified, 2);
+}
+
+function densifyRouteCoordinates(coordinates, maxSegmentMeters = 18) {
+    const result = [];
+
+    coordinates.forEach((coordinate, index) => {
+        if (index === 0) {
+            result.push(coordinate);
+            return;
+        }
+
+        const previous = coordinates[index - 1];
+        const distance = getDistanceMeters(
+            { longitude: previous[0], latitude: previous[1] },
+            { longitude: coordinate[0], latitude: coordinate[1] },
+        );
+        const steps = Math.max(1, Math.ceil(distance / maxSegmentMeters));
+
+        for (let step = 1; step <= steps; step += 1) {
+            const ratio = step / steps;
+            result.push([
+                previous[0] + ((coordinate[0] - previous[0]) * ratio),
+                previous[1] + ((coordinate[1] - previous[1]) * ratio),
+            ]);
+        }
+    });
+
+    return result;
+}
+
+function chaikinSmoothCoordinates(coordinates, iterations = 2) {
+    let result = coordinates;
+
+    for (let iteration = 0; iteration < iterations; iteration += 1) {
+        if (result.length < 3) {
+            return result;
+        }
+
+        const next = [result[0]];
+
+        for (let index = 0; index < result.length - 1; index += 1) {
+            const start = result[index];
+            const finish = result[index + 1];
+
+            next.push([
+                start[0] * 0.75 + finish[0] * 0.25,
+                start[1] * 0.75 + finish[1] * 0.25,
+            ]);
+            next.push([
+                start[0] * 0.25 + finish[0] * 0.75,
+                start[1] * 0.25 + finish[1] * 0.75,
+            ]);
+        }
+
+        next.push(result[result.length - 1]);
+        result = next;
+    }
+
+    return result;
 }
 
 function sanitizeLineCoordinates(coordinates) {
@@ -3422,7 +3528,9 @@ function getRouteDistanceMeters(coordinates) {
 }
 
 function buildRouteFeatureCollection(route) {
-    const routeCoordinates = sanitizeLineCoordinates(route?.geometry?.coordinates ?? []);
+    const routeCoordinates = sanitizeLineCoordinates(
+        route?.displayGeometry?.coordinates ?? route?.geometry?.coordinates ?? [],
+    );
 
     if (routeCoordinates.length < 2) {
         return buildFeatureCollection([]);
@@ -3482,11 +3590,17 @@ export function restoreActiveRoute(route) {
         return;
     }
 
+    const displayCoordinates = smoothRouteLineCoordinates(coordinates);
+
     map.getSource(ROUTE_SOURCE_ID)?.setData(buildRouteFeatureCollection({
         ...route,
         geometry: {
             type: 'LineString',
             coordinates,
+        },
+        displayGeometry: {
+            type: 'LineString',
+            coordinates: displayCoordinates,
         },
     }));
     safeSetRouteLineColor(ROUTE_TRAFFIC_LINE_COLOR);
@@ -3518,6 +3632,7 @@ export function updateActiveRouteProgress(userLocation, route) {
                 ...route.geometry,
                 coordinates: routeCoordinates,
             },
+            displayGeometry: undefined,
         }, Math.max(0, progressMeters - 6))
         : {
             ...route,
@@ -3525,9 +3640,22 @@ export function updateActiveRouteProgress(userLocation, route) {
                 ...route.geometry,
                 coordinates: routeCoordinates,
             },
+            displayGeometry: undefined,
         };
 
-    map.getSource(ROUTE_SOURCE_ID)?.setData(buildRouteFeatureCollection(visualRoute));
+    map.getSource(ROUTE_SOURCE_ID)?.setData(buildRouteFeatureCollection({
+        ...visualRoute,
+        displayGeometry: {
+            type: 'LineString',
+            coordinates: smoothRouteLineCoordinates(visualRoute.geometry.coordinates),
+        },
+        segments: Array.isArray(visualRoute.segments)
+            ? visualRoute.segments.map((segment) => ({
+                ...segment,
+                coordinates: smoothRouteLineCoordinates(segment.coordinates ?? []),
+            }))
+            : [],
+    }));
     safeSetRouteLineColor(ROUTE_TRAFFIC_LINE_COLOR);
 }
 

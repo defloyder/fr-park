@@ -35,7 +35,7 @@ class RoadDetailService
             out body qt;
             OVERPASS;
 
-        $cacheKey = 'road-details:features:v13:'.sha1(json_encode($this->quantizeBounds($bounds)));
+        $cacheKey = 'road-details:features:v14:'.sha1(json_encode($this->quantizeBounds($bounds)));
 
         return Cache::remember(
             $cacheKey,
@@ -642,6 +642,9 @@ class RoadDetailService
                     'detailType' => 'turn_lanes',
                     'turnLanes' => $lanes,
                     'bearing' => $travelBearing,
+                    'laneCount' => max($this->laneCount($tags) ?? count($lanes), count($lanes)),
+                    'roadClass' => $this->normalizeRoadClass($tags['highway'] ?? ''),
+                    'layer' => max(-5, min(5, (int) ($tags['layer'] ?? 0))),
                 ],
             );
         }
@@ -921,7 +924,7 @@ class RoadDetailService
 
             if (($element['type'] ?? null) !== 'way'
                 || $laneCount === null
-                || count($nodes) < 3
+                || count($nodes) < 2
                 || count($nodes) !== count($geometry)
                 || ! $this->isMajorRoad($tags['highway'] ?? '')) {
                 continue;
@@ -985,11 +988,14 @@ class RoadDetailService
                 $incomingIndex = $mainReverse ? $candidateNodeIndex + 1 : $candidateNodeIndex - 1;
                 $outgoingIndex = $mainReverse ? $candidateNodeIndex - 1 : $candidateNodeIndex + 1;
 
-                if (! isset($main['coordinates'][$incomingIndex], $main['coordinates'][$outgoingIndex])) {
+                if (! isset($main['coordinates'][$incomingIndex])
+                    && ! isset($main['coordinates'][$outgoingIndex])) {
                     continue;
                 }
 
-                $mainVector = $this->meterVector($origin, $main['coordinates'][$outgoingIndex]);
+                $mainVector = isset($main['coordinates'][$outgoingIndex])
+                    ? $this->meterVector($origin, $main['coordinates'][$outgoingIndex])
+                    : $this->meterVector($main['coordinates'][$incomingIndex], $origin);
                 $mainLength = hypot($mainVector[0], $mainVector[1]);
                 $linkLength = hypot($linkVector[0], $linkVector[1]);
 
@@ -1022,6 +1028,13 @@ class RoadDetailService
             $approach = $best['mainReverse']
                 ? array_reverse(array_slice($best['main']['coordinates'], $best['nodeIndex']))
                 : array_slice($best['main']['coordinates'], 0, $best['nodeIndex'] + 1);
+
+            if (count($approach) < 2) {
+                $approach = $best['mainReverse']
+                    ? array_reverse(array_slice($best['main']['coordinates'], max(0, $best['nodeIndex'] - 1), 2))
+                    : array_slice($best['main']['coordinates'], $best['nodeIndex'], 2);
+            }
+
             $approach = $this->trimLineFromEnd($approach, 110);
             $point = $this->pointAlongLine($approach, 0.68);
 
@@ -1043,6 +1056,9 @@ class RoadDetailService
                     'detailType' => 'turn_lanes',
                     'turnLanes' => $lanes,
                     'bearing' => $this->lineBearingAt($approach, 0.68),
+                    'laneCount' => $laneCount,
+                    'roadClass' => $this->normalizeRoadClass($best['main']['tags']['highway'] ?? ''),
+                    'layer' => $best['main']['layer'],
                     'inferred' => true,
                 ],
             );
