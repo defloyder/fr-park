@@ -560,8 +560,8 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
     assert.doesNotMatch(mapSource, /id: 'detailed-road-labels'/);
     assert.match(mapSource, /const ENABLE_ROAD_DETAILS = true/);
     assert.match(mapSource, /import \{ addRoadDetails \} from '\.\.\/utils\/map\/addRoadDetails'/);
-    assert.match(mapSource, /if \(ENABLE_ROAD_DETAILS\) \{\s*addRoadDetails\(map, \{ includeDataset: true \}\);\s*\}/);
-    assert.doesNotMatch(mapSource, /baseRoadSource: ROAD_SOURCE_ID/);
+    assert.match(mapSource, /if \(ENABLE_ROAD_DETAILS\) \{\s*addRoadDetails\(map, \{ baseRoadSource: ROAD_SOURCE_ID, includeDataset: true \}\);\s*\}/);
+    assert.match(mapSource, /baseRoadSource: ROAD_SOURCE_ID/);
     assert.doesNotMatch(mapSource, /createDetailedRoadSurfaceLayers/);
     assert.doesNotMatch(mapSource, /createDetailedRoadLaneLayers/);
     assert.doesNotMatch(mapSource, /'line-cap': 'square'/);
@@ -573,8 +573,8 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
     assert.match(roadSourceSource, /ROAD_DETAILS_SOURCE_ID = 'road-details'/);
     assert.match(roadSourceSource, /ROAD_DETAILS_GEOJSON_URL = '\/data\/road-details\/road-details\.geojson'/);
     assert.match(roadSourceSource, /pmtiles:\/\/road-details\.pmtiles/);
-    assert.doesNotMatch(addRoadDetailsSource, /createBaseRoadDetailLayers/);
-    assert.doesNotMatch(addRoadDetailsSource, /baseRoadSource/);
+    assert.match(addRoadDetailsSource, /createBaseRoadDetailLayers/);
+    assert.match(addRoadDetailsSource, /baseRoadSource/);
     assert.match(addRoadDetailsSource, /includeDataset = true/);
     assert.match(addRoadDetailsSource, /road-detail-gore-hatch/);
     assert.match(addRoadDetailsSource, /map\.getSource\(ROAD_DETAILS_SOURCE_ID\)/);
@@ -585,7 +585,7 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
     assert.match(baseRoadLayersSource, /line-offset/);
     assert.match(roadLayersSource, /explicitLaneDetailFilter/);
     assert.match(roadLayersSource, /explicitLaneMarkingFilter/);
-    assert.match(roadLayersSource, /minzoom: 16\.8/);
+    assert.match(roadLayersSource, /minzoom: 16\.2/);
     assert.match(roadLayersSource, /minzoom: 17/);
     assert.match(roadLayersSource, /minzoom: 18/);
     assert.match(roadLayersSource, /'line-offset': lineOffset/);

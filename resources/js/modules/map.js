@@ -772,7 +772,7 @@ function initMapLibreMap() {
             addSpeedCameraSourceAndLayer();
             addTrafficFlowLayer();
             if (ENABLE_ROAD_DETAILS) {
-                addRoadDetails(map, { includeDataset: true });
+                addRoadDetails(map, { baseRoadSource: ROAD_SOURCE_ID, includeDataset: true });
             }
             bindMapEvents();
             window.dispatchEvent(new CustomEvent('map:ready'));
