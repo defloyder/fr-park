@@ -72,5 +72,5 @@ function addRoadDetailImages(map) {
         context.stroke();
     }
 
-    map.addImage(ROAD_DETAIL_GORE_HATCH_IMAGE_ID, canvas, { pixelRatio: 2 });
+    map.addImage(ROAD_DETAIL_GORE_HATCH_IMAGE_ID, context.getImageData(0, 0, size, size), { pixelRatio: 2 });
 }
