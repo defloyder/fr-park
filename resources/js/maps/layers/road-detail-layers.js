@@ -2,6 +2,9 @@ import { ROAD_DETAILS_SOURCE_ID } from '../sources/road-detail-source';
 
 const featureTypeFilter = (featureType) => ['==', ['get', 'feature_type'], featureType];
 const lineOffset = ['coalesce', ['to-number', ['get', 'offset_px']], 0];
+const explicitLaneDetailFilter = ['==', ['get', 'detail_quality'], 'explicit_lane_tags'];
+const explicitLaneMarkingFilter = ['==', ['get', 'marking_source'], 'explicit_lanes'];
+const verifiedPaintFilter = ['==', ['get', 'render_verified'], true];
 
 export function createRoadDetailLayers({ source = ROAD_DETAILS_SOURCE_ID, sourceLayer = null } = {}) {
     return roadDetailLayerDefinitions.map((layer) => {
@@ -44,9 +47,9 @@ export const roadDetailLayerDefinitions = [
         id: 'road_surfaces',
         type: 'line',
         filter: featureTypeFilter('road_centerline'),
-        minzoom: 16,
+        minzoom: 16.8,
         layout: {
-            'line-cap': 'round',
+            'line-cap': 'butt',
             'line-join': 'round',
         },
         paint: {
@@ -55,14 +58,14 @@ export const roadDetailLayerDefinitions = [
                 'interpolate',
                 ['linear'],
                 ['zoom'],
-                16,
-                ['*', ['coalesce', ['to-number', ['get', 'lanes_total']], 3], 2.2],
+                16.8,
+                ['*', ['coalesce', ['to-number', ['get', 'lanes_total']], 2], 1.8],
                 18,
-                ['*', ['coalesce', ['to-number', ['get', 'lanes_total']], 3], 3.4],
+                ['*', ['coalesce', ['to-number', ['get', 'lanes_total']], 2], 2.8],
                 20,
-                ['*', ['coalesce', ['to-number', ['get', 'lanes_total']], 3], 4.8],
+                ['*', ['coalesce', ['to-number', ['get', 'lanes_total']], 2], 4.2],
             ],
-            'line-opacity': 0.22,
+            'line-opacity': 0.14,
         },
     },
     {
@@ -71,38 +74,38 @@ export const roadDetailLayerDefinitions = [
         filter: featureTypeFilter('road_centerline'),
         minzoom: 16,
         layout: {
-            'line-cap': 'round',
+            'line-cap': 'butt',
             'line-join': 'round',
         },
         paint: {
             'line-color': '#FFFFFF',
             'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.55, 18, 0.95, 20, 1.35],
-            'line-opacity': 0.28,
+            'line-opacity': 0.12,
         },
     },
     {
         id: 'road_edges',
         type: 'line',
         filter: featureTypeFilter('road_edge'),
-        minzoom: 16,
+        minzoom: 17.6,
         layout: {
-            'line-cap': 'round',
+            'line-cap': 'butt',
             'line-join': 'round',
         },
         paint: {
             'line-color': '#F8FAFC',
             'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.55, 18, 1.05, 20, 1.45],
-            'line-opacity': 0.36,
+            'line-opacity': 0.18,
             'line-offset': lineOffset,
         },
     },
     {
         id: 'road_lanes',
         type: 'line',
-        filter: featureTypeFilter('road_lane'),
-        minzoom: 16,
+        filter: ['all', featureTypeFilter('road_lane'), explicitLaneDetailFilter],
+        minzoom: 19.5,
         layout: {
-            'line-cap': 'round',
+            'line-cap': 'butt',
             'line-join': 'round',
         },
         paint: {
@@ -116,7 +119,7 @@ export const roadDetailLayerDefinitions = [
                 '#D8E2F0',
             ],
             'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.6, 18, 1.35, 20, 2.15],
-            'line-opacity': 0.34,
+            'line-opacity': 0.08,
             'line-offset': lineOffset,
         },
     },
@@ -140,16 +143,16 @@ export const roadDetailLayerDefinitions = [
     {
         id: 'bus_lanes',
         type: 'line',
-        filter: ['any', featureTypeFilter('bus_lane'), ['all', featureTypeFilter('road_lane'), ['==', ['get', 'lane_type'], 'bus']]],
-        minzoom: 16.5,
+        filter: ['all', ['any', featureTypeFilter('bus_lane'), ['all', featureTypeFilter('road_lane'), ['==', ['get', 'lane_type'], 'bus']]], verifiedPaintFilter],
+        minzoom: 19,
         layout: {
-            'line-cap': 'round',
+            'line-cap': 'butt',
             'line-join': 'round',
         },
         paint: {
             'line-color': '#78B7C8',
             'line-width': ['interpolate', ['linear'], ['zoom'], 16.5, 1.2, 18, 2.2, 20, 3],
-            'line-opacity': 0.42,
+            'line-opacity': 0.34,
             'line-offset': lineOffset,
         },
     },
@@ -159,18 +162,20 @@ export const roadDetailLayerDefinitions = [
         filter: [
             'all',
             featureTypeFilter('lane_marking'),
+            explicitLaneMarkingFilter,
+            verifiedPaintFilter,
             ['!=', ['get', 'marking_type'], 'dashed'],
             ['!=', ['get', 'marking_type'], 'bus_lane_marking'],
         ],
-        minzoom: 17,
+        minzoom: 19,
         layout: {
-            'line-cap': 'round',
+            'line-cap': 'butt',
             'line-join': 'round',
         },
         paint: {
             'line-color': ['match', ['get', 'color'], 'yellow', '#E5D79B', '#F8FAFC'],
             'line-width': ['interpolate', ['linear'], ['zoom'], 17, 0.75, 19, 1.25],
-            'line-opacity': 0.68,
+            'line-opacity': 0.58,
             'line-offset': lineOffset,
         },
     },
@@ -180,17 +185,19 @@ export const roadDetailLayerDefinitions = [
         filter: [
             'all',
             featureTypeFilter('lane_marking'),
+            explicitLaneMarkingFilter,
+            verifiedPaintFilter,
             ['==', ['get', 'marking_type'], 'dashed'],
         ],
-        minzoom: 17,
+        minzoom: 19,
         layout: {
-            'line-cap': 'round',
+            'line-cap': 'butt',
             'line-join': 'round',
         },
         paint: {
             'line-color': ['match', ['get', 'color'], 'yellow', '#E5D79B', '#F8FAFC'],
             'line-width': ['interpolate', ['linear'], ['zoom'], 17, 0.75, 19, 1.25],
-            'line-opacity': 0.72,
+            'line-opacity': 0.52,
             'line-offset': lineOffset,
             'line-dasharray': [2.4, 2.1],
         },
@@ -201,11 +208,13 @@ export const roadDetailLayerDefinitions = [
         filter: [
             'all',
             featureTypeFilter('lane_marking'),
+            explicitLaneMarkingFilter,
+            verifiedPaintFilter,
             ['==', ['get', 'marking_type'], 'bus_lane_marking'],
         ],
-        minzoom: 17,
+        minzoom: 19,
         layout: {
-            'line-cap': 'round',
+            'line-cap': 'butt',
             'line-join': 'round',
         },
         paint: {
@@ -219,8 +228,8 @@ export const roadDetailLayerDefinitions = [
     {
         id: 'turn_arrows',
         type: 'symbol',
-        filter: featureTypeFilter('turn_arrow'),
-        minzoom: 17.5,
+        filter: ['all', featureTypeFilter('turn_arrow'), explicitLaneDetailFilter, verifiedPaintFilter],
+        minzoom: 19,
         layout: {
             'text-field': [
                 'match',
@@ -249,8 +258,8 @@ export const roadDetailLayerDefinitions = [
             'text-rotation-alignment': 'map',
             'text-pitch-alignment': 'map',
             'text-keep-upright': false,
-            'text-allow-overlap': true,
-            'text-ignore-placement': true,
+            'text-allow-overlap': false,
+            'text-ignore-placement': false,
             'text-offset': ['literal', [0, 0]],
         },
         paint: {

@@ -110,6 +110,7 @@ function buildRoadDetailFeatures(elements) {
         const roadId = `osm_way_${element.id}`;
         const roadClass = normalizeRoadClass(tags.highway);
         const laneModel = getLaneModel(tags, roadClass);
+        const detailQuality = laneModel.hasExplicitLaneDetail ? 'explicit_lane_tags' : 'road_geometry_only';
         const centerline = makeLineFeature({
             id: `road_centerline/${element.id}`,
             coordinates,
@@ -124,6 +125,7 @@ function buildRoadDetailFeatures(elements) {
                 lanes_backward: laneModel.backward,
                 surface: tags.surface ?? '',
                 maxspeed: parseMaxspeed(tags.maxspeed),
+                detail_quality: detailQuality,
                 bridge: tags.bridge === 'yes' || tags.brunnel === 'bridge',
                 tunnel: tags.tunnel === 'yes' || tags.brunnel === 'tunnel',
                 z_order: Number(tags.layer ?? 0) || 0,
@@ -147,6 +149,7 @@ function buildRoadDetailFeatures(elements) {
                     direction: lane.direction,
                     lane_type: lane.type,
                     turn: lane.turn,
+                    detail_quality: detailQuality,
                     width_m: laneModel.laneWidthMeters,
                     offset_m: lane.offsetMeters,
                     offset_px: lane.offsetPixels,
@@ -167,6 +170,7 @@ function buildRoadDetailFeatures(elements) {
                         direction: lane.direction,
                         access: 'bus,taxi,emergency',
                         active_hours: tags['bus:lanes:conditional'] ?? tags['vehicle:lanes:conditional'] ?? '',
+                        detail_quality: detailQuality,
                         offset_m: lane.offsetMeters,
                         offset_px: lane.offsetPixels,
                         osm_type: element.type,
@@ -191,6 +195,7 @@ function buildRoadDetailFeatures(elements) {
                             direction: lane.direction,
                             turn: lane.turn,
                             bearing: point.bearing,
+                            detail_quality: detailQuality,
                             source: 'osm_turn_lanes',
                             osm_type: element.type,
                             osm_id: element.id,
@@ -202,6 +207,10 @@ function buildRoadDetailFeatures(elements) {
                     });
                 }
             }
+        }
+
+        if (!laneModel.hasExplicitLaneDetail) {
+            continue;
         }
 
         for (let boundary = 1; boundary < laneModel.total; boundary += 1) {
@@ -219,6 +228,7 @@ function buildRoadDetailFeatures(elements) {
                     marking_type: isDirectionBoundary ? 'solid' : 'dashed',
                     color: 'white',
                     between_lanes: `${boundary}|${boundary + 1}`,
+                    marking_source: 'explicit_lanes',
                     width_m: isDirectionBoundary ? 0.18 : 0.15,
                     offset_m: offsetMeters,
                     offset_px: offsetPixels,
@@ -238,6 +248,7 @@ function buildRoadDetailFeatures(elements) {
                 road_id: roadId,
                 edge_id: `edge_${element.id}_left`,
                 edge_type: 'carriageway_edge',
+                detail_quality: detailQuality,
                 offset_m: -edgeOffset,
                 offset_px: metersToOffsetPixels(-edgeOffset),
                 source: 'osm_derived',
@@ -251,6 +262,7 @@ function buildRoadDetailFeatures(elements) {
                 road_id: roadId,
                 edge_id: `edge_${element.id}_right`,
                 edge_type: 'carriageway_edge',
+                detail_quality: detailQuality,
                 offset_m: edgeOffset,
                 offset_px: metersToOffsetPixels(edgeOffset),
                 source: 'osm_derived',
@@ -287,6 +299,10 @@ function getLaneModel(tags, roadClass) {
         : 3.5;
     const turns = getTurnLaneValues(tags, total, oneway, forward, backward);
     const busLaneValues = getLaneValues(tags['bus:lanes'] ?? tags['psv:lanes'], total);
+    const hasExplicitLanes = hasAnyTag(tags, ['lanes', 'lanes:forward', 'lanes:backward', 'width']);
+    const hasTurnLanes = hasAnyTag(tags, ['turn:lanes', 'turn:lanes:forward', 'turn:lanes:backward']);
+    const hasBusLanes = hasAnyTag(tags, ['bus:lanes', 'psv:lanes']);
+    const hasExplicitLaneDetail = hasExplicitLanes || hasTurnLanes || hasBusLanes;
     const lanes = Array.from({ length: total }, (_, zeroIndex) => {
         const index = zeroIndex + 1;
         const offsetMeters = (zeroIndex - ((total - 1) / 2)) * laneWidthMeters;
@@ -309,8 +325,13 @@ function getLaneModel(tags, roadClass) {
         forward,
         backward,
         laneWidthMeters,
+        hasExplicitLaneDetail,
         lanes,
     };
+}
+
+function hasAnyTag(tags, keys) {
+    return keys.some((key) => tags[key] !== undefined && tags[key] !== '');
 }
 
 function getTurnLaneValues(tags, total, oneway, forward, backward) {

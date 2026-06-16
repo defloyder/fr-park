@@ -1,4 +1,3 @@
-import { createBaseRoadDetailLayers } from '../../maps/layers/base-road-detail-layers';
 import { createRoadDetailLayers } from '../../maps/layers/road-detail-layers';
 import {
     createRoadDetailsSource,
@@ -15,22 +14,12 @@ const ROAD_DETAIL_BEFORE_LAYER_IDS = [
     'house-number',
 ];
 
-export function addRoadDetails(map, { baseRoadSource = null, format = 'geojson', includeDataset = true } = {}) {
+export function addRoadDetails(map, { format = 'geojson', includeDataset = true } = {}) {
     if (!map) {
         return;
     }
 
     const beforeId = getRoadDetailBeforeLayerId(map);
-
-    if (baseRoadSource) {
-        for (const layer of createBaseRoadDetailLayers({ source: baseRoadSource })) {
-            if (map.getLayer(layer.id)) {
-                continue;
-            }
-
-            map.addLayer(layer, beforeId);
-        }
-    }
 
     if (!includeDataset) {
         return;

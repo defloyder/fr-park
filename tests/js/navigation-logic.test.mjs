@@ -573,7 +573,8 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
     assert.match(roadSourceSource, /ROAD_DETAILS_SOURCE_ID = 'road-details'/);
     assert.match(roadSourceSource, /ROAD_DETAILS_GEOJSON_URL = '\/data\/road-details\/road-details\.geojson'/);
     assert.match(roadSourceSource, /pmtiles:\/\/road-details\.pmtiles/);
-    assert.match(addRoadDetailsSource, /createBaseRoadDetailLayers/);
+    assert.doesNotMatch(addRoadDetailsSource, /createBaseRoadDetailLayers/);
+    assert.doesNotMatch(addRoadDetailsSource, /baseRoadSource/);
     assert.match(addRoadDetailsSource, /includeDataset = true/);
     assert.match(addRoadDetailsSource, /road-detail-gore-hatch/);
     assert.match(addRoadDetailsSource, /map\.getSource\(ROAD_DETAILS_SOURCE_ID\)/);
@@ -582,7 +583,9 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
     assert.match(baseRoadLayersSource, /'source-layer': sourceLayer/);
     assert.match(baseRoadLayersSource, /ROAD_CLASSES/);
     assert.match(baseRoadLayersSource, /line-offset/);
-    assert.match(roadLayersSource, /minzoom: 16/);
+    assert.match(roadLayersSource, /explicitLaneDetailFilter/);
+    assert.match(roadLayersSource, /explicitLaneMarkingFilter/);
+    assert.match(roadLayersSource, /minzoom: 16\.8/);
     assert.match(roadLayersSource, /minzoom: 17/);
     assert.match(roadLayersSource, /minzoom: 18/);
     assert.match(roadLayersSource, /'line-offset': lineOffset/);
