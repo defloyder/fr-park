@@ -509,7 +509,6 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
         'rail-line',
         'road-path',
         'transit-labels',
-        'road-turn-lane-arrows',
         'road-crossing-markings',
         'road-speed-bump-markings',
         'road-traffic-signals',
@@ -527,13 +526,16 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
     assert.doesNotMatch(mapSource, /id: 'detailed-road-casing'/);
     assert.doesNotMatch(mapSource, /id: 'detailed-road-shoulder'/);
     assert.doesNotMatch(mapSource, /id: 'detailed-road-surface'/);
-    assert.doesNotMatch(mapSource, /id: 'detailed-road-gore-fill'/);
     assert.doesNotMatch(mapSource, /id: 'detailed-road-labels'/);
     assert.match(mapSource, /createDetailedRoadSurfaceLayers/);
     assert.match(mapSource, /detailed-road-median-\$\{suffix\}/);
+    assert.match(mapSource, /detailed-road-bridge-shadow-\$\{suffix\}/);
     assert.match(mapSource, /detailed-road-underlay-\$\{suffix\}/);
     assert.match(mapSource, /detailed-road-surface-\$\{suffix\}/);
+    assert.match(mapSource, /detailed-road-gore-fill-\$\{suffix\}/);
+    assert.match(mapSource, /detailed-road-gore-hatch-\$\{suffix\}/);
     assert.match(mapSource, /detailed-road-edge-left-\$\{suffix\}/);
+    assert.match(mapSource, /detailed-road-bridge-rail-left-\$\{suffix\}/);
     assert.match(mapSource, /detailed-road-direction-left-\$\{suffix\}/);
     assert.match(mapSource, /detailed-road-lane-\$\{boundary\}-\$\{suffix\}/);
     assert.doesNotMatch(mapSource, /'line-cap': 'square'/);
@@ -554,8 +556,11 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
     assert.match(mapSource, /ROAD_DETAIL_MIN_LAT_SPAN/);
     assert.match(mapSource, /ROAD_DETAIL_MIN_LON_SPAN/);
     assert.match(mapSource, /detailType: 'turn_lane_arrow'/);
-    assert.match(mapSource, /offsetRoadMarkingCoordinate/);
-    assert.match(mapSource, /getRoadLaneWidthMeters/);
+    assert.match(mapSource, /createRoadTurnLaneArrowLayers/);
+    assert.match(mapSource, /'road-turn-lane-arrows'/);
+    assert.match(mapSource, /createTurnLaneIconOffsetExpression/);
+    assert.match(mapSource, /'icon-offset': iconOffset/);
+    assert.match(mapSource, /laneOffsetStep/);
     assert.match(mapSource, /displayGeometry/);
     assert.match(mapSource, /smoothRouteLineCoordinates/);
     assert.match(mapSource, /'icon-allow-overlap': true/);

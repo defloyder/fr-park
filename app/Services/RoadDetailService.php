@@ -35,7 +35,7 @@ class RoadDetailService
             out body qt;
             OVERPASS;
 
-        $cacheKey = 'road-details:features:v14:'.sha1(json_encode($this->quantizeBounds($bounds)));
+        $cacheKey = 'road-details:features:v15:'.sha1(json_encode($this->quantizeBounds($bounds)));
 
         return Cache::remember(
             $cacheKey,
@@ -266,6 +266,7 @@ class RoadDetailService
                 $roadNodes,
                 $roadCoordinates,
                 $junctionNodes,
+                $this->junctionMarkingTrimMeters($tags),
             ) as $index => $segment) {
                 $features[] = $this->feature(
                     $id.'-marking-'.$index,
@@ -347,7 +348,12 @@ class RoadDetailService
             ->all();
     }
 
-    private function roadMarkingSegments(array $nodes, array $coordinates, array $junctionNodes): array
+    private function roadMarkingSegments(
+        array $nodes,
+        array $coordinates,
+        array $junctionNodes,
+        float $junctionTrimMeters = 6,
+    ): array
     {
         $nodes = array_values($nodes);
 
@@ -372,11 +378,11 @@ class RoadDetailService
             $segment = array_slice($coordinates, $startIndex, $endIndex - $startIndex + 1);
 
             if (isset($junctionNodes[(string) $nodes[$startIndex]])) {
-                $segment = $this->removeLineStart($segment, 4);
+                $segment = $this->removeLineStart($segment, $junctionTrimMeters);
             }
 
             if (isset($junctionNodes[(string) $nodes[$endIndex]])) {
-                $segment = $this->removeLineEnd($segment, 4);
+                $segment = $this->removeLineEnd($segment, $junctionTrimMeters);
             }
 
             if (count($segment) >= 2 && $this->lineLength($segment) >= 6) {
@@ -385,6 +391,18 @@ class RoadDetailService
         }
 
         return $segments;
+    }
+
+    private function junctionMarkingTrimMeters(array $tags): float
+    {
+        $highway = mb_strtolower((string) ($tags['highway'] ?? ''));
+
+        return match (true) {
+            str_ends_with($highway, '_link') => 16,
+            in_array($highway, ['motorway', 'trunk'], true) => 14,
+            in_array($highway, ['primary', 'secondary', 'tertiary'], true) => 10,
+            default => 6,
+        };
     }
 
     private function pairedCarriagewayIds(array $elements): array
