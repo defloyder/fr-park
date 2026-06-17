@@ -207,11 +207,14 @@ const busLaneWidth = ['interpolate', ['linear'], ['zoom'], 18, 1.7, 20, 3.2];
 const majorSeamWidth = ['*', majorSurfaceWidth, 1.03];
 const minorSeamWidth = ['*', minorSurfaceWidth, 1.02];
 const rampSeamWidth = ['*', rampSurfaceWidth, 1.02];
-const lanePixelWidth = ['interpolate', ['linear'], ['zoom'], 17, 5.2, 18, 7.6, 19, 10.4, 20, 13.6];
 const centerDoubleOffset = ['interpolate', ['linear'], ['zoom'], 17, 1.1, 18.5, 1.9, 20, 2.8];
-const majorEdgeOffset = ['*', majorSurfaceWidth, 0.45];
-const rampEdgeOffset = ['*', rampSurfaceWidth, 0.42];
-const minorEdgeOffset = ['*', minorSurfaceWidth, 0.4];
+const centerDoubleOffsetNegative = ['interpolate', ['linear'], ['zoom'], 17, -1.1, 18.5, -1.9, 20, -2.8];
+const majorEdgeOffset = ['interpolate', ['linear'], ['zoom'], 17, 22, 18, 31, 19, 43, 20, 59];
+const majorEdgeOffsetNegative = ['interpolate', ['linear'], ['zoom'], 17, -22, 18, -31, 19, -43, 20, -59];
+const rampEdgeOffset = ['interpolate', ['linear'], ['zoom'], 17, 11, 18, 16, 19, 23, 20, 31];
+const rampEdgeOffsetNegative = ['interpolate', ['linear'], ['zoom'], 17, -11, 18, -16, 19, -23, 20, -31];
+const minorEdgeOffset = ['interpolate', ['linear'], ['zoom'], 17, 5, 18, 7, 19, 10, 20, 14];
+const minorEdgeOffsetNegative = ['interpolate', ['linear'], ['zoom'], 17, -5, 18, -7, 19, -10, 20, -14];
 
 const defaultLaneCount = [
     'case',
@@ -332,7 +335,21 @@ function laneCountFilter(laneCount) {
 }
 
 function laneDividerOffset(laneCount, dividerIndex) {
-    return ['*', lanePixelWidth, dividerIndex - laneCount / 2];
+    const factor = dividerIndex - laneCount / 2;
+
+    return [
+        'interpolate',
+        ['linear'],
+        ['zoom'],
+        17,
+        5.2 * factor,
+        18,
+        7.6 * factor,
+        19,
+        10.4 * factor,
+        20,
+        13.6 * factor,
+    ];
 }
 
 function createLaneDividerLayers({ source, sourceLayer, filter }) {
@@ -369,7 +386,7 @@ function createTwoWayLaneDividerLayers({ source, sourceLayer, filter }) {
             color: CENTER_MARKING_COLOR,
             width: roadCenterMarkingWidth,
             opacity: ['interpolate', ['linear'], ['zoom'], 17.5, 0.46, 19, 0.76, 20, 0.86],
-            offset: ['*', centerDoubleOffset, -1],
+            offset: centerDoubleOffsetNegative,
         }),
         roadLineLayer({
             id: 'base_road_center_double_right',
@@ -396,7 +413,7 @@ function createTwoWayLaneDividerLayers({ source, sourceLayer, filter }) {
     ];
 }
 
-function createRoadEdgeMarkingLayers({ source, sourceLayer, idPrefix, filter, offset }) {
+function createRoadEdgeMarkingLayers({ source, sourceLayer, idPrefix, filter, negativeOffset, positiveOffset }) {
     return [
         roadLineLayer({
             id: `${idPrefix}_edge_left`,
@@ -407,7 +424,7 @@ function createRoadEdgeMarkingLayers({ source, sourceLayer, idPrefix, filter, of
             color: MARKING_COLOR,
             width: roadEdgeMarkingWidth,
             opacity: ['interpolate', ['linear'], ['zoom'], 17.2, 0.28, 19, 0.56, 20, 0.66],
-            offset: ['*', offset, -1],
+            offset: negativeOffset,
         }),
         roadLineLayer({
             id: `${idPrefix}_edge_right`,
@@ -418,7 +435,7 @@ function createRoadEdgeMarkingLayers({ source, sourceLayer, idPrefix, filter, of
             color: MARKING_COLOR,
             width: roadEdgeMarkingWidth,
             opacity: ['interpolate', ['linear'], ['zoom'], 17.2, 0.28, 19, 0.56, 20, 0.66],
-            offset,
+            offset: positiveOffset,
         }),
     ];
 }
@@ -507,21 +524,24 @@ export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportati
             sourceLayer,
             idPrefix: 'base_road_minor',
             filter: minorRoadClassFilter,
-            offset: minorEdgeOffset,
+            negativeOffset: minorEdgeOffsetNegative,
+            positiveOffset: minorEdgeOffset,
         }),
         ...createRoadEdgeMarkingLayers({
             source,
             sourceLayer,
             idPrefix: 'base_road_ramp',
             filter: linkRoadFilter,
-            offset: rampEdgeOffset,
+            negativeOffset: rampEdgeOffsetNegative,
+            positiveOffset: rampEdgeOffset,
         }),
         ...createRoadEdgeMarkingLayers({
             source,
             sourceLayer,
             idPrefix: 'base_road_major',
             filter: majorFilter,
-            offset: majorEdgeOffset,
+            negativeOffset: majorEdgeOffsetNegative,
+            positiveOffset: majorEdgeOffset,
         }),
         ...createTwoWayLaneDividerLayers({
             source,
