@@ -204,9 +204,9 @@ const roadEdgeMarkingWidth = ['interpolate', ['linear'], ['zoom'], 17, 0.55, 18.
 const roadDividerMarkingWidth = ['interpolate', ['linear'], ['zoom'], 17, 0.55, 18.5, 1.05, 20, 1.45];
 const roadCenterMarkingWidth = ['interpolate', ['linear'], ['zoom'], 17, 0.75, 18.5, 1.35, 20, 1.9];
 const busLaneWidth = ['interpolate', ['linear'], ['zoom'], 18, 1.7, 20, 3.2];
-const majorSeamWidth = ['*', majorSurfaceWidth, 1.03];
-const minorSeamWidth = ['*', minorSurfaceWidth, 1.02];
-const rampSeamWidth = ['*', rampSurfaceWidth, 1.02];
+const majorSeamWidth = ['*', majorSurfaceWidth, 1.08];
+const minorSeamWidth = ['*', minorSurfaceWidth, 1.06];
+const rampSeamWidth = ['*', rampSurfaceWidth, 1.06];
 const centerDoubleOffset = ['interpolate', ['linear'], ['zoom'], 17, 1.1, 18.5, 1.9, 20, 2.8];
 const centerDoubleOffsetNegative = ['interpolate', ['linear'], ['zoom'], 17, -1.1, 18.5, -1.9, 20, -2.8];
 const majorEdgeOffset = ['interpolate', ['linear'], ['zoom'], 17, 22, 18, 31, 19, 43, 20, 59];
@@ -248,7 +248,7 @@ function roadLineLayer({
     color,
     width,
     opacity = 1,
-    cap = 'butt',
+    cap = 'round',
     dasharray = null,
     blur = null,
     offset = null,

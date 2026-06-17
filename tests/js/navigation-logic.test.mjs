@@ -600,7 +600,7 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
     assert.match(mapSource, /ROAD_LEGACY_DETAIL_OPACITY/);
     assert.match(baseRoadLayersSource, /line-offset/);
     assert.match(baseRoadLayersSource, /'line-dasharray'/);
-    assert.match(baseRoadLayersSource, /cap = 'butt'/);
+    assert.match(baseRoadLayersSource, /cap = 'round'/);
     assert.match(roadLayersSource, /explicitLaneDetailFilter/);
     assert.match(roadLayersSource, /explicitLaneMarkingFilter/);
     assert.match(roadLayersSource, /minzoom: 16\.2/);
