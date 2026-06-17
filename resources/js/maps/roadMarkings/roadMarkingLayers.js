@@ -16,8 +16,8 @@ const markingColor = [
     ROAD_MARKING_COLORS.white,
 ];
 
-const laneLineWidth = ['interpolate', ['linear'], ['zoom'], 16.5, 1.05, 18, 1.75, 20, 2.55];
-const edgeLineWidth = ['interpolate', ['linear'], ['zoom'], 16.5, 1.15, 18, 1.95, 20, 2.75];
+const laneLineWidth = ['interpolate', ['linear'], ['zoom'], 16.5, 1.45, 18, 2.35, 20, 3.35];
+const edgeLineWidth = ['interpolate', ['linear'], ['zoom'], 16.5, 1.35, 18, 2.25, 20, 3.15];
 const stopLineWidth = ['interpolate', ['linear'], ['zoom'], 17, 3.2, 19, 5.8, 20, 7.2];
 
 export function createRoadMarkingLayers({ source = ROAD_MARKINGS_SOURCE_ID, sourceLayer = null } = {}) {
@@ -130,7 +130,7 @@ export const roadMarkingLayerDefinitions = [
             'line-color': markingColor,
             'line-width': laneLineWidth,
             'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.7, 0.64, 18, 0.9, 20, 0.98],
-            'line-offset': ['interpolate', ['linear'], ['zoom'], 16.7, ['+', lineOffset, -1], 19, ['+', lineOffset, -1.75], 20, ['+', lineOffset, -2.35]],
+            'line-offset': ['interpolate', ['linear'], ['zoom'], 16.7, ['+', lineOffset, -1.25], 19, ['+', lineOffset, -2.1], 20, ['+', lineOffset, -2.8]],
         },
     },
     {
@@ -146,7 +146,7 @@ export const roadMarkingLayerDefinitions = [
             'line-color': markingColor,
             'line-width': laneLineWidth,
             'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.7, 0.64, 18, 0.9, 20, 0.98],
-            'line-offset': ['interpolate', ['linear'], ['zoom'], 16.7, ['+', lineOffset, 1], 19, ['+', lineOffset, 1.75], 20, ['+', lineOffset, 2.35]],
+            'line-offset': ['interpolate', ['linear'], ['zoom'], 16.7, ['+', lineOffset, 1.25], 19, ['+', lineOffset, 2.1], 20, ['+', lineOffset, 2.8]],
         },
     },
     {
@@ -213,7 +213,7 @@ export const roadMarkingLayerDefinitions = [
     {
         id: 'road_marking_turn_arrows',
         type: 'symbol',
-        filter: featureTypeFilter('turn_arrow'),
+        filter: ['all', featureTypeFilter('turn_arrow'), ['!=', ['get', 'source'], 'osm_direction']],
         minzoom: 17.8,
         layout: {
             'icon-image': [

@@ -221,9 +221,7 @@ function addTurnArrows(features, element, roadId, coordinates, laneModel, detail
     const ratios = isMajor && !isLink ? [0.35, 0.72] : [0.7];
 
     for (const lane of laneModel.lanes) {
-        const turn = lane.turn && lane.turn !== 'none'
-            ? lane.turn
-            : getEstimatedTurn(laneModel, lane, isLink, isMajor);
+        const turn = lane.turn && lane.turn !== 'none' ? lane.turn : 'none';
 
         if (turn === 'none') {
             continue;
@@ -247,8 +245,8 @@ function addTurnArrows(features, element, roadId, coordinates, laneModel, detail
                     direction: lane.direction,
                     turn,
                     bearing: point.bearing,
-                    detail_quality: lane.turn && lane.turn !== 'none' ? detailQuality : 'direction_estimated',
-                    source: lane.turn && lane.turn !== 'none' ? 'osm_turn_lanes' : 'osm_direction',
+                    detail_quality: detailQuality,
+                    source: 'osm_turn_lanes',
                     osm_type: element.type,
                     osm_id: element.id,
                 },
@@ -259,18 +257,6 @@ function addTurnArrows(features, element, roadId, coordinates, laneModel, detail
             });
         }
     }
-}
-
-function getEstimatedTurn(laneModel, lane, isLink, isMajor) {
-    if (!laneModel.oneway && !isMajor && !isLink) {
-        return 'none';
-    }
-
-    if (isLink) {
-        return 'slight_right';
-    }
-
-    return 'through';
 }
 
 function makeLineFeature({ id, coordinates, properties }) {
