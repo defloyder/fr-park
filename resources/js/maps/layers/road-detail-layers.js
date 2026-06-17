@@ -27,9 +27,9 @@ export const roadDetailLayerDefinitions = [
         filter: featureTypeFilter('gore_area'),
         minzoom: 16,
         paint: {
-            'fill-color': '#DCE3EA',
+            'fill-color': '#697584',
             'fill-opacity': 0.38,
-            'fill-outline-color': '#F8FAFC',
+            'fill-outline-color': '#AEB9C6',
         },
     },
     {
@@ -48,11 +48,11 @@ export const roadDetailLayerDefinitions = [
         filter: featureTypeFilter('road_centerline'),
         minzoom: 16.2,
         layout: {
-            'line-cap': 'butt',
+            'line-cap': 'round',
             'line-join': 'round',
         },
         paint: {
-            'line-color': '#EFF4F8',
+            'line-color': '#697584',
             'line-width': [
                 'interpolate',
                 ['linear'],
@@ -64,7 +64,7 @@ export const roadDetailLayerDefinitions = [
                 20,
                 ['*', ['coalesce', ['to-number', ['get', 'lanes_total']], 2], 6.2],
             ],
-            'line-opacity': 0.22,
+            'line-opacity': 0.38,
         },
     },
     {
@@ -73,13 +73,13 @@ export const roadDetailLayerDefinitions = [
         filter: featureTypeFilter('road_centerline'),
         minzoom: 16,
         layout: {
-            'line-cap': 'butt',
+            'line-cap': 'round',
             'line-join': 'round',
         },
         paint: {
-            'line-color': '#FFFFFF',
+            'line-color': '#D9E2EC',
             'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.55, 18, 0.95, 20, 1.35],
-            'line-opacity': 0.16,
+            'line-opacity': 0.24,
         },
     },
     {
@@ -88,11 +88,11 @@ export const roadDetailLayerDefinitions = [
         filter: featureTypeFilter('road_edge'),
         minzoom: 17.6,
         layout: {
-            'line-cap': 'butt',
+            'line-cap': 'round',
             'line-join': 'round',
         },
         paint: {
-            'line-color': '#F8FAFC',
+            'line-color': '#AEB9C6',
             'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.55, 18, 1.05, 20, 1.45],
             'line-opacity': 0.26,
             'line-offset': lineOffset,
