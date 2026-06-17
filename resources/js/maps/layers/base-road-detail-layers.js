@@ -26,7 +26,9 @@ const tunnelFilter = [
     ['<', ['coalesce', ['to-number', ['get', 'layer']], 0], 0],
 ];
 
-const ASPHALT_COLOR = '#8292A6';
+const ASPHALT_COLOR = '#8A9AAB';
+const MARKING_COLOR = '#E8EEF5';
+const BUS_LANE_COLOR = '#78B8C9';
 
 const roadWidthFactor = [
     'match',
@@ -48,6 +50,22 @@ const roadWidthFactor = [
     0.5,
 ];
 
+const motorwayMergeWidthFactor = [
+    'match',
+    ['get', 'class'],
+    'motorway',
+    1,
+    'trunk',
+    0.82,
+    'primary',
+    0.52,
+    'secondary',
+    0.34,
+    'tertiary',
+    0.2,
+    0,
+];
+
 const rampWidthFactor = [
     'match',
     ['get', 'class'],
@@ -60,6 +78,21 @@ const rampWidthFactor = [
     'secondary',
     0.48,
     0.42,
+];
+
+const motorwayMainlineFilter = [
+    'all',
+    ['in', ['get', 'class'], ['literal', ['motorway', 'trunk', 'primary']]],
+    ['!', linkRoadFilter],
+];
+
+const busLaneFilter = [
+    'any',
+    ['==', ['get', 'busway'], 'lane'],
+    ['==', ['get', 'busway:left'], 'lane'],
+    ['==', ['get', 'busway:right'], 'lane'],
+    ['==', ['get', 'bus:lanes'], 'designated'],
+    ['in', ['get', 'class'], ['literal', ['busway']]],
 ];
 
 const majorSurfaceWidth = [
@@ -102,6 +135,26 @@ const majorUnifierWidth = [
     ['*', 176, roadWidthFactor],
 ];
 
+const motorwayMedianFillWidth = [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    14,
+    ['*', 19, motorwayMergeWidthFactor],
+    15,
+    ['*', 32, motorwayMergeWidthFactor],
+    16,
+    ['*', 54, motorwayMergeWidthFactor],
+    17,
+    ['*', 80, motorwayMergeWidthFactor],
+    18,
+    ['*', 116, motorwayMergeWidthFactor],
+    19,
+    ['*', 164, motorwayMergeWidthFactor],
+    20,
+    ['*', 226, motorwayMergeWidthFactor],
+];
+
 const minorSurfaceWidth = [
     'interpolate',
     ['linear'],
@@ -138,6 +191,10 @@ const rampSurfaceWidth = [
     ['*', 74, rampWidthFactor],
 ];
 
+const roadEdgeMarkingWidth = ['interpolate', ['linear'], ['zoom'], 17, 0.35, 18.5, 0.7, 20, 1.05];
+const roadDividerMarkingWidth = ['interpolate', ['linear'], ['zoom'], 17, 0.45, 18.5, 0.85, 20, 1.25];
+const busLaneWidth = ['interpolate', ['linear'], ['zoom'], 18, 1.1, 20, 2.4];
+
 function roadLineLayer({
     id,
     source,
@@ -147,9 +204,10 @@ function roadLineLayer({
     color,
     width,
     opacity = 1,
-    cap = 'square',
+    cap = 'butt',
+    dasharray = null,
 }) {
-    return {
+    const layer = {
         id,
         type: 'line',
         source,
@@ -166,6 +224,12 @@ function roadLineLayer({
             'line-opacity': opacity,
         },
     };
+
+    if (dasharray) {
+        layer.paint['line-dasharray'] = dasharray;
+    }
+
+    return layer;
 }
 
 export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportation' }) {
@@ -191,6 +255,15 @@ export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportati
             width: rampSurfaceWidth,
         }),
         roadLineLayer({
+            id: 'base_road_motorway_median_fill',
+            source,
+            sourceLayer,
+            filter: motorwayMainlineFilter,
+            minzoom: 14,
+            color: ASPHALT_COLOR,
+            width: motorwayMedianFillWidth,
+        }),
+        roadLineLayer({
             id: 'base_road_major_unifier',
             source,
             sourceLayer,
@@ -207,6 +280,37 @@ export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportati
             minzoom: 14,
             color: ASPHALT_COLOR,
             width: majorSurfaceWidth,
+        }),
+        roadLineLayer({
+            id: 'base_road_edge_markings',
+            source,
+            sourceLayer,
+            filter: roadClassFilter,
+            minzoom: 17.4,
+            color: MARKING_COLOR,
+            width: roadEdgeMarkingWidth,
+            opacity: 0.2,
+        }),
+        roadLineLayer({
+            id: 'base_road_lane_dividers',
+            source,
+            sourceLayer,
+            filter: majorFilter,
+            minzoom: 17.8,
+            color: MARKING_COLOR,
+            width: roadDividerMarkingWidth,
+            opacity: 0.3,
+            dasharray: [2.6, 3.4],
+        }),
+        roadLineLayer({
+            id: 'base_road_bus_lanes',
+            source,
+            sourceLayer,
+            filter: busLaneFilter,
+            minzoom: 18.2,
+            color: BUS_LANE_COLOR,
+            width: busLaneWidth,
+            opacity: 0.28,
         }),
     ];
 }
