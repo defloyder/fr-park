@@ -582,9 +582,10 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
     assert.match(addRoadDetailsSource, /map\.addLayer\(layer, beforeId\)/);
     assert.match(baseRoadLayersSource, /'source-layer': sourceLayer/);
     assert.match(baseRoadLayersSource, /ROAD_CLASSES/);
-    assert.match(baseRoadLayersSource, /base_road_major_corridor/);
+    assert.match(baseRoadLayersSource, /base_road_major_unifier/);
     assert.match(baseRoadLayersSource, /base_road_major_surface/);
     assert.match(baseRoadLayersSource, /base_road_ramp_surface/);
+    assert.match(mapSource, /ROAD_LEGACY_DETAIL_OPACITY/);
     assert.doesNotMatch(baseRoadLayersSource, /line-offset/);
     assert.doesNotMatch(baseRoadLayersSource, /line-dasharray/);
     assert.match(roadLayersSource, /explicitLaneDetailFilter/);

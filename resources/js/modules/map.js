@@ -88,6 +88,17 @@ const ROAD_BASE_FADE_OPACITY = (peak = 0.96) => [
     17.2,
     0,
 ];
+const ROAD_LEGACY_DETAIL_OPACITY = (peak = 0.96) => [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    13.4,
+    peak,
+    14.2,
+    peak * 0.28,
+    14.8,
+    0,
+];
 
 const ROUTE_TRAFFIC_LINE_COLOR = [
     'match',
@@ -398,7 +409,7 @@ const MAP_STYLE = {
             paint: {
                 'line-color': '#B8C1CC',
                 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.6, 15, 7, 18, 16],
-                'line-opacity': 0.92,
+                'line-opacity': ROAD_LEGACY_DETAIL_OPACITY(0.92),
             },
         },
         {
@@ -435,7 +446,7 @@ const MAP_STYLE = {
                     20,
                     ['*', 136, ROAD_CLASS_WIDTH_FACTOR],
                 ],
-                'line-opacity': ROAD_BASE_FADE_OPACITY(0.94),
+                'line-opacity': ROAD_LEGACY_DETAIL_OPACITY(0.94),
             },
         },
         {
@@ -452,7 +463,7 @@ const MAP_STYLE = {
             paint: {
                 'line-color': '#D4DAE2',
                 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 15, 6, 18, 14],
-                'line-opacity': 0.96,
+                'line-opacity': ROAD_LEGACY_DETAIL_OPACITY(0.96),
             },
         },
         {
@@ -499,7 +510,7 @@ const MAP_STYLE = {
                     20,
                     ['*', 126, ROAD_CLASS_WIDTH_FACTOR],
                 ],
-                'line-opacity': ROAD_BASE_FADE_OPACITY(0.96),
+                'line-opacity': ROAD_LEGACY_DETAIL_OPACITY(0.96),
             },
         },
         {
@@ -1106,19 +1117,19 @@ function updateVectorRoadLayerTheme(layerId) {
         },
         'road-casing-minor': {
             'line-color': isDark ? '#64748B' : '#B8C1CC',
-            'line-opacity': isSatellite ? 0 : 0.92,
+            'line-opacity': isSatellite ? 0 : ROAD_LEGACY_DETAIL_OPACITY(0.92),
         },
         'road-casing-major': {
             'line-color': isDark ? '#718096' : '#AEB8C5',
-            'line-opacity': isSatellite ? 0 : ROAD_BASE_FADE_OPACITY(0.94),
+            'line-opacity': isSatellite ? 0 : ROAD_LEGACY_DETAIL_OPACITY(0.94),
         },
         'road-minor': {
             'line-color': isDark ? '#2A3546' : '#D4DAE2',
-            'line-opacity': isSatellite ? 0 : 0.96,
+            'line-opacity': isSatellite ? 0 : ROAD_LEGACY_DETAIL_OPACITY(0.96),
         },
         'road-major': {
             'line-color': isDark ? '#354052' : '#C6D0DC',
-            'line-opacity': isSatellite ? 0 : ROAD_BASE_FADE_OPACITY(0.96),
+            'line-opacity': isSatellite ? 0 : ROAD_LEGACY_DETAIL_OPACITY(0.96),
         },
         'road-name': {
             'text-color': isDark ? '#F8FAFC' : '#364152',
