@@ -597,8 +597,9 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
     assert.match(baseRoadLayersSource, /createLaneDividerLayers/);
     assert.match(baseRoadLayersSource, /laneCount <= 8/);
     assert.match(baseRoadLayersSource, /base_road_center_double_left/);
-    assert.match(baseRoadLayersSource, /base_road_direction_arrows/);
     assert.match(baseRoadLayersSource, /base_road_bus_lanes/);
+    assert.doesNotMatch(baseRoadLayersSource, /base_road_direction_arrows/);
+    assert.doesNotMatch(baseRoadLayersSource, /base_road_ramp_direction_arrows/);
     assert.match(baseRoadLayersSource, /includeMarkings = false/);
     assert.match(mapSource, /ROAD_LEGACY_DETAIL_OPACITY/);
     assert.match(baseRoadLayersSource, /line-offset/);

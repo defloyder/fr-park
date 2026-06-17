@@ -16,9 +16,9 @@ const markingColor = [
     ROAD_MARKING_COLORS.white,
 ];
 
-const laneLineWidth = ['interpolate', ['linear'], ['zoom'], 16.5, 0.5, 18, 0.95, 20, 1.35];
-const edgeLineWidth = ['interpolate', ['linear'], ['zoom'], 16.5, 0.55, 18, 1.05, 20, 1.55];
-const stopLineWidth = ['interpolate', ['linear'], ['zoom'], 17, 1.8, 19, 3.2, 20, 4.2];
+const laneLineWidth = ['interpolate', ['linear'], ['zoom'], 16.5, 1.05, 18, 1.75, 20, 2.55];
+const edgeLineWidth = ['interpolate', ['linear'], ['zoom'], 16.5, 1.15, 18, 1.95, 20, 2.75];
+const stopLineWidth = ['interpolate', ['linear'], ['zoom'], 17, 3.2, 19, 5.8, 20, 7.2];
 
 export function createRoadMarkingLayers({ source = ROAD_MARKINGS_SOURCE_ID, sourceLayer = null } = {}) {
     return roadMarkingLayerDefinitions.map((layer) => {
@@ -47,8 +47,8 @@ export const roadMarkingLayerDefinitions = [
         },
         paint: {
             'line-color': ROAD_MARKING_COLORS.bus,
-            'line-width': ['interpolate', ['linear'], ['zoom'], 16, 1.2, 18, 2.4, 20, 3.5],
-            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16, 0.22, 19, 0.48],
+            'line-width': ['interpolate', ['linear'], ['zoom'], 16, 2.1, 18, 3.8, 20, 5.4],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16, 0.34, 19, 0.62],
             'line-offset': lineOffset,
         },
     },
@@ -64,7 +64,7 @@ export const roadMarkingLayerDefinitions = [
         paint: {
             'line-color': ROAD_MARKING_COLORS.mutedWhite,
             'line-width': edgeLineWidth,
-            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.5, 0.22, 18, 0.46, 20, 0.62],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.5, 0.48, 18, 0.72, 20, 0.88],
             'line-offset': lineOffset,
         },
     },
@@ -80,7 +80,7 @@ export const roadMarkingLayerDefinitions = [
         paint: {
             'line-color': ROAD_MARKING_COLORS.mutedWhite,
             'line-width': laneLineWidth,
-            'line-opacity': ['interpolate', ['linear'], ['zoom'], 17, 0.2, 19, 0.42],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 17, 0.46, 19, 0.74],
             'line-offset': lineOffset,
         },
     },
@@ -96,8 +96,8 @@ export const roadMarkingLayerDefinitions = [
         paint: {
             'line-color': markingColor,
             'line-width': laneLineWidth,
-            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.7, 0.36, 18, 0.62, 20, 0.76],
-            'line-dasharray': ['literal', [2.6, 3.2]],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.7, 0.56, 18, 0.82, 20, 0.94],
+            'line-dasharray': ['literal', [3.4, 2.8]],
             'line-offset': lineOffset,
         },
     },
@@ -113,7 +113,7 @@ export const roadMarkingLayerDefinitions = [
         paint: {
             'line-color': markingColor,
             'line-width': laneLineWidth,
-            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.7, 0.42, 18, 0.68, 20, 0.84],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.7, 0.62, 18, 0.88, 20, 0.98],
             'line-offset': lineOffset,
         },
     },
@@ -129,8 +129,8 @@ export const roadMarkingLayerDefinitions = [
         paint: {
             'line-color': markingColor,
             'line-width': laneLineWidth,
-            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.7, 0.44, 18, 0.72, 20, 0.86],
-            'line-offset': ['interpolate', ['linear'], ['zoom'], 16.7, ['+', lineOffset, -0.7], 19, ['+', lineOffset, -1.25], 20, ['+', lineOffset, -1.75]],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.7, 0.64, 18, 0.9, 20, 0.98],
+            'line-offset': ['interpolate', ['linear'], ['zoom'], 16.7, ['+', lineOffset, -1], 19, ['+', lineOffset, -1.75], 20, ['+', lineOffset, -2.35]],
         },
     },
     {
@@ -145,8 +145,8 @@ export const roadMarkingLayerDefinitions = [
         paint: {
             'line-color': markingColor,
             'line-width': laneLineWidth,
-            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.7, 0.44, 18, 0.72, 20, 0.86],
-            'line-offset': ['interpolate', ['linear'], ['zoom'], 16.7, ['+', lineOffset, 0.7], 19, ['+', lineOffset, 1.25], 20, ['+', lineOffset, 1.75]],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.7, 0.64, 18, 0.9, 20, 0.98],
+            'line-offset': ['interpolate', ['linear'], ['zoom'], 16.7, ['+', lineOffset, 1], 19, ['+', lineOffset, 1.75], 20, ['+', lineOffset, 2.35]],
         },
     },
     {
@@ -160,8 +160,8 @@ export const roadMarkingLayerDefinitions = [
         },
         paint: {
             'line-color': ROAD_MARKING_COLORS.brightWhite,
-            'line-width': ['interpolate', ['linear'], ['zoom'], 17.2, 4.4, 19, 8.5, 20, 11],
-            'line-opacity': ['interpolate', ['linear'], ['zoom'], 17.2, 0.5, 19, 0.78],
+            'line-width': ['interpolate', ['linear'], ['zoom'], 17.2, 6.2, 19, 11, 20, 14],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 17.2, 0.62, 19, 0.9],
             'line-dasharray': ['literal', [0.42, 0.52]],
         },
     },
@@ -177,7 +177,7 @@ export const roadMarkingLayerDefinitions = [
         paint: {
             'line-color': ROAD_MARKING_COLORS.brightWhite,
             'line-width': stopLineWidth,
-            'line-opacity': ['interpolate', ['linear'], ['zoom'], 17.2, 0.58, 19, 0.86],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 17.2, 0.68, 19, 0.94],
         },
     },
     {
@@ -191,8 +191,8 @@ export const roadMarkingLayerDefinitions = [
         },
         paint: {
             'line-color': ROAD_MARKING_COLORS.yellow,
-            'line-width': ['interpolate', ['linear'], ['zoom'], 18, 0.85, 20, 1.45],
-            'line-opacity': 0.7,
+            'line-width': ['interpolate', ['linear'], ['zoom'], 18, 1.4, 20, 2.25],
+            'line-opacity': 0.86,
         },
     },
     {
@@ -206,8 +206,8 @@ export const roadMarkingLayerDefinitions = [
         },
         paint: {
             'line-color': markingColor,
-            'line-width': ['interpolate', ['linear'], ['zoom'], 17.5, 0.8, 20, 1.35],
-            'line-opacity': 0.62,
+            'line-width': ['interpolate', ['linear'], ['zoom'], 17.5, 1.35, 20, 2.15],
+            'line-opacity': 0.82,
         },
     },
     {
@@ -237,16 +237,16 @@ export const roadMarkingLayerDefinitions = [
                 ROAD_MARKING_ARROW_IMAGES.slight_right,
                 ROAD_MARKING_ARROW_IMAGES.through,
             ],
-            'icon-size': ['interpolate', ['linear'], ['zoom'], 17.8, 0.35, 19, 0.58, 20, 0.78],
+            'icon-size': ['interpolate', ['linear'], ['zoom'], 17.8, 0.52, 19, 0.82, 20, 1.06],
             'icon-rotate': ['coalesce', ['to-number', ['get', 'bearing']], 0],
             'icon-rotation-alignment': 'map',
             'icon-pitch-alignment': 'map',
             'icon-keep-upright': false,
-            'icon-allow-overlap': false,
-            'icon-ignore-placement': false,
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true,
         },
         paint: {
-            'icon-opacity': ['interpolate', ['linear'], ['zoom'], 17.8, 0.48, 19, 0.82],
+            'icon-opacity': ['interpolate', ['linear'], ['zoom'], 17.8, 0.62, 19, 0.94],
         },
     },
 ];
