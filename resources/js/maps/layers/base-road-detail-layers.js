@@ -27,6 +27,9 @@ const tunnelFilter = [
 ];
 
 const ASPHALT_COLOR = '#8A9AAB';
+const ELEVATED_ASPHALT_COLOR = '#92A2B4';
+const ELEVATED_SIDE_COLOR = '#607185';
+const ELEVATED_SHADOW_COLOR = '#0B1421';
 const MARKING_COLOR = '#E8EEF5';
 const BUS_LANE_COLOR = '#78B8C9';
 
@@ -155,6 +158,48 @@ const motorwayMedianFillWidth = [
     ['*', 226, motorwayMergeWidthFactor],
 ];
 
+const bridgeShadowWidth = [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    14,
+    ['+', ['*', 21, roadWidthFactor], 4],
+    16,
+    ['+', ['*', 58, roadWidthFactor], 8],
+    18,
+    ['+', ['*', 120, roadWidthFactor], 14],
+    20,
+    ['+', ['*', 230, roadWidthFactor], 22],
+];
+
+const bridgeSideWidth = [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    14,
+    ['+', ['*', 17, roadWidthFactor], 2],
+    16,
+    ['+', ['*', 46, roadWidthFactor], 4],
+    18,
+    ['+', ['*', 96, roadWidthFactor], 7],
+    20,
+    ['+', ['*', 184, roadWidthFactor], 10],
+];
+
+const bridgeSurfaceWidth = [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    14,
+    ['*', 12, roadWidthFactor],
+    16,
+    ['*', 35, roadWidthFactor],
+    18,
+    ['*', 72, roadWidthFactor],
+    20,
+    ['*', 136, roadWidthFactor],
+];
+
 const minorSurfaceWidth = [
     'interpolate',
     ['linear'],
@@ -194,6 +239,7 @@ const rampSurfaceWidth = [
 const roadEdgeMarkingWidth = ['interpolate', ['linear'], ['zoom'], 17, 0.35, 18.5, 0.7, 20, 1.05];
 const roadDividerMarkingWidth = ['interpolate', ['linear'], ['zoom'], 17, 0.45, 18.5, 0.85, 20, 1.25];
 const busLaneWidth = ['interpolate', ['linear'], ['zoom'], 18, 1.1, 20, 2.4];
+const bridgeHighlightWidth = ['interpolate', ['linear'], ['zoom'], 15, 0.8, 18, 1.4, 20, 2];
 
 function roadLineLayer({
     id,
@@ -206,6 +252,9 @@ function roadLineLayer({
     opacity = 1,
     cap = 'butt',
     dasharray = null,
+    blur = null,
+    translate = null,
+    translateAnchor = null,
 }) {
     const layer = {
         id,
@@ -229,11 +278,25 @@ function roadLineLayer({
         layer.paint['line-dasharray'] = dasharray;
     }
 
+    if (blur !== null) {
+        layer.paint['line-blur'] = blur;
+    }
+
+    if (translate) {
+        layer.paint['line-translate'] = translate;
+    }
+
+    if (translateAnchor) {
+        layer.paint['line-translate-anchor'] = translateAnchor;
+    }
+
     return layer;
 }
 
 export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportation' }) {
     const majorFilter = ['all', majorRoadClassFilter, ['!', linkRoadFilter]];
+    const bridgeRoadFilter = ['all', roadClassFilter, bridgeFilter, ['!', tunnelFilter]];
+    const bridgeMajorFilter = ['all', majorRoadClassFilter, bridgeFilter, ['!', linkRoadFilter], ['!', tunnelFilter]];
 
     return [
         roadLineLayer({
@@ -282,6 +345,48 @@ export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportati
             width: majorSurfaceWidth,
         }),
         roadLineLayer({
+            id: 'base_road_bridge_shadow',
+            source,
+            sourceLayer,
+            filter: bridgeRoadFilter,
+            minzoom: 14,
+            color: ELEVATED_SHADOW_COLOR,
+            width: bridgeShadowWidth,
+            opacity: 0.24,
+            blur: ['interpolate', ['linear'], ['zoom'], 14, 1.2, 18, 2.8, 20, 4],
+            translate: [2, 4],
+            translateAnchor: 'viewport',
+        }),
+        roadLineLayer({
+            id: 'base_road_bridge_side',
+            source,
+            sourceLayer,
+            filter: bridgeRoadFilter,
+            minzoom: 14,
+            color: ELEVATED_SIDE_COLOR,
+            width: bridgeSideWidth,
+            opacity: 0.7,
+        }),
+        roadLineLayer({
+            id: 'base_road_bridge_surface',
+            source,
+            sourceLayer,
+            filter: bridgeRoadFilter,
+            minzoom: 14,
+            color: ELEVATED_ASPHALT_COLOR,
+            width: bridgeSurfaceWidth,
+        }),
+        roadLineLayer({
+            id: 'base_road_bridge_highlight',
+            source,
+            sourceLayer,
+            filter: bridgeRoadFilter,
+            minzoom: 15.4,
+            color: '#D5DEE8',
+            width: bridgeHighlightWidth,
+            opacity: 0.34,
+        }),
+        roadLineLayer({
             id: 'base_road_edge_markings',
             source,
             sourceLayer,
@@ -300,6 +405,17 @@ export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportati
             color: MARKING_COLOR,
             width: roadDividerMarkingWidth,
             opacity: 0.3,
+            dasharray: [2.6, 3.4],
+        }),
+        roadLineLayer({
+            id: 'base_road_bridge_lane_dividers',
+            source,
+            sourceLayer,
+            filter: bridgeMajorFilter,
+            minzoom: 17.8,
+            color: MARKING_COLOR,
+            width: roadDividerMarkingWidth,
+            opacity: 0.38,
             dasharray: [2.6, 3.4],
         }),
         roadLineLayer({
