@@ -27,9 +27,6 @@ const tunnelFilter = [
 ];
 
 const ASPHALT_COLOR = '#8A9AAB';
-const ELEVATED_ASPHALT_COLOR = '#91A0B0';
-const ELEVATED_SIDE_COLOR = '#7D8D9F';
-const ELEVATED_SHADOW_COLOR = '#0B1421';
 const MARKING_COLOR = '#E8EEF5';
 const LANE_MARKING_COLOR = '#D7E0EA';
 const CENTER_MARKING_COLOR = '#F1F5FA';
@@ -167,48 +164,6 @@ const motorwayMedianFillWidth = [
     ['*', 284, motorwayMergeWidthFactor],
 ];
 
-const bridgeShadowWidth = [
-    'interpolate',
-    ['linear'],
-    ['zoom'],
-    14,
-    ['+', ['*', 13, roadWidthFactor], 2],
-    16,
-    ['+', ['*', 37, roadWidthFactor], 4],
-    18,
-    ['+', ['*', 76, roadWidthFactor], 6],
-    20,
-    ['+', ['*', 140, roadWidthFactor], 9],
-];
-
-const bridgeSideWidth = [
-    'interpolate',
-    ['linear'],
-    ['zoom'],
-    14,
-    ['+', ['*', 12, roadWidthFactor], 1],
-    16,
-    ['+', ['*', 35, roadWidthFactor], 2],
-    18,
-    ['+', ['*', 72, roadWidthFactor], 4],
-    20,
-    ['+', ['*', 136, roadWidthFactor], 6],
-];
-
-const bridgeSurfaceWidth = [
-    'interpolate',
-    ['linear'],
-    ['zoom'],
-    14,
-    ['*', 12, roadWidthFactor],
-    16,
-    ['*', 35, roadWidthFactor],
-    18,
-    ['*', 72, roadWidthFactor],
-    20,
-    ['*', 136, roadWidthFactor],
-];
-
 const minorSurfaceWidth = [
     'interpolate',
     ['linear'],
@@ -245,16 +200,14 @@ const rampSurfaceWidth = [
     ['*', 74, rampWidthFactor],
 ];
 
-const roadEdgeMarkingWidth = ['interpolate', ['linear'], ['zoom'], 17, 0.35, 18.5, 0.7, 20, 1.05];
-const roadDividerMarkingWidth = ['interpolate', ['linear'], ['zoom'], 17, 0.34, 18.5, 0.66, 20, 0.95];
-const roadCenterMarkingWidth = ['interpolate', ['linear'], ['zoom'], 17, 0.55, 18.5, 1.05, 20, 1.55];
-const busLaneWidth = ['interpolate', ['linear'], ['zoom'], 18, 1.1, 20, 2.4];
-const bridgeHighlightWidth = ['interpolate', ['linear'], ['zoom'], 15, 0.8, 18, 1.4, 20, 2];
-const majorSeamWidth = ['*', majorSurfaceWidth, 0.96];
-const minorSeamWidth = ['*', minorSurfaceWidth, 0.92];
-const rampSeamWidth = ['*', rampSurfaceWidth, 0.92];
-const bridgeSeamWidth = ['*', bridgeSurfaceWidth, 0.96];
-const lanePixelWidth = ['interpolate', ['linear'], ['zoom'], 17, 4.2, 18, 6.2, 19, 8.6, 20, 11.4];
+const roadEdgeMarkingWidth = ['interpolate', ['linear'], ['zoom'], 17, 0.55, 18.5, 1.05, 20, 1.45];
+const roadDividerMarkingWidth = ['interpolate', ['linear'], ['zoom'], 17, 0.55, 18.5, 1.05, 20, 1.45];
+const roadCenterMarkingWidth = ['interpolate', ['linear'], ['zoom'], 17, 0.75, 18.5, 1.35, 20, 1.9];
+const busLaneWidth = ['interpolate', ['linear'], ['zoom'], 18, 1.7, 20, 3.2];
+const majorSeamWidth = ['*', majorSurfaceWidth, 1.03];
+const minorSeamWidth = ['*', minorSurfaceWidth, 1.02];
+const rampSeamWidth = ['*', rampSurfaceWidth, 1.02];
+const lanePixelWidth = ['interpolate', ['linear'], ['zoom'], 17, 5.2, 18, 7.6, 19, 10.4, 20, 13.6];
 const centerDoubleOffset = ['interpolate', ['linear'], ['zoom'], 17, 1.1, 18.5, 1.9, 20, 2.8];
 const majorEdgeOffset = ['*', majorSurfaceWidth, 0.45];
 const rampEdgeOffset = ['*', rampSurfaceWidth, 0.42];
@@ -391,12 +344,12 @@ function createLaneDividerLayers({ source, sourceLayer, filter }) {
                 id: `base_road_lane_marking_${laneCount}_${dividerIndex}`,
                 source,
                 sourceLayer,
-                filter: ['all', filter, laneCountFilter(laneCount), onewayFilter],
+                filter: ['all', filter, laneCountFilter(laneCount)],
                 minzoom: 17.6,
                 color: LANE_MARKING_COLOR,
                 width: roadDividerMarkingWidth,
-                opacity: ['interpolate', ['linear'], ['zoom'], 17.6, 0.24, 19, 0.52, 20, 0.62],
-                dasharray: [2.1, 3.2],
+                opacity: ['interpolate', ['linear'], ['zoom'], 17.6, 0.42, 19, 0.72, 20, 0.82],
+                dasharray: [2.8, 3.2],
                 offset: laneDividerOffset(laneCount, dividerIndex),
             }));
         }
@@ -415,7 +368,7 @@ function createTwoWayLaneDividerLayers({ source, sourceLayer, filter }) {
             minzoom: 17.5,
             color: CENTER_MARKING_COLOR,
             width: roadCenterMarkingWidth,
-            opacity: ['interpolate', ['linear'], ['zoom'], 17.5, 0.28, 19, 0.56, 20, 0.68],
+            opacity: ['interpolate', ['linear'], ['zoom'], 17.5, 0.46, 19, 0.76, 20, 0.86],
             offset: ['*', centerDoubleOffset, -1],
         }),
         roadLineLayer({
@@ -426,7 +379,7 @@ function createTwoWayLaneDividerLayers({ source, sourceLayer, filter }) {
             minzoom: 17.5,
             color: CENTER_MARKING_COLOR,
             width: roadCenterMarkingWidth,
-            opacity: ['interpolate', ['linear'], ['zoom'], 17.5, 0.28, 19, 0.56, 20, 0.68],
+            opacity: ['interpolate', ['linear'], ['zoom'], 17.5, 0.46, 19, 0.76, 20, 0.86],
             offset: centerDoubleOffset,
         }),
         roadLineLayer({
@@ -437,8 +390,8 @@ function createTwoWayLaneDividerLayers({ source, sourceLayer, filter }) {
             minzoom: 17.8,
             color: CENTER_MARKING_COLOR,
             width: roadDividerMarkingWidth,
-            opacity: ['interpolate', ['linear'], ['zoom'], 17.8, 0.28, 19, 0.52, 20, 0.62],
-            dasharray: [2.4, 3.4],
+            opacity: ['interpolate', ['linear'], ['zoom'], 17.8, 0.44, 19, 0.7, 20, 0.8],
+            dasharray: [3, 3.4],
         }),
     ];
 }
@@ -453,7 +406,7 @@ function createRoadEdgeMarkingLayers({ source, sourceLayer, idPrefix, filter, of
             minzoom: 17.2,
             color: MARKING_COLOR,
             width: roadEdgeMarkingWidth,
-            opacity: ['interpolate', ['linear'], ['zoom'], 17.2, 0.16, 19, 0.38, 20, 0.46],
+            opacity: ['interpolate', ['linear'], ['zoom'], 17.2, 0.28, 19, 0.56, 20, 0.66],
             offset: ['*', offset, -1],
         }),
         roadLineLayer({
@@ -464,7 +417,7 @@ function createRoadEdgeMarkingLayers({ source, sourceLayer, idPrefix, filter, of
             minzoom: 17.2,
             color: MARKING_COLOR,
             width: roadEdgeMarkingWidth,
-            opacity: ['interpolate', ['linear'], ['zoom'], 17.2, 0.16, 19, 0.38, 20, 0.46],
+            opacity: ['interpolate', ['linear'], ['zoom'], 17.2, 0.28, 19, 0.56, 20, 0.66],
             offset,
         }),
     ];
@@ -472,9 +425,6 @@ function createRoadEdgeMarkingLayers({ source, sourceLayer, idPrefix, filter, of
 
 export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportation' }) {
     const majorFilter = ['all', majorRoadClassFilter, ['!', linkRoadFilter]];
-    const nonBridgeMajorFilter = ['all', majorFilter, ['!', bridgeFilter]];
-    const bridgeRoadFilter = ['all', roadClassFilter, bridgeFilter, ['!', tunnelFilter]];
-    const bridgeMajorFilter = ['all', majorRoadClassFilter, bridgeFilter, ['!', linkRoadFilter], ['!', tunnelFilter]];
 
     return [
         roadLineLayer({
@@ -485,7 +435,7 @@ export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportati
             minzoom: 15.2,
             color: ASPHALT_COLOR,
             width: minorSeamWidth,
-            cap: 'square',
+            cap: 'round',
         }),
         roadLineLayer({
             id: 'base_road_minor_surface',
@@ -504,7 +454,7 @@ export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportati
             minzoom: 14.8,
             color: ASPHALT_COLOR,
             width: rampSeamWidth,
-            cap: 'square',
+            cap: 'round',
         }),
         roadLineLayer({
             id: 'base_road_ramp_surface',
@@ -541,7 +491,7 @@ export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportati
             minzoom: 14,
             color: ASPHALT_COLOR,
             width: majorSeamWidth,
-            cap: 'square',
+            cap: 'round',
         }),
         roadLineLayer({
             id: 'base_road_major_surface',
@@ -551,28 +501,6 @@ export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportati
             minzoom: 14,
             color: ASPHALT_COLOR,
             width: majorSurfaceWidth,
-        }),
-        roadLineLayer({
-            id: 'base_road_bridge_shadow',
-            source,
-            sourceLayer,
-            filter: bridgeRoadFilter,
-            minzoom: 14,
-            color: ELEVATED_SHADOW_COLOR,
-            width: bridgeShadowWidth,
-            opacity: 0.14,
-            blur: ['interpolate', ['linear'], ['zoom'], 14, 0.8, 18, 1.6, 20, 2.2],
-            translate: [1, 2],
-            translateAnchor: 'viewport',
-        }),
-        roadLineLayer({
-            id: 'base_road_bridge_surface',
-            source,
-            sourceLayer,
-            filter: bridgeRoadFilter,
-            minzoom: 14,
-            color: ELEVATED_ASPHALT_COLOR,
-            width: bridgeSurfaceWidth,
         }),
         ...createRoadEdgeMarkingLayers({
             source,
@@ -598,37 +526,13 @@ export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportati
         ...createTwoWayLaneDividerLayers({
             source,
             sourceLayer,
-            filter: nonBridgeMajorFilter,
-        }),
-        ...createTwoWayLaneDividerLayers({
-            source,
-            sourceLayer,
-            filter: bridgeMajorFilter,
-        }).map((layer) => ({
-            ...layer,
-            id: layer.id.replace('base_road_center', 'base_road_bridge_center'),
-            paint: {
-                ...layer.paint,
-                'line-opacity': ['interpolate', ['linear'], ['zoom'], 17.5, 0.32, 19, 0.62, 20, 0.72],
-            },
-        })),
-        ...createLaneDividerLayers({
-            source,
-            sourceLayer,
-            filter: nonBridgeMajorFilter,
+            filter: majorFilter,
         }),
         ...createLaneDividerLayers({
             source,
             sourceLayer,
-            filter: bridgeMajorFilter,
-        }).map((layer) => ({
-            ...layer,
-            id: layer.id.replace('base_road_lane_marking', 'base_road_bridge_lane_marking'),
-            paint: {
-                ...layer.paint,
-                'line-opacity': ['interpolate', ['linear'], ['zoom'], 17.6, 0.28, 19, 0.6, 20, 0.7],
-            },
-        })),
+            filter: majorFilter,
+        }),
         roadLineLayer({
             id: 'base_road_bus_lanes',
             source,
@@ -643,11 +547,11 @@ export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportati
             id: 'base_road_direction_arrows',
             source,
             sourceLayer,
-            filter: ['all', nonBridgeMajorFilter, onewayFilter],
-            minzoom: 18.2,
-            size: ['interpolate', ['linear'], ['zoom'], 18.2, 0.26, 20, 0.42],
-            opacity: ['interpolate', ['linear'], ['zoom'], 18.2, 0.24, 20, 0.48],
-            spacing: 220,
+            filter: ['all', majorFilter, onewayFilter],
+            minzoom: 18,
+            size: ['interpolate', ['linear'], ['zoom'], 18, 0.52, 19, 0.72, 20, 0.9],
+            opacity: ['interpolate', ['linear'], ['zoom'], 18, 0.5, 20, 0.82],
+            spacing: 135,
         }),
         roadArrowSymbolLayer({
             id: 'base_road_ramp_direction_arrows',
@@ -655,9 +559,9 @@ export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportati
             sourceLayer,
             filter: linkRoadFilter,
             minzoom: 18,
-            size: ['interpolate', ['linear'], ['zoom'], 18, 0.22, 20, 0.34],
-            opacity: ['interpolate', ['linear'], ['zoom'], 18, 0.28, 20, 0.54],
-            spacing: 150,
+            size: ['interpolate', ['linear'], ['zoom'], 18, 0.44, 19, 0.6, 20, 0.76],
+            opacity: ['interpolate', ['linear'], ['zoom'], 18, 0.52, 20, 0.84],
+            spacing: 100,
         }),
     ];
 }

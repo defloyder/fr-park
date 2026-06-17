@@ -591,11 +591,8 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
     assert.match(baseRoadLayersSource, /base_road_major_surface/);
     assert.match(baseRoadLayersSource, /base_road_ramp_surface/);
     assert.match(baseRoadLayersSource, /base_road_motorway_median_fill/);
-    assert.match(baseRoadLayersSource, /base_road_bridge_shadow/);
-    assert.match(baseRoadLayersSource, /base_road_bridge_surface/);
     assert.match(baseRoadLayersSource, /createLaneDividerLayers/);
     assert.match(baseRoadLayersSource, /laneCount <= 8/);
-    assert.match(baseRoadLayersSource, /base_road_bridge_lane_marking/);
     assert.match(baseRoadLayersSource, /base_road_center_double_left/);
     assert.match(baseRoadLayersSource, /base_road_direction_arrows/);
     assert.match(baseRoadLayersSource, /'icon-image': 'road-marking-arrow-through'/);
