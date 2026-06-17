@@ -77,19 +77,19 @@ const majorSurfaceWidth = [
     ['linear'],
     ['zoom'],
     14,
-    ['*', 9, roadWidthFactor],
+    ['*', 11, roadWidthFactor],
     15,
-    ['*', 15, roadWidthFactor],
+    ['*', 19, roadWidthFactor],
     16,
-    ['*', 24, roadWidthFactor],
+    ['*', 31, roadWidthFactor],
     17,
-    ['*', 35, roadWidthFactor],
+    ['*', 47, roadWidthFactor],
     18,
-    ['*', 50, roadWidthFactor],
+    ['*', 68, roadWidthFactor],
     19,
-    ['*', 70, roadWidthFactor],
-    20,
     ['*', 96, roadWidthFactor],
+    20,
+    ['*', 132, roadWidthFactor],
 ];
 
 const majorCasingWidth = [
@@ -97,19 +97,39 @@ const majorCasingWidth = [
     ['linear'],
     ['zoom'],
     14,
-    ['*', 11, roadWidthFactor],
+    ['*', 14, roadWidthFactor],
     15,
-    ['*', 18, roadWidthFactor],
+    ['*', 23, roadWidthFactor],
     16,
-    ['*', 28, roadWidthFactor],
+    ['*', 37, roadWidthFactor],
     17,
-    ['*', 40, roadWidthFactor],
+    ['*', 54, roadWidthFactor],
     18,
-    ['*', 57, roadWidthFactor],
+    ['*', 78, roadWidthFactor],
     19,
-    ['*', 80, roadWidthFactor],
-    20,
     ['*', 110, roadWidthFactor],
+    20,
+    ['*', 150, roadWidthFactor],
+];
+
+const majorCorridorWidth = [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    14,
+    ['*', 19, roadWidthFactor],
+    15,
+    ['*', 32, roadWidthFactor],
+    16,
+    ['*', 52, roadWidthFactor],
+    17,
+    ['*', 76, roadWidthFactor],
+    18,
+    ['*', 110, roadWidthFactor],
+    19,
+    ['*', 154, roadWidthFactor],
+    20,
+    ['*', 210, roadWidthFactor],
 ];
 
 const minorSurfaceWidth = [
@@ -117,17 +137,17 @@ const minorSurfaceWidth = [
     ['linear'],
     ['zoom'],
     15,
-    5,
+    6,
     16,
-    8,
+    10,
     17,
-    12,
+    15,
     18,
-    17,
+    22,
     19,
-    23,
+    31,
     20,
-    32,
+    42,
 ];
 
 const rampSurfaceWidth = [
@@ -135,17 +155,17 @@ const rampSurfaceWidth = [
     ['linear'],
     ['zoom'],
     15,
-    ['*', 7, rampWidthFactor],
+    ['*', 10, rampWidthFactor],
     16,
-    ['*', 12, rampWidthFactor],
+    ['*', 16, rampWidthFactor],
     17,
-    ['*', 18, rampWidthFactor],
+    ['*', 25, rampWidthFactor],
     18,
-    ['*', 27, rampWidthFactor],
+    ['*', 38, rampWidthFactor],
     19,
-    ['*', 39, rampWidthFactor],
-    20,
     ['*', 54, rampWidthFactor],
+    20,
+    ['*', 72, rampWidthFactor],
 ];
 
 const edgeOffset = [
@@ -153,15 +173,15 @@ const edgeOffset = [
     ['linear'],
     ['zoom'],
     16,
-    ['*', 11, roadWidthFactor],
+    ['*', 15, roadWidthFactor],
     17,
-    ['*', 16.5, roadWidthFactor],
+    ['*', 23, roadWidthFactor],
     18,
-    ['*', 24, roadWidthFactor],
-    19,
     ['*', 34, roadWidthFactor],
+    19,
+    ['*', 48, roadWidthFactor],
     20,
-    ['*', 47, roadWidthFactor],
+    ['*', 65, roadWidthFactor],
 ];
 
 const rampEdgeOffset = [
@@ -188,17 +208,46 @@ const guideOffset = (direction) => [
         ['linear'],
         ['zoom'],
         17,
-        5.4,
+        8,
         18,
-        8.4,
+        12,
         19,
-        12.4,
+        17,
         20,
-        17.6,
+        24,
     ],
 ];
 
+const laneGuideWidth = ['interpolate', ['linear'], ['zoom'], 17, 0.8, 18, 1.2, 19, 1.55, 20, 2];
+const laneGuideOpacity = ['interpolate', ['linear'], ['zoom'], 17, 0.28, 18, 0.58, 19, 0.72, 20, 0.78];
+const secondaryLaneGuideOpacity = ['interpolate', ['linear'], ['zoom'], 17.8, 0.06, 18.5, 0.36, 20, 0.52];
+const rampLaneGuideOpacity = ['interpolate', ['linear'], ['zoom'], 17.2, 0.22, 18, 0.46, 20, 0.62];
+
+function laneGuideLayer({ id, source, sourceLayer, filter, offset, minzoom = 17, opacity = laneGuideOpacity }) {
+    return {
+        id,
+        type: 'line',
+        source,
+        'source-layer': sourceLayer,
+        filter,
+        minzoom,
+        layout: {
+            'line-cap': 'butt',
+            'line-join': 'round',
+        },
+        paint: {
+            'line-color': '#F7FBFF',
+            'line-width': laneGuideWidth,
+            'line-opacity': opacity,
+            'line-offset': guideOffset(offset),
+            'line-dasharray': [3.8, 3.1],
+        },
+    };
+}
+
 export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportation' }) {
+    const majorCarriagewayFilter = ['all', majorRoadClassFilter, ['!', linkRoadFilter]];
+
     return [
         {
             id: 'base_road_bridge_shadow',
@@ -239,6 +288,23 @@ export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportati
             },
         },
         {
+            id: 'base_road_major_corridor',
+            type: 'line',
+            source,
+            'source-layer': sourceLayer,
+            filter: majorCarriagewayFilter,
+            minzoom: 14,
+            layout: {
+                'line-cap': 'round',
+                'line-join': 'round',
+            },
+            paint: {
+                'line-color': '#2B3647',
+                'line-width': majorCorridorWidth,
+                'line-opacity': ['interpolate', ['linear'], ['zoom'], 14, 0.08, 16, 0.2, 18, 0.34, 20, 0.42],
+            },
+        },
+        {
             id: 'base_road_major_casing',
             type: 'line',
             source,
@@ -252,7 +318,7 @@ export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportati
             paint: {
                 'line-color': '#7F8EA2',
                 'line-width': majorCasingWidth,
-                'line-opacity': detailOpacity(0.12, 0.34, 0.54),
+                'line-opacity': detailOpacity(0.18, 0.44, 0.64),
             },
         },
         {
@@ -281,7 +347,7 @@ export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportati
                     '#C4CDD7',
                 ],
                 'line-width': majorSurfaceWidth,
-                'line-opacity': detailOpacity(0.16, 0.42, 0.72),
+                'line-opacity': detailOpacity(0.26, 0.58, 0.86),
             },
         },
         {
@@ -297,8 +363,8 @@ export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportati
             },
             paint: {
                 'line-color': '#8392A6',
-                'line-width': ['+', rampSurfaceWidth, 3],
-                'line-opacity': detailOpacity(0.14, 0.38, 0.58),
+                'line-width': ['+', rampSurfaceWidth, 4],
+                'line-opacity': detailOpacity(0.18, 0.48, 0.68),
             },
         },
         {
@@ -315,7 +381,7 @@ export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportati
             paint: {
                 'line-color': '#ADB9C8',
                 'line-width': rampSurfaceWidth,
-                'line-opacity': detailOpacity(0.18, 0.5, 0.78),
+                'line-opacity': detailOpacity(0.28, 0.62, 0.88),
             },
         },
         {
@@ -331,8 +397,8 @@ export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportati
             },
             paint: {
                 'line-color': '#6F7F94',
-                'line-width': ['+', minorSurfaceWidth, 2.4],
-                'line-opacity': detailOpacity(0.04, 0.18, 0.32),
+                'line-width': ['+', minorSurfaceWidth, 3],
+                'line-opacity': detailOpacity(0.06, 0.24, 0.38),
             },
         },
         {
@@ -349,9 +415,17 @@ export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportati
             paint: {
                 'line-color': '#8C9AAF',
                 'line-width': minorSurfaceWidth,
-                'line-opacity': detailOpacity(0.08, 0.28, 0.5),
+                'line-opacity': detailOpacity(0.12, 0.36, 0.58),
             },
         },
+        laneGuideLayer({
+            id: 'base_road_major_lane_guide_center',
+            source,
+            sourceLayer,
+            filter: majorCarriagewayFilter,
+            offset: 0,
+            minzoom: 17.1,
+        }),
         {
             id: 'base_road_major_edge_left',
             type: 'line',
@@ -424,44 +498,49 @@ export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportati
                 'line-offset': rampEdgeOffset,
             },
         },
-        {
-            id: 'base_road_major_lane_guide_left',
-            type: 'line',
+        laneGuideLayer({
+            id: 'base_road_major_lane_guide_inner_left',
             source,
-            'source-layer': sourceLayer,
-            filter: ['all', majorRoadClassFilter, ['!', linkRoadFilter]],
-            minzoom: 17.6,
-            layout: {
-                'line-cap': 'butt',
-                'line-join': 'round',
-            },
-            paint: {
-                'line-color': '#EEF4FB',
-                'line-width': ['interpolate', ['linear'], ['zoom'], 17.6, 0.45, 19, 0.8, 20, 1.05],
-                'line-opacity': ['interpolate', ['linear'], ['zoom'], 17.6, 0, 18.2, 0.18, 20, 0.28],
-                'line-offset': guideOffset(-1),
-                'line-dasharray': [3.6, 3.2],
-            },
-        },
-        {
-            id: 'base_road_major_lane_guide_right',
-            type: 'line',
+            sourceLayer,
+            filter: majorCarriagewayFilter,
+            offset: -1,
+            minzoom: 17,
+        }),
+        laneGuideLayer({
+            id: 'base_road_major_lane_guide_inner_right',
             source,
-            'source-layer': sourceLayer,
-            filter: ['all', majorRoadClassFilter, ['!', linkRoadFilter]],
-            minzoom: 17.6,
-            layout: {
-                'line-cap': 'butt',
-                'line-join': 'round',
-            },
-            paint: {
-                'line-color': '#EEF4FB',
-                'line-width': ['interpolate', ['linear'], ['zoom'], 17.6, 0.45, 19, 0.8, 20, 1.05],
-                'line-opacity': ['interpolate', ['linear'], ['zoom'], 17.6, 0, 18.2, 0.18, 20, 0.28],
-                'line-offset': guideOffset(1),
-                'line-dasharray': [3.6, 3.2],
-            },
-        },
+            sourceLayer,
+            filter: majorCarriagewayFilter,
+            offset: 1,
+            minzoom: 17,
+        }),
+        laneGuideLayer({
+            id: 'base_road_major_lane_guide_outer_left',
+            source,
+            sourceLayer,
+            filter: majorCarriagewayFilter,
+            offset: -2,
+            minzoom: 18.1,
+            opacity: secondaryLaneGuideOpacity,
+        }),
+        laneGuideLayer({
+            id: 'base_road_major_lane_guide_outer_right',
+            source,
+            sourceLayer,
+            filter: majorCarriagewayFilter,
+            offset: 2,
+            minzoom: 18.1,
+            opacity: secondaryLaneGuideOpacity,
+        }),
+        laneGuideLayer({
+            id: 'base_road_ramp_lane_guide',
+            source,
+            sourceLayer,
+            filter: linkRoadFilter,
+            offset: 0,
+            minzoom: 17.2,
+            opacity: rampLaneGuideOpacity,
+        }),
         {
             id: 'base_road_bridge_rail_left',
             type: 'line',
