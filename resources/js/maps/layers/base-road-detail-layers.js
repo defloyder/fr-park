@@ -135,13 +135,13 @@ const majorUnifierWidth = [
     16,
     ['*', 44, roadWidthFactor],
     17,
-    ['*', 66, roadWidthFactor],
+    ['*', 76, roadWidthFactor],
     18,
-    ['*', 92, roadWidthFactor],
+    ['*', 118, roadWidthFactor],
     19,
-    ['*', 128, roadWidthFactor],
-    20,
     ['*', 176, roadWidthFactor],
+    20,
+    ['*', 252, roadWidthFactor],
 ];
 
 const motorwayMedianFillWidth = [
@@ -261,10 +261,58 @@ const rampSeamWidth = [
 ];
 const centerDoubleOffset = ['interpolate', ['linear'], ['zoom'], 17, 1.1, 18.5, 1.9, 20, 2.8];
 const centerDoubleOffsetNegative = ['interpolate', ['linear'], ['zoom'], 17, -1.1, 18.5, -1.9, 20, -2.8];
-const majorEdgeOffset = ['interpolate', ['linear'], ['zoom'], 17, 22, 18, 31, 19, 43, 20, 59];
-const majorEdgeOffsetNegative = ['interpolate', ['linear'], ['zoom'], 17, -22, 18, -31, 19, -43, 20, -59];
-const rampEdgeOffset = ['interpolate', ['linear'], ['zoom'], 17, 11, 18, 16, 19, 23, 20, 31];
-const rampEdgeOffsetNegative = ['interpolate', ['linear'], ['zoom'], 17, -11, 18, -16, 19, -23, 20, -31];
+const majorEdgeOffset = [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    17,
+    ['*', 24, roadWidthFactor],
+    18,
+    ['*', 34, roadWidthFactor],
+    19,
+    ['*', 47, roadWidthFactor],
+    20,
+    ['*', 64, roadWidthFactor],
+];
+const majorEdgeOffsetNegative = [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    17,
+    ['*', -24, roadWidthFactor],
+    18,
+    ['*', -34, roadWidthFactor],
+    19,
+    ['*', -47, roadWidthFactor],
+    20,
+    ['*', -64, roadWidthFactor],
+];
+const rampEdgeOffset = [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    17,
+    ['*', 13, rampWidthFactor],
+    18,
+    ['*', 19, rampWidthFactor],
+    19,
+    ['*', 27, rampWidthFactor],
+    20,
+    ['*', 37, rampWidthFactor],
+];
+const rampEdgeOffsetNegative = [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    17,
+    ['*', -13, rampWidthFactor],
+    18,
+    ['*', -19, rampWidthFactor],
+    19,
+    ['*', -27, rampWidthFactor],
+    20,
+    ['*', -37, rampWidthFactor],
+];
 const minorEdgeOffset = ['interpolate', ['linear'], ['zoom'], 17, 5, 18, 7, 19, 10, 20, 14];
 const minorEdgeOffsetNegative = ['interpolate', ['linear'], ['zoom'], 17, -5, 18, -7, 19, -10, 20, -14];
 
