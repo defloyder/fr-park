@@ -560,7 +560,7 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
     assert.doesNotMatch(mapSource, /id: 'detailed-road-labels'/);
     assert.match(mapSource, /const ENABLE_ROAD_DETAILS = true/);
     assert.match(mapSource, /import \{ addRoadDetails \} from '\.\.\/utils\/map\/addRoadDetails'/);
-    assert.match(mapSource, /if \(ENABLE_ROAD_DETAILS\) \{\s*addRoadDetails\(map, \{ baseRoadSource: ROAD_SOURCE_ID, includeDataset: true \}\);\s*\}/);
+    assert.match(mapSource, /if \(ENABLE_ROAD_DETAILS\) \{\s*addRoadDetails\(map, \{ baseRoadSource: ROAD_SOURCE_ID, includeDataset: false \}\);\s*\}/);
     assert.match(mapSource, /baseRoadSource: ROAD_SOURCE_ID/);
     assert.doesNotMatch(mapSource, /createDetailedRoadSurfaceLayers/);
     assert.doesNotMatch(mapSource, /createDetailedRoadLaneLayers/);
@@ -582,7 +582,11 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
     assert.match(addRoadDetailsSource, /map\.addLayer\(layer, beforeId\)/);
     assert.match(baseRoadLayersSource, /'source-layer': sourceLayer/);
     assert.match(baseRoadLayersSource, /ROAD_CLASSES/);
-    assert.match(baseRoadLayersSource, /line-offset/);
+    assert.match(baseRoadLayersSource, /base_road_major_corridor/);
+    assert.match(baseRoadLayersSource, /base_road_major_surface/);
+    assert.match(baseRoadLayersSource, /base_road_ramp_surface/);
+    assert.doesNotMatch(baseRoadLayersSource, /line-offset/);
+    assert.doesNotMatch(baseRoadLayersSource, /line-dasharray/);
     assert.match(roadLayersSource, /explicitLaneDetailFilter/);
     assert.match(roadLayersSource, /explicitLaneMarkingFilter/);
     assert.match(roadLayersSource, /minzoom: 16\.2/);
