@@ -10,15 +10,15 @@ const markingColor = [
     'match',
     ['get', 'color'],
     'yellow',
-    ROAD_MARKING_COLORS.yellow,
+    ROAD_MARKING_COLORS.white,
     'muted',
     ROAD_MARKING_COLORS.mutedWhite,
     ROAD_MARKING_COLORS.white,
 ];
 
-const laneLineWidth = ['interpolate', ['linear'], ['zoom'], 16.5, 1.45, 18, 2.35, 20, 3.35];
-const edgeLineWidth = ['interpolate', ['linear'], ['zoom'], 16.5, 1.35, 18, 2.25, 20, 3.15];
-const stopLineWidth = ['interpolate', ['linear'], ['zoom'], 17, 3.2, 19, 5.8, 20, 7.2];
+const laneLineWidth = ['interpolate', ['linear'], ['zoom'], 16.5, 2.1, 18, 3.8, 20, 5.8];
+const edgeLineWidth = ['interpolate', ['linear'], ['zoom'], 16.5, 1.9, 18, 3.4, 20, 5.2];
+const stopLineWidth = ['interpolate', ['linear'], ['zoom'], 17, 4.8, 19, 8.2, 20, 10.5];
 
 export function createRoadMarkingLayers({ source = ROAD_MARKINGS_SOURCE_ID, sourceLayer = null } = {}) {
     return roadMarkingLayerDefinitions.map((layer) => {
@@ -47,8 +47,8 @@ export const roadMarkingLayerDefinitions = [
         },
         paint: {
             'line-color': ROAD_MARKING_COLORS.bus,
-            'line-width': ['interpolate', ['linear'], ['zoom'], 16, 2.1, 18, 3.8, 20, 5.4],
-            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16, 0.34, 19, 0.62],
+            'line-width': ['interpolate', ['linear'], ['zoom'], 16, 2.2, 18, 4.2, 20, 6],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16, 0.22, 19, 0.42],
             'line-offset': lineOffset,
         },
     },
@@ -64,7 +64,7 @@ export const roadMarkingLayerDefinitions = [
         paint: {
             'line-color': ROAD_MARKING_COLORS.mutedWhite,
             'line-width': edgeLineWidth,
-            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.5, 0.48, 18, 0.72, 20, 0.88],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.5, 0.68, 18, 0.9, 20, 1],
             'line-offset': lineOffset,
         },
     },
@@ -80,7 +80,7 @@ export const roadMarkingLayerDefinitions = [
         paint: {
             'line-color': ROAD_MARKING_COLORS.mutedWhite,
             'line-width': laneLineWidth,
-            'line-opacity': ['interpolate', ['linear'], ['zoom'], 17, 0.46, 19, 0.74],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 17, 0.72, 19, 0.96],
             'line-offset': lineOffset,
         },
     },
@@ -96,8 +96,8 @@ export const roadMarkingLayerDefinitions = [
         paint: {
             'line-color': markingColor,
             'line-width': laneLineWidth,
-            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.7, 0.56, 18, 0.82, 20, 0.94],
-            'line-dasharray': ['literal', [3.4, 2.8]],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.7, 0.78, 18, 0.96, 20, 1],
+            'line-dasharray': ['literal', [5.2, 3]],
             'line-offset': lineOffset,
         },
     },
@@ -113,7 +113,7 @@ export const roadMarkingLayerDefinitions = [
         paint: {
             'line-color': markingColor,
             'line-width': laneLineWidth,
-            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.7, 0.62, 18, 0.88, 20, 0.98],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.7, 0.82, 18, 0.98, 20, 1],
             'line-offset': lineOffset,
         },
     },
@@ -129,8 +129,8 @@ export const roadMarkingLayerDefinitions = [
         paint: {
             'line-color': markingColor,
             'line-width': laneLineWidth,
-            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.7, 0.64, 18, 0.9, 20, 0.98],
-            'line-offset': ['interpolate', ['linear'], ['zoom'], 16.7, ['+', lineOffset, -1.25], 19, ['+', lineOffset, -2.1], 20, ['+', lineOffset, -2.8]],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.7, 0.84, 18, 0.98, 20, 1],
+            'line-offset': ['interpolate', ['linear'], ['zoom'], 16.7, ['+', lineOffset, -1.8], 19, ['+', lineOffset, -2.8], 20, ['+', lineOffset, -3.7]],
         },
     },
     {
@@ -145,8 +145,8 @@ export const roadMarkingLayerDefinitions = [
         paint: {
             'line-color': markingColor,
             'line-width': laneLineWidth,
-            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.7, 0.64, 18, 0.9, 20, 0.98],
-            'line-offset': ['interpolate', ['linear'], ['zoom'], 16.7, ['+', lineOffset, 1.25], 19, ['+', lineOffset, 2.1], 20, ['+', lineOffset, 2.8]],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.7, 0.84, 18, 0.98, 20, 1],
+            'line-offset': ['interpolate', ['linear'], ['zoom'], 16.7, ['+', lineOffset, 1.8], 19, ['+', lineOffset, 2.8], 20, ['+', lineOffset, 3.7]],
         },
     },
     {

@@ -3,7 +3,7 @@ export const ROAD_MARKING_COLORS = {
     mutedWhite: '#C8D2DD',
     brightWhite: '#F8FAFC',
     yellow: '#DDBB45',
-    bus: '#D28A3C',
+    bus: '#BDE7F7',
 };
 
 export const ROAD_MARKING_ARROW_IMAGES = {

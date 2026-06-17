@@ -171,7 +171,7 @@ export const roadDetailLayerDefinitions = [
             'line-join': 'round',
         },
         paint: {
-            'line-color': ['match', ['get', 'color'], 'yellow', '#E5D79B', '#F8FAFC'],
+            'line-color': '#F8FAFC',
             'line-width': ['interpolate', ['linear'], ['zoom'], 17, 0.75, 19, 1.25],
             'line-opacity': 0.44,
             'line-offset': lineOffset,
@@ -192,7 +192,7 @@ export const roadDetailLayerDefinitions = [
             'line-join': 'round',
         },
         paint: {
-            'line-color': ['match', ['get', 'color'], 'yellow', '#E5D79B', '#F8FAFC'],
+            'line-color': '#F8FAFC',
             'line-width': ['interpolate', ['linear'], ['zoom'], 17, 0.75, 19, 1.25],
             'line-opacity': 0.36,
             'line-offset': lineOffset,
