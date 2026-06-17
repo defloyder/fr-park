@@ -27,9 +27,9 @@ export const roadDetailLayerDefinitions = [
         filter: featureTypeFilter('gore_area'),
         minzoom: 16,
         paint: {
-            'fill-color': '#697584',
-            'fill-opacity': 0.38,
-            'fill-outline-color': '#AEB9C6',
+            'fill-color': '#7A899E',
+            'fill-opacity': 0.52,
+            'fill-outline-color': '#CBD5E1',
         },
     },
     {
@@ -39,7 +39,7 @@ export const roadDetailLayerDefinitions = [
         minzoom: 17,
         paint: {
             'fill-pattern': 'road-detail-gore-hatch',
-            'fill-opacity': 0.34,
+            'fill-opacity': 0.44,
         },
     },
     {
@@ -52,7 +52,7 @@ export const roadDetailLayerDefinitions = [
             'line-join': 'round',
         },
         paint: {
-            'line-color': '#697584',
+            'line-color': '#7A899E',
             'line-width': [
                 'interpolate',
                 ['linear'],
@@ -64,7 +64,7 @@ export const roadDetailLayerDefinitions = [
                 20,
                 ['*', ['coalesce', ['to-number', ['get', 'lanes_total']], 2], 6.2],
             ],
-            'line-opacity': 0.38,
+            'line-opacity': 0.52,
         },
     },
     {
@@ -77,9 +77,9 @@ export const roadDetailLayerDefinitions = [
             'line-join': 'round',
         },
         paint: {
-            'line-color': '#D9E2EC',
+            'line-color': '#DCE6F1',
             'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.55, 18, 0.95, 20, 1.35],
-            'line-opacity': 0.24,
+            'line-opacity': 0.32,
         },
     },
     {
@@ -92,9 +92,9 @@ export const roadDetailLayerDefinitions = [
             'line-join': 'round',
         },
         paint: {
-            'line-color': '#AEB9C6',
+            'line-color': '#CBD5E1',
             'line-width': ['interpolate', ['linear'], ['zoom'], 16, 0.55, 18, 1.05, 20, 1.45],
-            'line-opacity': 0.26,
+            'line-opacity': 0.38,
             'line-offset': lineOffset,
         },
     },
