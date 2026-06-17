@@ -16,7 +16,16 @@ const ROAD_DETAIL_BEFORE_LAYER_IDS = [
     'house-number',
 ];
 
-export function addRoadDetails(map, { baseRoadSource = null, format = 'geojson', includeDataset = true, includeRoadMarkings = true } = {}) {
+export function addRoadDetails(
+    map,
+    {
+        baseRoadSource = null,
+        format = 'geojson',
+        includeDataset = true,
+        includeRoadMarkings = true,
+        includeBaseRoadMarkings = true,
+    } = {},
+) {
     if (!map) {
         return;
     }
@@ -26,7 +35,7 @@ export function addRoadDetails(map, { baseRoadSource = null, format = 'geojson',
     addRoadDetailImages(map);
 
     if (baseRoadSource) {
-        for (const layer of createBaseRoadDetailLayers({ source: baseRoadSource, includeMarkings: false })) {
+        for (const layer of createBaseRoadDetailLayers({ source: baseRoadSource, includeMarkings: includeBaseRoadMarkings })) {
             if (map.getLayer(layer.id)) {
                 continue;
             }
