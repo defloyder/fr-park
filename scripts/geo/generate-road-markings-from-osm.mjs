@@ -6,9 +6,13 @@ import { dirname, resolve } from 'node:path';
 const DEFAULT_BBOX = '55.48,37.30,55.96,37.96'; // south,west,north,east: Moscow core
 const OUTPUT_PATH = resolve(process.argv[3] ?? 'public/data/road-markings/road-markings.geojson');
 const bbox = parseBbox(process.argv[2] ?? process.env.ROAD_MARKINGS_BBOX ?? DEFAULT_BBOX);
-const chunkCount = clampInt(process.argv[4] ?? process.env.ROAD_MARKINGS_CHUNKS, shouldChunkBbox(bbox) ? 4 : 1, 1, 8);
+const chunkCount = clampInt(process.argv[4] ?? process.env.ROAD_MARKINGS_CHUNKS, shouldChunkBbox(bbox) ? 4 : 1, 1, 16);
+const requestRetries = clampInt(process.env.OVERPASS_RETRIES, 2, 0, 8);
+const requestDelayMs = clampInt(process.env.OVERPASS_DELAY_MS, 1800, 0, 60000);
+const requestTimeoutSeconds = clampInt(process.env.OVERPASS_TIMEOUT_SECONDS, 240, 30, 600);
 
 const elementById = new Map();
+let endpointCursor = 0;
 
 for (const chunk of makeBboxChunks(bbox, chunkCount)) {
     const payload = await fetchOverpass(buildRoadQuery(chunk));
@@ -16,13 +20,17 @@ for (const chunk of makeBboxChunks(bbox, chunkCount)) {
     for (const element of payload.elements ?? []) {
         elementById.set(`${element.type}/${element.id}`, element);
     }
+
+    if (requestDelayMs > 0) {
+        await sleep(requestDelayMs);
+    }
 }
 
 const features = buildRoadMarkingFeatures([...elementById.values()]);
 
 function buildRoadQuery(targetBbox) {
     return `
-[out:json][timeout:180];
+[out:json][timeout:${requestTimeoutSeconds}];
 (
   way["highway"]["highway"!~"^(footway|path|cycleway|steps|corridor|platform|pedestrian)$"](${targetBbox.join(',')});
 );
@@ -47,16 +55,20 @@ writeFileSync(OUTPUT_PATH, `${JSON.stringify({
 console.log(`Wrote ${features.length} road marking features to ${OUTPUT_PATH}`);
 
 async function fetchOverpass(overpassQuery) {
-    const endpoints = (process.env.OVERPASS_URL ? [process.env.OVERPASS_URL] : [
+    const endpoints = (process.env.OVERPASS_URLS
+        ? process.env.OVERPASS_URLS.split(',').map((url) => url.trim()).filter(Boolean)
+        : process.env.OVERPASS_URL ? [process.env.OVERPASS_URL] : [
         'https://overpass-api.de/api/interpreter',
         'https://overpass.kumi.systems/api/interpreter',
         'https://overpass.private.coffee/api/interpreter',
     ]);
     const errors = [];
 
-    for (const endpoint of endpoints) {
+    for (let attempt = 0; attempt <= requestRetries; attempt += 1) {
+        const endpoint = endpoints[(endpointCursor + attempt) % endpoints.length];
+
         try {
-            console.log(`Querying ${endpoint} ...`);
+            console.log(`Querying ${endpoint} (attempt ${attempt + 1}/${requestRetries + 1}) ...`);
             const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
@@ -65,6 +77,7 @@ async function fetchOverpass(overpassQuery) {
                     'user-agent': 'AuralithMapsRoadMarkings/1.0 (local dataset generator)',
                 },
                 body: new URLSearchParams({ data: overpassQuery }),
+                signal: AbortSignal.timeout((requestTimeoutSeconds + 30) * 1000),
             });
 
             if (!response.ok) {
@@ -72,13 +85,27 @@ async function fetchOverpass(overpassQuery) {
                 throw new Error(`${endpoint} returned ${response.status}: ${body.slice(0, 300)}`);
             }
 
+            endpointCursor = (endpointCursor + attempt + 1) % endpoints.length;
+
             return response.json();
         } catch (error) {
             errors.push(error.message);
         }
+
+        if (attempt < requestRetries) {
+            await sleep(getRetryDelayMs(attempt));
+        }
     }
 
     throw new Error(`Overpass request failed:\n${errors.join('\n')}`);
+}
+
+function getRetryDelayMs(attempt) {
+    return requestDelayMs + Math.min(30000, 2500 * (attempt + 1) ** 2);
+}
+
+function sleep(ms) {
+    return new Promise((resolveSleep) => setTimeout(resolveSleep, ms));
 }
 
 function buildRoadMarkingFeatures(elements) {

@@ -130,7 +130,7 @@ export const roadMarkingLayerDefinitions = [
             'line-color': markingColor,
             'line-width': laneLineWidth,
             'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.7, 0.44, 18, 0.72, 20, 0.86],
-            'line-offset': ['+', lineOffset, ['interpolate', ['linear'], ['zoom'], 16.7, -0.7, 19, -1.25, 20, -1.75]],
+            'line-offset': ['interpolate', ['linear'], ['zoom'], 16.7, ['+', lineOffset, -0.7], 19, ['+', lineOffset, -1.25], 20, ['+', lineOffset, -1.75]],
         },
     },
     {
@@ -146,7 +146,7 @@ export const roadMarkingLayerDefinitions = [
             'line-color': markingColor,
             'line-width': laneLineWidth,
             'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.7, 0.44, 18, 0.72, 20, 0.86],
-            'line-offset': ['+', lineOffset, ['interpolate', ['linear'], ['zoom'], 16.7, 0.7, 19, 1.25, 20, 1.75]],
+            'line-offset': ['interpolate', ['linear'], ['zoom'], 16.7, ['+', lineOffset, 0.7], 19, ['+', lineOffset, 1.25], 20, ['+', lineOffset, 1.75]],
         },
     },
     {

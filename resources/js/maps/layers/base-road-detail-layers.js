@@ -204,9 +204,61 @@ const roadEdgeMarkingWidth = ['interpolate', ['linear'], ['zoom'], 17, 0.55, 18.
 const roadDividerMarkingWidth = ['interpolate', ['linear'], ['zoom'], 17, 0.55, 18.5, 1.05, 20, 1.45];
 const roadCenterMarkingWidth = ['interpolate', ['linear'], ['zoom'], 17, 0.75, 18.5, 1.35, 20, 1.9];
 const busLaneWidth = ['interpolate', ['linear'], ['zoom'], 18, 1.7, 20, 3.2];
-const majorSeamWidth = ['*', majorSurfaceWidth, 1.08];
-const minorSeamWidth = ['*', minorSurfaceWidth, 1.06];
-const rampSeamWidth = ['*', rampSurfaceWidth, 1.06];
+const majorSeamWidth = [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    14,
+    ['*', 12.96, roadWidthFactor],
+    15,
+    ['*', 21.6, roadWidthFactor],
+    16,
+    ['*', 36.72, roadWidthFactor],
+    17,
+    ['*', 54, roadWidthFactor],
+    18,
+    ['*', 75.6, roadWidthFactor],
+    19,
+    ['*', 103.68, roadWidthFactor],
+    20,
+    ['*', 142.56, roadWidthFactor],
+];
+
+const minorSeamWidth = [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    15,
+    5.3,
+    16,
+    8.48,
+    17,
+    12.72,
+    18,
+    18.02,
+    19,
+    25.44,
+    20,
+    36.04,
+];
+
+const rampSeamWidth = [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    15,
+    ['*', 10.6, rampWidthFactor],
+    16,
+    ['*', 18.02, rampWidthFactor],
+    17,
+    ['*', 27.56, rampWidthFactor],
+    18,
+    ['*', 40.28, rampWidthFactor],
+    19,
+    ['*', 57.24, rampWidthFactor],
+    20,
+    ['*', 78.44, rampWidthFactor],
+];
 const centerDoubleOffset = ['interpolate', ['linear'], ['zoom'], 17, 1.1, 18.5, 1.9, 20, 2.8];
 const centerDoubleOffsetNegative = ['interpolate', ['linear'], ['zoom'], 17, -1.1, 18.5, -1.9, 20, -2.8];
 const majorEdgeOffset = ['interpolate', ['linear'], ['zoom'], 17, 22, 18, 31, 19, 43, 20, 59];
