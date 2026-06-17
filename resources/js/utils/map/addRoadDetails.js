@@ -5,9 +5,9 @@ import {
     ROAD_DETAILS_SOURCE_ID,
     ROAD_DETAILS_VECTOR_SOURCE_LAYER,
 } from '../../maps/sources/road-detail-source';
+import { addRoadMarkings } from '../../maps/roadMarkings/addRoadMarkings';
 
 const ROAD_DETAIL_GORE_HATCH_IMAGE_ID = 'road-detail-gore-hatch';
-const ROAD_MARKING_ARROW_THROUGH_IMAGE_ID = 'road-marking-arrow-through';
 const ROAD_DETAIL_BEFORE_LAYER_IDS = [
     'place-label',
     'road-name',
@@ -16,7 +16,7 @@ const ROAD_DETAIL_BEFORE_LAYER_IDS = [
     'house-number',
 ];
 
-export function addRoadDetails(map, { baseRoadSource = null, format = 'geojson', includeDataset = true } = {}) {
+export function addRoadDetails(map, { baseRoadSource = null, format = 'geojson', includeDataset = true, includeRoadMarkings = true } = {}) {
     if (!map) {
         return;
     }
@@ -26,13 +26,17 @@ export function addRoadDetails(map, { baseRoadSource = null, format = 'geojson',
     addRoadDetailImages(map);
 
     if (baseRoadSource) {
-        for (const layer of createBaseRoadDetailLayers({ source: baseRoadSource })) {
+        for (const layer of createBaseRoadDetailLayers({ source: baseRoadSource, includeMarkings: false })) {
             if (map.getLayer(layer.id)) {
                 continue;
             }
 
             map.addLayer(layer, beforeId);
         }
+    }
+
+    if (includeRoadMarkings) {
+        addRoadMarkings(map, { format });
     }
 
     if (!includeDataset) {
@@ -60,7 +64,6 @@ function getRoadDetailBeforeLayerId(map) {
 
 function addRoadDetailImages(map) {
     addGoreHatchImage(map);
-    addRoadArrowImage(map);
 }
 
 function addGoreHatchImage(map) {
@@ -88,43 +91,4 @@ function addGoreHatchImage(map) {
     }
 
     map.addImage(ROAD_DETAIL_GORE_HATCH_IMAGE_ID, context.getImageData(0, 0, size, size), { pixelRatio: 2 });
-}
-
-function addRoadArrowImage(map) {
-    if (map.hasImage(ROAD_MARKING_ARROW_THROUGH_IMAGE_ID)) return;
-
-    const width = 48;
-    const height = 96;
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const context = canvas.getContext('2d');
-
-    if (!context) {
-        return;
-    }
-
-    context.clearRect(0, 0, width, height);
-    context.fillStyle = 'rgba(232, 238, 245, 0.88)';
-    context.strokeStyle = 'rgba(232, 238, 245, 0.88)';
-    context.lineJoin = 'round';
-
-    context.beginPath();
-    context.moveTo(24, 8);
-    context.lineTo(38, 31);
-    context.lineTo(30, 31);
-    context.lineTo(30, 80);
-    context.lineTo(18, 80);
-    context.lineTo(18, 31);
-    context.lineTo(10, 31);
-    context.closePath();
-    context.fill();
-
-    context.lineWidth = 3;
-    context.beginPath();
-    context.moveTo(24, 81);
-    context.lineTo(24, 90);
-    context.stroke();
-
-    map.addImage(ROAD_MARKING_ARROW_THROUGH_IMAGE_ID, context.getImageData(0, 0, width, height), { pixelRatio: 2 });
 }

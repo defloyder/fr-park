@@ -7,7 +7,9 @@
         "dev": "vite",
         "test:js": "node --test tests/js/*.test.mjs",
         "validate:road-details": "node scripts/geo/validate-road-details.mjs",
+        "validate:road-markings": "node scripts/geo/validate-road-markings.mjs",
         "build:road-details-osm": "node scripts/geo/build-road-details-from-osm.mjs",
+        "build:road-markings-osm": "node scripts/geo/generate-road-markings-from-osm.mjs",
         "build:road-detail-tiles": "node scripts/geo/build-road-detail-tiles.mjs"
     },
     "devDependencies": {

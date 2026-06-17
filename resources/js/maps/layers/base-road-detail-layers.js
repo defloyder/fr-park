@@ -440,10 +440,9 @@ function createRoadEdgeMarkingLayers({ source, sourceLayer, idPrefix, filter, ne
     ];
 }
 
-export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportation' }) {
+export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportation', includeMarkings = false }) {
     const majorFilter = ['all', majorRoadClassFilter, ['!', linkRoadFilter]];
-
-    return [
+    const surfaceLayers = [
         roadLineLayer({
             id: 'base_road_minor_seam_fill',
             source,
@@ -519,6 +518,14 @@ export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportati
             color: ASPHALT_COLOR,
             width: majorSurfaceWidth,
         }),
+    ];
+
+    if (!includeMarkings) {
+        return surfaceLayers;
+    }
+
+    return [
+        ...surfaceLayers,
         ...createRoadEdgeMarkingLayers({
             source,
             sourceLayer,

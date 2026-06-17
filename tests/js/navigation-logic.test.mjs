@@ -511,6 +511,9 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
     const roadLayersSource = readFileSync(new URL('../../resources/js/maps/layers/road-detail-layers.js', import.meta.url), 'utf8');
     const roadSourceSource = readFileSync(new URL('../../resources/js/maps/sources/road-detail-source.js', import.meta.url), 'utf8');
     const addRoadDetailsSource = readFileSync(new URL('../../resources/js/utils/map/addRoadDetails.js', import.meta.url), 'utf8');
+    const roadMarkingLayersSource = readFileSync(new URL('../../resources/js/maps/roadMarkings/roadMarkingLayers.js', import.meta.url), 'utf8');
+    const roadMarkingSourceSource = readFileSync(new URL('../../resources/js/maps/roadMarkings/roadMarkingSources.js', import.meta.url), 'utf8');
+    const addRoadMarkingsSource = readFileSync(new URL('../../resources/js/maps/roadMarkings/addRoadMarkings.js', import.meta.url), 'utf8');
 
     for (const layerId of [
         'landcover-wood',
@@ -577,8 +580,8 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
     assert.match(addRoadDetailsSource, /baseRoadSource/);
     assert.match(addRoadDetailsSource, /includeDataset = true/);
     assert.match(addRoadDetailsSource, /road-detail-gore-hatch/);
-    assert.match(addRoadDetailsSource, /road-marking-arrow-through/);
     assert.match(addRoadDetailsSource, /addRoadDetailImages\(map\);/);
+    assert.match(addRoadDetailsSource, /addRoadMarkings\(map, \{ format \}\)/);
     assert.match(addRoadDetailsSource, /map\.getSource\(ROAD_DETAILS_SOURCE_ID\)/);
     assert.match(addRoadDetailsSource, /map\.getLayer\(layer\.id\)/);
     assert.match(addRoadDetailsSource, /map\.addLayer\(layer, beforeId\)/);
@@ -595,8 +598,8 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
     assert.match(baseRoadLayersSource, /laneCount <= 8/);
     assert.match(baseRoadLayersSource, /base_road_center_double_left/);
     assert.match(baseRoadLayersSource, /base_road_direction_arrows/);
-    assert.match(baseRoadLayersSource, /'icon-image': 'road-marking-arrow-through'/);
     assert.match(baseRoadLayersSource, /base_road_bus_lanes/);
+    assert.match(baseRoadLayersSource, /includeMarkings = false/);
     assert.match(mapSource, /ROAD_LEGACY_DETAIL_OPACITY/);
     assert.match(baseRoadLayersSource, /line-offset/);
     assert.match(baseRoadLayersSource, /'line-dasharray'/);
@@ -609,6 +612,27 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
     assert.match(roadLayersSource, /'line-offset': lineOffset/);
     assert.match(roadLayersSource, /'line-dasharray'/);
     assert.match(roadLayersSource, /'fill-pattern': 'road-detail-gore-hatch'/);
+    assert.match(roadMarkingSourceSource, /ROAD_MARKINGS_SOURCE_ID = 'road-markings'/);
+    assert.match(roadMarkingSourceSource, /ROAD_MARKINGS_GEOJSON_URL = '\/data\/road-markings\/road-markings\.geojson'/);
+    assert.match(roadMarkingSourceSource, /pmtiles:\/\/road-markings\.pmtiles/);
+    assert.match(addRoadMarkingsSource, /addRoadMarkingImages\(map\)/);
+    assert.match(addRoadMarkingsSource, /createRoadMarkingLayers/);
+    for (const layerId of [
+        'road_marking_edges',
+        'road_marking_dashed',
+        'road_marking_solid',
+        'road_marking_double_solid_left',
+        'road_marking_double_solid_right',
+        'road_marking_crosswalks',
+        'road_marking_stop_lines',
+        'road_marking_yellow_box_lines',
+        'road_marking_hatched_area_lines',
+        'road_marking_turn_arrows',
+    ]) {
+        assert.match(roadMarkingLayersSource, new RegExp(`id: '${layerId}'`));
+    }
+    assert.match(roadMarkingLayersSource, /'icon-image': \[/);
+    assert.match(roadMarkingLayersSource, /ROAD_MARKING_ARROW_IMAGES\.through_right/);
     assert.match(mapSource, /displayGeometry/);
     assert.match(mapSource, /smoothRouteLineCoordinates/);
     assert.match(mapSource, /'icon-allow-overlap': true/);
