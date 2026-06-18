@@ -1,38 +1,67 @@
 #!/usr/bin/env node
 
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { createReadStream, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
+import { createGunzip } from 'node:zlib';
+import { createInterface } from 'node:readline';
 
 const DEFAULT_BBOX = '55.48,37.30,55.96,37.96'; // south,west,north,east: Moscow core
+const sourceArg = process.argv[2] ?? process.env.ROAD_MARKINGS_OSM_XML ?? process.env.ROAD_MARKINGS_BBOX ?? DEFAULT_BBOX;
 const OUTPUT_PATH = resolve(process.argv[3] ?? 'public/data/road-markings/road-markings.geojson');
-const bbox = parseBbox(process.argv[2] ?? process.env.ROAD_MARKINGS_BBOX ?? DEFAULT_BBOX);
-const chunkCount = clampInt(process.argv[4] ?? process.env.ROAD_MARKINGS_CHUNKS, shouldChunkBbox(bbox) ? 4 : 1, 1, 16);
+const isOsmXmlInput = /\.osm(\.gz)?$/i.test(sourceArg);
+const bbox = isOsmXmlInput ? null : parseBbox(sourceArg);
+const chunkCount = clampInt(process.argv[4] ?? process.env.ROAD_MARKINGS_CHUNKS, bbox && shouldChunkBbox(bbox) ? 4 : 1, 1, 16);
 const requestRetries = clampInt(process.env.OVERPASS_RETRIES, 2, 0, 8);
 const requestDelayMs = clampInt(process.env.OVERPASS_DELAY_MS, 1800, 0, 60000);
 const requestTimeoutSeconds = clampInt(process.env.OVERPASS_TIMEOUT_SECONDS, 240, 30, 600);
+const requestSplitDepth = clampInt(process.env.OVERPASS_SPLIT_DEPTH, 3, 0, 6);
 
 const elementById = new Map();
 let endpointCursor = 0;
+let outputBbox = bboxToObject(bbox);
 
-for (const chunk of makeBboxChunks(bbox, chunkCount)) {
-    const payload = await fetchOverpass(buildRoadQuery(chunk));
+if (isOsmXmlInput) {
+    const source = resolve(sourceArg);
+    const parsed = await readRoadElementsFromOsmXml(source);
 
-    for (const element of payload.elements ?? []) {
+    outputBbox = parsed.bbox;
+
+    for (const element of parsed.elements) {
         elementById.set(`${element.type}/${element.id}`, element);
     }
+} else {
+    for (const chunk of makeBboxChunks(bbox, chunkCount)) {
+        const payloads = await fetchOverpassChunk(chunk);
 
-    if (requestDelayMs > 0) {
-        await sleep(requestDelayMs);
+        for (const payload of payloads) {
+            for (const element of payload.elements ?? []) {
+                elementById.set(`${element.type}/${element.id}`, element);
+            }
+        }
     }
 }
 
 const features = buildRoadMarkingFeatures([...elementById.values()]);
 
 function buildRoadQuery(targetBbox) {
+    const bboxString = targetBbox.join(',');
+
     return `
 [out:json][timeout:${requestTimeoutSeconds}];
 (
-  way["highway"]["highway"!~"^(footway|path|cycleway|steps|corridor|platform|pedestrian)$"](${targetBbox.join(',')});
+  way["highway"~"^(motorway|trunk|primary|secondary|tertiary)$"]["lanes"](${bboxString});
+  way["highway"~"^(motorway|trunk|primary|secondary|tertiary)$"]["lanes:forward"](${bboxString});
+  way["highway"~"^(motorway|trunk|primary|secondary|tertiary)$"]["lanes:backward"](${bboxString});
+  way["highway"~"^(motorway|trunk|primary|secondary|tertiary)$"]["turn:lanes"](${bboxString});
+  way["highway"~"^(motorway|trunk|primary|secondary|tertiary)$"]["turn:lanes:forward"](${bboxString});
+  way["highway"~"^(motorway|trunk|primary|secondary|tertiary)$"]["turn:lanes:backward"](${bboxString});
+  way["highway"~"^(motorway|trunk|primary|secondary|tertiary)$"]["bus:lanes"](${bboxString});
+  way["highway"~"^(motorway|trunk|primary|secondary|tertiary)$"]["bus:lanes:forward"](${bboxString});
+  way["highway"~"^(motorway|trunk|primary|secondary|tertiary)$"]["bus:lanes:backward"](${bboxString});
+  way["highway"~"^(motorway|trunk|primary|secondary|tertiary)$"]["psv:lanes"](${bboxString});
+  way["highway"~"^(motorway|trunk|primary|secondary|tertiary)$"]["busway"](${bboxString});
+  way["highway"~"^(motorway|trunk|primary|secondary|tertiary)$"]["busway:left"](${bboxString});
+  way["highway"~"^(motorway|trunk|primary|secondary|tertiary)$"]["busway:right"](${bboxString});
 );
 out tags geom;
 `;
@@ -43,16 +72,175 @@ writeFileSync(OUTPUT_PATH, `${JSON.stringify({
     type: 'FeatureCollection',
     name: 'road-markings',
     generated_at: new Date().toISOString(),
-    bbox: {
-        south: bbox[0],
-        west: bbox[1],
-        north: bbox[2],
-        east: bbox[3],
-    },
+    bbox: outputBbox,
     features,
-}, null, 2)}\n`);
+}, null, process.env.ROAD_MARKINGS_PRETTY === '1' ? 2 : 0)}\n`);
 
 console.log(`Wrote ${features.length} road marking features to ${OUTPUT_PATH}`);
+
+async function readRoadElementsFromOsmXml(source) {
+    const ways = [];
+    const neededNodeIds = new Set();
+    let bboxFromFile = null;
+    let currentWay = null;
+
+    console.log(`Reading OSM ways from ${source} ...`);
+
+    for await (const rawLine of readOsmLines(source)) {
+        const line = rawLine.trim();
+
+        if (!bboxFromFile && line.startsWith('<bounds ')) {
+            bboxFromFile = parseBoundsLine(line);
+            continue;
+        }
+
+        if (line.startsWith('<way ')) {
+            currentWay = {
+                type: 'way',
+                id: getXmlAttribute(line, 'id'),
+                refs: [],
+                tags: {},
+            };
+            continue;
+        }
+
+        if (!currentWay) {
+            continue;
+        }
+
+        if (line.startsWith('<nd ')) {
+            const ref = getXmlAttribute(line, 'ref');
+
+            if (ref) {
+                currentWay.refs.push(ref);
+            }
+
+            continue;
+        }
+
+        if (line.startsWith('<tag ')) {
+            const key = decodeXmlAttribute(getXmlAttribute(line, 'k'));
+            const value = decodeXmlAttribute(getXmlAttribute(line, 'v'));
+
+            if (key) {
+                currentWay.tags[key] = value;
+            }
+
+            continue;
+        }
+
+        if (line.startsWith('</way>')) {
+            if (isRoadMarkingCandidate(currentWay.tags) && currentWay.refs.length >= 2) {
+                ways.push(currentWay);
+
+                for (const ref of currentWay.refs) {
+                    neededNodeIds.add(ref);
+                }
+            }
+
+            currentWay = null;
+        }
+    }
+
+    const nodeById = new Map();
+
+    console.log(`Reading ${neededNodeIds.size} referenced OSM nodes ...`);
+
+    for await (const rawLine of readOsmLines(source)) {
+        const line = rawLine.trim();
+
+        if (!line.startsWith('<node ')) {
+            continue;
+        }
+
+        const id = getXmlAttribute(line, 'id');
+
+        if (!neededNodeIds.has(id)) {
+            continue;
+        }
+
+        const lat = Number(getXmlAttribute(line, 'lat'));
+        const lon = Number(getXmlAttribute(line, 'lon'));
+
+        if (Number.isFinite(lat) && Number.isFinite(lon)) {
+            nodeById.set(id, { lat, lon });
+        }
+    }
+
+    const elements = ways
+        .map((way) => ({
+            type: 'way',
+            id: way.id,
+            tags: way.tags,
+            geometry: way.refs
+                .map((ref) => nodeById.get(ref))
+                .filter(Boolean),
+        }))
+        .filter((way) => way.geometry.length >= 2);
+
+    console.log(`Loaded ${elements.length} road ways with explicit lane data.`);
+
+    return {
+        bbox: bboxFromFile,
+        elements,
+    };
+}
+
+function readOsmLines(source) {
+    const input = createReadStream(source);
+    const stream = /\.gz$/i.test(source) ? input.pipe(createGunzip()) : input;
+
+    return createInterface({
+        input: stream,
+        crlfDelay: Infinity,
+    });
+}
+
+function isRoadMarkingCandidate(tags) {
+    const roadClass = normalizeRoadClass(tags.highway);
+    const isLink = String(tags.highway || '').endsWith('_link');
+
+    return shouldRenderLaneMarkings(roadClass, isLink)
+        && hasAnyTag(tags, [
+            'lanes',
+            'lanes:forward',
+            'lanes:backward',
+            'turn:lanes',
+            'turn:lanes:forward',
+            'turn:lanes:backward',
+            'bus:lanes',
+            'bus:lanes:forward',
+            'bus:lanes:backward',
+            'psv:lanes',
+            'busway',
+            'busway:left',
+            'busway:right',
+        ]);
+}
+
+function parseBoundsLine(line) {
+    return {
+        south: Number(getXmlAttribute(line, 'minlat')),
+        west: Number(getXmlAttribute(line, 'minlon')),
+        north: Number(getXmlAttribute(line, 'maxlat')),
+        east: Number(getXmlAttribute(line, 'maxlon')),
+    };
+}
+
+function getXmlAttribute(line, name) {
+    const match = line.match(new RegExp(`\\s${name}=(?:"([^"]*)"|'([^']*)')`));
+
+    return match ? match[1] ?? match[2] ?? '' : '';
+}
+
+function decodeXmlAttribute(value) {
+    return String(value || '')
+        .replace(/&quot;/g, '"')
+        .replace(/&apos;/g, "'")
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&');
+}
 
 async function fetchOverpass(overpassQuery) {
     const endpoints = (process.env.OVERPASS_URLS
@@ -100,6 +288,32 @@ async function fetchOverpass(overpassQuery) {
     throw new Error(`Overpass request failed:\n${errors.join('\n')}`);
 }
 
+async function fetchOverpassChunk(chunk, depth = 0) {
+    try {
+        const payload = await fetchOverpass(buildRoadQuery(chunk));
+
+        if (requestDelayMs > 0) {
+            await sleep(requestDelayMs);
+        }
+
+        return [payload];
+    } catch (error) {
+        if (depth >= requestSplitDepth) {
+            throw error;
+        }
+
+        console.warn(`Splitting bbox ${chunk.join(',')} after Overpass failure: ${error.message.split('\n')[0]}`);
+
+        const payloads = [];
+
+        for (const subChunk of makeBboxChunks(chunk, 2)) {
+            payloads.push(...await fetchOverpassChunk(subChunk, depth + 1));
+        }
+
+        return payloads;
+    }
+}
+
 function getRetryDelayMs(attempt) {
     return requestDelayMs + Math.min(30000, 2500 * (attempt + 1) ** 2);
 }
@@ -135,7 +349,7 @@ function buildRoadMarkingFeatures(elements) {
 }
 
 function addRoadEdges(features, element, roadId, coordinates, laneModel, detailQuality, roadClass, isLink) {
-    if (!shouldRenderLaneMarkings(roadClass, isLink) || !laneModel.hasExplicitLaneDetail) {
+    if (!shouldRenderRoadEdges(roadClass, isLink) || !laneModel.hasExplicitLaneDetail) {
         return;
     }
 
@@ -144,7 +358,7 @@ function addRoadEdges(features, element, roadId, coordinates, laneModel, detailQ
     for (const [side, offsetMeters] of [['left', -edgeOffset], ['right', edgeOffset]]) {
         features.push(makeLineFeature({
             id: `lane_marking/edge/${element.id}/${side}`,
-            coordinates,
+            coordinates: offsetLineString(coordinates, offsetMeters),
             properties: {
                 feature_type: 'lane_marking',
                 road_id: roadId,
@@ -157,6 +371,7 @@ function addRoadEdges(features, element, roadId, coordinates, laneModel, detailQ
                 is_link: isLink,
                 offset_m: offsetMeters,
                 offset_px: metersToOffsetPixels(offsetMeters),
+                geometry_offset: true,
                 source: 'osm_derived',
                 osm_type: element.type,
                 osm_id: element.id,
@@ -177,7 +392,7 @@ function addLaneMarkings(features, element, roadId, coordinates, laneModel, deta
 
         features.push(makeLineFeature({
             id: `lane_marking/${element.id}/${boundary}`,
-            coordinates,
+            coordinates: offsetLineString(coordinates, offsetMeters),
             properties: {
                 feature_type: 'lane_marking',
                 road_id: roadId,
@@ -190,6 +405,7 @@ function addLaneMarkings(features, element, roadId, coordinates, laneModel, deta
                 is_link: isLink,
                 offset_m: offsetMeters,
                 offset_px: metersToOffsetPixels(offsetMeters),
+                geometry_offset: true,
                 source: laneModel.hasExplicitLaneDetail ? 'osm_explicit_lanes' : 'osm_estimated_lanes',
                 osm_type: element.type,
                 osm_id: element.id,
@@ -210,7 +426,7 @@ function addBusLanes(features, element, roadId, coordinates, laneModel, detailQu
 
         features.push(makeLineFeature({
             id: `bus_lane/${element.id}/${lane.index}`,
-            coordinates,
+            coordinates: offsetLineString(coordinates, lane.offsetMeters),
             properties: {
                 feature_type: 'bus_lane',
                 road_id: roadId,
@@ -222,6 +438,7 @@ function addBusLanes(features, element, roadId, coordinates, laneModel, detailQu
                 is_link: isLink,
                 offset_m: lane.offsetMeters,
                 offset_px: lane.offsetPixels,
+                geometry_offset: true,
                 source: 'osm_bus_lanes',
                 osm_type: element.type,
                 osm_id: element.id,
@@ -285,6 +502,10 @@ function shouldRenderLaneMarkings(roadClass, isLink) {
     return !isLink && ['motorway', 'trunk', 'primary', 'secondary', 'tertiary'].includes(roadClass);
 }
 
+function shouldRenderRoadEdges(roadClass, isLink) {
+    return !isLink && ['motorway', 'trunk', 'primary'].includes(roadClass);
+}
+
 function makeLineFeature({ id, coordinates, properties }) {
     return {
         type: 'Feature',
@@ -315,7 +536,7 @@ function getLaneModel(tags, roadClass, isLink) {
         ...getLaneValues(tags['bus:lanes:forward'], forward),
         ...getLaneValues(tags['bus:lanes:backward'], backward),
     ];
-    const hasExplicitLanes = hasAnyTag(tags, ['lanes', 'lanes:forward', 'lanes:backward', 'width']);
+    const hasExplicitLanes = hasAnyTag(tags, ['lanes', 'lanes:forward', 'lanes:backward']);
     const hasTurnLanes = hasAnyTag(tags, ['turn:lanes', 'turn:lanes:forward', 'turn:lanes:backward']);
     const hasBusLanes = hasAnyTag(tags, ['bus:lanes', 'bus:lanes:forward', 'bus:lanes:backward', 'psv:lanes', 'busway', 'busway:left', 'busway:right']);
     const hasExplicitLaneDetail = hasExplicitLanes || hasTurnLanes || hasBusLanes;
@@ -485,6 +706,24 @@ function offsetPointAtRatio(coordinates, ratio, offsetMeters = 0) {
     };
 }
 
+function offsetLineString(coordinates, offsetMeters = 0) {
+    const distance = Number(offsetMeters) || 0;
+
+    if (!distance || coordinates.length < 2) {
+        return coordinates;
+    }
+
+    return coordinates.map((coordinate, index) => {
+        const previous = coordinates[index - 1] ?? coordinate;
+        const next = coordinates[index + 1] ?? coordinate;
+        const start = previous === coordinate ? coordinate : previous;
+        const finish = next === coordinate ? coordinate : next;
+        const bearing = getBearing(start, finish);
+
+        return offsetCoordinate(coordinate, bearing + 90, distance);
+    });
+}
+
 function offsetCoordinate(coordinate, bearingDegrees, meters) {
     const earthRadius = 6378137;
     const distance = Number(meters) || 0;
@@ -534,6 +773,19 @@ function parseBbox(value) {
     }
 
     return parts;
+}
+
+function bboxToObject(value) {
+    if (!value) {
+        return null;
+    }
+
+    return {
+        south: value[0],
+        west: value[1],
+        north: value[2],
+        east: value[3],
+    };
 }
 
 function shouldChunkBbox([south, west, north, east]) {
