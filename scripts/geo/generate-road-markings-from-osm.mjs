@@ -218,7 +218,7 @@ function addBusLanes(features, element, roadId, coordinates, laneModel, detailQu
 
 function addTurnArrows(features, element, roadId, coordinates, laneModel, detailQuality, roadClass, isLink) {
     const isMajor = ['motorway', 'trunk', 'primary', 'secondary'].includes(roadClass);
-    const ratios = isMajor && !isLink ? [0.35, 0.72] : [0.7];
+    const ratios = isMajor && !isLink ? [0.72] : [0.7];
 
     for (const lane of laneModel.lanes) {
         const turn = lane.turn && lane.turn !== 'none' ? lane.turn : 'none';
@@ -228,7 +228,7 @@ function addTurnArrows(features, element, roadId, coordinates, laneModel, detail
         }
 
         for (const ratio of ratios) {
-            const point = offsetPointAtRatio(coordinates, ratio, lane.offsetMeters);
+            const point = pointAtRatio(coordinates, ratio);
             if (!point) {
                 continue;
             }
@@ -245,6 +245,9 @@ function addTurnArrows(features, element, roadId, coordinates, laneModel, detail
                     direction: lane.direction,
                     turn,
                     bearing: point.bearing,
+                    offset_m: lane.offsetMeters,
+                    offset_px: lane.offsetPixels,
+                    icon_offset: [lane.offsetPixels * 4.1, 0],
                     detail_quality: detailQuality,
                     source: 'osm_turn_lanes',
                     osm_type: element.type,
@@ -439,7 +442,7 @@ function getElementCoordinates(element) {
     return [];
 }
 
-function offsetPointAtRatio(coordinates, ratio, offsetMeters) {
+function pointAtRatio(coordinates, ratio) {
     if (coordinates.length < 2) {
         return null;
     }
@@ -448,10 +451,10 @@ function offsetPointAtRatio(coordinates, ratio, offsetMeters) {
     const start = coordinates[targetIndex];
     const finish = coordinates[targetIndex + 1];
     const bearing = getBearing(start, finish);
-    const coordinate = offsetCoordinate([
+    const coordinate = [
         start[0] + ((finish[0] - start[0]) * 0.5),
         start[1] + ((finish[1] - start[1]) * 0.5),
-    ], bearing + 90, offsetMeters);
+    ];
 
     return {
         coordinate,

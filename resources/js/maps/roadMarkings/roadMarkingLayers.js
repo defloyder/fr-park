@@ -3,9 +3,10 @@ import { ROAD_MARKINGS_SOURCE_ID } from './roadMarkingSources';
 
 const featureTypeFilter = (featureType) => ['==', ['get', 'feature_type'], featureType];
 const markingTypeFilter = (...markingTypes) => ['in', ['get', 'marking_type'], ['literal', markingTypes]];
+const lineOffsetScale = 4.1;
 const sourceLineOffset = ['coalesce', ['to-number', ['get', 'offset_px']], 0];
-const lineOffset = ['*', sourceLineOffset, 3.2];
-const negativeLineOffset = ['*', lineOffset, -1];
+const lineOffset = ['*', sourceLineOffset, lineOffsetScale];
+const arrowIconOffset = ['coalesce', ['array', 'number', 2, ['get', 'icon_offset']], ['literal', [0, 0]]];
 
 const markingColor = [
     'match',
@@ -239,6 +240,7 @@ export const roadMarkingLayerDefinitions = [
                 ROAD_MARKING_ARROW_IMAGES.through,
             ],
             'icon-size': ['interpolate', ['linear'], ['zoom'], 17.8, 0.52, 19, 0.82, 20, 1.06],
+            'icon-offset': arrowIconOffset,
             'icon-rotate': ['coalesce', ['to-number', ['get', 'bearing']], 0],
             'icon-rotation-alignment': 'map',
             'icon-pitch-alignment': 'map',

@@ -117,11 +117,11 @@ const majorSurfaceWidth = [
     17,
     ['*', 50, roadWidthFactor],
     18,
-    ['*', 70, roadWidthFactor],
+    ['*', 76, roadWidthFactor],
     19,
-    ['*', 96, roadWidthFactor],
+    ['*', 108, roadWidthFactor],
     20,
-    ['*', 132, roadWidthFactor],
+    ['*', 148, roadWidthFactor],
 ];
 
 const majorUnifierWidth = [
@@ -135,13 +135,13 @@ const majorUnifierWidth = [
     16,
     ['*', 44, roadWidthFactor],
     17,
-    ['*', 76, roadWidthFactor],
+    ['*', 88, roadWidthFactor],
     18,
-    ['*', 118, roadWidthFactor],
+    ['*', 140, roadWidthFactor],
     19,
-    ['*', 176, roadWidthFactor],
+    ['*', 220, roadWidthFactor],
     20,
-    ['*', 252, roadWidthFactor],
+    ['*', 340, roadWidthFactor],
 ];
 
 const motorwayMedianFillWidth = [
@@ -155,13 +155,13 @@ const motorwayMedianFillWidth = [
     16,
     ['*', 66, motorwayMergeWidthFactor],
     17,
-    ['*', 98, motorwayMergeWidthFactor],
+    ['*', 112, motorwayMergeWidthFactor],
     18,
-    ['*', 142, motorwayMergeWidthFactor],
+    ['*', 166, motorwayMergeWidthFactor],
     19,
-    ['*', 204, motorwayMergeWidthFactor],
+    ['*', 248, motorwayMergeWidthFactor],
     20,
-    ['*', 284, motorwayMergeWidthFactor],
+    ['*', 360, motorwayMergeWidthFactor],
 ];
 
 const minorSurfaceWidth = [
@@ -191,13 +191,13 @@ const rampSurfaceWidth = [
     16,
     ['*', 17, rampWidthFactor],
     17,
-    ['*', 26, rampWidthFactor],
+    ['*', 23, rampWidthFactor],
     18,
-    ['*', 38, rampWidthFactor],
+    ['*', 34, rampWidthFactor],
     19,
-    ['*', 54, rampWidthFactor],
+    ['*', 49, rampWidthFactor],
     20,
-    ['*', 74, rampWidthFactor],
+    ['*', 66, rampWidthFactor],
 ];
 
 const roadEdgeMarkingWidth = ['interpolate', ['linear'], ['zoom'], 16.8, 1.2, 18.5, 2.2, 20, 3.1];
@@ -215,13 +215,13 @@ const majorSeamWidth = [
     16,
     ['*', 36.72, roadWidthFactor],
     17,
-    ['*', 54, roadWidthFactor],
+    ['*', 59, roadWidthFactor],
     18,
-    ['*', 75.6, roadWidthFactor],
+    ['*', 84, roadWidthFactor],
     19,
-    ['*', 103.68, roadWidthFactor],
+    ['*', 122, roadWidthFactor],
     20,
-    ['*', 142.56, roadWidthFactor],
+    ['*', 168, roadWidthFactor],
 ];
 
 const minorSeamWidth = [
@@ -251,13 +251,13 @@ const rampSeamWidth = [
     16,
     ['*', 18.02, rampWidthFactor],
     17,
-    ['*', 27.56, rampWidthFactor],
+    ['*', 24.5, rampWidthFactor],
     18,
-    ['*', 40.28, rampWidthFactor],
+    ['*', 35.9, rampWidthFactor],
     19,
-    ['*', 57.24, rampWidthFactor],
+    ['*', 51.9, rampWidthFactor],
     20,
-    ['*', 78.44, rampWidthFactor],
+    ['*', 70, rampWidthFactor],
 ];
 const centerDoubleOffset = ['interpolate', ['linear'], ['zoom'], 17, 1.1, 18.5, 1.9, 20, 2.8];
 const centerDoubleOffsetNegative = ['interpolate', ['linear'], ['zoom'], 17, -1.1, 18.5, -1.9, 20, -2.8];
@@ -266,52 +266,52 @@ const majorEdgeOffset = [
     ['linear'],
     ['zoom'],
     17,
-    ['*', 24, roadWidthFactor],
+    ['*', 29, roadWidthFactor],
     18,
-    ['*', 34, roadWidthFactor],
+    ['*', 42, roadWidthFactor],
     19,
-    ['*', 47, roadWidthFactor],
+    ['*', 58, roadWidthFactor],
     20,
-    ['*', 64, roadWidthFactor],
+    ['*', 74, roadWidthFactor],
 ];
 const majorEdgeOffsetNegative = [
     'interpolate',
     ['linear'],
     ['zoom'],
     17,
-    ['*', -24, roadWidthFactor],
+    ['*', -29, roadWidthFactor],
     18,
-    ['*', -34, roadWidthFactor],
+    ['*', -42, roadWidthFactor],
     19,
-    ['*', -47, roadWidthFactor],
+    ['*', -58, roadWidthFactor],
     20,
-    ['*', -64, roadWidthFactor],
+    ['*', -74, roadWidthFactor],
 ];
 const rampEdgeOffset = [
     'interpolate',
     ['linear'],
     ['zoom'],
     17,
-    ['*', 13, rampWidthFactor],
+    ['*', 11, rampWidthFactor],
     18,
-    ['*', 19, rampWidthFactor],
+    ['*', 16, rampWidthFactor],
     19,
-    ['*', 27, rampWidthFactor],
+    ['*', 23, rampWidthFactor],
     20,
-    ['*', 37, rampWidthFactor],
+    ['*', 31, rampWidthFactor],
 ];
 const rampEdgeOffsetNegative = [
     'interpolate',
     ['linear'],
     ['zoom'],
     17,
-    ['*', -13, rampWidthFactor],
+    ['*', -11, rampWidthFactor],
     18,
-    ['*', -19, rampWidthFactor],
+    ['*', -16, rampWidthFactor],
     19,
-    ['*', -27, rampWidthFactor],
+    ['*', -23, rampWidthFactor],
     20,
-    ['*', -37, rampWidthFactor],
+    ['*', -31, rampWidthFactor],
 ];
 const minorEdgeOffset = ['interpolate', ['linear'], ['zoom'], 17, 5, 18, 7, 19, 10, 20, 14];
 const minorEdgeOffsetNegative = ['interpolate', ['linear'], ['zoom'], 17, -5, 18, -7, 19, -10, 20, -14];
@@ -409,13 +409,13 @@ function laneDividerOffset(laneCount, dividerIndex) {
         ['linear'],
         ['zoom'],
         17,
-        ['*', 24 * factor * laneScale, roadWidthFactor],
+        ['*', 29 * factor * laneScale, roadWidthFactor],
         18,
-        ['*', 34 * factor * laneScale, roadWidthFactor],
+        ['*', 42 * factor * laneScale, roadWidthFactor],
         19,
-        ['*', 47 * factor * laneScale, roadWidthFactor],
+        ['*', 58 * factor * laneScale, roadWidthFactor],
         20,
-        ['*', 64 * factor * laneScale, roadWidthFactor],
+        ['*', 80 * factor * laneScale, roadWidthFactor],
     ];
 }
 
