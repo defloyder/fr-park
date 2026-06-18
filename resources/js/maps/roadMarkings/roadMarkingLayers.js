@@ -38,11 +38,11 @@ const roadMaskWidth = [
     ['linear'],
     ['zoom'],
     16.5,
-    ['*', ['coalesce', ['to-number', ['get', 'lanes_total']], 2], 5.5],
+    ['max', 36, ['*', ['coalesce', ['to-number', ['get', 'lanes_total']], 2], 9.5]],
     18,
-    ['*', ['coalesce', ['to-number', ['get', 'lanes_total']], 2], 9.5],
+    ['max', 68, ['*', ['coalesce', ['to-number', ['get', 'lanes_total']], 2], 17]],
     20,
-    ['*', ['coalesce', ['to-number', ['get', 'lanes_total']], 2], 15.5],
+    ['max', 118, ['*', ['coalesce', ['to-number', ['get', 'lanes_total']], 2], 30]],
 ];
 
 export function createRoadMarkingLayers({ source = ROAD_MARKINGS_SOURCE_ID, sourceLayer = null } = {}) {
