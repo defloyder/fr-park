@@ -10,7 +10,6 @@ const chunkCount = clampInt(process.argv[4] ?? process.env.ROAD_MARKINGS_CHUNKS,
 const requestRetries = clampInt(process.env.OVERPASS_RETRIES, 2, 0, 8);
 const requestDelayMs = clampInt(process.env.OVERPASS_DELAY_MS, 1800, 0, 60000);
 const requestTimeoutSeconds = clampInt(process.env.OVERPASS_TIMEOUT_SECONDS, 240, 30, 600);
-const laneOffsetPixelScale = 5.8;
 
 const elementById = new Map();
 let endpointCursor = 0;
@@ -126,16 +125,20 @@ function buildRoadMarkingFeatures(elements) {
         const laneModel = getLaneModel(tags, roadClass, isLink);
         const detailQuality = laneModel.hasExplicitLaneDetail ? 'osm_explicit' : 'osm_estimated';
 
-        addRoadEdges(features, element, roadId, coordinates, laneModel, detailQuality);
-        addLaneMarkings(features, element, roadId, coordinates, laneModel, detailQuality);
-        addBusLanes(features, element, roadId, coordinates, laneModel, detailQuality, tags);
+        addRoadEdges(features, element, roadId, coordinates, laneModel, detailQuality, roadClass, isLink);
+        addLaneMarkings(features, element, roadId, coordinates, laneModel, detailQuality, roadClass, isLink);
+        addBusLanes(features, element, roadId, coordinates, laneModel, detailQuality, tags, roadClass, isLink);
         addTurnArrows(features, element, roadId, coordinates, laneModel, detailQuality, roadClass, isLink);
     }
 
     return features;
 }
 
-function addRoadEdges(features, element, roadId, coordinates, laneModel, detailQuality) {
+function addRoadEdges(features, element, roadId, coordinates, laneModel, detailQuality, roadClass, isLink) {
+    if (!shouldRenderLaneMarkings(roadClass, isLink) || !laneModel.hasExplicitLaneDetail) {
+        return;
+    }
+
     const edgeOffset = Math.max(1.9, (laneModel.total * laneModel.laneWidthMeters) / 2);
 
     for (const [side, offsetMeters] of [['left', -edgeOffset], ['right', edgeOffset]]) {
@@ -150,6 +153,8 @@ function addRoadEdges(features, element, roadId, coordinates, laneModel, detailQ
                 color: 'muted',
                 side,
                 detail_quality: detailQuality,
+                road_class: roadClass,
+                is_link: isLink,
                 offset_m: offsetMeters,
                 offset_px: metersToOffsetPixels(offsetMeters),
                 source: 'osm_derived',
@@ -160,8 +165,8 @@ function addRoadEdges(features, element, roadId, coordinates, laneModel, detailQ
     }
 }
 
-function addLaneMarkings(features, element, roadId, coordinates, laneModel, detailQuality) {
-    if (laneModel.total < 2) {
+function addLaneMarkings(features, element, roadId, coordinates, laneModel, detailQuality, roadClass, isLink) {
+    if (laneModel.total < 2 || !shouldRenderLaneMarkings(roadClass, isLink) || !laneModel.hasExplicitLaneDetail) {
         return;
     }
 
@@ -181,6 +186,8 @@ function addLaneMarkings(features, element, roadId, coordinates, laneModel, deta
                 color: 'white',
                 between_lanes: `${boundary}|${boundary + 1}`,
                 detail_quality: detailQuality,
+                road_class: roadClass,
+                is_link: isLink,
                 offset_m: offsetMeters,
                 offset_px: metersToOffsetPixels(offsetMeters),
                 source: laneModel.hasExplicitLaneDetail ? 'osm_explicit_lanes' : 'osm_estimated_lanes',
@@ -191,7 +198,11 @@ function addLaneMarkings(features, element, roadId, coordinates, laneModel, deta
     }
 }
 
-function addBusLanes(features, element, roadId, coordinates, laneModel, detailQuality, tags) {
+function addBusLanes(features, element, roadId, coordinates, laneModel, detailQuality, tags, roadClass, isLink) {
+    if (!shouldRenderLaneMarkings(roadClass, isLink)) {
+        return;
+    }
+
     for (const lane of laneModel.lanes) {
         if (lane.type !== 'bus') {
             continue;
@@ -207,6 +218,8 @@ function addBusLanes(features, element, roadId, coordinates, laneModel, detailQu
                 direction: lane.direction,
                 active_hours: tags['bus:lanes:conditional'] ?? tags['vehicle:lanes:conditional'] ?? '',
                 detail_quality: detailQuality,
+                road_class: roadClass,
+                is_link: isLink,
                 offset_m: lane.offsetMeters,
                 offset_px: lane.offsetPixels,
                 source: 'osm_bus_lanes',
@@ -218,6 +231,10 @@ function addBusLanes(features, element, roadId, coordinates, laneModel, detailQu
 }
 
 function addTurnArrows(features, element, roadId, coordinates, laneModel, detailQuality, roadClass, isLink) {
+    if (!shouldRenderLaneMarkings(roadClass, isLink)) {
+        return;
+    }
+
     const isMajor = ['motorway', 'trunk', 'primary', 'secondary'].includes(roadClass);
     const ratios = isMajor && !isLink ? [0.88] : [0.76];
 
@@ -229,7 +246,7 @@ function addTurnArrows(features, element, roadId, coordinates, laneModel, detail
         }
 
         for (const ratio of ratios) {
-            const point = pointAtRatio(coordinates, ratio);
+            const point = offsetPointAtRatio(coordinates, ratio, lane.offsetMeters);
             if (!point) {
                 continue;
             }
@@ -248,8 +265,9 @@ function addTurnArrows(features, element, roadId, coordinates, laneModel, detail
                     bearing: lane.direction === 'backward' ? (point.bearing + 180) % 360 : point.bearing,
                     offset_m: lane.offsetMeters,
                     offset_px: lane.offsetPixels,
-                    icon_offset: [lane.offsetPixels * laneOffsetPixelScale, 0],
                     detail_quality: detailQuality,
+                    road_class: roadClass,
+                    is_link: isLink,
                     source: 'osm_turn_lanes',
                     osm_type: element.type,
                     osm_id: element.id,
@@ -261,6 +279,10 @@ function addTurnArrows(features, element, roadId, coordinates, laneModel, detail
             });
         }
     }
+}
+
+function shouldRenderLaneMarkings(roadClass, isLink) {
+    return !isLink && ['motorway', 'trunk', 'primary', 'secondary', 'tertiary'].includes(roadClass);
 }
 
 function makeLineFeature({ id, coordinates, properties }) {
@@ -443,7 +465,7 @@ function getElementCoordinates(element) {
     return [];
 }
 
-function pointAtRatio(coordinates, ratio) {
+function offsetPointAtRatio(coordinates, ratio, offsetMeters = 0) {
     if (coordinates.length < 2) {
         return null;
     }
@@ -452,10 +474,10 @@ function pointAtRatio(coordinates, ratio) {
     const start = coordinates[targetIndex];
     const finish = coordinates[targetIndex + 1];
     const bearing = getBearing(start, finish);
-    const coordinate = [
+    const coordinate = offsetCoordinate([
         start[0] + ((finish[0] - start[0]) * 0.5),
         start[1] + ((finish[1] - start[1]) * 0.5),
-    ];
+    ], bearing + 90, offsetMeters);
 
     return {
         coordinate,

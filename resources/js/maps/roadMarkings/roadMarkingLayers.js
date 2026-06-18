@@ -3,10 +3,23 @@ import { ROAD_MARKINGS_SOURCE_ID } from './roadMarkingSources';
 
 const featureTypeFilter = (featureType) => ['==', ['get', 'feature_type'], featureType];
 const markingTypeFilter = (...markingTypes) => ['in', ['get', 'marking_type'], ['literal', markingTypes]];
-const lineOffsetScale = 5.8;
+const majorRoadMarkingFilter = ['in', ['get', 'road_class'], ['literal', ['motorway', 'trunk', 'primary', 'secondary', 'tertiary']]];
+const explicitLaneMarkingFilter = ['!=', ['get', 'source'], 'osm_estimated_lanes'];
 const sourceLineOffset = ['coalesce', ['to-number', ['get', 'offset_px']], 0];
-const lineOffset = ['*', sourceLineOffset, lineOffsetScale];
-const arrowIconOffset = ['coalesce', ['array', 'number', 2, ['get', 'icon_offset']], ['literal', [0, 0]]];
+const scaledLineOffset = (scale) => ['*', sourceLineOffset, scale];
+const lineOffset = [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    16.5,
+    scaledLineOffset(3.4),
+    18,
+    scaledLineOffset(5.8),
+    19,
+    scaledLineOffset(7),
+    20,
+    scaledLineOffset(8.6),
+];
 
 const markingColor = [
     'match',
@@ -57,7 +70,7 @@ export const roadMarkingLayerDefinitions = [
     {
         id: 'road_marking_edges',
         type: 'line',
-        filter: ['all', featureTypeFilter('lane_marking'), markingTypeFilter('edge_line')],
+        filter: ['all', featureTypeFilter('lane_marking'), markingTypeFilter('edge_line'), majorRoadMarkingFilter, ['!=', ['get', 'is_link'], true]],
         minzoom: 16.5,
         layout: {
             'line-cap': 'round',
@@ -73,7 +86,7 @@ export const roadMarkingLayerDefinitions = [
     {
         id: 'road_marking_guides',
         type: 'line',
-        filter: ['all', featureTypeFilter('lane_marking'), markingTypeFilter('guide_line')],
+        filter: ['all', featureTypeFilter('lane_marking'), markingTypeFilter('guide_line'), explicitLaneMarkingFilter],
         minzoom: 17,
         layout: {
             'line-cap': 'round',
@@ -89,7 +102,7 @@ export const roadMarkingLayerDefinitions = [
     {
         id: 'road_marking_dashed',
         type: 'line',
-        filter: ['all', featureTypeFilter('lane_marking'), markingTypeFilter('dashed', 'bus_lane_border')],
+        filter: ['all', featureTypeFilter('lane_marking'), markingTypeFilter('dashed', 'bus_lane_border'), explicitLaneMarkingFilter],
         minzoom: 16.7,
         layout: {
             'line-cap': 'butt',
@@ -106,7 +119,7 @@ export const roadMarkingLayerDefinitions = [
     {
         id: 'road_marking_solid',
         type: 'line',
-        filter: ['all', featureTypeFilter('lane_marking'), markingTypeFilter('solid', 'solid_dashed', 'dashed_solid')],
+        filter: ['all', featureTypeFilter('lane_marking'), markingTypeFilter('solid', 'solid_dashed', 'dashed_solid'), explicitLaneMarkingFilter],
         minzoom: 16.7,
         layout: {
             'line-cap': 'round',
@@ -122,7 +135,7 @@ export const roadMarkingLayerDefinitions = [
     {
         id: 'road_marking_double_solid_left',
         type: 'line',
-        filter: ['all', featureTypeFilter('lane_marking'), markingTypeFilter('double_solid')],
+        filter: ['all', featureTypeFilter('lane_marking'), markingTypeFilter('double_solid'), explicitLaneMarkingFilter],
         minzoom: 16.7,
         layout: {
             'line-cap': 'round',
@@ -132,13 +145,13 @@ export const roadMarkingLayerDefinitions = [
             'line-color': markingColor,
             'line-width': laneLineWidth,
             'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.7, 0.64, 18, 0.88, 20, 0.96],
-            'line-offset': ['interpolate', ['linear'], ['zoom'], 16.7, ['+', lineOffset, -1.2], 19, ['+', lineOffset, -2], 20, ['+', lineOffset, -2.8]],
+            'line-offset': ['interpolate', ['linear'], ['zoom'], 16.7, ['+', scaledLineOffset(3.8), -1.2], 19, ['+', scaledLineOffset(7), -2], 20, ['+', scaledLineOffset(8.6), -2.8]],
         },
     },
     {
         id: 'road_marking_double_solid_right',
         type: 'line',
-        filter: ['all', featureTypeFilter('lane_marking'), markingTypeFilter('double_solid')],
+        filter: ['all', featureTypeFilter('lane_marking'), markingTypeFilter('double_solid'), explicitLaneMarkingFilter],
         minzoom: 16.7,
         layout: {
             'line-cap': 'round',
@@ -148,7 +161,7 @@ export const roadMarkingLayerDefinitions = [
             'line-color': markingColor,
             'line-width': laneLineWidth,
             'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.7, 0.64, 18, 0.88, 20, 0.96],
-            'line-offset': ['interpolate', ['linear'], ['zoom'], 16.7, ['+', lineOffset, 1.2], 19, ['+', lineOffset, 2], 20, ['+', lineOffset, 2.8]],
+            'line-offset': ['interpolate', ['linear'], ['zoom'], 16.7, ['+', scaledLineOffset(3.8), 1.2], 19, ['+', scaledLineOffset(7), 2], 20, ['+', scaledLineOffset(8.6), 2.8]],
         },
     },
     {
@@ -240,7 +253,6 @@ export const roadMarkingLayerDefinitions = [
                 ROAD_MARKING_ARROW_IMAGES.through,
             ],
             'icon-size': ['interpolate', ['linear'], ['zoom'], 18.8, 0.46, 19.5, 0.74, 20, 0.9],
-            'icon-offset': arrowIconOffset,
             'icon-rotate': ['coalesce', ['to-number', ['get', 'bearing']], 0],
             'icon-rotation-alignment': 'map',
             'icon-pitch-alignment': 'map',
