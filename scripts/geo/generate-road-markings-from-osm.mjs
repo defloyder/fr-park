@@ -10,6 +10,7 @@ const chunkCount = clampInt(process.argv[4] ?? process.env.ROAD_MARKINGS_CHUNKS,
 const requestRetries = clampInt(process.env.OVERPASS_RETRIES, 2, 0, 8);
 const requestDelayMs = clampInt(process.env.OVERPASS_DELAY_MS, 1800, 0, 60000);
 const requestTimeoutSeconds = clampInt(process.env.OVERPASS_TIMEOUT_SECONDS, 240, 30, 600);
+const laneOffsetPixelScale = 5.8;
 
 const elementById = new Map();
 let endpointCursor = 0;
@@ -218,7 +219,7 @@ function addBusLanes(features, element, roadId, coordinates, laneModel, detailQu
 
 function addTurnArrows(features, element, roadId, coordinates, laneModel, detailQuality, roadClass, isLink) {
     const isMajor = ['motorway', 'trunk', 'primary', 'secondary'].includes(roadClass);
-    const ratios = isMajor && !isLink ? [0.72] : [0.7];
+    const ratios = isMajor && !isLink ? [0.88] : [0.76];
 
     for (const lane of laneModel.lanes) {
         const turn = lane.turn && lane.turn !== 'none' ? lane.turn : 'none';
@@ -244,10 +245,10 @@ function addTurnArrows(features, element, roadId, coordinates, laneModel, detail
                     lane_index: lane.index,
                     direction: lane.direction,
                     turn,
-                    bearing: point.bearing,
+                    bearing: lane.direction === 'backward' ? (point.bearing + 180) % 360 : point.bearing,
                     offset_m: lane.offsetMeters,
                     offset_px: lane.offsetPixels,
-                    icon_offset: [lane.offsetPixels * 4.1, 0],
+                    icon_offset: [lane.offsetPixels * laneOffsetPixelScale, 0],
                     detail_quality: detailQuality,
                     source: 'osm_turn_lanes',
                     osm_type: element.type,

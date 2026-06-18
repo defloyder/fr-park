@@ -3,7 +3,7 @@ import { ROAD_MARKINGS_SOURCE_ID } from './roadMarkingSources';
 
 const featureTypeFilter = (featureType) => ['==', ['get', 'feature_type'], featureType];
 const markingTypeFilter = (...markingTypes) => ['in', ['get', 'marking_type'], ['literal', markingTypes]];
-const lineOffsetScale = 4.1;
+const lineOffsetScale = 5.8;
 const sourceLineOffset = ['coalesce', ['to-number', ['get', 'offset_px']], 0];
 const lineOffset = ['*', sourceLineOffset, lineOffsetScale];
 const arrowIconOffset = ['coalesce', ['array', 'number', 2, ['get', 'icon_offset']], ['literal', [0, 0]]];
@@ -216,7 +216,7 @@ export const roadMarkingLayerDefinitions = [
         id: 'road_marking_turn_arrows',
         type: 'symbol',
         filter: ['all', featureTypeFilter('turn_arrow'), ['!=', ['get', 'source'], 'osm_direction']],
-        minzoom: 17.8,
+        minzoom: 18.8,
         layout: {
             'icon-image': [
                 'match',
@@ -239,17 +239,17 @@ export const roadMarkingLayerDefinitions = [
                 ROAD_MARKING_ARROW_IMAGES.slight_right,
                 ROAD_MARKING_ARROW_IMAGES.through,
             ],
-            'icon-size': ['interpolate', ['linear'], ['zoom'], 17.8, 0.52, 19, 0.82, 20, 1.06],
+            'icon-size': ['interpolate', ['linear'], ['zoom'], 18.8, 0.46, 19.5, 0.74, 20, 0.9],
             'icon-offset': arrowIconOffset,
             'icon-rotate': ['coalesce', ['to-number', ['get', 'bearing']], 0],
             'icon-rotation-alignment': 'map',
             'icon-pitch-alignment': 'map',
             'icon-keep-upright': false,
-            'icon-allow-overlap': true,
-            'icon-ignore-placement': true,
+            'icon-allow-overlap': false,
+            'icon-ignore-placement': false,
         },
         paint: {
-            'icon-opacity': ['interpolate', ['linear'], ['zoom'], 17.8, 0.62, 19, 0.94],
+            'icon-opacity': ['interpolate', ['linear'], ['zoom'], 18.8, 0.45, 19.5, 0.78, 20, 0.9],
         },
     },
 ];

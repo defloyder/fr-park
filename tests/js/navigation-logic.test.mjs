@@ -563,7 +563,7 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
     assert.doesNotMatch(mapSource, /id: 'detailed-road-labels'/);
     assert.match(mapSource, /const ENABLE_ROAD_DETAILS = true/);
     assert.match(mapSource, /import \{ addRoadDetails \} from '\.\.\/utils\/map\/addRoadDetails'/);
-    assert.match(mapSource, /if \(ENABLE_ROAD_DETAILS\) \{\s*addRoadDetails\(map, \{ baseRoadSource: ROAD_SOURCE_ID, includeDataset: false \}\);\s*\}/);
+    assert.match(mapSource, /if \(ENABLE_ROAD_DETAILS\) \{\s*addRoadDetails\(map, \{ baseRoadSource: ROAD_SOURCE_ID, includeDataset: false, includeBaseRoadMarkings: false \}\);\s*\}/);
     assert.match(mapSource, /baseRoadSource: ROAD_SOURCE_ID/);
     assert.doesNotMatch(mapSource, /createDetailedRoadSurfaceLayers/);
     assert.doesNotMatch(mapSource, /createDetailedRoadLaneLayers/);

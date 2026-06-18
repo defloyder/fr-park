@@ -135,13 +135,13 @@ const majorUnifierWidth = [
     16,
     ['*', 44, roadWidthFactor],
     17,
-    ['*', 88, roadWidthFactor],
+    ['*', 120, roadWidthFactor],
     18,
-    ['*', 140, roadWidthFactor],
+    ['*', 210, roadWidthFactor],
     19,
-    ['*', 220, roadWidthFactor],
+    ['*', 360, roadWidthFactor],
     20,
-    ['*', 340, roadWidthFactor],
+    ['*', 620, roadWidthFactor],
 ];
 
 const motorwayMedianFillWidth = [
@@ -155,13 +155,13 @@ const motorwayMedianFillWidth = [
     16,
     ['*', 66, motorwayMergeWidthFactor],
     17,
-    ['*', 112, motorwayMergeWidthFactor],
+    ['*', 126, motorwayMergeWidthFactor],
     18,
-    ['*', 166, motorwayMergeWidthFactor],
+    ['*', 230, motorwayMergeWidthFactor],
     19,
-    ['*', 248, motorwayMergeWidthFactor],
+    ['*', 390, motorwayMergeWidthFactor],
     20,
-    ['*', 360, motorwayMergeWidthFactor],
+    ['*', 660, motorwayMergeWidthFactor],
 ];
 
 const minorSurfaceWidth = [
