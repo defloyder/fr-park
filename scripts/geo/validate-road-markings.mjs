@@ -13,6 +13,9 @@ const allowedFeatureTypes = new Set([
     'yellow_box_line',
     'hatched_area_line',
     'turn_arrow',
+    'road_mask',
+    'speed_marking',
+    'traffic_signal',
 ]);
 
 const idFieldsByType = {
@@ -23,6 +26,9 @@ const idFieldsByType = {
     yellow_box_line: 'box_line_id',
     hatched_area_line: 'area_line_id',
     turn_arrow: 'arrow_id',
+    road_mask: 'road_id',
+    speed_marking: 'road_id',
+    traffic_signal: 'osm_id',
 };
 
 const requiredByType = {
@@ -33,6 +39,9 @@ const requiredByType = {
     yellow_box_line: ['box_line_id'],
     hatched_area_line: ['area_line_id'],
     turn_arrow: ['road_id', 'arrow_id', 'turn'],
+    road_mask: ['road_id', 'lanes_total', 'structure_level'],
+    speed_marking: ['road_id', 'maxspeed'],
+    traffic_signal: ['osm_id'],
 };
 
 const errors = [];
