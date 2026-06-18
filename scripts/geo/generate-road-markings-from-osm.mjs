@@ -26,7 +26,7 @@ if (isOsmXmlInput) {
 
     outputBbox = parsed.bbox;
 
-    for (const element of [...parsed.elements, ...parsed.signalNodes]) {
+    for (const element of parsed.elements) {
         elementById.set(`${element.type}/${element.id}`, element);
     }
 } else {
@@ -242,22 +242,7 @@ function isRoadMarkingCandidate(tags) {
     const roadClass = normalizeRoadClass(tags.highway);
     const isLink = String(tags.highway || '').endsWith('_link');
 
-    return shouldRenderLaneMarkings(roadClass, isLink)
-        && hasAnyTag(tags, [
-            'lanes',
-            'lanes:forward',
-            'lanes:backward',
-            'turn:lanes',
-            'turn:lanes:forward',
-            'turn:lanes:backward',
-            'bus:lanes',
-            'bus:lanes:forward',
-            'bus:lanes:backward',
-            'psv:lanes',
-            'busway',
-            'busway:left',
-            'busway:right',
-        ]);
+    return shouldRenderLaneMarkings(roadClass, isLink);
 }
 
 function parseBoundsLine(line) {
@@ -366,16 +351,10 @@ function sleep(ms) {
 
 function buildRoadMarkingFeatures(elements) {
     const features = [];
-    const intersectionNodeIds = getIntersectionNodeIds(elements);
 
     for (const element of elements) {
         const tags = element.tags ?? {};
         const coordinates = getElementCoordinates(element);
-
-        if (element.type === 'node' && tags.highway === 'traffic_signals' && coordinates.length === 1) {
-            addTrafficSignal(features, element, coordinates[0]);
-            continue;
-        }
 
         if (!tags.highway || coordinates.length < 2) {
             continue;
@@ -387,19 +366,11 @@ function buildRoadMarkingFeatures(elements) {
         const structure = getRoadStructure(tags);
         const laneModel = getLaneModel(tags, roadClass, isLink);
         const detailQuality = laneModel.hasExplicitLaneDetail ? 'osm_explicit' : 'osm_estimated';
-        const refs = getElementCoordinateRefs(element);
-        const markingSegments = splitRoadSegments(coordinates, refs, intersectionNodeIds);
 
         addRoadMask(features, element, roadId, coordinates, laneModel, roadClass, isLink, structure);
-        addSpeedMarking(features, element, roadId, coordinates, laneModel, roadClass, isLink, structure, tags);
-        addStopLines(features, element, roadId, coordinates, refs, intersectionNodeIds, laneModel, detailQuality, roadClass, isLink, structure);
-
-        for (const [segmentIndex, segment] of markingSegments.entries()) {
-            addRoadEdges(features, element, roadId, segment, laneModel, detailQuality, roadClass, isLink, structure, segmentIndex);
-            addLaneMarkings(features, element, roadId, segment, laneModel, detailQuality, roadClass, isLink, structure, segmentIndex);
-            addBusLanes(features, element, roadId, segment, laneModel, detailQuality, tags, roadClass, isLink, structure, segmentIndex);
-        }
-
+        addRoadEdges(features, element, roadId, coordinates, laneModel, detailQuality, roadClass, isLink, structure);
+        addLaneMarkings(features, element, roadId, coordinates, laneModel, detailQuality, roadClass, isLink, structure);
+        addBusLanes(features, element, roadId, coordinates, laneModel, detailQuality, tags, roadClass, isLink, structure);
         addTurnArrows(features, element, roadId, coordinates, laneModel, detailQuality, roadClass, isLink, structure);
     }
 
@@ -430,7 +401,7 @@ function addRoadMask(features, element, roadId, coordinates, laneModel, roadClas
     }));
 }
 
-function addRoadEdges(features, element, roadId, coordinates, laneModel, detailQuality, roadClass, isLink, structure, segmentIndex = 0) {
+function addRoadEdges(features, element, roadId, coordinates, laneModel, detailQuality, roadClass, isLink, structure) {
     if (!shouldRenderRoadEdges(roadClass, isLink) || !laneModel.hasExplicitLaneDetail) {
         return;
     }
@@ -439,24 +410,19 @@ function addRoadEdges(features, element, roadId, coordinates, laneModel, detailQ
 
     for (const [side, offsetMeters] of [['left', -edgeOffset], ['right', edgeOffset]]) {
         features.push(makeLineFeature({
-            id: `lane_marking/edge/${element.id}/${segmentIndex}/${side}`,
+            id: `lane_marking/edge/${element.id}/${side}`,
             coordinates: offsetLineString(coordinates, offsetMeters),
             properties: {
                 feature_type: 'lane_marking',
                 road_id: roadId,
-                marking_id: `edge_${element.id}_${segmentIndex}_${side}`,
+                marking_id: `edge_${element.id}_${side}`,
                 marking_type: 'edge_line',
                 color: 'muted',
                 side,
                 detail_quality: detailQuality,
                 road_class: roadClass,
                 is_link: isLink,
-                offset_m: offsetMeters,
-                offset_px: metersToOffsetPixels(offsetMeters),
-                geometry_offset: true,
-                lanes_total: laneModel.total,
-                lane_width_m: laneModel.laneWidthMeters,
-                ...structure,
+                structure_level: structure.structure_level,
                 source: 'osm_derived',
                 osm_type: element.type,
                 osm_id: element.id,
@@ -465,8 +431,8 @@ function addRoadEdges(features, element, roadId, coordinates, laneModel, detailQ
     }
 }
 
-function addLaneMarkings(features, element, roadId, coordinates, laneModel, detailQuality, roadClass, isLink, structure, segmentIndex = 0) {
-    if (laneModel.total < 2 || !shouldRenderLaneMarkings(roadClass, isLink) || !laneModel.hasExplicitLaneDetail) {
+function addLaneMarkings(features, element, roadId, coordinates, laneModel, detailQuality, roadClass, isLink, structure) {
+    if (laneModel.total < 2 || !shouldRenderLaneMarkings(roadClass, isLink)) {
         return;
     }
 
@@ -476,24 +442,19 @@ function addLaneMarkings(features, element, roadId, coordinates, laneModel, deta
         const markingType = isDirectionBoundary ? 'double_solid' : 'dashed';
 
         features.push(makeLineFeature({
-            id: `lane_marking/${element.id}/${segmentIndex}/${boundary}`,
+            id: `lane_marking/${element.id}/${boundary}`,
             coordinates: offsetLineString(coordinates, offsetMeters),
             properties: {
                 feature_type: 'lane_marking',
                 road_id: roadId,
-                marking_id: `marking_${element.id}_${segmentIndex}_${boundary}`,
+                marking_id: `marking_${element.id}_${boundary}`,
                 marking_type: markingType,
                 color: 'white',
                 between_lanes: `${boundary}|${boundary + 1}`,
                 detail_quality: detailQuality,
                 road_class: roadClass,
                 is_link: isLink,
-                offset_m: offsetMeters,
-                offset_px: metersToOffsetPixels(offsetMeters),
-                geometry_offset: true,
-                lanes_total: laneModel.total,
-                lane_width_m: laneModel.laneWidthMeters,
-                ...structure,
+                structure_level: structure.structure_level,
                 source: laneModel.hasExplicitLaneDetail ? 'osm_explicit_lanes' : 'osm_estimated_lanes',
                 osm_type: element.type,
                 osm_id: element.id,
@@ -502,7 +463,7 @@ function addLaneMarkings(features, element, roadId, coordinates, laneModel, deta
     }
 }
 
-function addBusLanes(features, element, roadId, coordinates, laneModel, detailQuality, tags, roadClass, isLink, structure, segmentIndex = 0) {
+function addBusLanes(features, element, roadId, coordinates, laneModel, detailQuality, tags, roadClass, isLink, structure) {
     if (!shouldRenderLaneMarkings(roadClass, isLink)) {
         return;
     }
@@ -513,23 +474,18 @@ function addBusLanes(features, element, roadId, coordinates, laneModel, detailQu
         }
 
         features.push(makeLineFeature({
-            id: `bus_lane/${element.id}/${segmentIndex}/${lane.index}`,
+            id: `bus_lane/${element.id}/${lane.index}`,
             coordinates: offsetLineString(coordinates, lane.offsetMeters),
             properties: {
                 feature_type: 'bus_lane',
                 road_id: roadId,
-                lane_id: `${roadId}_segment_${segmentIndex}_lane_${lane.index}`,
+                lane_id: `${roadId}_lane_${lane.index}`,
                 direction: lane.direction,
                 active_hours: tags['bus:lanes:conditional'] ?? tags['vehicle:lanes:conditional'] ?? '',
                 detail_quality: detailQuality,
                 road_class: roadClass,
                 is_link: isLink,
-                offset_m: lane.offsetMeters,
-                offset_px: lane.offsetPixels,
-                geometry_offset: true,
-                lanes_total: laneModel.total,
-                lane_width_m: laneModel.laneWidthMeters,
-                ...structure,
+                structure_level: structure.structure_level,
                 source: 'osm_bus_lanes',
                 osm_type: element.type,
                 osm_id: element.id,
@@ -571,131 +527,21 @@ function addTurnArrows(features, element, roadId, coordinates, laneModel, detail
                     direction: lane.direction,
                     turn,
                     bearing: lane.direction === 'backward' ? (point.bearing + 180) % 360 : point.bearing,
-                    offset_m: lane.offsetMeters,
-                    offset_px: lane.offsetPixels,
                     detail_quality: detailQuality,
                     road_class: roadClass,
                     is_link: isLink,
-                    lanes_total: laneModel.total,
-                    lane_width_m: laneModel.laneWidthMeters,
-                    ...structure,
+                    structure_level: structure.structure_level,
                     source: 'osm_turn_lanes',
                     osm_type: element.type,
                     osm_id: element.id,
                 },
                 geometry: {
                     type: 'Point',
-                    coordinates: point.coordinate,
+                    coordinates: roundCoordinatePair(point.coordinate),
                 },
             });
         }
     }
-}
-
-function addSpeedMarking(features, element, roadId, coordinates, laneModel, roadClass, isLink, structure, tags) {
-    const speed = normalizeSpeedLimit(tags.maxspeed);
-
-    if (!speed || isLink || !['motorway', 'trunk', 'primary', 'secondary'].includes(roadClass)) {
-        return;
-    }
-
-    const point = offsetPointAtRatio(coordinates, 0.48, 0);
-
-    if (!point) {
-        return;
-    }
-
-    features.push({
-        type: 'Feature',
-        id: `speed_marking/${element.id}`,
-        properties: {
-            feature_type: 'speed_marking',
-            road_id: roadId,
-            maxspeed: speed,
-            bearing: point.bearing,
-            road_class: roadClass,
-            is_link: isLink,
-            lanes_total: laneModel.total,
-            lane_width_m: laneModel.laneWidthMeters,
-            ...structure,
-            source: 'osm_maxspeed',
-            osm_type: element.type,
-            osm_id: element.id,
-        },
-        geometry: {
-            type: 'Point',
-            coordinates: point.coordinate,
-        },
-    });
-}
-
-function addStopLines(features, element, roadId, coordinates, refs, intersectionNodeIds, laneModel, detailQuality, roadClass, isLink, structure) {
-    if (!refs.length || laneModel.total < 2 || isLink || !['primary', 'secondary', 'tertiary'].includes(roadClass)) {
-        return;
-    }
-
-    const roadWidth = Math.max(5.5, laneModel.total * laneModel.laneWidthMeters * 0.92);
-    let added = 0;
-
-    for (let index = 1; index < coordinates.length - 1; index += 1) {
-        if (!intersectionNodeIds.has(refs[index])) {
-            continue;
-        }
-
-        const before = coordinates[index - 1];
-        const current = coordinates[index];
-        const after = coordinates[index + 1];
-        const bearing = getBearing(before, after);
-        const stopPointBefore = offsetCoordinate(current, bearing + 180, 7.5);
-        const stopPointAfter = offsetCoordinate(current, bearing, 7.5);
-
-        for (const [side, point, sideBearing] of [
-            ['before', stopPointBefore, bearing],
-            ['after', stopPointAfter, bearing],
-        ]) {
-            features.push(makeLineFeature({
-                id: `stop_line/${element.id}/${index}/${side}`,
-                coordinates: makeCrossLine(point, sideBearing, roadWidth),
-                properties: {
-                    feature_type: 'stop_line',
-                    road_id: roadId,
-                    stop_line_id: `stop_${element.id}_${index}_${side}`,
-                    detail_quality: detailQuality,
-                    road_class: roadClass,
-                    is_link: isLink,
-                    lanes_total: laneModel.total,
-                    lane_width_m: laneModel.laneWidthMeters,
-                    ...structure,
-                    source: 'osm_intersection',
-                    osm_type: element.type,
-                    osm_id: element.id,
-                },
-            }));
-        }
-
-        added += 1;
-
-        if (added >= 4) {
-            return;
-        }
-    }
-}
-
-function addTrafficSignal(features, element, coordinate) {
-    features.push({
-        type: 'Feature',
-        id: `traffic_signal/${element.id}`,
-        properties: {
-            feature_type: 'traffic_signal',
-            source: 'osm_traffic_signals',
-            osm_type: element.type,
-            osm_id: element.id,
-        },
-        geometry: {
-            type: 'Point',
-            coordinates: coordinate,
-        },
-    });
 }
 
 function shouldRenderLaneMarkings(roadClass, isLink) {
@@ -706,32 +552,6 @@ function shouldRenderRoadEdges(roadClass, isLink) {
     return !isLink && ['motorway', 'trunk', 'primary'].includes(roadClass);
 }
 
-function getIntersectionNodeIds(elements) {
-    const counts = new Map();
-
-    for (const element of elements) {
-        if (element.type !== 'way' || !Array.isArray(element.refs)) {
-            continue;
-        }
-
-        const tags = element.tags ?? {};
-        const roadClass = normalizeRoadClass(tags.highway);
-        const isLink = String(tags.highway || '').endsWith('_link');
-
-        if (!shouldRenderLaneMarkings(roadClass, isLink)) {
-            continue;
-        }
-
-        for (const ref of new Set(element.refs)) {
-            counts.set(ref, (counts.get(ref) ?? 0) + 1);
-        }
-    }
-
-    return new Set([...counts.entries()]
-        .filter(([, count]) => count > 1)
-        .map(([ref]) => ref));
-}
-
 function makeLineFeature({ id, coordinates, properties }) {
     return {
         type: 'Feature',
@@ -739,7 +559,7 @@ function makeLineFeature({ id, coordinates, properties }) {
         properties,
         geometry: {
             type: 'LineString',
-            coordinates,
+            coordinates: coordinates.map(roundCoordinatePair),
         },
     };
 }
@@ -760,12 +580,6 @@ function getRoadStructure(tags) {
 
 function truthyTag(value) {
     return ['yes', 'true', '1', 'viaduct', 'aqueduct'].includes(String(value || '').toLowerCase());
-}
-
-function normalizeSpeedLimit(value) {
-    const match = String(value || '').match(/\d{2,3}/);
-
-    return match ? match[0] : '';
 }
 
 function getLaneWidthMeters(tags, roadClass, isLink, total) {
@@ -1211,6 +1025,13 @@ function makeBboxChunks([south, west, north, east], count) {
 
 function roundCoordinate(value) {
     return Math.round(Number(value) * 1000000) / 1000000;
+}
+
+function roundCoordinatePair(coordinate) {
+    return [
+        roundCoordinate(coordinate[0]),
+        roundCoordinate(coordinate[1]),
+    ];
 }
 
 function toRadians(value) {

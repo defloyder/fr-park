@@ -5,6 +5,7 @@ const featureTypeFilter = (featureType) => ['==', ['get', 'feature_type'], featu
 const markingTypeFilter = (...markingTypes) => ['in', ['get', 'marking_type'], ['literal', markingTypes]];
 const majorRoadMarkingFilter = ['in', ['get', 'road_class'], ['literal', ['motorway', 'trunk', 'primary', 'secondary', 'tertiary']]];
 const explicitLaneMarkingFilter = ['!=', ['get', 'source'], 'osm_estimated_lanes'];
+const estimatedLaneMarkingFilter = ['==', ['get', 'source'], 'osm_estimated_lanes'];
 const bridgeLevelFilter = ['>=', ['coalesce', ['to-number', ['get', 'structure_level']], 0], 1];
 
 const markingColor = [
@@ -62,6 +63,54 @@ const baseRoadMarkingLayerDefinitions = [
             'line-color': ROAD_MARKING_COLORS.bus,
             'line-width': ['interpolate', ['linear'], ['zoom'], 16, 1.8, 18, 3.2, 20, 4.8],
             'line-opacity': ['interpolate', ['linear'], ['zoom'], 16, 0.22, 19, 0.42],
+        },
+    },
+    {
+        id: 'road_marking_estimated_dashed',
+        type: 'line',
+        filter: ['all', featureTypeFilter('lane_marking'), markingTypeFilter('dashed'), estimatedLaneMarkingFilter],
+        minzoom: 17.6,
+        layout: {
+            'line-cap': 'butt',
+            'line-join': 'round',
+        },
+        paint: {
+            'line-color': ROAD_MARKING_COLORS.mutedWhite,
+            'line-width': ['interpolate', ['linear'], ['zoom'], 17.6, 0.9, 19, 1.45, 20, 1.9],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 17.6, 0.22, 19, 0.42, 20, 0.54],
+            'line-dasharray': ['literal', [4.4, 4.2]],
+        },
+    },
+    {
+        id: 'road_marking_estimated_double_left',
+        type: 'line',
+        filter: ['all', featureTypeFilter('lane_marking'), markingTypeFilter('double_solid'), estimatedLaneMarkingFilter],
+        minzoom: 17.8,
+        layout: {
+            'line-cap': 'round',
+            'line-join': 'round',
+        },
+        paint: {
+            'line-color': ROAD_MARKING_COLORS.mutedWhite,
+            'line-width': ['interpolate', ['linear'], ['zoom'], 17.8, 0.65, 20, 1.15],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 17.8, 0.18, 19, 0.34, 20, 0.46],
+            'line-offset': ['interpolate', ['linear'], ['zoom'], 17.8, -1, 20, -2.4],
+        },
+    },
+    {
+        id: 'road_marking_estimated_double_right',
+        type: 'line',
+        filter: ['all', featureTypeFilter('lane_marking'), markingTypeFilter('double_solid'), estimatedLaneMarkingFilter],
+        minzoom: 17.8,
+        layout: {
+            'line-cap': 'round',
+            'line-join': 'round',
+        },
+        paint: {
+            'line-color': ROAD_MARKING_COLORS.mutedWhite,
+            'line-width': ['interpolate', ['linear'], ['zoom'], 17.8, 0.65, 20, 1.15],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 17.8, 0.18, 19, 0.34, 20, 0.46],
+            'line-offset': ['interpolate', ['linear'], ['zoom'], 17.8, 1, 20, 2.4],
         },
     },
     {
@@ -219,29 +268,6 @@ const baseRoadMarkingLayerDefinitions = [
         },
     },
     {
-        id: 'road_marking_speed_markings',
-        type: 'symbol',
-        filter: featureTypeFilter('speed_marking'),
-        minzoom: 18.5,
-        layout: {
-            'text-field': ['get', 'maxspeed'],
-            'text-size': ['interpolate', ['linear'], ['zoom'], 18.5, 9, 20, 14],
-            'text-font': ['literal', ['Noto Sans Regular']],
-            'text-rotate': ['coalesce', ['to-number', ['get', 'bearing']], 0],
-            'text-rotation-alignment': 'map',
-            'text-pitch-alignment': 'map',
-            'text-keep-upright': false,
-            'text-allow-overlap': false,
-            'text-ignore-placement': false,
-        },
-        paint: {
-            'text-color': ROAD_MARKING_COLORS.brightWhite,
-            'text-opacity': ['interpolate', ['linear'], ['zoom'], 18.5, 0.45, 20, 0.78],
-            'text-halo-color': 'rgba(33, 48, 66, 0.22)',
-            'text-halo-width': 0.8,
-        },
-    },
-    {
         id: 'road_marking_bus_lane_symbols',
         type: 'symbol',
         filter: featureTypeFilter('bus_lane'),
@@ -312,9 +338,6 @@ const bridgeReplayLayerIds = new Set([
     'road_marking_solid',
     'road_marking_double_solid_left',
     'road_marking_double_solid_right',
-    'road_marking_stop_lines',
-    'road_marking_speed_markings',
-    'road_marking_bus_lane_symbols',
     'road_marking_turn_arrows',
 ]);
 
@@ -334,20 +357,6 @@ const bridgeMaskLayerDefinition = {
     },
 };
 
-const trafficSignalLayerDefinition = {
-    id: 'road_marking_traffic_signals',
-    type: 'circle',
-    filter: featureTypeFilter('traffic_signal'),
-    minzoom: 17.8,
-    paint: {
-        'circle-radius': ['interpolate', ['linear'], ['zoom'], 17.8, 2.8, 20, 5.2],
-        'circle-color': '#22C55E',
-        'circle-stroke-color': '#F8FAFC',
-        'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 17.8, 0.8, 20, 1.4],
-        'circle-opacity': ['interpolate', ['linear'], ['zoom'], 17.8, 0.5, 20, 0.88],
-    },
-};
-
 function withExtraFilter(layer, suffix, extraFilter) {
     return {
         ...layer,
@@ -364,5 +373,4 @@ export const roadMarkingLayerDefinitions = [
     ...baseRoadMarkingLayerDefinitions
         .filter((layer) => bridgeReplayLayerIds.has(layer.id))
         .map((layer) => withExtraFilter(layer, '_bridge', bridgeLevelFilter)),
-    trafficSignalLayerDefinition,
 ];
