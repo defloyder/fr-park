@@ -344,7 +344,7 @@ const baseRoadMarkingLayerDefinitions = [
                 ROAD_MARKING_ARROW_IMAGES.slight_right,
                 ROAD_MARKING_ARROW_IMAGES.through,
             ],
-            'icon-size': ['interpolate', ['linear'], ['zoom'], 17.8, 0.48, 19, 0.82, 20, 1.08],
+            'icon-size': ['interpolate', ['linear'], ['zoom'], 17.6, 0.66, 18.6, 1.08, 20, 1.55],
             'icon-rotate': ['coalesce', ['to-number', ['get', 'bearing']], 0],
             'icon-rotation-alignment': 'map',
             'icon-pitch-alignment': 'map',
@@ -353,7 +353,7 @@ const baseRoadMarkingLayerDefinitions = [
             'icon-ignore-placement': true,
         },
         paint: {
-            'icon-opacity': ['interpolate', ['linear'], ['zoom'], 17.8, 0.48, 19, 0.82, 20, 0.94],
+            'icon-opacity': ['interpolate', ['linear'], ['zoom'], 17.6, 0.66, 18.8, 0.9, 20, 1],
         },
     },
     {

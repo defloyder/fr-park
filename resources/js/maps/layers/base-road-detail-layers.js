@@ -28,6 +28,7 @@ const tunnelFilter = [
 
 const ASPHALT_COLOR = '#8A9AAB';
 const BRIDGE_EDGE_COLOR = '#A6B4C3';
+const BRIDGE_SHADOW_COLOR = '#203247';
 const MARKING_COLOR = '#F8FAFC';
 const LANE_MARKING_COLOR = '#EEF4FA';
 const CENTER_MARKING_COLOR = '#FFFFFF';
@@ -224,6 +225,25 @@ const majorSeamWidth = [
     20,
     ['*', 168, roadWidthFactor],
 ];
+const majorBridgeShadowWidth = [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    14,
+    ['*', 18, roadWidthFactor],
+    15,
+    ['*', 29, roadWidthFactor],
+    16,
+    ['*', 48, roadWidthFactor],
+    17,
+    ['*', 74, roadWidthFactor],
+    18,
+    ['*', 104, roadWidthFactor],
+    19,
+    ['*', 148, roadWidthFactor],
+    20,
+    ['*', 202, roadWidthFactor],
+];
 
 const minorSeamWidth = [
     'interpolate',
@@ -242,6 +262,23 @@ const minorSeamWidth = [
     20,
     36.04,
 ];
+const minorBridgeShadowWidth = [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    15,
+    8,
+    16,
+    12,
+    17,
+    17,
+    18,
+    24,
+    19,
+    33,
+    20,
+    46,
+];
 
 const rampSeamWidth = [
     'interpolate',
@@ -259,6 +296,23 @@ const rampSeamWidth = [
     ['*', 51.9, rampWidthFactor],
     20,
     ['*', 70, rampWidthFactor],
+];
+const rampBridgeShadowWidth = [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    15,
+    ['*', 15, rampWidthFactor],
+    16,
+    ['*', 24, rampWidthFactor],
+    17,
+    ['*', 32, rampWidthFactor],
+    18,
+    ['*', 46, rampWidthFactor],
+    19,
+    ['*', 64, rampWidthFactor],
+    20,
+    ['*', 86, rampWidthFactor],
 ];
 const centerDoubleOffset = ['interpolate', ['linear'], ['zoom'], 17, 1.1, 18.5, 1.9, 20, 2.8];
 const centerDoubleOffsetNegative = ['interpolate', ['linear'], ['zoom'], 17, -1.1, 18.5, -1.9, 20, -2.8];
@@ -589,6 +643,20 @@ export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportati
     ];
     const bridgeSurfaceLayers = [
         roadLineLayer({
+            id: 'base_road_bridge_minor_shadow',
+            source,
+            sourceLayer,
+            filter: ['all', minorRoadClassFilter, bridgeFilter],
+            minzoom: 15.2,
+            color: BRIDGE_SHADOW_COLOR,
+            width: minorBridgeShadowWidth,
+            opacity: ['interpolate', ['linear'], ['zoom'], 15.2, 0.36, 18, 0.5, 20, 0.62],
+            cap: 'round',
+            blur: ['interpolate', ['linear'], ['zoom'], 15.2, 1.2, 20, 2.4],
+            translate: [0, 3],
+            translateAnchor: 'viewport',
+        }),
+        roadLineLayer({
             id: 'base_road_bridge_minor_casing',
             source,
             sourceLayer,
@@ -608,6 +676,20 @@ export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportati
             width: minorSurfaceWidth,
         }),
         roadLineLayer({
+            id: 'base_road_bridge_ramp_shadow',
+            source,
+            sourceLayer,
+            filter: ['all', linkRoadFilter, bridgeFilter],
+            minzoom: 14.8,
+            color: BRIDGE_SHADOW_COLOR,
+            width: rampBridgeShadowWidth,
+            opacity: ['interpolate', ['linear'], ['zoom'], 14.8, 0.38, 18, 0.54, 20, 0.66],
+            cap: 'round',
+            blur: ['interpolate', ['linear'], ['zoom'], 14.8, 1.4, 20, 2.8],
+            translate: [0, 4],
+            translateAnchor: 'viewport',
+        }),
+        roadLineLayer({
             id: 'base_road_bridge_ramp_casing',
             source,
             sourceLayer,
@@ -625,6 +707,20 @@ export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportati
             minzoom: 14.8,
             color: ASPHALT_COLOR,
             width: rampSurfaceWidth,
+        }),
+        roadLineLayer({
+            id: 'base_road_bridge_major_shadow',
+            source,
+            sourceLayer,
+            filter: ['all', majorFilter, bridgeFilter],
+            minzoom: 14,
+            color: BRIDGE_SHADOW_COLOR,
+            width: majorBridgeShadowWidth,
+            opacity: ['interpolate', ['linear'], ['zoom'], 14, 0.4, 18, 0.58, 20, 0.7],
+            cap: 'round',
+            blur: ['interpolate', ['linear'], ['zoom'], 14, 1.6, 20, 3.2],
+            translate: [0, 5],
+            translateAnchor: 'viewport',
         }),
         roadLineLayer({
             id: 'base_road_bridge_major_casing',

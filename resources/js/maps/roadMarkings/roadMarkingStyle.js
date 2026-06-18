@@ -1,7 +1,7 @@
 import { ROAD_MARKING_ARROW_IMAGES, ROAD_MARKING_TRAFFIC_SIGNAL_IMAGE } from './roadMarkingConfig';
 
-const ARROW_COLOR = 'rgba(232, 238, 245, 0.86)';
-const ARROW_SHADOW = 'rgba(16, 32, 51, 0.18)';
+const ARROW_COLOR = 'rgba(248, 250, 252, 0.94)';
+const ARROW_SHADOW = 'rgba(12, 24, 39, 0.34)';
 
 export function addRoadMarkingImages(map) {
     addArrowImage(map, ROAD_MARKING_ARROW_IMAGES.through, drawThroughArrow);
@@ -77,8 +77,8 @@ function addArrowImage(map, id, draw) {
         return;
     }
 
-    const width = 72;
-    const height = 112;
+    const width = 92;
+    const height = 138;
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
@@ -89,7 +89,7 @@ function addArrowImage(map, id, draw) {
     }
 
     context.clearRect(0, 0, width, height);
-    draw(context, { width, height, centerX: width / 2 });
+    draw(context, { width, height, centerX: width / 2, baseY: 112, headY: 25 });
 
     map.addImage(id, context.getImageData(0, 0, width, height), { pixelRatio: 2 });
 }
@@ -115,7 +115,7 @@ function drawArrowHead(context, x, y, angle, size) {
     context.restore();
 }
 
-function drawPathWithShadow(context, drawPath, width = 6) {
+function drawPathWithShadow(context, drawPath, width = 8) {
     setupPaint(context, true);
     context.lineWidth = width + 3;
     drawPath();
@@ -127,30 +127,30 @@ function drawPathWithShadow(context, drawPath, width = 6) {
     context.stroke();
 }
 
-function drawThroughArrow(context, { centerX }) {
+function drawThroughArrow(context, { centerX, baseY = 88, headY = 21 }) {
     drawPathWithShadow(context, () => {
         context.beginPath();
-        context.moveTo(centerX, 88);
-        context.lineTo(centerX, 26);
+        context.moveTo(centerX, baseY);
+        context.lineTo(centerX, headY + 6);
     });
     setupPaint(context, true);
-    drawArrowHead(context, centerX, 21, 0, 15);
+    drawArrowHead(context, centerX, headY, 0, 18);
     setupPaint(context);
-    drawArrowHead(context, centerX, 21, 0, 15);
+    drawArrowHead(context, centerX, headY, 0, 18);
 }
 
-function drawTurnArrow(context, { centerX }, side) {
+function drawTurnArrow(context, { centerX, baseY = 88, headY = 25 }, side) {
     const sign = side === 'left' ? -1 : 1;
     drawPathWithShadow(context, () => {
         context.beginPath();
-        context.moveTo(centerX, 88);
-        context.lineTo(centerX, 56);
-        context.quadraticCurveTo(centerX, 34, centerX + sign * 24, 32);
+        context.moveTo(centerX, baseY);
+        context.lineTo(centerX, 68);
+        context.quadraticCurveTo(centerX, 38, centerX + sign * 31, 37);
     });
     setupPaint(context, true);
-    drawArrowHead(context, centerX + sign * 29, 32, sign * Math.PI / 2, 14);
+    drawArrowHead(context, centerX + sign * 37, 37, sign * Math.PI / 2, 16);
     setupPaint(context);
-    drawArrowHead(context, centerX + sign * 29, 32, sign * Math.PI / 2, 14);
+    drawArrowHead(context, centerX + sign * 37, 37, sign * Math.PI / 2, 16);
 }
 
 function drawForkArrow(context, metrics, side) {
@@ -159,49 +159,52 @@ function drawForkArrow(context, metrics, side) {
     drawThroughArrow(context, metrics);
     drawPathWithShadow(context, () => {
         context.beginPath();
-        context.moveTo(centerX, 62);
-        context.quadraticCurveTo(centerX + sign * 3, 42, centerX + sign * 26, 33);
-    }, 5);
+        context.moveTo(centerX, 78);
+        context.quadraticCurveTo(centerX + sign * 4, 48, centerX + sign * 34, 39);
+    }, 7);
     setupPaint(context);
-    drawArrowHead(context, centerX + sign * 31, 31, sign * Math.PI / 2.6, 12);
+    drawArrowHead(context, centerX + sign * 39, 37, sign * Math.PI / 2.6, 15);
 }
 
-function drawLeftRightArrow(context, { centerX }) {
+function drawLeftRightArrow(context, { centerX, baseY = 88 }) {
     drawPathWithShadow(context, () => {
         context.beginPath();
-        context.moveTo(centerX, 88);
-        context.lineTo(centerX, 58);
-        context.moveTo(centerX, 58);
-        context.quadraticCurveTo(centerX - 4, 36, centerX - 27, 33);
-        context.moveTo(centerX, 58);
-        context.quadraticCurveTo(centerX + 4, 36, centerX + 27, 33);
-    }, 5);
+        context.moveTo(centerX, baseY);
+        context.lineTo(centerX, 72);
+        context.moveTo(centerX, 72);
+        context.quadraticCurveTo(centerX - 5, 42, centerX - 35, 39);
+        context.moveTo(centerX, 72);
+        context.quadraticCurveTo(centerX + 5, 42, centerX + 35, 39);
+    }, 7);
+    setupPaint(context, true);
+    drawArrowHead(context, centerX - 40, 39, -Math.PI / 2, 15);
+    drawArrowHead(context, centerX + 40, 39, Math.PI / 2, 15);
     setupPaint(context);
-    drawArrowHead(context, centerX - 32, 33, -Math.PI / 2, 12);
-    drawArrowHead(context, centerX + 32, 33, Math.PI / 2, 12);
+    drawArrowHead(context, centerX - 40, 39, -Math.PI / 2, 15);
+    drawArrowHead(context, centerX + 40, 39, Math.PI / 2, 15);
 }
 
-function drawUTurnArrow(context, { centerX }) {
+function drawUTurnArrow(context, { centerX, baseY = 88 }) {
     drawPathWithShadow(context, () => {
         context.beginPath();
-        context.moveTo(centerX + 13, 88);
-        context.lineTo(centerX + 13, 45);
-        context.quadraticCurveTo(centerX + 13, 25, centerX - 8, 25);
-        context.quadraticCurveTo(centerX - 27, 25, centerX - 27, 45);
-        context.lineTo(centerX - 27, 60);
-    }, 5);
+        context.moveTo(centerX + 16, baseY);
+        context.lineTo(centerX + 16, 52);
+        context.quadraticCurveTo(centerX + 16, 28, centerX - 10, 28);
+        context.quadraticCurveTo(centerX - 34, 28, centerX - 34, 52);
+        context.lineTo(centerX - 34, 69);
+    }, 7);
     setupPaint(context);
-    drawArrowHead(context, centerX - 27, 64, Math.PI, 12);
+    drawArrowHead(context, centerX - 34, 74, Math.PI, 15);
 }
 
-function drawSlightArrow(context, { centerX }, side) {
+function drawSlightArrow(context, { centerX, baseY = 88 }, side) {
     const sign = side === 'left' ? -1 : 1;
     drawPathWithShadow(context, () => {
         context.beginPath();
-        context.moveTo(centerX, 88);
-        context.lineTo(centerX, 61);
-        context.quadraticCurveTo(centerX, 42, centerX + sign * 18, 27);
-    }, 5);
+        context.moveTo(centerX, baseY);
+        context.lineTo(centerX, 74);
+        context.quadraticCurveTo(centerX, 48, centerX + sign * 24, 31);
+    }, 7);
     setupPaint(context);
-    drawArrowHead(context, centerX + sign * 21, 23, sign * Math.PI / 5, 13);
+    drawArrowHead(context, centerX + sign * 29, 27, sign * Math.PI / 5, 16);
 }
