@@ -200,9 +200,9 @@ const rampSurfaceWidth = [
     ['*', 74, rampWidthFactor],
 ];
 
-const roadEdgeMarkingWidth = ['interpolate', ['linear'], ['zoom'], 16.8, 1.8, 18.5, 3.2, 20, 4.6];
-const roadDividerMarkingWidth = ['interpolate', ['linear'], ['zoom'], 16.8, 2.2, 18.5, 4.1, 20, 5.8];
-const roadCenterMarkingWidth = ['interpolate', ['linear'], ['zoom'], 16.8, 2.8, 18.5, 5.2, 20, 7.2];
+const roadEdgeMarkingWidth = ['interpolate', ['linear'], ['zoom'], 16.8, 1.2, 18.5, 2.2, 20, 3.1];
+const roadDividerMarkingWidth = ['interpolate', ['linear'], ['zoom'], 16.8, 1.3, 18.5, 2.4, 20, 3.4];
+const roadCenterMarkingWidth = ['interpolate', ['linear'], ['zoom'], 16.8, 1.6, 18.5, 3, 20, 4.2];
 const busLaneWidth = ['interpolate', ['linear'], ['zoom'], 17.6, 2.6, 19, 4.2, 20, 5.4];
 const majorSeamWidth = [
     'interpolate',
@@ -402,19 +402,20 @@ function laneCountFilter(laneCount) {
 
 function laneDividerOffset(laneCount, dividerIndex) {
     const factor = dividerIndex - laneCount / 2;
+    const laneScale = 2 / laneCount;
 
     return [
         'interpolate',
         ['linear'],
         ['zoom'],
         17,
-        5.2 * factor,
+        ['*', 24 * factor * laneScale, roadWidthFactor],
         18,
-        7.6 * factor,
+        ['*', 34 * factor * laneScale, roadWidthFactor],
         19,
-        10.4 * factor,
+        ['*', 47 * factor * laneScale, roadWidthFactor],
         20,
-        13.6 * factor,
+        ['*', 64 * factor * laneScale, roadWidthFactor],
     ];
 }
 
@@ -431,8 +432,8 @@ function createLaneDividerLayers({ source, sourceLayer, filter }) {
                 minzoom: 17.2,
                 color: LANE_MARKING_COLOR,
                 width: roadDividerMarkingWidth,
-                opacity: ['interpolate', ['linear'], ['zoom'], 17.2, 0.82, 18.5, 0.96, 20, 1],
-                dasharray: [5.2, 2.8],
+                opacity: ['interpolate', ['linear'], ['zoom'], 17.2, 0.62, 18.5, 0.84, 20, 0.92],
+                dasharray: [4.8, 3],
                 offset: laneDividerOffset(laneCount, dividerIndex),
             }));
         }
@@ -451,7 +452,7 @@ function createTwoWayLaneDividerLayers({ source, sourceLayer, filter }) {
             minzoom: 17,
             color: CENTER_MARKING_COLOR,
             width: roadCenterMarkingWidth,
-            opacity: ['interpolate', ['linear'], ['zoom'], 17, 0.86, 18.5, 1],
+            opacity: ['interpolate', ['linear'], ['zoom'], 17, 0.68, 18.5, 0.9, 20, 0.96],
             offset: centerDoubleOffsetNegative,
         }),
         roadLineLayer({
@@ -462,7 +463,7 @@ function createTwoWayLaneDividerLayers({ source, sourceLayer, filter }) {
             minzoom: 17,
             color: CENTER_MARKING_COLOR,
             width: roadCenterMarkingWidth,
-            opacity: ['interpolate', ['linear'], ['zoom'], 17, 0.86, 18.5, 1],
+            opacity: ['interpolate', ['linear'], ['zoom'], 17, 0.68, 18.5, 0.9, 20, 0.96],
             offset: centerDoubleOffset,
         }),
         roadLineLayer({
@@ -473,8 +474,8 @@ function createTwoWayLaneDividerLayers({ source, sourceLayer, filter }) {
             minzoom: 17.3,
             color: CENTER_MARKING_COLOR,
             width: roadDividerMarkingWidth,
-            opacity: ['interpolate', ['linear'], ['zoom'], 17.3, 0.82, 18.5, 0.98, 20, 1],
-            dasharray: [5.2, 2.8],
+            opacity: ['interpolate', ['linear'], ['zoom'], 17.3, 0.64, 18.5, 0.86, 20, 0.94],
+            dasharray: [4.8, 3],
         }),
     ];
 }
@@ -489,7 +490,7 @@ function createRoadEdgeMarkingLayers({ source, sourceLayer, idPrefix, filter, ne
             minzoom: 16.8,
             color: MARKING_COLOR,
             width: roadEdgeMarkingWidth,
-            opacity: ['interpolate', ['linear'], ['zoom'], 16.8, 0.66, 18.5, 0.9, 20, 0.98],
+            opacity: ['interpolate', ['linear'], ['zoom'], 16.8, 0.52, 18.5, 0.78, 20, 0.9],
             offset: negativeOffset,
         }),
         roadLineLayer({
@@ -500,7 +501,7 @@ function createRoadEdgeMarkingLayers({ source, sourceLayer, idPrefix, filter, ne
             minzoom: 16.8,
             color: MARKING_COLOR,
             width: roadEdgeMarkingWidth,
-            opacity: ['interpolate', ['linear'], ['zoom'], 16.8, 0.66, 18.5, 0.9, 20, 0.98],
+            opacity: ['interpolate', ['linear'], ['zoom'], 16.8, 0.52, 18.5, 0.78, 20, 0.9],
             offset: positiveOffset,
         }),
     ];
