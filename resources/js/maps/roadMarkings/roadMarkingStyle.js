@@ -1,4 +1,4 @@
-import { ROAD_MARKING_ARROW_IMAGES } from './roadMarkingConfig';
+import { ROAD_MARKING_ARROW_IMAGES, ROAD_MARKING_TRAFFIC_SIGNAL_IMAGE } from './roadMarkingConfig';
 
 const ARROW_COLOR = 'rgba(232, 238, 245, 0.86)';
 const ARROW_SHADOW = 'rgba(16, 32, 51, 0.18)';
@@ -13,6 +13,63 @@ export function addRoadMarkingImages(map) {
     addArrowImage(map, ROAD_MARKING_ARROW_IMAGES.u_turn, drawUTurnArrow);
     addArrowImage(map, ROAD_MARKING_ARROW_IMAGES.slight_left, (context, metrics) => drawSlightArrow(context, metrics, 'left'));
     addArrowImage(map, ROAD_MARKING_ARROW_IMAGES.slight_right, (context, metrics) => drawSlightArrow(context, metrics, 'right'));
+    addTrafficSignalImage(map);
+}
+
+function addTrafficSignalImage(map) {
+    if (map.hasImage(ROAD_MARKING_TRAFFIC_SIGNAL_IMAGE)) {
+        return;
+    }
+
+    const width = 28;
+    const height = 46;
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext('2d');
+
+    if (!context) {
+        return;
+    }
+
+    context.clearRect(0, 0, width, height);
+    context.fillStyle = 'rgba(10, 19, 31, 0.76)';
+    roundRect(context, 6, 2, 16, 36, 5);
+    context.fill();
+
+    drawSignalLamp(context, 14, 9, '#EF4444');
+    drawSignalLamp(context, 14, 20, '#FBBF24');
+    drawSignalLamp(context, 14, 31, '#22C55E');
+
+    context.strokeStyle = 'rgba(237, 244, 251, 0.68)';
+    context.lineWidth = 2;
+    context.beginPath();
+    context.moveTo(14, 38);
+    context.lineTo(14, 44);
+    context.stroke();
+
+    map.addImage(ROAD_MARKING_TRAFFIC_SIGNAL_IMAGE, context.getImageData(0, 0, width, height), { pixelRatio: 2 });
+}
+
+function drawSignalLamp(context, x, y, color) {
+    context.fillStyle = color;
+    context.beginPath();
+    context.arc(x, y, 3.1, 0, Math.PI * 2);
+    context.fill();
+}
+
+function roundRect(context, x, y, width, height, radius) {
+    context.beginPath();
+    context.moveTo(x + radius, y);
+    context.lineTo(x + width - radius, y);
+    context.quadraticCurveTo(x + width, y, x + width, y + radius);
+    context.lineTo(x + width, y + height - radius);
+    context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    context.lineTo(x + radius, y + height);
+    context.quadraticCurveTo(x, y + height, x, y + height - radius);
+    context.lineTo(x, y + radius);
+    context.quadraticCurveTo(x, y, x + radius, y);
+    context.closePath();
 }
 
 function addArrowImage(map, id, draw) {

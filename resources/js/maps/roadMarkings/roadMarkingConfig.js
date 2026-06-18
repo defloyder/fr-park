@@ -17,3 +17,5 @@ export const ROAD_MARKING_ARROW_IMAGES = {
     slight_left: 'road-marking-arrow-slight-left',
     slight_right: 'road-marking-arrow-slight-right',
 };
+
+export const ROAD_MARKING_TRAFFIC_SIGNAL_IMAGE = 'road-marking-traffic-signal';

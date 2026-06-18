@@ -1,4 +1,4 @@
-import { ROAD_MARKING_ARROW_IMAGES, ROAD_MARKING_COLORS } from './roadMarkingConfig';
+import { ROAD_MARKING_ARROW_IMAGES, ROAD_MARKING_COLORS, ROAD_MARKING_TRAFFIC_SIGNAL_IMAGE } from './roadMarkingConfig';
 import { ROAD_MARKINGS_SOURCE_ID } from './roadMarkingSources';
 
 const featureTypeFilter = (featureType) => ['==', ['get', 'feature_type'], featureType];
@@ -22,6 +22,17 @@ const laneLineWidth = ['interpolate', ['linear'], ['zoom'], 16.5, 1.3, 18, 2.25,
 const doubleLineWidth = ['interpolate', ['linear'], ['zoom'], 16.7, 0.82, 18.5, 1.22, 20, 1.55];
 const edgeLineWidth = ['interpolate', ['linear'], ['zoom'], 16.5, 1.25, 18, 2.05, 20, 3.05];
 const stopLineWidth = ['interpolate', ['linear'], ['zoom'], 17, 3.6, 19, 6.4, 20, 8.2];
+const intersectionMaskWidth = [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    16.8,
+    ['*', ['coalesce', ['to-number', ['get', 'lanes_total']], 2], 7],
+    18.4,
+    ['*', ['coalesce', ['to-number', ['get', 'lanes_total']], 2], 11.5],
+    20,
+    ['*', ['coalesce', ['to-number', ['get', 'lanes_total']], 2], 17.5],
+];
 const roadMaskWidth = [
     'interpolate',
     ['linear'],
@@ -61,8 +72,8 @@ const baseRoadMarkingLayerDefinitions = [
         },
         paint: {
             'line-color': ROAD_MARKING_COLORS.bus,
-            'line-width': ['interpolate', ['linear'], ['zoom'], 16, 1.8, 18, 3.2, 20, 4.8],
-            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16, 0.22, 19, 0.42],
+            'line-width': ['interpolate', ['linear'], ['zoom'], 16, 1.8, 18, 3.4, 20, 5.4],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16, 0.28, 18.5, 0.56, 20, 0.72],
         },
     },
     {
@@ -207,6 +218,21 @@ const baseRoadMarkingLayerDefinitions = [
         },
     },
     {
+        id: 'road_marking_intersection_masks',
+        type: 'line',
+        filter: featureTypeFilter('intersection_mask'),
+        minzoom: 16.8,
+        layout: {
+            'line-cap': 'round',
+            'line-join': 'round',
+        },
+        paint: {
+            'line-color': '#8A9AAB',
+            'line-width': intersectionMaskWidth,
+            'line-opacity': 1,
+        },
+    },
+    {
         id: 'road_marking_crosswalks',
         type: 'line',
         filter: featureTypeFilter('crosswalk'),
@@ -274,13 +300,15 @@ const baseRoadMarkingLayerDefinitions = [
         minzoom: 18.4,
         layout: {
             'symbol-placement': 'line',
-            'symbol-spacing': ['interpolate', ['linear'], ['zoom'], 18.4, 110, 20, 165],
+            'symbol-spacing': ['interpolate', ['linear'], ['zoom'], 18.2, 120, 20, 180],
             'text-field': 'A',
-            'text-size': ['interpolate', ['linear'], ['zoom'], 18.4, 10, 20, 16],
+            'text-size': ['interpolate', ['linear'], ['zoom'], 18.2, 11, 20, 17],
             'text-font': ['literal', ['Noto Sans Regular']],
             'text-rotation-alignment': 'map',
             'text-pitch-alignment': 'map',
             'text-keep-upright': false,
+            'text-allow-overlap': true,
+            'text-ignore-placement': true,
         },
         paint: {
             'text-color': ROAD_MARKING_COLORS.bus,
@@ -293,7 +321,7 @@ const baseRoadMarkingLayerDefinitions = [
         id: 'road_marking_turn_arrows',
         type: 'symbol',
         filter: ['all', featureTypeFilter('turn_arrow'), ['!=', ['get', 'source'], 'osm_direction']],
-        minzoom: 18.8,
+        minzoom: 17.8,
         layout: {
             'icon-image': [
                 'match',
@@ -316,16 +344,54 @@ const baseRoadMarkingLayerDefinitions = [
                 ROAD_MARKING_ARROW_IMAGES.slight_right,
                 ROAD_MARKING_ARROW_IMAGES.through,
             ],
-            'icon-size': ['interpolate', ['linear'], ['zoom'], 18.8, 0.46, 19.5, 0.74, 20, 0.9],
+            'icon-size': ['interpolate', ['linear'], ['zoom'], 17.8, 0.48, 19, 0.82, 20, 1.08],
             'icon-rotate': ['coalesce', ['to-number', ['get', 'bearing']], 0],
             'icon-rotation-alignment': 'map',
             'icon-pitch-alignment': 'map',
             'icon-keep-upright': false,
-            'icon-allow-overlap': false,
-            'icon-ignore-placement': false,
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true,
         },
         paint: {
-            'icon-opacity': ['interpolate', ['linear'], ['zoom'], 18.8, 0.45, 19.5, 0.78, 20, 0.9],
+            'icon-opacity': ['interpolate', ['linear'], ['zoom'], 17.8, 0.48, 19, 0.82, 20, 0.94],
+        },
+    },
+    {
+        id: 'road_marking_speed_markings',
+        type: 'symbol',
+        filter: featureTypeFilter('speed_marking'),
+        minzoom: 18.3,
+        layout: {
+            'text-field': ['get', 'maxspeed'],
+            'text-size': ['interpolate', ['linear'], ['zoom'], 18.3, 10, 20, 16],
+            'text-font': ['literal', ['Noto Sans Bold']],
+            'text-rotate': ['coalesce', ['to-number', ['get', 'bearing']], 0],
+            'text-rotation-alignment': 'map',
+            'text-pitch-alignment': 'map',
+            'text-keep-upright': false,
+            'text-allow-overlap': false,
+            'text-ignore-placement': false,
+        },
+        paint: {
+            'text-color': ROAD_MARKING_COLORS.brightWhite,
+            'text-opacity': ['interpolate', ['linear'], ['zoom'], 18.3, 0.46, 19.5, 0.8, 20, 0.9],
+            'text-halo-color': 'rgba(35, 50, 68, 0.28)',
+            'text-halo-width': 0.8,
+        },
+    },
+    {
+        id: 'road_marking_traffic_signals',
+        type: 'symbol',
+        filter: featureTypeFilter('traffic_signal'),
+        minzoom: 18.2,
+        layout: {
+            'icon-image': ROAD_MARKING_TRAFFIC_SIGNAL_IMAGE,
+            'icon-size': ['interpolate', ['linear'], ['zoom'], 18.2, 0.42, 20, 0.72],
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true,
+        },
+        paint: {
+            'icon-opacity': ['interpolate', ['linear'], ['zoom'], 18.2, 0.52, 19.5, 0.92],
         },
     },
 ];
@@ -339,6 +405,7 @@ const bridgeReplayLayerIds = new Set([
     'road_marking_double_solid_left',
     'road_marking_double_solid_right',
     'road_marking_turn_arrows',
+    'road_marking_speed_markings',
 ]);
 
 const bridgeMaskLayerDefinition = {

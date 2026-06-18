@@ -27,6 +27,7 @@ const tunnelFilter = [
 ];
 
 const ASPHALT_COLOR = '#8A9AAB';
+const BRIDGE_EDGE_COLOR = '#A6B4C3';
 const MARKING_COLOR = '#F8FAFC';
 const LANE_MARKING_COLOR = '#EEF4FA';
 const CENTER_MARKING_COLOR = '#FFFFFF';
@@ -137,11 +138,11 @@ const majorUnifierWidth = [
     17,
     ['*', 78, roadWidthFactor],
     18,
-    ['*', 135, roadWidthFactor],
+    ['*', 124, roadWidthFactor],
     19,
-    ['*', 230, roadWidthFactor],
+    ['*', 205, roadWidthFactor],
     20,
-    ['*', 360, roadWidthFactor],
+    ['*', 318, roadWidthFactor],
 ];
 
 const motorwayMedianFillWidth = [
@@ -157,11 +158,11 @@ const motorwayMedianFillWidth = [
     17,
     ['*', 84, motorwayMergeWidthFactor],
     18,
-    ['*', 148, motorwayMergeWidthFactor],
+    ['*', 136, motorwayMergeWidthFactor],
     19,
-    ['*', 240, motorwayMergeWidthFactor],
+    ['*', 216, motorwayMergeWidthFactor],
     20,
-    ['*', 390, motorwayMergeWidthFactor],
+    ['*', 338, motorwayMergeWidthFactor],
 ];
 
 const minorSurfaceWidth = [
@@ -586,13 +587,76 @@ export function createBaseRoadDetailLayers({ source, sourceLayer = 'transportati
             width: majorSurfaceWidth,
         }),
     ];
+    const bridgeSurfaceLayers = [
+        roadLineLayer({
+            id: 'base_road_bridge_minor_casing',
+            source,
+            sourceLayer,
+            filter: ['all', minorRoadClassFilter, bridgeFilter],
+            minzoom: 15.2,
+            color: BRIDGE_EDGE_COLOR,
+            width: minorSeamWidth,
+            cap: 'round',
+        }),
+        roadLineLayer({
+            id: 'base_road_bridge_minor_surface',
+            source,
+            sourceLayer,
+            filter: ['all', minorRoadClassFilter, bridgeFilter],
+            minzoom: 15.2,
+            color: ASPHALT_COLOR,
+            width: minorSurfaceWidth,
+        }),
+        roadLineLayer({
+            id: 'base_road_bridge_ramp_casing',
+            source,
+            sourceLayer,
+            filter: ['all', linkRoadFilter, bridgeFilter],
+            minzoom: 14.8,
+            color: BRIDGE_EDGE_COLOR,
+            width: rampSeamWidth,
+            cap: 'round',
+        }),
+        roadLineLayer({
+            id: 'base_road_bridge_ramp_surface',
+            source,
+            sourceLayer,
+            filter: ['all', linkRoadFilter, bridgeFilter],
+            minzoom: 14.8,
+            color: ASPHALT_COLOR,
+            width: rampSurfaceWidth,
+        }),
+        roadLineLayer({
+            id: 'base_road_bridge_major_casing',
+            source,
+            sourceLayer,
+            filter: ['all', majorFilter, bridgeFilter],
+            minzoom: 14,
+            color: BRIDGE_EDGE_COLOR,
+            width: majorSeamWidth,
+            cap: 'round',
+        }),
+        roadLineLayer({
+            id: 'base_road_bridge_major_surface',
+            source,
+            sourceLayer,
+            filter: ['all', majorFilter, bridgeFilter],
+            minzoom: 14,
+            color: ASPHALT_COLOR,
+            width: majorSurfaceWidth,
+        }),
+    ];
 
     if (!includeMarkings) {
-        return surfaceLayers;
+        return [
+            ...surfaceLayers,
+            ...bridgeSurfaceLayers,
+        ];
     }
 
     return [
         ...surfaceLayers,
+        ...bridgeSurfaceLayers,
         ...createRoadEdgeMarkingLayers({
             source,
             sourceLayer,
