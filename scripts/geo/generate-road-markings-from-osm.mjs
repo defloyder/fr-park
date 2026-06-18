@@ -683,7 +683,21 @@ function addIntersectionMasks(features, intersectionNodes) {
 
             if (node.hasTrafficSignal) {
                 const stopCenter = offsetCoordinate(node.coordinate, bearing, distance + 2);
+                const crosswalkCenter = offsetCoordinate(node.coordinate, bearing, Math.max(8, distance - 4));
                 const halfWidth = Math.max(5, (approach.lanes_total * approach.lane_width_m) / 2 + 0.8);
+
+                features.push(makeLineFeature({
+                    id: `crosswalk/signal/${node.id}/${approach.road_id}/${approach.side}`,
+                    coordinates: [
+                        offsetCoordinate(crosswalkCenter, bearing + 90, -halfWidth),
+                        offsetCoordinate(crosswalkCenter, bearing + 90, halfWidth),
+                    ],
+                    properties: {
+                        feature_type: 'crosswalk',
+                        crosswalk_id: `crosswalk_signal_${node.id}_${approach.road_id}_${approach.side}`,
+                        road_id: approach.road_id,
+                    },
+                }));
 
                 features.push(makeLineFeature({
                     id: `stop_line/${node.id}/${approach.road_id}/${approach.side}`,

@@ -21,7 +21,7 @@ const markingColor = [
 const laneLineWidth = ['interpolate', ['linear'], ['zoom'], 16.5, 1.3, 18, 2.25, 20, 3.35];
 const doubleLineWidth = ['interpolate', ['linear'], ['zoom'], 16.7, 0.82, 18.5, 1.22, 20, 1.55];
 const edgeLineWidth = ['interpolate', ['linear'], ['zoom'], 16.5, 1.25, 18, 2.05, 20, 3.05];
-const stopLineWidth = ['interpolate', ['linear'], ['zoom'], 17, 3.6, 19, 6.4, 20, 8.2];
+const stopLineWidth = ['interpolate', ['linear'], ['zoom'], 16.5, 4.8, 18, 7.2, 20, 9.2];
 const intersectionMaskWidth = [
     'interpolate',
     ['linear'],
@@ -236,15 +236,15 @@ const baseRoadMarkingLayerDefinitions = [
         id: 'road_marking_crosswalks',
         type: 'line',
         filter: featureTypeFilter('crosswalk'),
-        minzoom: 17.2,
+        minzoom: 16.4,
         layout: {
             'line-cap': 'butt',
             'line-join': 'round',
         },
         paint: {
             'line-color': ROAD_MARKING_COLORS.brightWhite,
-            'line-width': ['interpolate', ['linear'], ['zoom'], 17.2, 6.2, 19, 11, 20, 14],
-            'line-opacity': ['interpolate', ['linear'], ['zoom'], 17.2, 0.62, 19, 0.9],
+            'line-width': ['interpolate', ['linear'], ['zoom'], 16.4, 8.5, 18, 13, 20, 18],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.4, 0.72, 18.5, 0.94],
             'line-dasharray': ['literal', [0.42, 0.52]],
         },
     },
@@ -252,7 +252,7 @@ const baseRoadMarkingLayerDefinitions = [
         id: 'road_marking_stop_lines',
         type: 'line',
         filter: featureTypeFilter('stop_line'),
-        minzoom: 17.2,
+        minzoom: 16.5,
         layout: {
             'line-cap': 'butt',
             'line-join': 'round',
@@ -260,22 +260,22 @@ const baseRoadMarkingLayerDefinitions = [
         paint: {
             'line-color': ROAD_MARKING_COLORS.brightWhite,
             'line-width': stopLineWidth,
-            'line-opacity': ['interpolate', ['linear'], ['zoom'], 17.2, 0.68, 19, 0.94],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.5, 0.58, 18.5, 0.88],
         },
     },
     {
         id: 'road_marking_yellow_box_lines',
         type: 'line',
         filter: featureTypeFilter('yellow_box_line'),
-        minzoom: 18,
+        minzoom: 16.8,
         layout: {
             'line-cap': 'butt',
             'line-join': 'round',
         },
         paint: {
             'line-color': ROAD_MARKING_COLORS.yellow,
-            'line-width': ['interpolate', ['linear'], ['zoom'], 18, 1.4, 20, 2.25],
-            'line-opacity': 0.86,
+            'line-width': ['interpolate', ['linear'], ['zoom'], 16.8, 1.8, 18.5, 2.6, 20, 3.2],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.8, 0.64, 18.5, 0.92],
         },
     },
     {
@@ -321,7 +321,7 @@ const baseRoadMarkingLayerDefinitions = [
         id: 'road_marking_turn_arrows',
         type: 'symbol',
         filter: ['all', featureTypeFilter('turn_arrow'), ['!=', ['get', 'source'], 'osm_direction']],
-        minzoom: 17.8,
+        minzoom: 16.9,
         layout: {
             'icon-image': [
                 'match',
@@ -344,7 +344,7 @@ const baseRoadMarkingLayerDefinitions = [
                 ROAD_MARKING_ARROW_IMAGES.slight_right,
                 ROAD_MARKING_ARROW_IMAGES.through,
             ],
-            'icon-size': ['interpolate', ['linear'], ['zoom'], 17.6, 0.66, 18.6, 1.08, 20, 1.55],
+            'icon-size': ['interpolate', ['linear'], ['zoom'], 16.9, 0.58, 18, 0.9, 20, 1.18],
             'icon-rotate': ['coalesce', ['to-number', ['get', 'bearing']], 0],
             'icon-rotation-alignment': 'map',
             'icon-pitch-alignment': 'map',
@@ -353,45 +353,45 @@ const baseRoadMarkingLayerDefinitions = [
             'icon-ignore-placement': true,
         },
         paint: {
-            'icon-opacity': ['interpolate', ['linear'], ['zoom'], 17.6, 0.66, 18.8, 0.9, 20, 1],
+            'icon-opacity': ['interpolate', ['linear'], ['zoom'], 16.9, 0.74, 18.4, 0.96, 20, 1],
         },
     },
     {
         id: 'road_marking_speed_markings',
         type: 'symbol',
         filter: featureTypeFilter('speed_marking'),
-        minzoom: 18.3,
+        minzoom: 17.1,
         layout: {
             'text-field': ['get', 'maxspeed'],
-            'text-size': ['interpolate', ['linear'], ['zoom'], 18.3, 10, 20, 16],
+            'text-size': ['interpolate', ['linear'], ['zoom'], 17.1, 13, 18.5, 16, 20, 20],
             'text-font': ['literal', ['Noto Sans Bold']],
             'text-rotate': ['coalesce', ['to-number', ['get', 'bearing']], 0],
             'text-rotation-alignment': 'map',
             'text-pitch-alignment': 'map',
             'text-keep-upright': false,
-            'text-allow-overlap': false,
-            'text-ignore-placement': false,
+            'text-allow-overlap': true,
+            'text-ignore-placement': true,
         },
         paint: {
             'text-color': ROAD_MARKING_COLORS.brightWhite,
-            'text-opacity': ['interpolate', ['linear'], ['zoom'], 18.3, 0.46, 19.5, 0.8, 20, 0.9],
-            'text-halo-color': 'rgba(35, 50, 68, 0.28)',
-            'text-halo-width': 0.8,
+            'text-opacity': ['interpolate', ['linear'], ['zoom'], 17.1, 0.62, 18.5, 0.88, 20, 0.96],
+            'text-halo-color': 'rgba(20, 32, 47, 0.5)',
+            'text-halo-width': 1.1,
         },
     },
     {
         id: 'road_marking_traffic_signals',
         type: 'symbol',
         filter: featureTypeFilter('traffic_signal'),
-        minzoom: 18.2,
+        minzoom: 16.8,
         layout: {
             'icon-image': ROAD_MARKING_TRAFFIC_SIGNAL_IMAGE,
-            'icon-size': ['interpolate', ['linear'], ['zoom'], 18.2, 0.42, 20, 0.72],
+            'icon-size': ['interpolate', ['linear'], ['zoom'], 16.8, 0.82, 18.4, 1.05, 20, 1.28],
             'icon-allow-overlap': true,
             'icon-ignore-placement': true,
         },
         paint: {
-            'icon-opacity': ['interpolate', ['linear'], ['zoom'], 18.2, 0.52, 19.5, 0.92],
+            'icon-opacity': ['interpolate', ['linear'], ['zoom'], 16.8, 0.84, 18.5, 1],
         },
     },
 ];
