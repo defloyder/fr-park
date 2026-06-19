@@ -27,11 +27,11 @@ const intersectionMaskWidth = [
     ['linear'],
     ['zoom'],
     16.8,
-    ['*', ['coalesce', ['to-number', ['get', 'lanes_total']], 2], 7],
+    ['*', ['coalesce', ['to-number', ['get', 'lanes_total']], 2], 9],
     18.4,
-    ['*', ['coalesce', ['to-number', ['get', 'lanes_total']], 2], 11.5],
+    ['*', ['coalesce', ['to-number', ['get', 'lanes_total']], 2], 14],
     20,
-    ['*', ['coalesce', ['to-number', ['get', 'lanes_total']], 2], 17.5],
+    ['*', ['coalesce', ['to-number', ['get', 'lanes_total']], 2], 21],
 ];
 const roadMaskWidth = [
     'interpolate',
@@ -72,8 +72,8 @@ const baseRoadMarkingLayerDefinitions = [
         },
         paint: {
             'line-color': ROAD_MARKING_COLORS.bus,
-            'line-width': ['interpolate', ['linear'], ['zoom'], 16, 1.8, 18, 3.4, 20, 5.4],
-            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16, 0.28, 18.5, 0.56, 20, 0.72],
+            'line-width': ['interpolate', ['linear'], ['zoom'], 16, 2.2, 18, 3.8, 20, 5.8],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16, 0.34, 18.5, 0.62, 20, 0.76],
         },
     },
     {
@@ -243,9 +243,9 @@ const baseRoadMarkingLayerDefinitions = [
         },
         paint: {
             'line-color': ROAD_MARKING_COLORS.brightWhite,
-            'line-width': ['interpolate', ['linear'], ['zoom'], 16.4, 8.5, 18, 13, 20, 18],
-            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.4, 0.72, 18.5, 0.94],
-            'line-dasharray': ['literal', [0.42, 0.52]],
+            'line-width': ['interpolate', ['linear'], ['zoom'], 16.4, 10, 18, 15, 20, 21],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.4, 0.76, 18.5, 0.96],
+            'line-dasharray': ['literal', [0.36, 0.46]],
         },
     },
     {
@@ -274,8 +274,8 @@ const baseRoadMarkingLayerDefinitions = [
         },
         paint: {
             'line-color': ROAD_MARKING_COLORS.yellow,
-            'line-width': ['interpolate', ['linear'], ['zoom'], 16.8, 1.8, 18.5, 2.6, 20, 3.2],
-            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.8, 0.64, 18.5, 0.92],
+            'line-width': ['interpolate', ['linear'], ['zoom'], 16.8, 1.4, 18.5, 2, 20, 2.4],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.8, 0.5, 18.5, 0.78],
         },
     },
     {
@@ -344,12 +344,12 @@ const baseRoadMarkingLayerDefinitions = [
                 ROAD_MARKING_ARROW_IMAGES.slight_right,
                 ROAD_MARKING_ARROW_IMAGES.through,
             ],
-            'icon-size': ['interpolate', ['linear'], ['zoom'], 16.9, 0.58, 18, 0.9, 20, 1.18],
+            'icon-size': ['interpolate', ['linear'], ['zoom'], 16.9, 0.5, 18, 0.76, 20, 0.98],
             'icon-rotate': ['coalesce', ['to-number', ['get', 'bearing']], 0],
             'icon-rotation-alignment': 'map',
             'icon-pitch-alignment': 'map',
             'icon-keep-upright': false,
-            'icon-allow-overlap': true,
+            'icon-allow-overlap': false,
             'icon-ignore-placement': true,
         },
         paint: {

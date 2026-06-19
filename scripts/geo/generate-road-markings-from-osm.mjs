@@ -501,14 +501,22 @@ function addBusLanes(features, element, roadId, coordinates, laneModel, detailQu
         return;
     }
 
+    const busDirections = new Set();
+
     for (const lane of laneModel.lanes) {
         if (lane.type !== 'bus') {
             continue;
         }
 
+        if (busDirections.has(lane.direction)) {
+            continue;
+        }
+
+        busDirections.add(lane.direction);
+
         features.push(makeLineFeature({
             id: `bus_lane/${element.id}/${lane.index}`,
-            coordinates: offsetLineString(coordinates, lane.offsetMeters),
+            coordinates: offsetLineString(coordinates, getBusLaneRenderOffset(lane, laneModel)),
             properties: {
                 feature_type: 'bus_lane',
                 road_id: roadId,
@@ -552,7 +560,7 @@ function addCrosswalks(features, element, roadId, coordinates, laneModel, roadCl
         }
 
         const bearing = getBearing(previous, next);
-        const halfWidth = Math.max(5, (laneModel.total * laneModel.laneWidthMeters) / 2 + 1.5);
+        const halfWidth = getCrosswalkHalfWidth(laneModel);
         const line = [
             offsetCoordinate(center, bearing + 90, -halfWidth),
             offsetCoordinate(center, bearing + 90, halfWidth),
@@ -667,7 +675,7 @@ function addIntersectionMasks(features, intersectionNodes) {
             }
 
             const bearing = getBearing(node.coordinate, approach.neighbor);
-            const distance = Math.min(34, Math.max(15, approach.lanes_total * 4.5));
+            const distance = Math.min(52, Math.max(24, approach.lanes_total * 6));
             const end = offsetCoordinate(node.coordinate, bearing, distance);
 
             features.push(makeLineFeature({
@@ -684,7 +692,7 @@ function addIntersectionMasks(features, intersectionNodes) {
             if (node.hasTrafficSignal) {
                 const stopCenter = offsetCoordinate(node.coordinate, bearing, distance + 2);
                 const crosswalkCenter = offsetCoordinate(node.coordinate, bearing, Math.max(8, distance - 4));
-                const halfWidth = Math.max(5, (approach.lanes_total * approach.lane_width_m) / 2 + 0.8);
+                const halfWidth = Math.min(30, Math.max(9, (approach.lanes_total * approach.lane_width_m) / 2 + 4));
 
                 features.push(makeLineFeature({
                     id: `crosswalk/signal/${node.id}/${approach.road_id}/${approach.side}`,
@@ -718,12 +726,12 @@ function addIntersectionMasks(features, intersectionNodes) {
 
 function addYellowBoxMarkings(features, intersectionNodes) {
     for (const node of intersectionNodes) {
-        if (!node.hasTrafficSignal || node.totalLanes < 8) {
+        if (!node.hasTrafficSignal || node.totalLanes < 10 || (node.roads.size < 3 && node.approaches.length < 5)) {
             continue;
         }
 
-        const size = Math.min(24, Math.max(12, node.totalLanes * 1.7));
-        const spacing = 4.5;
+        const size = Math.min(10, Math.max(6, Math.sqrt(node.totalLanes) * 2.2));
+        const spacing = 3.6;
         let lineIndex = 0;
 
         for (let offset = -size; offset <= size; offset += spacing) {
@@ -750,6 +758,20 @@ function shouldRenderLaneMarkings(roadClass, isLink) {
 
 function shouldRenderRoadEdges(roadClass, isLink) {
     return !isLink && ['motorway', 'trunk', 'primary'].includes(roadClass);
+}
+
+function getBusLaneRenderOffset(lane, laneModel) {
+    const edgeOffset = ((laneModel.total - 1) / 2) * laneModel.laneWidthMeters;
+
+    if (lane.direction === 'backward') {
+        return -edgeOffset;
+    }
+
+    return edgeOffset;
+}
+
+function getCrosswalkHalfWidth(laneModel) {
+    return Math.min(30, Math.max(9, (laneModel.total * laneModel.laneWidthMeters) / 2 + 4));
 }
 
 function getIntersectionNodes(elements) {

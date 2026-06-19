@@ -119,11 +119,11 @@ const majorSurfaceWidth = [
     17,
     ['*', 58, roadWidthFactor],
     18,
-    ['*', 92, roadWidthFactor],
+    ['*', 104, roadWidthFactor],
     19,
-    ['*', 136, roadWidthFactor],
+    ['*', 158, roadWidthFactor],
     20,
-    ['*', 190, roadWidthFactor],
+    ['*', 230, roadWidthFactor],
 ];
 
 const majorUnifierWidth = [
@@ -195,11 +195,11 @@ const rampSurfaceWidth = [
     17,
     ['*', 26, rampWidthFactor],
     18,
-    ['*', 40, rampWidthFactor],
+    ['*', 46, rampWidthFactor],
     19,
-    ['*', 58, rampWidthFactor],
+    ['*', 68, rampWidthFactor],
     20,
-    ['*', 80, rampWidthFactor],
+    ['*', 96, rampWidthFactor],
 ];
 
 const roadEdgeMarkingWidth = ['interpolate', ['linear'], ['zoom'], 16.8, 1.2, 18.5, 2.2, 20, 3.1];
