@@ -21,7 +21,7 @@ const markingColor = [
 const laneLineWidth = ['interpolate', ['linear'], ['zoom'], 16.5, 1.3, 18, 2.25, 20, 3.35];
 const doubleLineWidth = ['interpolate', ['linear'], ['zoom'], 16.7, 0.82, 18.5, 1.22, 20, 1.55];
 const edgeLineWidth = ['interpolate', ['linear'], ['zoom'], 16.5, 1.25, 18, 2.05, 20, 3.05];
-const stopLineWidth = ['interpolate', ['linear'], ['zoom'], 16.5, 4.8, 18, 7.2, 20, 9.2];
+const stopLineWidth = ['interpolate', ['linear'], ['zoom'], 16.5, 3.6, 18, 5.4, 20, 7];
 const intersectionMaskWidth = [
     'interpolate',
     ['linear'],
@@ -233,6 +233,21 @@ const baseRoadMarkingLayerDefinitions = [
         },
     },
     {
+        id: 'road_marking_yellow_box_lines',
+        type: 'line',
+        filter: featureTypeFilter('yellow_box_line'),
+        minzoom: 16.8,
+        layout: {
+            'line-cap': 'butt',
+            'line-join': 'round',
+        },
+        paint: {
+            'line-color': ROAD_MARKING_COLORS.yellow,
+            'line-width': ['interpolate', ['linear'], ['zoom'], 16.8, 1, 18.5, 1.45, 20, 1.8],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.8, 0.42, 18.5, 0.66],
+        },
+    },
+    {
         id: 'road_marking_crosswalks',
         type: 'line',
         filter: featureTypeFilter('crosswalk'),
@@ -243,9 +258,9 @@ const baseRoadMarkingLayerDefinitions = [
         },
         paint: {
             'line-color': ROAD_MARKING_COLORS.brightWhite,
-            'line-width': ['interpolate', ['linear'], ['zoom'], 16.4, 10, 18, 15, 20, 21],
-            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.4, 0.76, 18.5, 0.96],
-            'line-dasharray': ['literal', [0.36, 0.46]],
+            'line-width': ['interpolate', ['linear'], ['zoom'], 16.4, 7.5, 18, 11, 20, 15],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.4, 0.72, 18.5, 0.94],
+            'line-dasharray': ['literal', [0.42, 0.5]],
         },
     },
     {
@@ -260,22 +275,7 @@ const baseRoadMarkingLayerDefinitions = [
         paint: {
             'line-color': ROAD_MARKING_COLORS.brightWhite,
             'line-width': stopLineWidth,
-            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.5, 0.58, 18.5, 0.88],
-        },
-    },
-    {
-        id: 'road_marking_yellow_box_lines',
-        type: 'line',
-        filter: featureTypeFilter('yellow_box_line'),
-        minzoom: 16.8,
-        layout: {
-            'line-cap': 'butt',
-            'line-join': 'round',
-        },
-        paint: {
-            'line-color': ROAD_MARKING_COLORS.yellow,
-            'line-width': ['interpolate', ['linear'], ['zoom'], 16.8, 1.4, 18.5, 2, 20, 2.4],
-            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.8, 0.5, 18.5, 0.78],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.5, 0.56, 18.5, 0.86],
         },
     },
     {
@@ -344,7 +344,7 @@ const baseRoadMarkingLayerDefinitions = [
                 ROAD_MARKING_ARROW_IMAGES.slight_right,
                 ROAD_MARKING_ARROW_IMAGES.through,
             ],
-            'icon-size': ['interpolate', ['linear'], ['zoom'], 16.9, 0.5, 18, 0.76, 20, 0.98],
+            'icon-size': ['interpolate', ['linear'], ['zoom'], 16.9, 0.44, 18, 0.66, 20, 0.82],
             'icon-rotate': ['coalesce', ['to-number', ['get', 'bearing']], 0],
             'icon-rotation-alignment': 'map',
             'icon-pitch-alignment': 'map',

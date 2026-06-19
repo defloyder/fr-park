@@ -351,7 +351,7 @@ function sleep(ms) {
 
 function buildRoadMarkingFeatures(elements) {
     const features = [];
-    const intersectionNodes = getIntersectionNodes(elements);
+    const intersectionNodes = clusterIntersectionNodes(getIntersectionNodes(elements));
 
     for (const element of elements) {
         const tags = element.tags ?? {};
@@ -623,7 +623,7 @@ function addTurnArrows(features, element, roadId, coordinates, laneModel, detail
     }
 
     const isMajor = ['motorway', 'trunk', 'primary', 'secondary'].includes(roadClass);
-    const ratios = isMajor && !isLink ? [0.84] : [0.76];
+    const ratios = isMajor && !isLink ? [0.64] : [0.68];
 
     for (const lane of laneModel.lanes) {
         const turn = lane.turn && lane.turn !== 'none' ? lane.turn : 'none';
@@ -675,7 +675,7 @@ function addIntersectionMasks(features, intersectionNodes) {
             }
 
             const bearing = getBearing(node.coordinate, approach.neighbor);
-            const distance = Math.min(52, Math.max(24, approach.lanes_total * 6));
+            const distance = Math.min(38, Math.max(18, approach.lanes_total * 4.8));
             const end = offsetCoordinate(node.coordinate, bearing, distance);
 
             features.push(makeLineFeature({
@@ -691,8 +691,8 @@ function addIntersectionMasks(features, intersectionNodes) {
 
             if (node.hasTrafficSignal) {
                 const stopCenter = offsetCoordinate(node.coordinate, bearing, distance + 2);
-                const crosswalkCenter = offsetCoordinate(node.coordinate, bearing, Math.max(8, distance - 4));
-                const halfWidth = Math.min(30, Math.max(9, (approach.lanes_total * approach.lane_width_m) / 2 + 4));
+                const crosswalkCenter = offsetCoordinate(node.coordinate, bearing, Math.max(7, distance - 5));
+                const halfWidth = Math.min(22, Math.max(7, (approach.lanes_total * approach.lane_width_m) / 2 + 1.6));
 
                 features.push(makeLineFeature({
                     id: `crosswalk/signal/${node.id}/${approach.road_id}/${approach.side}`,
@@ -726,11 +726,11 @@ function addIntersectionMasks(features, intersectionNodes) {
 
 function addYellowBoxMarkings(features, intersectionNodes) {
     for (const node of intersectionNodes) {
-        if (!node.hasTrafficSignal || node.totalLanes < 10 || (node.roads.size < 3 && node.approaches.length < 5)) {
+        if (!node.hasTrafficSignal || node.totalLanes < 10 || node.roads.size < 3) {
             continue;
         }
 
-        const size = Math.min(10, Math.max(6, Math.sqrt(node.totalLanes) * 2.2));
+        const size = Math.min(6.5, Math.max(4.5, Math.sqrt(node.totalLanes) * 1.4));
         const spacing = 3.6;
         let lineIndex = 0;
 
@@ -771,7 +771,75 @@ function getBusLaneRenderOffset(lane, laneModel) {
 }
 
 function getCrosswalkHalfWidth(laneModel) {
-    return Math.min(30, Math.max(9, (laneModel.total * laneModel.laneWidthMeters) / 2 + 4));
+    return Math.min(22, Math.max(7, (laneModel.total * laneModel.laneWidthMeters) / 2 + 1.6));
+}
+
+function clusterIntersectionNodes(nodes) {
+    const clusters = [];
+    const clusterDistanceMeters = 28;
+
+    for (const node of nodes) {
+        let cluster = clusters.find((item) => distanceMeters(item.coordinate, node.coordinate) <= clusterDistanceMeters);
+
+        if (!cluster) {
+            cluster = {
+                id: node.id,
+                coordinate: node.coordinate,
+                roads: new Set(),
+                approaches: [],
+                totalLanes: 0,
+                hasTrafficSignal: false,
+                hasMajorRoad: false,
+                count: 0,
+            };
+            clusters.push(cluster);
+        }
+
+        const nextCount = cluster.count + 1;
+        cluster.coordinate = [
+            ((cluster.coordinate[0] * cluster.count) + node.coordinate[0]) / nextCount,
+            ((cluster.coordinate[1] * cluster.count) + node.coordinate[1]) / nextCount,
+        ];
+        cluster.count = nextCount;
+        cluster.hasTrafficSignal = cluster.hasTrafficSignal || node.hasTrafficSignal;
+        cluster.hasMajorRoad = cluster.hasMajorRoad || node.hasMajorRoad;
+
+        for (const roadId of node.roads) {
+            cluster.roads.add(roadId);
+        }
+
+        cluster.totalLanes = Math.max(cluster.totalLanes, node.totalLanes);
+        cluster.approaches.push(...node.approaches);
+    }
+
+    return clusters
+        .map((cluster) => ({
+            ...cluster,
+            approaches: dedupeIntersectionApproaches(cluster),
+        }))
+        .filter((cluster) => cluster.roads.size >= 2 && cluster.totalLanes >= 5 && cluster.hasMajorRoad && cluster.hasTrafficSignal);
+}
+
+function dedupeIntersectionApproaches(cluster) {
+    const byKey = new Map();
+
+    for (const approach of cluster.approaches) {
+        if (!approach.neighbor) {
+            continue;
+        }
+
+        const bearingBucket = Math.round(getBearing(cluster.coordinate, approach.neighbor) / 30) * 30;
+        const key = `${approach.road_id}:${bearingBucket}`;
+        const previous = byKey.get(key);
+
+        if (!previous || approach.lanes_total > previous.lanes_total) {
+            byKey.set(key, approach);
+        }
+    }
+
+    return [...byKey.values()]
+        .sort((left, right) => right.lanes_total - left.lanes_total)
+        .slice(0, 8);
 }
 
 function getIntersectionNodes(elements) {
