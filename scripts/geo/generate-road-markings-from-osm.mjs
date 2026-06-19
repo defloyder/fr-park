@@ -439,7 +439,7 @@ function addRoadEdges(features, element, roadId, coordinates, laneModel, detailQ
         return;
     }
 
-    const edgeOffset = Math.max(1.9, (laneModel.total * laneModel.laneWidthMeters) / 2);
+    const edgeOffset = Math.max(1.6, (((laneModel.total - 1) / 2) * laneModel.laneWidthMeters) + 0.75);
 
     for (const [side, offsetMeters] of [['left', -edgeOffset], ['right', edgeOffset]]) {
         features.push(makeLineFeature({
@@ -692,7 +692,7 @@ function addIntersectionMasks(features, intersectionNodes) {
             if (node.hasTrafficSignal) {
                 const stopCenter = offsetCoordinate(node.coordinate, bearing, distance + 2);
                 const crosswalkCenter = offsetCoordinate(node.coordinate, bearing, Math.max(7, distance - 5));
-                const halfWidth = Math.min(22, Math.max(7, (approach.lanes_total * approach.lane_width_m) / 2 + 1.6));
+                const halfWidth = Math.min(18, Math.max(6, (approach.lanes_total * approach.lane_width_m) / 2 + 0.8));
 
                 features.push(makeLineFeature({
                     id: `crosswalk/signal/${node.id}/${approach.road_id}/${approach.side}`,
@@ -730,24 +730,26 @@ function addYellowBoxMarkings(features, intersectionNodes) {
             continue;
         }
 
-        const size = Math.min(6.5, Math.max(4.5, Math.sqrt(node.totalLanes) * 1.4));
-        const spacing = 3.6;
+        const size = Math.min(8, Math.max(5.2, Math.sqrt(node.totalLanes) * 1.55));
+        const spacing = 3.4;
         let lineIndex = 0;
 
         for (let offset = -size; offset <= size; offset += spacing) {
-            const start = offsetFromCenter(node.coordinate, offset - size, -size);
-            const finish = offsetFromCenter(node.coordinate, offset + size, size);
+            for (const direction of [-1, 1]) {
+                const start = offsetFromBearingAxes(node.coordinate, node.dominantBearing, offset - size, -size * direction);
+                const finish = offsetFromBearingAxes(node.coordinate, node.dominantBearing, offset + size, size * direction);
 
-            features.push(makeLineFeature({
-                id: `yellow_box/${node.id}/${lineIndex}`,
-                coordinates: [start, finish],
-                properties: {
-                    feature_type: 'yellow_box_line',
-                    box_line_id: `box_${node.id}_${lineIndex}`,
-                },
-            }));
+                features.push(makeLineFeature({
+                    id: `yellow_box/${node.id}/${lineIndex}`,
+                    coordinates: [start, finish],
+                    properties: {
+                        feature_type: 'yellow_box_line',
+                        box_line_id: `box_${node.id}_${lineIndex}`,
+                    },
+                }));
 
-            lineIndex += 1;
+                lineIndex += 1;
+            }
         }
     }
 }
@@ -771,7 +773,7 @@ function getBusLaneRenderOffset(lane, laneModel) {
 }
 
 function getCrosswalkHalfWidth(laneModel) {
-    return Math.min(22, Math.max(7, (laneModel.total * laneModel.laneWidthMeters) / 2 + 1.6));
+    return Math.min(18, Math.max(6, (laneModel.total * laneModel.laneWidthMeters) / 2 + 0.8));
 }
 
 function clusterIntersectionNodes(nodes) {
@@ -790,6 +792,7 @@ function clusterIntersectionNodes(nodes) {
                 totalLanes: 0,
                 hasTrafficSignal: false,
                 hasMajorRoad: false,
+                dominantBearing: 0,
                 count: 0,
             };
             clusters.push(cluster);
@@ -816,8 +819,17 @@ function clusterIntersectionNodes(nodes) {
         .map((cluster) => ({
             ...cluster,
             approaches: dedupeIntersectionApproaches(cluster),
+            dominantBearing: getDominantIntersectionBearing(cluster),
         }))
         .filter((cluster) => cluster.roads.size >= 2 && cluster.totalLanes >= 5 && cluster.hasMajorRoad && cluster.hasTrafficSignal);
+}
+
+function getDominantIntersectionBearing(cluster) {
+    const approach = [...cluster.approaches]
+        .filter((item) => item.neighbor)
+        .sort((left, right) => right.lanes_total - left.lanes_total)[0];
+
+    return approach ? getBearing(cluster.coordinate, approach.neighbor) : 0;
 }
 
 function dedupeIntersectionApproaches(cluster) {
@@ -951,6 +963,10 @@ function normalizeMaxspeed(value) {
 
 function offsetFromCenter(center, eastMeters, northMeters) {
     return offsetCoordinate(offsetCoordinate(center, 90, eastMeters), 0, northMeters);
+}
+
+function offsetFromBearingAxes(center, bearing, acrossMeters, alongMeters) {
+    return offsetCoordinate(offsetCoordinate(center, bearing + 90, acrossMeters), bearing, alongMeters);
 }
 
 function makeLineFeature({ id, coordinates, properties }) {

@@ -119,11 +119,11 @@ const majorSurfaceWidth = [
     17,
     ['*', 58, roadWidthFactor],
     18,
-    ['*', 114, roadWidthFactor],
+    ['*', 142, roadWidthFactor],
     19,
-    ['*', 178, roadWidthFactor],
+    ['*', 235, roadWidthFactor],
     20,
-    ['*', 270, roadWidthFactor],
+    ['*', 360, roadWidthFactor],
 ];
 
 const majorUnifierWidth = [
@@ -139,11 +139,11 @@ const majorUnifierWidth = [
     17,
     ['*', 78, roadWidthFactor],
     18,
-    ['*', 124, roadWidthFactor],
+    ['*', 158, roadWidthFactor],
     19,
-    ['*', 205, roadWidthFactor],
+    ['*', 272, roadWidthFactor],
     20,
-    ['*', 318, roadWidthFactor],
+    ['*', 430, roadWidthFactor],
 ];
 
 const motorwayMedianFillWidth = [
@@ -159,11 +159,11 @@ const motorwayMedianFillWidth = [
     17,
     ['*', 84, motorwayMergeWidthFactor],
     18,
-    ['*', 136, motorwayMergeWidthFactor],
+    ['*', 164, motorwayMergeWidthFactor],
     19,
-    ['*', 216, motorwayMergeWidthFactor],
+    ['*', 288, motorwayMergeWidthFactor],
     20,
-    ['*', 338, motorwayMergeWidthFactor],
+    ['*', 460, motorwayMergeWidthFactor],
 ];
 
 const minorSurfaceWidth = [
@@ -195,11 +195,11 @@ const rampSurfaceWidth = [
     17,
     ['*', 26, rampWidthFactor],
     18,
-    ['*', 52, rampWidthFactor],
+    ['*', 66, rampWidthFactor],
     19,
-    ['*', 80, rampWidthFactor],
+    ['*', 112, rampWidthFactor],
     20,
-    ['*', 116, rampWidthFactor],
+    ['*', 164, rampWidthFactor],
 ];
 
 const roadEdgeMarkingWidth = ['interpolate', ['linear'], ['zoom'], 16.8, 1.2, 18.5, 2.2, 20, 3.1];
@@ -219,11 +219,11 @@ const majorSeamWidth = [
     17,
     ['*', 59, roadWidthFactor],
     18,
-    ['*', 84, roadWidthFactor],
+    ['*', 156, roadWidthFactor],
     19,
-    ['*', 122, roadWidthFactor],
+    ['*', 258, roadWidthFactor],
     20,
-    ['*', 168, roadWidthFactor],
+    ['*', 394, roadWidthFactor],
 ];
 const majorBridgeShadowWidth = [
     'interpolate',
@@ -238,11 +238,11 @@ const majorBridgeShadowWidth = [
     17,
     ['*', 74, roadWidthFactor],
     18,
-    ['*', 104, roadWidthFactor],
+    ['*', 172, roadWidthFactor],
     19,
-    ['*', 148, roadWidthFactor],
+    ['*', 286, roadWidthFactor],
     20,
-    ['*', 202, roadWidthFactor],
+    ['*', 432, roadWidthFactor],
 ];
 
 const minorSeamWidth = [
@@ -291,11 +291,11 @@ const rampSeamWidth = [
     17,
     ['*', 24.5, rampWidthFactor],
     18,
-    ['*', 35.9, rampWidthFactor],
+    ['*', 72, rampWidthFactor],
     19,
-    ['*', 51.9, rampWidthFactor],
+    ['*', 122, rampWidthFactor],
     20,
-    ['*', 70, rampWidthFactor],
+    ['*', 178, rampWidthFactor],
 ];
 const rampBridgeShadowWidth = [
     'interpolate',
@@ -308,11 +308,11 @@ const rampBridgeShadowWidth = [
     17,
     ['*', 32, rampWidthFactor],
     18,
-    ['*', 46, rampWidthFactor],
+    ['*', 80, rampWidthFactor],
     19,
-    ['*', 64, rampWidthFactor],
+    ['*', 134, rampWidthFactor],
     20,
-    ['*', 86, rampWidthFactor],
+    ['*', 194, rampWidthFactor],
 ];
 const centerDoubleOffset = ['interpolate', ['linear'], ['zoom'], 17, 1.1, 18.5, 1.9, 20, 2.8];
 const centerDoubleOffsetNegative = ['interpolate', ['linear'], ['zoom'], 17, -1.1, 18.5, -1.9, 20, -2.8];
