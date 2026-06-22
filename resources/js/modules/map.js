@@ -57,6 +57,27 @@ const ROUTE_CACHE_STORAGE_KEY = 'auralith:last-driving-route';
 const TRAFFIC_LAYER_STORAGE_KEY = 'auralith:traffic-enabled';
 const USER_LOCATION_ICON_STORAGE_KEY = 'auralith:user-location-icon';
 const USER_LOCATION_ICON_PREFIX = 'user-location-';
+const ROAD_MARKING_LAYER_PATTERNS = [
+    /^road_marking_/,
+    /^base_road_lane_marking_/,
+    /^base_road_center_/,
+    /^base_road_.*_edge_/,
+    /^lane_markings_/,
+    /^turn_arrows$/,
+    /^crosswalks$/,
+    /^stop_lines$/,
+    /^traffic_calming$/,
+    /^traffic_islands$/,
+    /^gore_areas$/,
+    /^gore_area_hatching$/,
+    /^road_lanes$/,
+    /^parking_lanes$/,
+    /^bus_lanes$/,
+    /^road_edges$/,
+    /^road_centerlines$/,
+    /^road_surfaces$/,
+];
+const ROAD_MARKING_SOURCE_IDS = ['road-markings', 'road-details'];
 const FOLLOW_ZOOM = 17.75;
 const FOLLOW_PITCH = 68;
 const FOLLOW_SCREEN_OFFSET_RATIO = 0.24;
@@ -758,6 +779,10 @@ function initMapLibreMap() {
         console.warn('MapLibre error', event.error);
     });
 
+    map.on('styledata', () => {
+        removeRoadMarkingLayers();
+    });
+
     bindLayerSwitcher();
     bindTrafficToggle();
     bindMapControlButtons();
@@ -783,8 +808,12 @@ function initMapLibreMap() {
             addSpeedCameraSourceAndLayer();
             addTrafficFlowLayer();
             if (ENABLE_ROAD_DETAILS) {
-                addRoadDetails(map, { baseRoadSource: ROAD_SOURCE_ID, includeDataset: false, includeBaseRoadMarkings: false });
+                addRoadDetails(map, {
+                    baseRoadSource: ROAD_SOURCE_ID,
+                    includeBaseRoadMarkings: false,
+                });
             }
+            removeRoadMarkingLayers();
             bindMapEvents();
             window.dispatchEvent(new CustomEvent('map:ready'));
         } catch (error) {
@@ -806,6 +835,38 @@ function initMapLibreMap() {
             scheduleParkingSpotsLoad();
         }
     });
+}
+
+function removeRoadMarkingLayers() {
+    if (!map) {
+        return;
+    }
+
+    const layers = map.getStyle()?.layers ?? [];
+
+    for (const layer of [...layers].reverse()) {
+        if (!ROAD_MARKING_LAYER_PATTERNS.some((pattern) => pattern.test(layer.id))) {
+            continue;
+        }
+
+        try {
+            if (map.getLayer(layer.id)) {
+                map.removeLayer(layer.id);
+            }
+        } catch {
+            // Layer removal can race style updates; the next styledata pass retries.
+        }
+    }
+
+    for (const sourceId of ROAD_MARKING_SOURCE_IDS) {
+        try {
+            if (map.getSource(sourceId)) {
+                map.removeSource(sourceId);
+            }
+        } catch {
+            // Sources with surviving layers cannot be removed yet.
+        }
+    }
 }
 
 function scheduleParkingSpotsLoad() {

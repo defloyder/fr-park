@@ -1,4 +1,4 @@
-const CACHE_NAME = 'auralith-navigation-v9';
+const CACHE_NAME = 'auralith-navigation-v13';
 const SHELL_URLS = [
     '/offline.html',
     '/site.webmanifest',
@@ -38,6 +38,11 @@ self.addEventListener('fetch', (event) => {
     }
 
     if (url.origin === self.location.origin && url.pathname.startsWith('/build/')) {
+        event.respondWith(fetch(request, { cache: 'no-store' }));
+        return;
+    }
+
+    if (url.origin === self.location.origin && url.pathname.startsWith('/data/')) {
         event.respondWith(fetch(request, { cache: 'no-store' }));
         return;
     }
