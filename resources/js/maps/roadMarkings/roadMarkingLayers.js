@@ -21,7 +21,7 @@ const markingColor = [
 const laneLineWidth = ['interpolate', ['linear'], ['zoom'], 16.5, 1.3, 18, 2.25, 20, 3.35];
 const doubleLineWidth = ['interpolate', ['linear'], ['zoom'], 16.7, 0.82, 18.5, 1.22, 20, 1.55];
 const edgeLineWidth = ['interpolate', ['linear'], ['zoom'], 16.5, 1.25, 18, 2.05, 20, 3.05];
-const stopLineWidth = ['interpolate', ['linear'], ['zoom'], 16.5, 3.6, 18, 5.4, 20, 7];
+const stopLineWidth = ['interpolate', ['linear'], ['zoom'], 16.5, 3.1, 18, 4.7, 20, 6.1];
 const intersectionMaskWidth = [
     'interpolate',
     ['linear'],
@@ -243,8 +243,8 @@ const baseRoadMarkingLayerDefinitions = [
         },
         paint: {
             'line-color': ROAD_MARKING_COLORS.yellow,
-            'line-width': ['interpolate', ['linear'], ['zoom'], 16.8, 1, 18.5, 1.45, 20, 1.8],
-            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.8, 0.42, 18.5, 0.66],
+            'line-width': ['interpolate', ['linear'], ['zoom'], 16.8, 0.85, 18.5, 1.2, 20, 1.5],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.8, 0.46, 18.5, 0.72],
         },
     },
     {
@@ -258,9 +258,9 @@ const baseRoadMarkingLayerDefinitions = [
         },
         paint: {
             'line-color': ROAD_MARKING_COLORS.brightWhite,
-            'line-width': ['interpolate', ['linear'], ['zoom'], 16.4, 7.5, 18, 11, 20, 15],
+            'line-width': ['interpolate', ['linear'], ['zoom'], 16.4, 9, 18, 13.5, 20, 18],
             'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.4, 0.72, 18.5, 0.94],
-            'line-dasharray': ['literal', [0.42, 0.5]],
+            'line-dasharray': ['literal', [0.34, 0.38]],
         },
     },
     {
@@ -344,7 +344,7 @@ const baseRoadMarkingLayerDefinitions = [
                 ROAD_MARKING_ARROW_IMAGES.slight_right,
                 ROAD_MARKING_ARROW_IMAGES.through,
             ],
-            'icon-size': ['interpolate', ['linear'], ['zoom'], 16.9, 0.44, 18, 0.66, 20, 0.82],
+            'icon-size': ['interpolate', ['linear'], ['zoom'], 16.9, 0.38, 18, 0.58, 20, 0.72],
             'icon-rotate': ['coalesce', ['to-number', ['get', 'bearing']], 0],
             'icon-rotation-alignment': 'map',
             'icon-pitch-alignment': 'map',

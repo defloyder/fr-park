@@ -352,6 +352,7 @@ function sleep(ms) {
 function buildRoadMarkingFeatures(elements) {
     const features = [];
     const intersectionNodes = clusterIntersectionNodes(getIntersectionNodes(elements));
+    const seenCrosswalks = new Set();
 
     for (const element of elements) {
         const tags = element.tags ?? {};
@@ -377,12 +378,12 @@ function buildRoadMarkingFeatures(elements) {
         addRoadEdges(features, element, roadId, coordinates, laneModel, detailQuality, roadClass, isLink, structure);
         addLaneMarkings(features, element, roadId, coordinates, laneModel, detailQuality, roadClass, isLink, structure);
         addBusLanes(features, element, roadId, coordinates, laneModel, detailQuality, tags, roadClass, isLink, structure);
-        addCrosswalks(features, element, roadId, coordinates, laneModel, roadClass, isLink, structure);
+        addCrosswalks(features, element, roadId, coordinates, laneModel, roadClass, isLink, structure, seenCrosswalks);
         addSpeedMarking(features, element, roadId, coordinates, laneModel, roadClass, isLink, structure);
         addTurnArrows(features, element, roadId, coordinates, laneModel, detailQuality, roadClass, isLink, structure);
     }
 
-    addIntersectionMasks(features, intersectionNodes);
+    addIntersectionMasks(features, intersectionNodes, seenCrosswalks);
     addYellowBoxMarkings(features, intersectionNodes);
 
     return features;
@@ -535,7 +536,7 @@ function addBusLanes(features, element, roadId, coordinates, laneModel, detailQu
     }
 }
 
-function addCrosswalks(features, element, roadId, coordinates, laneModel, roadClass, isLink, structure) {
+function addCrosswalks(features, element, roadId, coordinates, laneModel, roadClass, isLink, structure, seenCrosswalks) {
     if (!shouldRenderRoadEdges(roadClass, isLink) || structure.structure_level !== 0) {
         return;
     }
@@ -561,6 +562,12 @@ function addCrosswalks(features, element, roadId, coordinates, laneModel, roadCl
 
         const bearing = getBearing(previous, next);
         const halfWidth = getCrosswalkHalfWidth(laneModel);
+        const crosswalkKey = getCrosswalkClusterKey(center, bearing);
+
+        if (seenCrosswalks.has(crosswalkKey) || hasNearbyCrosswalk(features, center, bearing, 18)) {
+            continue;
+        }
+
         const line = [
             offsetCoordinate(center, bearing + 90, -halfWidth),
             offsetCoordinate(center, bearing + 90, halfWidth),
@@ -573,9 +580,12 @@ function addCrosswalks(features, element, roadId, coordinates, laneModel, roadCl
                 feature_type: 'crosswalk',
                 crosswalk_id: `crosswalk_${element.id}_${point.id ?? index}`,
                 road_id: roadId,
+                bearing,
+                source: 'osm_crossing',
             },
         }));
 
+        seenCrosswalks.add(crosswalkKey);
         count += 1;
 
         if (count >= 6) {
@@ -623,12 +633,24 @@ function addTurnArrows(features, element, roadId, coordinates, laneModel, detail
     }
 
     const isMajor = ['motorway', 'trunk', 'primary', 'secondary'].includes(roadClass);
+    const roadLength = lineLengthMeters(coordinates);
+
+    if (roadLength < (isMajor ? 85 : 55)) {
+        return;
+    }
+
     const ratios = isMajor && !isLink ? [0.64] : [0.68];
+    const arrowLanes = laneModel.lanes.filter((lane) => lane.turn && lane.turn !== 'none');
+    const skipThroughOnly = roadLength < 150 && arrowLanes.length > 3;
 
     for (const lane of laneModel.lanes) {
         const turn = lane.turn && lane.turn !== 'none' ? lane.turn : 'none';
 
         if (turn === 'none') {
+            continue;
+        }
+
+        if (skipThroughOnly && turn === 'through') {
             continue;
         }
 
@@ -667,7 +689,9 @@ function addTurnArrows(features, element, roadId, coordinates, laneModel, detail
     }
 }
 
-function addIntersectionMasks(features, intersectionNodes) {
+function addIntersectionMasks(features, intersectionNodes, seenCrosswalks) {
+    const seenStopLines = new Set();
+
     for (const node of intersectionNodes) {
         for (const approach of node.approaches) {
             if (!approach.neighbor || approach.structure_level !== 0) {
@@ -690,35 +714,48 @@ function addIntersectionMasks(features, intersectionNodes) {
             }));
 
             if (node.hasTrafficSignal) {
-                const stopCenter = offsetCoordinate(node.coordinate, bearing, distance + 2);
-                const crosswalkCenter = offsetCoordinate(node.coordinate, bearing, Math.max(7, distance - 5));
-                const halfWidth = Math.min(18, Math.max(6, (approach.lanes_total * approach.lane_width_m) / 2 + 0.8));
+                const stopCenter = offsetCoordinate(node.coordinate, bearing, distance + 2.5);
+                const crosswalkCenter = offsetCoordinate(node.coordinate, bearing, Math.max(8, distance - 6.5));
+                const halfWidth = getApproachCrosswalkHalfWidth(approach);
+                const crosswalkKey = getCrosswalkClusterKey(crosswalkCenter, bearing);
 
-                features.push(makeLineFeature({
-                    id: `crosswalk/signal/${node.id}/${approach.road_id}/${approach.side}`,
-                    coordinates: [
-                        offsetCoordinate(crosswalkCenter, bearing + 90, -halfWidth),
-                        offsetCoordinate(crosswalkCenter, bearing + 90, halfWidth),
-                    ],
-                    properties: {
-                        feature_type: 'crosswalk',
-                        crosswalk_id: `crosswalk_signal_${node.id}_${approach.road_id}_${approach.side}`,
-                        road_id: approach.road_id,
-                    },
-                }));
+                if (!seenCrosswalks.has(crosswalkKey) && !hasNearbyCrosswalk(features, crosswalkCenter, bearing, 18)) {
+                    seenCrosswalks.add(crosswalkKey);
 
-                features.push(makeLineFeature({
-                    id: `stop_line/${node.id}/${approach.road_id}/${approach.side}`,
-                    coordinates: [
-                        offsetCoordinate(stopCenter, bearing + 90, -halfWidth),
-                        offsetCoordinate(stopCenter, bearing + 90, halfWidth),
-                    ],
-                    properties: {
-                        feature_type: 'stop_line',
-                        road_id: approach.road_id,
-                        stop_line_id: `stop_${node.id}_${approach.road_id}_${approach.side}`,
-                    },
-                }));
+                    features.push(makeLineFeature({
+                        id: `crosswalk/signal/${node.id}/${approach.road_id}/${approach.side}`,
+                        coordinates: [
+                            offsetCoordinate(crosswalkCenter, bearing + 90, -halfWidth),
+                            offsetCoordinate(crosswalkCenter, bearing + 90, halfWidth),
+                        ],
+                        properties: {
+                            feature_type: 'crosswalk',
+                            crosswalk_id: `crosswalk_signal_${node.id}_${approach.road_id}_${approach.side}`,
+                            road_id: approach.road_id,
+                            bearing,
+                            source: 'osm_signalized_intersection',
+                        },
+                    }));
+                }
+
+                const stopLineCoordinates = getDedupedStopLine({
+                    seenStopLines,
+                    stopCenter,
+                    bearing,
+                    halfWidth,
+                });
+
+                if (stopLineCoordinates) {
+                    features.push(makeLineFeature({
+                        id: `stop_line/${node.id}/${approach.road_id}/${approach.side}`,
+                        coordinates: stopLineCoordinates,
+                        properties: {
+                            feature_type: 'stop_line',
+                            road_id: approach.road_id,
+                            stop_line_id: `stop_${node.id}_${approach.road_id}_${approach.side}`,
+                        },
+                    }));
+                }
             }
         }
     }
@@ -730,25 +767,33 @@ function addYellowBoxMarkings(features, intersectionNodes) {
             continue;
         }
 
-        const size = Math.min(8, Math.max(5.2, Math.sqrt(node.totalLanes) * 1.55));
-        const spacing = 3.4;
+        const acrossLimit = Math.min(5.6, Math.max(3.8, Math.sqrt(node.totalLanes) * 1.05));
+        const alongLimit = Math.min(4.4, Math.max(3.2, Math.sqrt(node.totalLanes) * 0.85));
+        const acrossSpacing = acrossLimit * 2;
+        const alongSpacing = alongLimit * 2;
+        const dashAcross = 1.35;
+        const dashAlong = 2.25;
         let lineIndex = 0;
 
-        for (let offset = -size; offset <= size; offset += spacing) {
-            for (const direction of [-1, 1]) {
-                const start = offsetFromBearingAxes(node.coordinate, node.dominantBearing, offset - size, -size * direction);
-                const finish = offsetFromBearingAxes(node.coordinate, node.dominantBearing, offset + size, size * direction);
+        for (let along = -alongLimit; along <= alongLimit; along += alongSpacing) {
+            for (let offset = -acrossLimit; offset <= acrossLimit; offset += acrossSpacing) {
+                const center = offsetFromBearingAxes(node.coordinate, node.dominantBearing, offset, along);
 
-                features.push(makeLineFeature({
-                    id: `yellow_box/${node.id}/${lineIndex}`,
-                    coordinates: [start, finish],
-                    properties: {
-                        feature_type: 'yellow_box_line',
-                        box_line_id: `box_${node.id}_${lineIndex}`,
-                    },
-                }));
+                for (const direction of [-1, 1]) {
+                    const start = offsetFromBearingAxes(center, node.dominantBearing, -dashAcross, -dashAlong * direction);
+                    const finish = offsetFromBearingAxes(center, node.dominantBearing, dashAcross, dashAlong * direction);
 
-                lineIndex += 1;
+                    features.push(makeLineFeature({
+                        id: `yellow_box/${node.id}/${lineIndex}`,
+                        coordinates: [start, finish],
+                        properties: {
+                            feature_type: 'yellow_box_line',
+                            box_line_id: `box_${node.id}_${lineIndex}`,
+                        },
+                    }));
+
+                    lineIndex += 1;
+                }
             }
         }
     }
@@ -773,7 +818,74 @@ function getBusLaneRenderOffset(lane, laneModel) {
 }
 
 function getCrosswalkHalfWidth(laneModel) {
-    return Math.min(18, Math.max(6, (laneModel.total * laneModel.laneWidthMeters) / 2 + 0.8));
+    return Math.min(13.5, Math.max(5.2, (laneModel.total * laneModel.laneWidthMeters) / 2 - 0.45));
+}
+
+function getApproachCrosswalkHalfWidth(approach) {
+    return Math.min(13.5, Math.max(5.2, (approach.lanes_total * approach.lane_width_m) / 2 - 0.45));
+}
+
+function hasNearbyCrosswalk(features, center, bearing, thresholdMeters = 13) {
+    const expectedBearing = (bearing + 90) % 360;
+
+    return features.some((feature) => {
+        if (feature.properties?.feature_type !== 'crosswalk' || feature.geometry?.type !== 'LineString') {
+            return false;
+        }
+
+        const coordinates = feature.geometry.coordinates;
+
+        if (!Array.isArray(coordinates) || coordinates.length < 2) {
+            return false;
+        }
+
+        const start = coordinates[0];
+        const finish = coordinates[coordinates.length - 1];
+        const midpoint = [
+            (start[0] + finish[0]) / 2,
+            (start[1] + finish[1]) / 2,
+        ];
+
+        return distanceMeters(center, midpoint) <= thresholdMeters
+            && undirectedAngleDeltaDegrees(getBearing(start, finish), expectedBearing) <= 24;
+    });
+}
+
+function getDedupedStopLine({ seenStopLines, stopCenter, bearing, halfWidth }) {
+    const stopKey = getLinearMarkingClusterKey(stopCenter, bearing);
+
+    if (seenStopLines.has(stopKey)) {
+        return null;
+    }
+
+    seenStopLines.add(stopKey);
+
+    return [
+        offsetCoordinate(stopCenter, bearing + 90, -halfWidth * 0.9),
+        offsetCoordinate(stopCenter, bearing + 90, halfWidth * 0.9),
+    ];
+}
+
+function getCrosswalkClusterKey(center, bearing) {
+    const lonKey = Math.round(center[0] * 10000);
+    const latKey = Math.round(center[1] * 10000);
+    const bearingKey = Math.round(((bearing + 90) % 180) / 20);
+
+    return `${lonKey}:${latKey}:${bearingKey}`;
+}
+
+function getLinearMarkingClusterKey(center, bearing) {
+    const lonKey = Math.round(center[0] * 10000);
+    const latKey = Math.round(center[1] * 10000);
+    const bearingKey = Math.round(((bearing + 90) % 180) / 18);
+
+    return `${lonKey}:${latKey}:${bearingKey}`;
+}
+
+function undirectedAngleDeltaDegrees(left, right) {
+    const delta = Math.abs((((left - right) % 180) + 180) % 180);
+
+    return Math.min(delta, 180 - delta);
 }
 
 function clusterIntersectionNodes(nodes) {
@@ -1316,19 +1428,38 @@ function offsetPointAtRatio(coordinates, ratio, offsetMeters = 0) {
         return null;
     }
 
-    const targetIndex = Math.max(0, Math.min(coordinates.length - 2, Math.floor((coordinates.length - 1) * ratio)));
-    const start = coordinates[targetIndex];
-    const finish = coordinates[targetIndex + 1];
-    const bearing = getBearing(start, finish);
-    const coordinate = offsetCoordinate([
-        start[0] + ((finish[0] - start[0]) * 0.5),
-        start[1] + ((finish[1] - start[1]) * 0.5),
-    ], bearing + 90, offsetMeters);
+    const totalLength = lineLengthMeters(coordinates);
+    const targetDistance = Math.max(0, Math.min(totalLength, totalLength * ratio));
+    let walked = 0;
 
-    return {
-        coordinate,
-        bearing,
-    };
+    for (let index = 0; index < coordinates.length - 1; index += 1) {
+        const start = coordinates[index];
+        const finish = coordinates[index + 1];
+        const segmentLength = distanceMeters(start, finish);
+
+        if (segmentLength <= 0) {
+            continue;
+        }
+
+        if (walked + segmentLength < targetDistance && index < coordinates.length - 2) {
+            walked += segmentLength;
+            continue;
+        }
+
+        const segmentRatio = Math.max(0, Math.min(1, (targetDistance - walked) / segmentLength));
+        const bearing = getBearing(start, finish);
+        const coordinate = offsetCoordinate([
+            start[0] + ((finish[0] - start[0]) * segmentRatio),
+            start[1] + ((finish[1] - start[1]) * segmentRatio),
+        ], bearing + 90, offsetMeters);
+
+        return {
+            coordinate,
+            bearing,
+        };
+    }
+
+    return null;
 }
 
 function offsetLineString(coordinates, offsetMeters = 0) {
