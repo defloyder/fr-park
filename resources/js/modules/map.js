@@ -2426,6 +2426,17 @@ function showFuelStationPopup(feature) {
                 ${properties.openingHours ? `<p class="fuel-popup__hours">Режим: ${escapeMapHtml(properties.openingHours)}</p>` : ''}
                 ${updatedAt ? `<small>Данные обновлены: ${escapeMapHtml(updatedAt)}</small>` : ''}
                 ${properties.priceSource ? `<small>Источник цены: ${escapeMapHtml(properties.priceSource)}</small>` : ''}
+                <button
+                    class="route-button fuel-popup__route"
+                    type="button"
+                    data-action="route-fuel-station"
+                    data-fuel-route
+                    data-station-id="${escapeMapAttribute(properties.stationId || '')}"
+                    data-title="${escapeMapAttribute(properties.name || properties.brand || 'АЗС')}"
+                    data-address="${escapeMapAttribute(properties.address || '')}"
+                    data-latitude="${escapeMapAttribute(feature.geometry.coordinates[1])}"
+                    data-longitude="${escapeMapAttribute(feature.geometry.coordinates[0])}"
+                >Маршрут</button>
                 <a href="${escapeMapAttribute(properties.osmUrl || '#')}" target="_blank" rel="noreferrer">Открыть источник</a>
             </article>
         `)

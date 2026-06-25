@@ -662,3 +662,13 @@ test('fuel station popup does not claim fuel is available without confirmation',
     assert.doesNotMatch(source, /Наличие не подтверждено/);
     assert.match(source, /properties\.name \|\| properties\.brand \|\| 'АЗС'/);
 });
+
+test('fuel station card opens the existing route picker', () => {
+    const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
+    const uiSource = readFileSync(new URL('../../resources/js/modules/parking-form.js', import.meta.url), 'utf8');
+
+    assert.match(mapSource, /data-action="route-fuel-station"/);
+    assert.match(uiSource, /'route-fuel-station': \(\) => openFuelStationRoute/);
+    assert.match(uiSource, /state\.selectedSpot = \{/);
+    assert.match(uiSource, /openRoutePicker\(\);/);
+});

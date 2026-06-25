@@ -680,6 +680,11 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-settings__option:
     text-decoration: none;
 }
 
+.fuel-popup__route {
+    width: 100%;
+    min-height: 42px;
+}
+
 .floating-nav {
     left: 50%;
     bottom: calc(10px + var(--safe-bottom));

@@ -189,6 +189,7 @@ export function initParkingUi() {
             'prev-photo': () => moveLightbox(-1),
             'next-photo': () => moveLightbox(1),
             'open-route-picker': openRoutePicker,
+            'route-fuel-station': () => openFuelStationRoute(event.target.closest('[data-fuel-route]')),
             'close-route-picker': closeRoutePicker,
             'route-yandex': () => openExternalRoute('yandex'),
             'route-2gis': () => openExternalRoute('2gis'),
@@ -1219,6 +1220,23 @@ export function initParkingUi() {
         `;
         document.body.append(modal);
         window.setTimeout(() => modal.classList.add('is-visible'), 20);
+    }
+
+    function openFuelStationRoute(button) {
+        if (!button) return;
+
+        const latitude = Number(button.dataset.latitude);
+        const longitude = Number(button.dataset.longitude);
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+
+        state.selectedSpot = {
+            id: button.dataset.stationId || `fuel:${latitude}:${longitude}`,
+            title: button.dataset.title || 'АЗС',
+            address: button.dataset.address || '',
+            latitude,
+            longitude,
+        };
+        openRoutePicker();
     }
 
     function closeRoutePicker() {
