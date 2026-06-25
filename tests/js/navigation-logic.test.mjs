@@ -720,3 +720,38 @@ test('fuel station card opens the existing route picker', () => {
     assert.match(uiSource, /state\.selectedSpot = \{/);
     assert.match(uiSource, /openRoutePicker\(\);/);
 });
+
+test('fuel layer keeps loading state inside the layer menu without floating error plaques', () => {
+    const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
+    const viewSource = readFileSync(new URL('../../resources/views/pages/map.blade.php', import.meta.url), 'utf8');
+
+    assert.match(viewSource, /data-fuel-layer-status/);
+    assert.match(mapSource, /function updateFuelLayerMenuState/);
+    assert.match(mapSource, /парковки скрыты/);
+    assert.doesNotMatch(mapSource, /showFuelStatus\(/);
+});
+
+test('fuel requests are cancellable cached and preserve rendered stations on refresh failure', () => {
+    const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
+    const apiSource = readFileSync(new URL('../../resources/js/modules/parking-api.js', import.meta.url), 'utf8');
+    const loader = mapSource.match(/async function loadFuelStationsInView[\s\S]*?\n}\n\nfunction getSavedBaseMapLayer/)?.[0] ?? '';
+
+    assert.match(apiSource, /fetchFuelStations\(bounds, \{ signal \} = \{\}\)/);
+    assert.match(apiSource, /signal,/);
+    assert.match(loader, /fuelStationsCache\.get/);
+    assert.match(loader, /abort\('superseded'\)/);
+    assert.match(loader, /requestController\.abort\('timeout'\)/);
+    assert.ok(loader.indexOf('++fuelStationsRequestId') < loader.indexOf('fuelStationsCache.get'));
+    assert.doesNotMatch(loader.match(/catch \(error\)[\s\S]*?finally/)?.[0] ?? '', /setData\(buildFuelStationFeatureCollection\(\[\]\)\)/);
+});
+
+test('fuel stations cluster on smaller zoom levels and clean stale popup state', () => {
+    const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
+
+    assert.match(mapSource, /clusterMaxZoom: 12/);
+    assert.match(mapSource, /fuel-station-cluster-count/);
+    assert.match(mapSource, /renderedFuelStationIds/);
+    assert.match(mapSource, /function renderFuelStations[\s\S]*?closeFuelStationPopup\(\);[\s\S]*?setData/);
+    assert.match(mapSource, /fuel-layer:changed/);
+    assert.match(mapSource, /fuel-station:route-opened/);
+});

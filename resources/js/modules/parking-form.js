@@ -313,7 +313,9 @@ export function initParkingUi() {
         renderPersonalPlaces();
         restoreNavigationState();
         hideStatus();
-        if (state.spots.length === 0) showStatus('Пока нет добавленных парковок. Добавьте первую точку на карту.');
+        if (state.spots.length === 0 && !document.body.classList.contains('is-fuel-layer')) {
+            showStatus('Пока нет добавленных парковок. Добавьте первую точку на карту.');
+        }
     });
 
     window.addEventListener('map:ready', renderPersonalPlaces);
@@ -321,6 +323,7 @@ export function initParkingUi() {
     loadAccountSession();
 
     window.addEventListener('parking:loading', () => {
+        if (document.body.classList.contains('is-fuel-layer')) return;
         showStatus('Загружаем парковки...', 'loading');
     });
 
@@ -330,10 +333,15 @@ export function initParkingUi() {
             : event.detail ?? {};
 
         fallback?.classList.toggle('hidden', !detail.mapUnavailable);
+        if (document.body.classList.contains('is-fuel-layer') && !detail.mapUnavailable) {
+            hideStatus();
+            return;
+        }
         showStatus(detail.message ?? 'Произошла ошибка загрузки.', 'error');
     });
 
     window.addEventListener('parking:selected', (event) => {
+        if (document.body.classList.contains('is-fuel-layer')) return;
         renderCard(event.detail);
         list.classList.add('hidden');
         searchPanel?.classList.add('hidden');
@@ -341,6 +349,19 @@ export function initParkingUi() {
         profilePanel?.classList.add('hidden');
         navigatorPanel?.classList.add('hidden');
         document.body.classList.remove('is-sheet-open', 'is-navigator-panel-open');
+    });
+
+    window.addEventListener('fuel-layer:changed', (event) => {
+        const enabled = Boolean(event.detail?.enabled);
+
+        closePanels();
+        closeRoutePicker();
+        hideStatus();
+        state.selectedSpot = null;
+
+        if (enabled) {
+            setActiveNav('show-map');
+        }
     });
 
     window.addEventListener('map:coords-selected', (event) => {
@@ -1235,11 +1256,13 @@ export function initParkingUi() {
 
         state.selectedSpot = {
             id: button.dataset.stationId || `fuel:${latitude}:${longitude}`,
+            kind: 'fuel',
             title: button.dataset.title || 'АЗС',
             address: button.dataset.address || '',
             latitude,
             longitude,
         };
+        window.dispatchEvent(new CustomEvent('fuel-station:route-opened'));
         openRoutePicker();
     }
 

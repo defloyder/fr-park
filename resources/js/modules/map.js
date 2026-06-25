@@ -24,6 +24,10 @@ let routeManeuverMarker = null;
 let routeManeuverCoordinate = null;
 let fuelStationsLoadTimer = null;
 let fuelStationsRequestId = 0;
+let fuelStationsAbortController = null;
+let fuelStationsRetryTimer = null;
+let fuelStationsCache = new Map();
+let renderedFuelStationIds = new Set();
 let fuelStationPopup = null;
 let isFuelLayerEnabled = false;
 
@@ -35,6 +39,9 @@ const USER_LOCATION_SOURCE_ID = 'user-location';
 const ROUTE_SOURCE_ID = 'active-route';
 const SPEED_CAMERA_SOURCE_ID = 'speed-cameras';
 const FUEL_STATION_SOURCE_ID = 'fuel-stations';
+const FUEL_STATION_MIN_ZOOM = 8.5;
+const FUEL_STATION_CACHE_TTL_MS = 5 * 60 * 1000;
+const FUEL_STATION_CACHE_LIMIT = 12;
 const PERSONAL_PLACE_SOURCE_ID = 'personal-places';
 const TRAFFIC_FLOW_SOURCE_ID = 'tomtom-traffic-flow';
 const TRAFFIC_FLOW_LAYER_ID = 'tomtom-traffic-flow';
@@ -1083,12 +1090,63 @@ function addFuelStationSourceAndLayers() {
     map.addSource(FUEL_STATION_SOURCE_ID, {
         type: 'geojson',
         data: buildFuelStationFeatureCollection([]),
+        cluster: true,
+        clusterMaxZoom: 12,
+        clusterRadius: 44,
+    });
+
+    map.addLayer({
+        id: 'fuel-station-cluster-glow',
+        type: 'circle',
+        source: FUEL_STATION_SOURCE_ID,
+        filter: ['has', 'point_count'],
+        layout: { visibility: 'none' },
+        paint: {
+            'circle-radius': ['step', ['get', 'point_count'], 18, 20, 23, 80, 28],
+            'circle-color': '#22D3EE',
+            'circle-blur': 0.78,
+            'circle-opacity': 0.42,
+        },
+    });
+
+    map.addLayer({
+        id: 'fuel-station-cluster',
+        type: 'circle',
+        source: FUEL_STATION_SOURCE_ID,
+        filter: ['has', 'point_count'],
+        layout: { visibility: 'none' },
+        paint: {
+            'circle-radius': ['step', ['get', 'point_count'], 14, 20, 18, 80, 22],
+            'circle-color': 'rgba(5, 18, 40, 0.96)',
+            'circle-stroke-color': '#46FFD2',
+            'circle-stroke-width': 2,
+        },
+    });
+
+    map.addLayer({
+        id: 'fuel-station-cluster-count',
+        type: 'symbol',
+        source: FUEL_STATION_SOURCE_ID,
+        filter: ['has', 'point_count'],
+        layout: {
+            visibility: 'none',
+            'text-field': ['get', 'point_count_abbreviated'],
+            'text-font': ['Noto Sans Bold'],
+            'text-size': 12,
+            'text-allow-overlap': true,
+        },
+        paint: {
+            'text-color': '#EFFFFF',
+            'text-halo-color': 'rgba(5, 18, 40, 0.94)',
+            'text-halo-width': 1,
+        },
     });
 
     map.addLayer({
         id: 'fuel-station-glow',
         type: 'circle',
         source: FUEL_STATION_SOURCE_ID,
+        filter: ['!', ['has', 'point_count']],
         layout: { visibility: 'none' },
         paint: {
             'circle-radius': ['interpolate', ['linear'], ['zoom'], 9, 14, 15, 23],
@@ -1102,6 +1160,7 @@ function addFuelStationSourceAndLayers() {
         id: 'fuel-station-pin',
         type: 'symbol',
         source: FUEL_STATION_SOURCE_ID,
+        filter: ['!', ['has', 'point_count']],
         layout: {
             visibility: 'none',
             'icon-image': FUEL_MARKER_AVAILABLE_ID,
@@ -1116,6 +1175,7 @@ function addFuelStationSourceAndLayers() {
         id: 'fuel-station-price',
         type: 'symbol',
         source: FUEL_STATION_SOURCE_ID,
+        filter: ['!', ['has', 'point_count']],
         minzoom: 11,
         layout: {
             visibility: 'none',
@@ -1219,7 +1279,14 @@ function setFuelLayerEnabled(enabled, { persist = false } = {}) {
     const visibility = isFuelLayerEnabled ? 'visible' : 'none';
     const parkingVisibility = isFuelLayerEnabled ? 'none' : 'visible';
 
-    ['fuel-station-glow', 'fuel-station-pin', 'fuel-station-price'].forEach((layerId) => {
+    [
+        'fuel-station-cluster-glow',
+        'fuel-station-cluster',
+        'fuel-station-cluster-count',
+        'fuel-station-glow',
+        'fuel-station-pin',
+        'fuel-station-price',
+    ].forEach((layerId) => {
         if (map?.getLayer(layerId)) {
             map.setLayoutProperty(layerId, 'visibility', visibility);
         }
@@ -1234,6 +1301,7 @@ function setFuelLayerEnabled(enabled, { persist = false } = {}) {
     const button = document.querySelector('[data-fuel-layer-toggle]');
     button?.classList.toggle('is-active', isFuelLayerEnabled);
     button?.setAttribute('aria-pressed', String(isFuelLayerEnabled));
+    updateFuelLayerMenuState(isFuelLayerEnabled ? 'loading' : 'off');
 
     if (persist) {
         window.localStorage?.setItem(FUEL_LAYER_STORAGE_KEY, String(isFuelLayerEnabled));
@@ -1241,12 +1309,19 @@ function setFuelLayerEnabled(enabled, { persist = false } = {}) {
 
     if (isFuelLayerEnabled) {
         document.getElementById('selected-spot-card')?.classList.add('hidden');
+        closeFuelStationPopup();
+        window.dispatchEvent(new CustomEvent('fuel-layer:changed', { detail: { enabled: true } }));
         scheduleFuelStationsLoad(0);
     } else {
+        window.clearTimeout(fuelStationsLoadTimer);
+        window.clearTimeout(fuelStationsRetryTimer);
+        fuelStationsLoadTimer = null;
+        fuelStationsRetryTimer = null;
         fuelStationsRequestId += 1;
-        fuelStationPopup?.remove();
-        fuelStationPopup = null;
-        hideFuelStatus();
+        fuelStationsAbortController?.abort('disabled');
+        fuelStationsAbortController = null;
+        closeFuelStationPopup();
+        window.dispatchEvent(new CustomEvent('fuel-layer:changed', { detail: { enabled: false } }));
     }
 }
 
@@ -1260,9 +1335,32 @@ function scheduleFuelStationsLoad(delay = 260) {
 async function loadFuelStationsInView() {
     if (!isFuelLayerEnabled || !map) return;
 
-    const bounds = map.getBounds();
     const requestId = ++fuelStationsRequestId;
-    showFuelStatus('Ищем заправки и актуальные цены…', 'loading');
+    fuelStationsAbortController?.abort('superseded');
+    fuelStationsAbortController = null;
+
+    if (map.getZoom() < FUEL_STATION_MIN_ZOOM) {
+        renderedFuelStationIds = new Set();
+        map.getSource(FUEL_STATION_SOURCE_ID)?.setData(buildFuelStationFeatureCollection([]));
+        closeFuelStationPopup();
+        updateFuelLayerMenuState('zoom');
+        return;
+    }
+
+    const bounds = map.getBounds();
+    const cacheKey = getFuelStationsCacheKey(bounds);
+    const cached = fuelStationsCache.get(cacheKey);
+
+    if (cached && Date.now() - cached.savedAt < FUEL_STATION_CACHE_TTL_MS) {
+        renderFuelStations(cached.stations);
+        updateFuelLayerMenuState(cached.stations.length ? 'ready' : 'empty', cached.stations.length);
+        return;
+    }
+
+    const requestController = new AbortController();
+    const requestTimeout = window.setTimeout(() => requestController.abort('timeout'), 18000);
+    fuelStationsAbortController = requestController;
+    updateFuelLayerMenuState(renderedFuelStationIds.size ? 'refreshing' : 'loading', renderedFuelStationIds.size);
 
     try {
         const response = await fetchFuelStations({
@@ -1270,26 +1368,27 @@ async function loadFuelStationsInView() {
             south: bounds.getSouth(),
             east: bounds.getEast(),
             north: bounds.getNorth(),
+        }, {
+            signal: requestController.signal,
         });
         if (requestId !== fuelStationsRequestId || !isFuelLayerEnabled) return;
 
-        const stations = Array.isArray(response.data) ? response.data : [];
-        map.getSource(FUEL_STATION_SOURCE_ID)?.setData(buildFuelStationFeatureCollection(stations));
-        showFuelStatus(
-            stations.length
-                ? `Заправок на карте: ${stations.length}. Цены показаны по открытым данным АЗС.`
-                : 'В этой области заправки не найдены.',
-        );
-        window.setTimeout(hideFuelStatus, 4200);
-    } catch {
+        const stations = normalizeFuelStations(response.data);
+        cacheFuelStations(cacheKey, stations);
+        renderFuelStations(stations);
+        updateFuelLayerMenuState(stations.length ? 'ready' : 'empty', stations.length);
+    } catch (error) {
         if (requestId !== fuelStationsRequestId || !isFuelLayerEnabled) return;
-        map.getSource(FUEL_STATION_SOURCE_ID)?.setData(buildFuelStationFeatureCollection([]));
-        showFuelStatus(
-            map.getZoom() < 8
-                ? 'Приблизьте карту, чтобы загрузить заправки.'
-                : 'Не удалось обновить данные заправок. Попробуйте ещё раз.',
-            'error',
-        );
+        if (error?.name === 'AbortError' && requestController.signal.reason !== 'timeout') return;
+
+        updateFuelLayerMenuState(renderedFuelStationIds.size ? 'stale' : 'error', renderedFuelStationIds.size);
+        window.clearTimeout(fuelStationsRetryTimer);
+        fuelStationsRetryTimer = window.setTimeout(() => scheduleFuelStationsLoad(0), 10000);
+    } finally {
+        window.clearTimeout(requestTimeout);
+        if (requestId === fuelStationsRequestId) {
+            fuelStationsAbortController = null;
+        }
     }
 }
 
@@ -2314,11 +2413,21 @@ function getTomTomTrafficKey() {
 }
 
 function bindMapEvents() {
+    window.addEventListener('fuel-station:route-opened', closeFuelStationPopup);
+
     map.on('click', 'clusters', async (event) => {
         await expandCluster(event);
     });
     map.on('click', 'cluster-count', async (event) => {
         await expandCluster(event);
+    });
+    map.on('click', 'fuel-station-cluster', async (event) => {
+        closeFuelStationPopup();
+        await expandFuelStationCluster(event);
+    });
+    map.on('click', 'fuel-station-cluster-count', async (event) => {
+        closeFuelStationPopup();
+        await expandFuelStationCluster(event);
     });
 
     map.on('click', 'spots-pin', (event) => selectSpotFromFeature(event.features?.[0]));
@@ -2333,6 +2442,10 @@ function bindMapEvents() {
     map.on('mouseleave', 'spots-pin', () => setMapCursor(''));
     map.on('mouseenter', 'fuel-station-pin', () => setMapCursor('pointer'));
     map.on('mouseleave', 'fuel-station-pin', () => setMapCursor(''));
+    map.on('mouseenter', 'fuel-station-cluster', () => setMapCursor('pointer'));
+    map.on('mouseleave', 'fuel-station-cluster', () => setMapCursor(''));
+    map.on('mouseenter', 'fuel-station-cluster-count', () => setMapCursor('pointer'));
+    map.on('mouseleave', 'fuel-station-cluster-count', () => setMapCursor(''));
     map.on('mouseenter', 'personal-place-dot', () => setMapCursor('pointer'));
     map.on('mouseleave', 'personal-place-dot', () => setMapCursor(''));
 
@@ -2398,9 +2511,34 @@ async function expandCluster(event) {
     });
 }
 
+async function expandFuelStationCluster(event) {
+    const feature = map.queryRenderedFeatures(event.point, {
+        layers: ['fuel-station-cluster', 'fuel-station-cluster-count'],
+    })[0];
+    const clusterId = feature?.properties?.cluster_id;
+    const source = map.getSource(FUEL_STATION_SOURCE_ID);
+
+    if (!source || clusterId === undefined) return;
+
+    const zoom = await source.getClusterExpansionZoom(clusterId);
+    safeEaseTo({
+        center: feature.geometry.coordinates,
+        zoom,
+        duration: 220,
+    });
+}
+
 function clickedFeature(point) {
     return map.queryRenderedFeatures(point, {
-        layers: ['clusters', 'cluster-count', 'spots-pin', 'fuel-station-pin', 'personal-place-dot'],
+        layers: [
+            'clusters',
+            'cluster-count',
+            'spots-pin',
+            'fuel-station-cluster',
+            'fuel-station-cluster-count',
+            'fuel-station-pin',
+            'personal-place-dot',
+        ],
     }).length > 0;
 }
 
@@ -2421,7 +2559,7 @@ function selectSpotFromFeature(feature) {
 }
 
 function showFuelStationPopup(feature) {
-    if (!feature?.geometry?.coordinates) return;
+    if (!isFuelLayerEnabled || !feature?.geometry?.coordinates) return;
 
     const properties = feature.properties ?? {};
     let prices = {};
@@ -2439,7 +2577,10 @@ function showFuelStationPopup(feature) {
         .join('');
     const updatedAt = formatFuelUpdatedAt(properties.updatedAt);
 
-    fuelStationPopup?.remove();
+    closeFuelStationPopup();
+    const sourceLink = isSafeHttpUrl(properties.osmUrl)
+        ? `<a href="${escapeMapAttribute(properties.osmUrl)}" target="_blank" rel="noreferrer">Открыть источник</a>`
+        : '';
     fuelStationPopup = new maplibregl.Popup({
         closeButton: true,
         closeOnClick: true,
@@ -2471,10 +2612,14 @@ function showFuelStationPopup(feature) {
                     data-latitude="${escapeMapAttribute(feature.geometry.coordinates[1])}"
                     data-longitude="${escapeMapAttribute(feature.geometry.coordinates[0])}"
                 >Маршрут</button>
-                <a href="${escapeMapAttribute(properties.osmUrl || '#')}" target="_blank" rel="noreferrer">Открыть источник</a>
+                ${sourceLink}
             </article>
         `)
         .addTo(map);
+
+    fuelStationPopup.on('close', () => {
+        fuelStationPopup = null;
+    });
 }
 
 function selectPersonalPlaceFromFeature(feature) {
@@ -2755,6 +2900,9 @@ function keepNavigationLayersOrdered() {
         'clusters',
         'spots-pin',
         'cluster-count',
+        'fuel-station-cluster-glow',
+        'fuel-station-cluster',
+        'fuel-station-cluster-count',
         'fuel-station-glow',
         'fuel-station-pin',
         'fuel-station-price',
@@ -3862,6 +4010,63 @@ function buildFeatureCollection(spots) {
     };
 }
 
+function normalizeFuelStations(stations) {
+    const seen = new Set();
+
+    return (Array.isArray(stations) ? stations : [])
+        .filter((station) => {
+            const longitude = Number(station?.longitude);
+            const latitude = Number(station?.latitude);
+            const id = getFuelStationId(station);
+
+            if (
+                !Number.isFinite(longitude)
+                || !Number.isFinite(latitude)
+                || Math.abs(longitude) > 180
+                || Math.abs(latitude) > 90
+                || seen.has(id)
+            ) {
+                return false;
+            }
+
+            seen.add(id);
+            return true;
+        })
+        .slice(0, 1500);
+}
+
+function renderFuelStations(stations) {
+    const normalized = normalizeFuelStations(stations);
+    renderedFuelStationIds = new Set(normalized.map(getFuelStationId));
+    closeFuelStationPopup();
+    map?.getSource(FUEL_STATION_SOURCE_ID)?.setData(buildFuelStationFeatureCollection(normalized));
+}
+
+function getFuelStationId(station) {
+    const longitude = Number(station?.longitude);
+    const latitude = Number(station?.latitude);
+
+    return String(station?.id ?? `${longitude.toFixed(5)}:${latitude.toFixed(5)}`);
+}
+
+function getFuelStationsCacheKey(bounds) {
+    return [
+        bounds.getWest(),
+        bounds.getSouth(),
+        bounds.getEast(),
+        bounds.getNorth(),
+    ].map((value) => Number(value).toFixed(2)).join(':');
+}
+
+function cacheFuelStations(key, stations) {
+    fuelStationsCache.delete(key);
+    fuelStationsCache.set(key, { stations, savedAt: Date.now() });
+
+    while (fuelStationsCache.size > FUEL_STATION_CACHE_LIMIT) {
+        fuelStationsCache.delete(fuelStationsCache.keys().next().value);
+    }
+}
+
 function buildFuelStationFeatureCollection(stations) {
     return {
         type: 'FeatureCollection',
@@ -3876,7 +4081,7 @@ function buildFuelStationFeatureCollection(stations) {
                 return {
                     type: 'Feature',
                     properties: {
-                        stationId: String(station.id ?? `${longitude}:${latitude}`),
+                        stationId: getFuelStationId(station),
                         name: station.name || 'АЗС',
                         brand: station.brand || '',
                         address: station.address || '',
@@ -3900,25 +4105,35 @@ function buildFuelStationFeatureCollection(stations) {
     };
 }
 
-function showFuelStatus(message, state = 'info') {
-    const panel = document.getElementById('status-panel');
-    if (!panel || !isFuelLayerEnabled) return;
+function updateFuelLayerMenuState(state, count = 0) {
+    const button = document.querySelector('[data-fuel-layer-toggle]');
+    const status = button?.querySelector('[data-fuel-layer-status]');
+    if (!button || !status) return;
 
-    panel.textContent = message;
-    panel.dataset.state = state;
-    panel.classList.remove('hidden');
+    const labels = {
+        off: 'Выключены',
+        loading: 'Включены · загружаем · парковки скрыты',
+        refreshing: 'Включены · обновляем данные · парковки скрыты',
+        ready: `Включены · ${count} на карте · парковки скрыты`,
+        empty: 'Включены · рядом не найдено · парковки скрыты',
+        zoom: 'Включены · приблизьте карту · парковки скрыты',
+        stale: `Включены · показаны последние данные · парковки скрыты`,
+        error: 'Включены · данные временно недоступны · парковки скрыты',
+    };
+
+    button.dataset.state = state;
+    status.textContent = labels[state] ?? labels.off;
+    button.setAttribute(
+        'aria-label',
+        isFuelLayerEnabled
+            ? `Слой заправок включён. ${status.textContent}`
+            : 'Включить слой заправок',
+    );
 }
 
-function hideFuelStatus() {
-    if (!isFuelLayerEnabled) {
-        document.getElementById('status-panel')?.classList.add('hidden');
-        return;
-    }
-
-    const panel = document.getElementById('status-panel');
-    if (panel?.textContent?.toLowerCase().includes('заправ')) {
-        panel.classList.add('hidden');
-    }
+function closeFuelStationPopup() {
+    fuelStationPopup?.remove();
+    fuelStationPopup = null;
 }
 
 function formatFuelUpdatedAt(value) {
@@ -3945,6 +4160,17 @@ function escapeMapHtml(value) {
 
 function escapeMapAttribute(value) {
     return escapeMapHtml(value).replaceAll('`', '&#096;');
+}
+
+function isSafeHttpUrl(value) {
+    try {
+        if (!String(value || '').trim()) return false;
+        const url = new URL(String(value));
+
+        return url.protocol === 'https:' || url.protocol === 'http:';
+    } catch {
+        return false;
+    }
 }
 
 function setPendingCoords(coords) {
