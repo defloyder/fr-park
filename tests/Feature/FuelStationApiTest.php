@@ -2,11 +2,19 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class FuelStationApiTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Cache::flush();
+    }
+
     public function test_it_returns_fuel_stations_with_prices_and_availability(): void
     {
         Http::fake([
@@ -219,6 +227,106 @@ class FuelStationApiTest extends TestCase
             ->assertJsonPath('data.0.name', 'Нефтьмагистраль №01')
             ->assertJsonPath('data.0.prices.АИ-95', '79,99 ₽')
             ->assertJsonPath('data.0.priceSource', 'Официальная карта АЗС «Нефтьмагистраль»')
+            ->assertJsonPath('data.0.availability', 'unknown');
+    }
+
+    public function test_it_loads_station_prices_from_the_official_gazpromneft_api(): void
+    {
+        config()->set('services.tomtom_traffic.key', null);
+
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), 'overpass-api.de')) {
+                return Http::response([
+                    'elements' => [[
+                        'type' => 'node',
+                        'id' => 30,
+                        'lat' => 55.76746,
+                        'lon' => 37.40399,
+                        'tags' => [
+                            'amenity' => 'fuel',
+                            'name' => 'Газпромнефть',
+                        ],
+                    ]],
+                ]);
+            }
+
+            if ($request->url() === 'https://gpnbonus.ru/api/stations/list') {
+                return Http::response([
+                    'stations' => [[
+                        'GPNAZSID' => 1665,
+                        'name' => 'АЗС №10',
+                        'city' => 'Москва',
+                        'address' => 'Осенняя, 23Б',
+                        'latitude' => '55.76746',
+                        'longitude' => '37.40399',
+                        'workMode' => 'круглосуточно',
+                    ]],
+                ]);
+            }
+
+            if ($request->url() === 'https://gpnbonus.ru/api/stations/1665') {
+                return Http::response([
+                    'data' => [[
+                        'product' => [
+                            'shortTitle' => '95',
+                            'title' => 'Бензин АИ-95',
+                        ],
+                        'price' => [
+                            'price' => 72.06,
+                            'since' => '2026-06-25T08:49:59.000000Z',
+                        ],
+                    ]],
+                ]);
+            }
+
+            return Http::response([], 404);
+        });
+
+        $this->getJson('/api/fuel-stations?west=37.3&south=55.7&east=37.5&north=55.8')
+            ->assertOk()
+            ->assertJsonPath('data.0.name', 'Газпромнефть АЗС №10')
+            ->assertJsonPath('data.0.prices.АИ-95', '72,06 ₽')
+            ->assertJsonPath('data.0.updatedAt', '2026-06-25T08:49:59.000000Z')
+            ->assertJsonPath('data.0.priceSource', 'Официальная карта АЗС «Газпромнефть»')
+            ->assertJsonPath('data.0.availability', 'unknown');
+    }
+
+    public function test_it_parses_station_prices_from_the_official_rosneft_map(): void
+    {
+        config()->set('services.tomtom_traffic.key', null);
+
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), 'overpass-api.de')) {
+                return Http::response([
+                    'elements' => [[
+                        'type' => 'node',
+                        'id' => 40,
+                        'lat' => 55.75,
+                        'lon' => 37.61,
+                        'tags' => [
+                            'amenity' => 'fuel',
+                            'name' => 'Роснефть',
+                        ],
+                    ]],
+                ]);
+            }
+
+            if ($request->url() === 'https://rosneft-azs.ru/stations') {
+                return Http::response(<<<'HTML'
+                    <script>
+                    window.__NUXT__=(function(a,b,c,d,e,f,g,h){c.id=a;c.label=d;return {stations:{stations:[{id:e,title:"АЗС 12 ПАО Роснефть",address:"Москва, Тестовая улица, 1",brand:f,currency:"RUB",type:"gas_station",region:g,coords:{lat:55.75,lng:37.61},fuelsIds:new Set([a]),servicesIds:new Set([]),fuels:[{id:a,price:b,info:c}],services:[],serivicesInfo:[]}],filters:{}}}}("ai95",72.45,{},"АИ-95",500,"rosneft",{}));
+                    </script>
+                    HTML);
+            }
+
+            return Http::response([], 404);
+        });
+
+        $this->getJson('/api/fuel-stations?west=37.5&south=55.7&east=37.7&north=55.8')
+            ->assertOk()
+            ->assertJsonPath('data.0.name', 'Роснефть · АЗС 12')
+            ->assertJsonPath('data.0.prices.АИ-95', '72,45 ₽')
+            ->assertJsonPath('data.0.priceSource', 'Официальная карта АЗС «Роснефть»')
             ->assertJsonPath('data.0.availability', 'unknown');
     }
 }
