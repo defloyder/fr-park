@@ -711,6 +711,16 @@ test('fuel station popup does not claim fuel is available without confirmation',
     assert.match(source, /properties\.name \|\| properties\.brand \|\| 'АЗС'/);
 });
 
+test('fuel popup only shows price metadata when a price exists and contains long station names', () => {
+    const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
+    const cssSource = readFileSync(new URL('../../resources/css/map-ui.css', import.meta.url), 'utf8');
+
+    assert.match(mapSource, /const hasPrices = priceRows !== ''/);
+    assert.match(mapSource, /hasPrices && properties\.priceSource/);
+    assert.match(mapSource, /Официальная карта ЛУКОЙЛ показывает виды топлива, но не публикует цену этой АЗС/);
+    assert.match(cssSource, /\.fuel-popup__status \{[\s\S]*?max-width: calc\(100% - 34px\);[\s\S]*?overflow-wrap: anywhere;[\s\S]*?white-space: normal;/);
+});
+
 test('fuel station card opens the existing route picker', () => {
     const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
     const uiSource = readFileSync(new URL('../../resources/js/modules/parking-form.js', import.meta.url), 'utf8');

@@ -2575,10 +2575,17 @@ function showFuelStationPopup(feature) {
             </div>
         `)
         .join('');
-    const updatedAt = formatFuelUpdatedAt(properties.updatedAt);
+    const hasPrices = priceRows !== '';
+    const updatedAt = hasPrices ? formatFuelUpdatedAt(properties.updatedAt) : '';
+    const stationName = properties.name || properties.brand || 'АЗС';
+    const stationAddress = String(properties.address || '').trim();
+    const normalizedAddress = stationAddress.toLocaleLowerCase('ru-RU');
+    const normalizedName = String(stationName).trim().toLocaleLowerCase('ru-RU');
+    const showAddress = stationAddress !== '' && normalizedAddress !== normalizedName;
+    const noPriceMessage = getFuelPriceUnavailableMessage(properties.brand || properties.name);
 
     closeFuelStationPopup();
-    const sourceLink = isSafeHttpUrl(properties.osmUrl)
+    const sourceLink = hasPrices && isSafeHttpUrl(properties.osmUrl)
         ? `<a href="${escapeMapAttribute(properties.osmUrl)}" target="_blank" rel="noreferrer">Открыть источник</a>`
         : '';
     fuelStationPopup = new maplibregl.Popup({
@@ -2592,15 +2599,15 @@ function showFuelStationPopup(feature) {
         .setHTML(`
             <article class="fuel-popup">
                 <div class="fuel-popup__head">
-                    <span class="fuel-popup__status is-unknown">${escapeMapHtml(properties.name || properties.brand || 'АЗС')}</span>
-                    <p>${escapeMapHtml(properties.address || properties.brand || 'Адрес не указан')}</p>
+                    <span class="fuel-popup__status is-unknown">${escapeMapHtml(stationName)}</span>
+                    ${showAddress ? `<p>${escapeMapHtml(stationAddress)}</p>` : ''}
                 </div>
                 <div class="fuel-popup__prices">
-                    ${priceRows || '<p class="fuel-popup__notice">Цена не опубликована в открытых данных.</p>'}
+                    ${priceRows || `<p class="fuel-popup__notice">${escapeMapHtml(noPriceMessage)}</p>`}
                 </div>
                 ${properties.openingHours ? `<p class="fuel-popup__hours">Режим: ${escapeMapHtml(properties.openingHours)}</p>` : ''}
                 ${updatedAt ? `<small>Данные обновлены: ${escapeMapHtml(updatedAt)}</small>` : ''}
-                ${properties.priceSource ? `<small>Источник цены: ${escapeMapHtml(properties.priceSource)}</small>` : ''}
+                ${hasPrices && properties.priceSource ? `<small>Источник цены: ${escapeMapHtml(properties.priceSource)}</small>` : ''}
                 <button
                     class="route-button fuel-popup__route"
                     type="button"
@@ -2620,6 +2627,16 @@ function showFuelStationPopup(feature) {
     fuelStationPopup.on('close', () => {
         fuelStationPopup = null;
     });
+}
+
+function getFuelPriceUnavailableMessage(brand) {
+    const normalizedBrand = String(brand || '').toLocaleLowerCase('ru-RU');
+
+    if (normalizedBrand.includes('лукойл') || normalizedBrand.includes('lukoil')) {
+        return 'Официальная карта ЛУКОЙЛ показывает виды топлива, но не публикует цену этой АЗС.';
+    }
+
+    return 'Цена этой АЗС не опубликована в доступных источниках.';
 }
 
 function selectPersonalPlaceFromFeature(feature) {

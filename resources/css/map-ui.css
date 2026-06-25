@@ -670,9 +670,16 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-settings__option:
 
 .fuel-popup {
     display: grid;
+    width: min(280px, calc(100vw - 70px));
+    min-width: 0;
     gap: 11px;
-    min-width: 260px;
     padding: 17px;
+}
+
+.fuel-popup__head {
+    display: grid;
+    min-width: 0;
+    gap: 7px;
 }
 
 .fuel-popup__head h3 {
@@ -692,12 +699,17 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-settings__option:
 
 .fuel-popup__status {
     display: inline-flex;
+    width: fit-content;
+    max-width: calc(100% - 34px);
     padding: 4px 8px;
+    overflow-wrap: anywhere;
     color: #6effd8;
     font-size: 0.66rem;
     font-weight: 900;
+    line-height: 1.25;
     letter-spacing: 0.04em;
     text-transform: uppercase;
+    white-space: normal;
     background: rgba(70, 255, 210, 0.09);
     border: 1px solid rgba(70, 255, 210, 0.52);
     border-radius: 999px;
