@@ -16,6 +16,7 @@ import {
     shouldFollowNavigationPosition,
     shouldFollowUserLocation,
     shouldRecenterNavigationFromLocate,
+    shouldShowNavigationGpsWarning,
     smoothCompassHeading,
 } from '../../resources/js/modules/navigation-logic.js';
 
@@ -456,8 +457,55 @@ test('GPS failure clears live navigation values and exposes a warning', () => {
     assert.match(errorHandler, /state\.currentSpeedKmh = 0/);
     assert.match(formSource, /state\.displayedSpeedKmh = 0/);
     assert.doesNotMatch(errorHandler, /updatedAt: Date\.now/);
-    assert.match(formSource, /GPS недоступен/);
-    assert.match(formSource, /Ожидание сигнала GPS/);
+    assert.match(formSource, /Слабый сигнал GPS/);
+    assert.match(formSource, /Продолжаем по последней позиции/);
+});
+
+test('navigation ignores isolated GPS timeouts and warns after a sustained outage', () => {
+    const startedAt = 10_000;
+
+    assert.equal(shouldShowNavigationGpsWarning({
+        errorCode: 3,
+        consecutiveErrors: 1,
+        navigationStartedAt: startedAt,
+        now: startedAt + 12_000,
+    }), false);
+    assert.equal(shouldShowNavigationGpsWarning({
+        errorCode: 3,
+        consecutiveErrors: 3,
+        navigationStartedAt: startedAt,
+        now: startedAt + 9_000,
+    }), false);
+    assert.equal(shouldShowNavigationGpsWarning({
+        errorCode: 3,
+        consecutiveErrors: 3,
+        navigationStartedAt: startedAt,
+        now: startedAt + 12_000,
+    }), true);
+    assert.equal(shouldShowNavigationGpsWarning({
+        errorCode: 1,
+        consecutiveErrors: 1,
+        navigationStartedAt: startedAt,
+        now: startedAt + 100,
+    }), true);
+});
+
+test('navigation cockpit inverts against the active map and keeps alerts compact', () => {
+    const cssSource = readFileSync(new URL('../../resources/css/map-ui.css', import.meta.url), 'utf8');
+
+    assert.match(cssSource, /body\[data-map-layer="dark"\]\.is-navigation-mode,[\s\S]*?--nav-surface: linear-gradient\(145deg, rgba\(255, 255, 255, 0\.97\)/);
+    assert.match(cssSource, /body\.is-navigation-mode \{[\s\S]*?--nav-surface: linear-gradient\(145deg, rgba\(7, 18, 40, 0\.96\)/);
+    assert.match(cssSource, /\.navigation-gps-alert \{[\s\S]*?grid-template-columns: 8px auto minmax\(0, 1fr\)/);
+    assert.match(cssSource, /@media \(max-width: 720px\)[\s\S]*?\.navigation-compass \{[\s\S]*?display: none;/);
+});
+
+test('active route uses casing glow traffic color and a highlight layer', () => {
+    const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
+
+    assert.match(mapSource, /active-route-casing/);
+    assert.match(mapSource, /active-route-glow/);
+    assert.match(mapSource, /active-route-highlight/);
+    assert.match(mapSource, /'free',\s*'#3478F6'/);
 });
 
 test('map labels only request font stacks available from OpenFreeMap', () => {

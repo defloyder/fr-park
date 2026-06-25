@@ -18,7 +18,7 @@ import {
     uploadParkingPhoto,
 } from './parking-api';
 import { addParkingSpotToMap, buildRouteToSpot, clearActiveRoute, clearPendingSelection, clearRouteManeuverHint, focusNavigationPosition, focusSpot, focusSpots, focusUserLocation, getMapCenterLocation, renderSpeedCameras, replaceParkingSpotsOnMap, replacePersonalPlacesOnMap, restoreActiveRoute, setMapPickingMode, setRouteDestinationPickingMode, startRouteNavigation, updateActiveRouteProgress, updateRouteManeuverHint } from './map';
-import { getCompassEventPriority, getHeadingDifference, getNavigationRerouteDecision, getRouteSnappedNavigationLocation, getSpeedTransitionDurationMs, normalizeCompassHeading, pickUpcomingSpeedCamera, selectUpcomingRouteInstruction, shouldFollowNavigationPosition, shouldFollowUserLocation, shouldRecenterNavigationFromLocate, smoothCompassHeading } from './navigation-logic';
+import { getCompassEventPriority, getHeadingDifference, getNavigationRerouteDecision, getRouteSnappedNavigationLocation, getSpeedTransitionDurationMs, normalizeCompassHeading, pickUpcomingSpeedCamera, selectUpcomingRouteInstruction, shouldFollowNavigationPosition, shouldFollowUserLocation, shouldRecenterNavigationFromLocate, shouldShowNavigationGpsWarning, smoothCompassHeading } from './navigation-logic';
 
 const STATUS_LABELS = {
     verified: 'Проверено',
@@ -94,6 +94,10 @@ const state = {
     navigationOffRouteSince: 0,
     navigationGpsAvailable: true,
     navigationGpsErrorAt: 0,
+    navigationGpsErrorCount: 0,
+    navigationGpsErrorCode: 0,
+    navigationLastGpsFixAt: 0,
+    navigationStartedAt: 0,
     navigationPreserveZoom: false,
     navigatorDestination: null,
     navigatorPicking: false,
@@ -1810,6 +1814,10 @@ export function initParkingUi() {
         state.navigationOffRouteSince = 0;
         state.navigationGpsAvailable = true;
         state.navigationGpsErrorAt = 0;
+        state.navigationGpsErrorCount = 0;
+        state.navigationGpsErrorCode = 0;
+        state.navigationLastGpsFixAt = 0;
+        state.navigationStartedAt = 0;
         resetNavigationSpeedState();
         state.navigationPreserveZoom = false;
         clearNavigationState();
@@ -1879,6 +1887,9 @@ export function initParkingUi() {
         state.navigationSpot = spot;
         state.navigationRoute = route;
         state.navigationSessionId += 1;
+        state.navigationStartedAt = Date.now();
+        state.navigationGpsErrorCount = 0;
+        state.navigationGpsErrorCode = 0;
 
         closeRoutePicker();
         list.classList.add('hidden');
@@ -1934,8 +1945,9 @@ export function initParkingUi() {
                     <span data-navigation-instruction></span>
                 </div>
                 <div class="navigation-gps-alert hidden" role="status">
-                    <strong>GPS недоступен</strong>
-                    <span>Скорость и позиция временно не обновляются</span>
+                    <span class="navigation-gps-alert__dot" aria-hidden="true"></span>
+                    <strong data-navigation-gps-title>Слабый сигнал GPS</strong>
+                    <span data-navigation-gps-message>Продолжаем по последней позиции</span>
                 </div>
                 <div class="navigation-compass" aria-label="Компас направления">
                     <div class="navigation-compass__dial" aria-hidden="true">
@@ -2037,6 +2049,9 @@ export function initParkingUi() {
         state.navigationPreserveZoom = Boolean(saved.preserveZoom);
         state.navigationViewportHoldUntil = 0;
         state.navigationSessionId += 1;
+        state.navigationStartedAt = Date.now();
+        state.navigationGpsErrorCount = 0;
+        state.navigationGpsErrorCode = 0;
         document.body.classList.add('is-navigation-mode', 'is-navigation-following');
         document.body.classList.remove('is-navigation-detached');
         restoreActiveRoute(saved.route);
@@ -2127,6 +2142,16 @@ export function initParkingUi() {
         const speedometer = document.querySelector('.navigation-speedometer');
         speedometer?.classList.toggle('is-speeding', isSpeeding);
         document.querySelector('.navigation-gps-alert')?.classList.toggle('hidden', state.navigationGpsAvailable);
+        setText(
+            '[data-navigation-gps-title]',
+            state.navigationGpsErrorCode === 1 ? 'Нет доступа к геолокации' : 'Слабый сигнал GPS',
+        );
+        setText(
+            '[data-navigation-gps-message]',
+            state.navigationGpsErrorCode === 1
+                ? 'Разрешите доступ к геопозиции'
+                : 'Продолжаем по последней позиции',
+        );
         renderCameraAlert();
     }
 
@@ -2351,6 +2376,10 @@ export function initParkingUi() {
         state.navigationOffRouteSince = 0;
         state.navigationGpsAvailable = true;
         state.navigationGpsErrorAt = 0;
+        state.navigationGpsErrorCount = 0;
+        state.navigationGpsErrorCode = 0;
+        state.navigationLastGpsFixAt = 0;
+        state.navigationStartedAt = 0;
         resetNavigationSpeedState();
         state.navigationPreserveZoom = false;
         stopNavigationMetricsTimer();
@@ -2641,6 +2670,7 @@ export function initParkingUi() {
 
         state.navigationLocationPollTimer = window.setInterval(() => {
             if (!document.body.classList.contains('is-navigation-following')) return;
+            if (Date.now() - Number(state.navigationLastGpsFixAt || 0) < 4500) return;
 
             navigator.geolocation.getCurrentPosition(
                 ({ coords }) => applyNavigationLocationCoords(coords),
@@ -2651,7 +2681,7 @@ export function initParkingUi() {
                     timeout: 2200,
                 },
             );
-        }, 1500);
+        }, 5000);
     }
 
     function stopNavigationLocationPolling() {
@@ -2721,6 +2751,9 @@ export function initParkingUi() {
         };
         state.navigationGpsAvailable = true;
         state.navigationGpsErrorAt = 0;
+        state.navigationGpsErrorCount = 0;
+        state.navigationGpsErrorCode = 0;
+        state.navigationLastGpsFixAt = Date.now();
         setNavigationSpeedTarget(getGpsSpeedKmh(coords));
         document.body.classList.remove('is-navigation-gps-unavailable');
         state.userLocation = getRouteSnappedNavigationLocation(rawLocation, state.navigationRoute, {
@@ -2749,13 +2782,25 @@ export function initParkingUi() {
         saveNavigationState();
     }
 
-    function handleNavigationLocationError() {
+    function handleNavigationLocationError(error = {}) {
         if (!state.userLocation || !state.navigationRoute || !document.body.classList.contains('is-navigation-following')) {
             return;
         }
 
+        state.navigationGpsErrorCount += 1;
+        state.navigationGpsErrorCode = Number(error?.code) || 0;
+        state.navigationGpsErrorAt ||= Date.now();
+
+        if (!shouldShowNavigationGpsWarning({
+            errorCode: state.navigationGpsErrorCode,
+            consecutiveErrors: state.navigationGpsErrorCount,
+            lastFixAt: state.navigationLastGpsFixAt,
+            navigationStartedAt: state.navigationStartedAt,
+        })) {
+            return;
+        }
+
         state.navigationGpsAvailable = false;
-        state.navigationGpsErrorAt = Date.now();
         window.clearTimeout(state.navigationSpeedAnimationTimer);
         state.navigationSpeedAnimationTimer = null;
         state.currentSpeedKmh = 0;

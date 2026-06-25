@@ -39,7 +39,9 @@ const PERSONAL_PLACE_SOURCE_ID = 'personal-places';
 const TRAFFIC_FLOW_SOURCE_ID = 'tomtom-traffic-flow';
 const TRAFFIC_FLOW_LAYER_ID = 'tomtom-traffic-flow';
 const ROUTE_CASING_LAYER_ID = 'active-route-casing';
+const ROUTE_GLOW_LAYER_ID = 'active-route-glow';
 const ROUTE_LINE_LAYER_ID = 'active-route-line';
+const ROUTE_HIGHLIGHT_LAYER_ID = 'active-route-highlight';
 const ROAD_SOURCE_ID = 'openfreemap-vector';
 const ENABLE_ROAD_DETAILS = true;
 const POI_ICON_IMAGE_IDS = {
@@ -132,14 +134,14 @@ const ROUTE_TRAFFIC_LINE_COLOR = [
     'match',
     ['get', 'traffic'],
     'jam',
-    '#EF174A',
+    '#F43F5E',
     'heavy',
-    '#FF7A1A',
+    '#FF7A18',
     'slow',
-    '#FFD84D',
+    '#F7C948',
     'free',
-    '#22C55E',
-    '#20F4FF',
+    '#3478F6',
+    '#635BFF',
 ];
 
 const MAP_STYLE = {
@@ -2217,10 +2219,26 @@ function addRouteSourceAndLayer() {
             'line-join': 'round',
         },
         paint: {
-            'line-color': 'rgba(5, 12, 28, 0.82)',
-            'line-width': ['interpolate', ['linear'], ['zoom'], 11, 13, 16, 24],
-            'line-blur': ['interpolate', ['linear'], ['zoom'], 11, 1.2, 16, 2.2],
-            'line-opacity': 0.58,
+            'line-color': 'rgba(3, 9, 24, 0.94)',
+            'line-width': ['interpolate', ['linear'], ['zoom'], 11, 12, 16, 21],
+            'line-blur': ['interpolate', ['linear'], ['zoom'], 11, 0.6, 16, 1.2],
+            'line-opacity': 0.84,
+        },
+    }, 'spots-pin');
+
+    map.addLayer({
+        id: ROUTE_GLOW_LAYER_ID,
+        type: 'line',
+        source: ROUTE_SOURCE_ID,
+        layout: {
+            'line-cap': 'round',
+            'line-join': 'round',
+        },
+        paint: {
+            'line-color': '#55C7FF',
+            'line-width': ['interpolate', ['linear'], ['zoom'], 11, 9, 16, 17],
+            'line-blur': ['interpolate', ['linear'], ['zoom'], 11, 2.2, 16, 4.2],
+            'line-opacity': 0.38,
         },
     }, 'spots-pin');
 
@@ -2233,9 +2251,25 @@ function addRouteSourceAndLayer() {
             'line-join': 'round',
         },
         paint: {
-            'line-color': '#20F4FF',
-            'line-width': ['interpolate', ['linear'], ['zoom'], 11, 7, 16, 13],
-            'line-opacity': 0.92,
+            'line-color': '#635BFF',
+            'line-width': ['interpolate', ['linear'], ['zoom'], 11, 6.5, 16, 12.5],
+            'line-opacity': 0.98,
+        },
+    }, 'spots-pin');
+
+    map.addLayer({
+        id: ROUTE_HIGHLIGHT_LAYER_ID,
+        type: 'line',
+        source: ROUTE_SOURCE_ID,
+        layout: {
+            'line-cap': 'round',
+            'line-join': 'round',
+        },
+        paint: {
+            'line-color': 'rgba(255, 255, 255, 0.9)',
+            'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 16, 2],
+            'line-blur': 0.2,
+            'line-opacity': 0.34,
         },
     }, 'spots-pin');
 }
@@ -2715,7 +2749,9 @@ export async function buildRouteToSpot(userLocation, spot, { camera = 'overview'
 function keepNavigationLayersOrdered() {
     const orderedTopLayers = [
         ROUTE_CASING_LAYER_ID,
+        ROUTE_GLOW_LAYER_ID,
         ROUTE_LINE_LAYER_ID,
+        ROUTE_HIGHLIGHT_LAYER_ID,
         'clusters',
         'spots-pin',
         'cluster-count',

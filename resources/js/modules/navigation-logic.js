@@ -4,6 +4,25 @@ export const DEFAULT_REROUTE_CONFIRMATION_MS = 1500;
 export const DEFAULT_REROUTE_COOLDOWN_MS = 8000;
 export const MIN_SPEED_TRANSITION_MS = 180;
 export const MAX_SPEED_TRANSITION_MS = 1400;
+export const DEFAULT_GPS_WARNING_GRACE_MS = 10000;
+
+export function shouldShowNavigationGpsWarning({
+    errorCode = 0,
+    consecutiveErrors = 0,
+    lastFixAt = 0,
+    navigationStartedAt = 0,
+    now = Date.now(),
+    graceMs = DEFAULT_GPS_WARNING_GRACE_MS,
+} = {}) {
+    if (Number(errorCode) === 1) {
+        return true;
+    }
+
+    const referenceTime = Math.max(Number(lastFixAt) || 0, Number(navigationStartedAt) || 0);
+    const signalAge = referenceTime > 0 ? Number(now) - referenceTime : Number.POSITIVE_INFINITY;
+
+    return Number(consecutiveErrors) >= 3 && signalAge >= graceMs;
+}
 
 export function shouldRecenterNavigationFromLocate({ isNavigationMode = false, hasRoute = false } = {}) {
     return Boolean(isNavigationMode && hasRoute);
