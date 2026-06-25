@@ -75,6 +75,25 @@ export async function fetchParkingSpots() {
     return _decrypt(encrypted, cryptoKey);
 }
 
+export async function fetchFuelStations(bounds) {
+    const params = new URLSearchParams({
+        west: String(bounds.west),
+        south: String(bounds.south),
+        east: String(bounds.east),
+        north: String(bounds.north),
+    });
+    const response = await fetch(`/api/fuel-stations?${params}`, {
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json' },
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to load fuel stations');
+    }
+
+    return response.json();
+}
+
 export async function createParkingSpot(payload) {
     const response = await fetch('/api/parking-spots', {
         method: 'POST',

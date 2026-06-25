@@ -78,6 +78,13 @@
                         <span class="layer-switcher__swatch layer-switcher__swatch--satellite"></span>
                         <span>Спутник</span>
                     </button>
+                    <div class="layer-switcher__divider" role="separator"></div>
+                    <button class="layer-switcher__option layer-switcher__option--fuel" type="button" data-fuel-layer-toggle aria-pressed="false">
+                        <span class="layer-switcher__swatch layer-switcher__swatch--fuel" aria-hidden="true">
+                            <svg viewBox="0 0 24 24"><path d="M6 21V5.5A2.5 2.5 0 0 1 8.5 3h5A2.5 2.5 0 0 1 16 5.5V21M4 21h14M8 7h6v5H8V7Z"></path><path d="m16 8 2.5 2.5V17a1.5 1.5 0 0 0 3 0v-5l-2-2"></path></svg>
+                        </span>
+                        <span>Заправки</span>
+                    </button>
                 </div>
             </div>
             <button class="map-control-button map-profile-control" type="button" data-action="open-profile" aria-label="Открыть профиль">
