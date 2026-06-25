@@ -45,8 +45,8 @@ class OfficialFuelPriceService
         $payload = Cache::remember(
             'fuel-prices:official:gazpromneft:list',
             now()->addMinutes(10),
-            fn (): array => Http::connectTimeout(5)
-                ->timeout(25)
+            fn (): array => Http::connectTimeout(3)
+                ->timeout(8)
                 ->withoutVerifying()
                 ->acceptJson()
                 ->withHeaders(['User-Agent' => 'Mozilla/5.0 AuralithMaps/1.0'])
@@ -96,8 +96,8 @@ class OfficialFuelPriceService
             $responses = Http::pool(function (Pool $pool) use ($missing): void {
                 foreach ($missing as $stationId) {
                     $pool->as($stationId)
-                        ->connectTimeout(4)
-                        ->timeout(10)
+                        ->connectTimeout(3)
+                        ->timeout(6)
                         ->withoutVerifying()
                         ->acceptJson()
                         ->withHeaders(['User-Agent' => 'Mozilla/5.0 AuralithMaps/1.0'])
@@ -192,8 +192,8 @@ class OfficialFuelPriceService
         $html = Cache::remember(
             'fuel-prices:official:rosneft',
             now()->addMinutes(10),
-            fn (): string => Http::connectTimeout(5)
-                ->timeout(30)
+            fn (): string => Http::connectTimeout(3)
+                ->timeout(10)
                 ->withoutVerifying()
                 ->withHeaders(['User-Agent' => 'AuralithMaps/1.0'])
                 ->get('https://rosneft-azs.ru/stations')
@@ -345,15 +345,15 @@ class OfficialFuelPriceService
             'fuel-prices:official:tatneft',
             now()->addMinutes(10),
             fn (): array => [
-                Http::connectTimeout(5)
-                    ->timeout(20)
+                Http::connectTimeout(3)
+                    ->timeout(8)
                     ->withoutVerifying()
                     ->acceptJson()
                     ->get('https://api.gs.cloud.tatneftm.ru/api/v2/azs/')
                     ->throw()
                     ->json(),
-                Http::connectTimeout(5)
-                    ->timeout(15)
+                Http::connectTimeout(3)
+                    ->timeout(8)
                     ->withoutVerifying()
                     ->acceptJson()
                     ->get('https://api.gs.cloud.tatneftm.ru/api/v2/azs/fuel_types/')
@@ -612,8 +612,8 @@ class OfficialFuelPriceService
         $html = Cache::remember(
             'fuel-prices:official:neftmagistral',
             now()->addMinutes(10),
-            fn (): string => Http::connectTimeout(5)
-                ->timeout(20)
+            fn (): string => Http::connectTimeout(3)
+                ->timeout(8)
                 ->withoutVerifying()
                 ->withHeaders(['User-Agent' => 'AuralithMaps/1.0'])
                 ->get('https://neftm.ru/')

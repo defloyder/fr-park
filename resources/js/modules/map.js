@@ -1350,7 +1350,8 @@ async function loadFuelStationsInView() {
     }
 
     const bounds = map.getBounds();
-    const cacheKey = getFuelStationsCacheKey(bounds);
+    const requestBounds = getRoundedFuelStationBounds(bounds);
+    const cacheKey = getFuelStationsCacheKey(requestBounds);
     const cached = fuelStationsCache.get(cacheKey);
 
     if (cached && Date.now() - cached.savedAt < FUEL_STATION_CACHE_TTL_MS) {
@@ -1360,38 +1361,66 @@ async function loadFuelStationsInView() {
     }
 
     const requestController = new AbortController();
-    const requestTimeout = window.setTimeout(() => requestController.abort('timeout'), 18000);
+    const requestTimeout = window.setTimeout(() => requestController.abort('timeout'), 45000);
     fuelStationsAbortController = requestController;
     updateFuelLayerMenuState(renderedFuelStationIds.size ? 'refreshing' : 'loading', renderedFuelStationIds.size);
 
     try {
-        const response = await fetchFuelStations({
-            west: bounds.getWest(),
-            south: bounds.getSouth(),
-            east: bounds.getEast(),
-            north: bounds.getNorth(),
-        }, {
+        let fastStations = [];
+        try {
+            const fastResponse = await fetchFuelStations(requestBounds, {
+                signal: requestController.signal,
+                detail: 'fast',
+            });
+            fastStations = normalizeFuelStations(fastResponse.data);
+        } catch (error) {
+            if (error?.name === 'AbortError') throw error;
+        }
+
+        if (requestId !== fuelStationsRequestId || !isFuelLayerEnabled) return;
+        if (fastStations.length > 0) {
+            renderFuelStations(fastStations);
+            updateFuelLayerMenuState('refreshing', fastStations.length);
+        }
+
+        const response = await fetchFuelStations(requestBounds, {
             signal: requestController.signal,
+            detail: 'full',
         });
         if (requestId !== fuelStationsRequestId || !isFuelLayerEnabled) return;
 
         const stations = normalizeFuelStations(response.data);
-        cacheFuelStations(cacheKey, stations);
-        renderFuelStations(stations);
-        updateFuelLayerMenuState(stations.length ? 'ready' : 'empty', stations.length);
+        const finalStations = stations.length > 0 ? stations : fastStations;
+        cacheFuelStations(cacheKey, finalStations);
+        renderFuelStations(finalStations);
+        updateFuelLayerMenuState(finalStations.length ? 'ready' : 'empty', finalStations.length);
     } catch (error) {
         if (requestId !== fuelStationsRequestId || !isFuelLayerEnabled) return;
         if (error?.name === 'AbortError' && requestController.signal.reason !== 'timeout') return;
 
         updateFuelLayerMenuState(renderedFuelStationIds.size ? 'stale' : 'error', renderedFuelStationIds.size);
         window.clearTimeout(fuelStationsRetryTimer);
-        fuelStationsRetryTimer = window.setTimeout(() => scheduleFuelStationsLoad(0), 10000);
+        fuelStationsRetryTimer = window.setTimeout(
+            () => scheduleFuelStationsLoad(0),
+            renderedFuelStationIds.size ? 60000 : 10000,
+        );
     } finally {
         window.clearTimeout(requestTimeout);
         if (requestId === fuelStationsRequestId) {
             fuelStationsAbortController = null;
         }
     }
+}
+
+function getRoundedFuelStationBounds(bounds) {
+    const precision = 100;
+
+    return {
+        west: Math.floor(bounds.getWest() * precision) / precision,
+        south: Math.floor(bounds.getSouth() * precision) / precision,
+        east: Math.ceil(bounds.getEast() * precision) / precision,
+        north: Math.ceil(bounds.getNorth() * precision) / precision,
+    };
 }
 
 function getSavedBaseMapLayer() {
@@ -4078,10 +4107,10 @@ function getFuelStationId(station) {
 
 function getFuelStationsCacheKey(bounds) {
     return [
-        bounds.getWest(),
-        bounds.getSouth(),
-        bounds.getEast(),
-        bounds.getNorth(),
+        bounds.west,
+        bounds.south,
+        bounds.east,
+        bounds.north,
     ].map((value) => Number(value).toFixed(2)).join(':');
 }
 

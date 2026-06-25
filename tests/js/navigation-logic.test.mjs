@@ -780,8 +780,11 @@ test('fuel requests are cancellable cached and preserve rendered stations on ref
     const apiSource = readFileSync(new URL('../../resources/js/modules/parking-api.js', import.meta.url), 'utf8');
     const loader = mapSource.match(/async function loadFuelStationsInView[\s\S]*?\n}\n\nfunction getSavedBaseMapLayer/)?.[0] ?? '';
 
-    assert.match(apiSource, /fetchFuelStations\(bounds, \{ signal \} = \{\}\)/);
+    assert.match(apiSource, /fetchFuelStations\(bounds, \{ signal, detail = 'full' \} = \{\}\)/);
     assert.match(apiSource, /signal,/);
+    assert.match(loader, /detail: 'fast'/);
+    assert.match(loader, /detail: 'full'/);
+    assert.ok(loader.indexOf("detail: 'fast'") < loader.indexOf("detail: 'full'"));
     assert.match(loader, /fuelStationsCache\.get/);
     assert.match(loader, /abort\('superseded'\)/);
     assert.match(loader, /requestController\.abort\('timeout'\)/);

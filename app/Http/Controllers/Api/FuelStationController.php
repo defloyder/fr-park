@@ -17,6 +17,7 @@ class FuelStationController extends Controller
             'south' => ['required', 'numeric', 'between:-90,90'],
             'east' => ['required', 'numeric', 'between:-180,180'],
             'north' => ['required', 'numeric', 'between:-90,90'],
+            'detail' => ['sometimes', 'in:fast,full'],
         ]);
 
         $west = (float) $validated['west'];
@@ -28,12 +29,16 @@ class FuelStationController extends Controller
         abort_if(($east - $west) > 2.5 || ($north - $south) > 2.5, 422, 'Увеличьте масштаб карты.');
 
         try {
-            $result = $fuelStations->stationsForBounds($west, $south, $east, $north);
+            $detail = (string) ($validated['detail'] ?? 'full');
+            $result = $detail === 'fast'
+                ? $fuelStations->stationsForBoundsFast($west, $south, $east, $north)
+                : $fuelStations->stationsForBounds($west, $south, $east, $north);
 
             return response()->json([
                 'data' => $result['data'],
                 'meta' => [
                     'source' => $result['source'],
+                    'detail' => $detail,
                     'pricesNotice' => 'Цены отображаются только когда источник публикует их для выбранной АЗС.',
                 ],
             ]);

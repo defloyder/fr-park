@@ -62,6 +62,34 @@ class FuelStationApiTest extends TestCase
             ->assertUnprocessable();
     }
 
+    public function test_fast_mode_returns_tomtom_locations_without_waiting_for_price_sources(): void
+    {
+        config()->set('services.tomtom_traffic.key', 'tomtom-test-key');
+
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), 'api.tomtom.com/search/2/categorySearch/')) {
+                return Http::response([
+                    'results' => [[
+                        'id' => 'fast-station',
+                        'poi' => ['name' => 'Быстрая АЗС'],
+                        'position' => ['lat' => 55.75, 'lon' => 37.61],
+                    ]],
+                ]);
+            }
+
+            return Http::response([], 500);
+        });
+
+        $this->getJson('/api/fuel-stations?west=37.5&south=55.7&east=37.7&north=55.8&detail=fast')
+            ->assertOk()
+            ->assertJsonPath('meta.detail', 'fast')
+            ->assertJsonPath('meta.source', 'TomTom')
+            ->assertJsonPath('data.0.name', 'Быстрая АЗС')
+            ->assertJsonCount(1, 'data');
+
+        Http::assertSentCount(1);
+    }
+
     public function test_it_uses_tomtom_and_enriches_station_with_open_data_price(): void
     {
         config()->set('services.tomtom_traffic.key', 'tomtom-test-key');

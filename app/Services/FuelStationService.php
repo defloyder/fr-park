@@ -10,9 +10,7 @@ use Throwable;
 
 class FuelStationService
 {
-    public function __construct(private readonly OfficialFuelPriceService $officialPrices)
-    {
-    }
+    public function __construct(private readonly OfficialFuelPriceService $officialPrices) {}
 
     private const TOMTOM_FUEL_TYPES = [
         'regular' => 'Бензин',
@@ -76,15 +74,22 @@ class FuelStationService
             try {
                 $tomTomStations = $this->fetchTomTomStations($west, $south, $east, $north, $tomTomApiKey);
 
-                try {
-                    $openStreetMapStations = $this->fetchOpenStreetMapStations($west, $south, $east, $north);
-
+                if (count($tomTomStations) >= 40) {
                     $result = [
-                        'data' => $this->mergeStations($tomTomStations, $openStreetMapStations),
-                        'source' => 'TomTom + OpenStreetMap',
+                        'data' => $tomTomStations,
+                        'source' => 'TomTom',
                     ];
-                } catch (Throwable) {
-                    // TomTom stations are still useful if the supplemental source is unavailable.
+                } else {
+                    try {
+                        $openStreetMapStations = $this->fetchOpenStreetMapStations($west, $south, $east, $north);
+
+                        $result = [
+                            'data' => $this->mergeStations($tomTomStations, $openStreetMapStations),
+                            'source' => 'TomTom + OpenStreetMap',
+                        ];
+                    } catch (Throwable) {
+                        // TomTom stations are still useful if the supplemental source is unavailable.
+                    }
                 }
 
                 $result ??= [
@@ -122,6 +127,23 @@ class FuelStationService
         return $result;
     }
 
+    public function stationsForBoundsFast(float $west, float $south, float $east, float $north): array
+    {
+        $tomTomApiKey = trim((string) config('services.tomtom_traffic.key'));
+
+        if ($tomTomApiKey === '') {
+            return [
+                'data' => [],
+                'source' => 'Быстрый источник недоступен',
+            ];
+        }
+
+        return [
+            'data' => $this->fetchTomTomStationLocations($west, $south, $east, $north, $tomTomApiKey),
+            'source' => 'TomTom',
+        ];
+    }
+
     private function mergeOfficialPrices(array $stations, array $officialStations): array
     {
         $merged = collect($stations)->values();
@@ -138,6 +160,7 @@ class FuelStationService
 
             if ($matchIndex === false) {
                 $merged->push($officialStation);
+
                 continue;
             }
 
@@ -174,6 +197,7 @@ class FuelStationService
 
             if ($matchIndex === false) {
                 $merged->push($openStreetMapStation);
+
                 continue;
             }
 
@@ -213,29 +237,7 @@ class FuelStationService
         float $north,
         string $apiKey
     ): array {
-        $payload = Cache::remember(
-            'fuel-stations:tomtom-search:'.sha1(implode(':', [$west, $south, $east, $north])),
-            now()->addMinutes(10),
-            fn () => Http::connectTimeout(5)
-                ->timeout(15)
-                ->acceptJson()
-                ->get('https://api.tomtom.com/search/2/categorySearch/petrol%20station.json', [
-                    'key' => $apiKey,
-                    'topLeft' => "{$north},{$west}",
-                    'btmRight' => "{$south},{$east}",
-                    'limit' => 100,
-                    'language' => 'ru-RU',
-                    'view' => 'Unified',
-                    'openingHours' => 'nextSevenDays',
-                ])
-                ->throw()
-                ->json()
-        );
-
-        $stations = collect((array) data_get($payload, 'results', []))
-            ->map(fn (array $item): ?array => $this->normalizeTomTomStation($item))
-            ->filter()
-            ->values();
+        $stations = collect($this->fetchTomTomStationLocations($west, $south, $east, $north, $apiKey));
         $priceIds = $stations
             ->pluck('fuelPriceId', 'id')
             ->filter()
@@ -253,6 +255,39 @@ class FuelStationService
 
                 return $station;
             })
+            ->all();
+    }
+
+    private function fetchTomTomStationLocations(
+        float $west,
+        float $south,
+        float $east,
+        float $north,
+        string $apiKey
+    ): array {
+        $payload = Cache::remember(
+            'fuel-stations:tomtom-search:'.sha1(implode(':', [$west, $south, $east, $north])),
+            now()->addMinutes(10),
+            fn () => Http::connectTimeout(3)
+                ->timeout(7)
+                ->acceptJson()
+                ->get('https://api.tomtom.com/search/2/categorySearch/petrol%20station.json', [
+                    'key' => $apiKey,
+                    'topLeft' => "{$north},{$west}",
+                    'btmRight' => "{$south},{$east}",
+                    'limit' => 100,
+                    'language' => 'ru-RU',
+                    'view' => 'Unified',
+                    'openingHours' => 'nextSevenDays',
+                ])
+                ->throw()
+                ->json()
+        );
+
+        return collect((array) data_get($payload, 'results', []))
+            ->map(fn (array $item): ?array => $this->normalizeTomTomStation($item))
+            ->filter()
+            ->values()
             ->all();
     }
 
@@ -434,7 +469,7 @@ class FuelStationService
                     ->post($endpoint, ['data' => $query])
                     ->throw()
                     ->json();
-            } catch (\Throwable $exception) {
+            } catch (Throwable $exception) {
                 $lastException = $exception;
             }
         }

@@ -75,12 +75,13 @@ export async function fetchParkingSpots() {
     return _decrypt(encrypted, cryptoKey);
 }
 
-export async function fetchFuelStations(bounds, { signal } = {}) {
+export async function fetchFuelStations(bounds, { signal, detail = 'full' } = {}) {
     const params = new URLSearchParams({
         west: String(bounds.west),
         south: String(bounds.south),
         east: String(bounds.east),
         north: String(bounds.north),
+        detail,
     });
     const response = await fetch(`/api/fuel-stations?${params}`, {
         credentials: 'same-origin',
