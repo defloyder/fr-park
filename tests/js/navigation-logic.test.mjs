@@ -646,3 +646,11 @@ test('light map style exposes detailed green areas and a clear road hierarchy', 
     assert.match(mapSource, /'icon-ignore-placement': true/);
     assert.doesNotMatch(mapSource, /createTurnLaneMarkingSvg/);
 });
+
+test('fuel stations load even while map tiles are still loading', () => {
+    const source = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
+    const scheduler = source.match(/function scheduleFuelStationsLoad[\s\S]*?\n}/)?.[0] ?? '';
+
+    assert.match(scheduler, /getSource\(FUEL_STATION_SOURCE_ID\)/);
+    assert.doesNotMatch(scheduler, /map\?\.loaded\(\)/);
+});

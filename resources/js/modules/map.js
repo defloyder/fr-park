@@ -1249,7 +1249,7 @@ function setFuelLayerEnabled(enabled, { persist = false } = {}) {
 }
 
 function scheduleFuelStationsLoad(delay = 260) {
-    if (!isFuelLayerEnabled || !map?.loaded()) return;
+    if (!isFuelLayerEnabled || !map?.getSource(FUEL_STATION_SOURCE_ID)) return;
 
     window.clearTimeout(fuelStationsLoadTimer);
     fuelStationsLoadTimer = window.setTimeout(loadFuelStationsInView, delay);
