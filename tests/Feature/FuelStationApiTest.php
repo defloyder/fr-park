@@ -43,9 +43,9 @@ class FuelStationApiTest extends TestCase
         $this->getJson('/api/fuel-stations?west=37.5&south=55.7&east=37.7&north=55.8')
             ->assertOk()
             ->assertJsonPath('data.0.name', 'Неон Нефть')
-            ->assertJsonPath('data.0.available', true)
+            ->assertJsonPath('data.0.availability', 'unknown')
             ->assertJsonPath('data.0.prices.АИ-95', '63,49 ₽')
-            ->assertJsonPath('data.1.available', false);
+            ->assertJsonPath('data.1.availability', 'unknown');
     }
 
     public function test_it_rejects_an_excessively_large_map_area(): void
@@ -118,5 +118,107 @@ class FuelStationApiTest extends TestCase
             ->assertJsonPath('data.0.name', 'TomTom Fuel')
             ->assertJsonPath('data.0.prices.АИ-95', '70,55 ₽')
             ->assertJsonPath('data.0.updatedAt', '2026-06-25T09:00:00Z');
+    }
+
+    public function test_it_enriches_a_station_from_an_official_tatneft_price_feed(): void
+    {
+        config()->set('services.tomtom_traffic.key', null);
+
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), 'overpass-api.de')) {
+                return Http::response([
+                    'elements' => [[
+                        'type' => 'node',
+                        'id' => 10,
+                        'lat' => 55.7643,
+                        'lon' => 37.4070,
+                        'tags' => [
+                            'amenity' => 'fuel',
+                            'name' => 'Татнефть',
+                        ],
+                    ]],
+                ]);
+            }
+
+            if (str_ends_with($request->url(), '/api/v2/azs/')) {
+                return Http::response([
+                    'status' => 'success',
+                    'data' => [[
+                        'id' => 222,
+                        'lat' => 55.76432,
+                        'lon' => 37.40702,
+                        'number' => 27,
+                        'address' => 'Москва, улица Крылатские Холмы, 40',
+                        'fuel' => [[
+                            'fuel_type_id' => 34,
+                            'price' => 70.99,
+                            'updated' => 1782379446,
+                        ]],
+                    ]],
+                ]);
+            }
+
+            if (str_contains($request->url(), '/api/v2/azs/fuel_types/')) {
+                return Http::response([
+                    'status' => 'success',
+                    'data' => [
+                        'items' => [[
+                            'id' => 34,
+                            'title' => 'АИ-95',
+                        ]],
+                    ],
+                ]);
+            }
+
+            return Http::response([], 404);
+        });
+
+        $this->getJson('/api/fuel-stations?west=37.3&south=55.7&east=37.5&north=55.8')
+            ->assertOk()
+            ->assertJsonPath('meta.source', 'OpenStreetMap + официальные сайты АЗС')
+            ->assertJsonPath('data.0.prices.АИ-95', '70,99 ₽')
+            ->assertJsonPath('data.0.priceSource', 'Официальная карта АЗС «Татнефть»')
+            ->assertJsonPath('data.0.availability', 'unknown');
+    }
+
+    public function test_it_parses_prices_from_the_official_neftmagistral_station_page(): void
+    {
+        config()->set('services.tomtom_traffic.key', null);
+
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), 'overpass-api.de')) {
+                return Http::response([
+                    'elements' => [[
+                        'type' => 'node',
+                        'id' => 20,
+                        'lat' => 55.63327,
+                        'lon' => 37.95761,
+                        'tags' => [
+                            'amenity' => 'fuel',
+                            'name' => 'Нефтьмагистраль',
+                        ],
+                    ]],
+                ]);
+            }
+
+            if ($request->url() === 'https://neftm.ru/') {
+                return Http::response(<<<'HTML'
+                    <div class="map-filter__station-item" id="gs901" data-lat="55.633269" data-lng="37.9576">
+                        <p class="map-filter__station-address">АЗС 01. МО, Быковское шоссе, стр. 2</p>
+                        <div class="map-filter__fuel-price"><p>АИ-95</p><p>79.99</p></div>
+                        <div class="map-filter__fuel-price"><p>ДТ</p><p>84.99</p></div>
+                    </div>
+                    HTML);
+            }
+
+            return Http::response([], 404);
+        });
+
+        $this->getJson('/api/fuel-stations?west=37.9&south=55.6&east=38&north=55.7')
+            ->assertOk()
+            ->assertJsonPath('data.0.name', 'Нефтьмагистраль №01')
+            ->assertJsonPath('data.0.prices.АИ-95', '79,99 ₽')
+            ->assertJsonPath('data.0.priceSource', 'Официальная карта АЗС «Нефтьмагистраль»')
+            ->assertJsonPath('data.0.availability', 'unknown');
     }
 }

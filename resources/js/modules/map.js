@@ -1090,7 +1090,7 @@ function addFuelStationSourceAndLayers() {
         layout: { visibility: 'none' },
         paint: {
             'circle-radius': ['interpolate', ['linear'], ['zoom'], 9, 14, 15, 23],
-            'circle-color': ['case', ['get', 'available'], '#22D3EE', '#FF174F'],
+            'circle-color': '#22D3EE',
             'circle-blur': 0.86,
             'circle-opacity': 0.52,
         },
@@ -1102,7 +1102,7 @@ function addFuelStationSourceAndLayers() {
         source: FUEL_STATION_SOURCE_ID,
         layout: {
             visibility: 'none',
-            'icon-image': ['case', ['get', 'available'], FUEL_MARKER_AVAILABLE_ID, FUEL_MARKER_UNAVAILABLE_ID],
+            'icon-image': FUEL_MARKER_AVAILABLE_ID,
             'icon-size': ['interpolate', ['linear'], ['zoom'], 9, 0.58, 14, 0.82, 18, 1],
             'icon-anchor': 'bottom',
             'icon-allow-overlap': true,
@@ -1126,7 +1126,7 @@ function addFuelStationSourceAndLayers() {
             'text-optional': true,
         },
         paint: {
-            'text-color': ['case', ['get', 'available'], '#E6FFFF', '#FFE4EA'],
+            'text-color': '#E6FFFF',
             'text-halo-color': 'rgba(3, 10, 24, 0.94)',
             'text-halo-width': 2.4,
         },
@@ -2403,7 +2403,6 @@ function showFuelStationPopup(feature) {
             </div>
         `)
         .join('');
-    const available = properties.available === true || properties.available === 'true';
     const updatedAt = formatFuelUpdatedAt(properties.updatedAt);
 
     fuelStationPopup?.remove();
@@ -2418,10 +2417,7 @@ function showFuelStationPopup(feature) {
         .setHTML(`
             <article class="fuel-popup">
                 <div class="fuel-popup__head">
-                    <span class="fuel-popup__status ${available ? '' : 'is-empty'}">
-                        ${available ? 'Топливо есть' : 'Бензина нет'}
-                    </span>
-                    <h3>${escapeMapHtml(properties.name || 'АЗС')}</h3>
+                    <span class="fuel-popup__status is-unknown">${escapeMapHtml(properties.name || properties.brand || 'АЗС')}</span>
                     <p>${escapeMapHtml(properties.address || properties.brand || 'Адрес не указан')}</p>
                 </div>
                 <div class="fuel-popup__prices">
@@ -2429,6 +2425,7 @@ function showFuelStationPopup(feature) {
                 </div>
                 ${properties.openingHours ? `<p class="fuel-popup__hours">Режим: ${escapeMapHtml(properties.openingHours)}</p>` : ''}
                 ${updatedAt ? `<small>Данные обновлены: ${escapeMapHtml(updatedAt)}</small>` : ''}
+                ${properties.priceSource ? `<small>Источник цены: ${escapeMapHtml(properties.priceSource)}</small>` : ''}
                 <a href="${escapeMapAttribute(properties.osmUrl || '#')}" target="_blank" rel="noreferrer">Открыть источник</a>
             </article>
         `)
@@ -3826,6 +3823,8 @@ function buildFuelStationFeatureCollection(stations) {
                 const longitude = Number(station.longitude);
                 const latitude = Number(station.latitude);
                 if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) return null;
+                const prices = station.prices || {};
+                const hasPrices = Object.keys(prices).length > 0;
 
                 return {
                     type: 'Feature',
@@ -3834,14 +3833,15 @@ function buildFuelStationFeatureCollection(stations) {
                         name: station.name || 'АЗС',
                         brand: station.brand || '',
                         address: station.address || '',
-                        available: station.available !== false,
-                        priceLabel: station.available === false
-                            ? 'Бензина нет'
-                            : (station.priceLabel || 'Цена не опубликована'),
-                        pricesJson: JSON.stringify(station.prices || {}),
+                        availability: 'unknown',
+                        priceLabel: hasPrices
+                            ? station.priceLabel
+                            : (station.brand || station.name || 'АЗС'),
+                        pricesJson: JSON.stringify(prices),
                         openingHours: station.openingHours || '',
                         updatedAt: station.updatedAt || '',
                         osmUrl: station.osmUrl || '',
+                        priceSource: station.priceSource || '',
                     },
                     geometry: {
                         type: 'Point',

@@ -633,6 +633,13 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-settings__option:
     box-shadow: 0 0 14px rgba(255, 23, 79, 0.2);
 }
 
+.fuel-popup__status.is-unknown {
+    color: #a8dfff;
+    background: rgba(56, 189, 248, 0.09);
+    border-color: rgba(125, 211, 252, 0.46);
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.12);
+}
+
 .fuel-popup__prices {
     display: grid;
     gap: 6px;

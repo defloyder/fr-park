@@ -10,6 +10,10 @@ use Throwable;
 
 class FuelStationService
 {
+    public function __construct(private readonly OfficialFuelPriceService $officialPrices)
+    {
+    }
+
     private const TOMTOM_FUEL_TYPES = [
         'regular' => 'Бензин',
         'sp91' => 'АИ-91',
@@ -59,6 +63,14 @@ class FuelStationService
     public function stationsForBounds(float $west, float $south, float $east, float $north): array
     {
         $tomTomApiKey = trim((string) config('services.tomtom_traffic.key'));
+        $result = null;
+        $officialStations = [];
+
+        try {
+            $officialStations = $this->officialPrices->stationsForBounds($west, $south, $east, $north);
+        } catch (Throwable) {
+            // Public map providers can still populate the layer.
+        }
 
         if ($tomTomApiKey !== '') {
             try {
@@ -67,7 +79,7 @@ class FuelStationService
                 try {
                     $openStreetMapStations = $this->fetchOpenStreetMapStations($west, $south, $east, $north);
 
-                    return [
+                    $result = [
                         'data' => $this->mergeStations($tomTomStations, $openStreetMapStations),
                         'source' => 'TomTom + OpenStreetMap',
                     ];
@@ -75,7 +87,7 @@ class FuelStationService
                     // TomTom stations are still useful if the supplemental source is unavailable.
                 }
 
-                return [
+                $result ??= [
                     'data' => $tomTomStations,
                     'source' => 'TomTom',
                 ];
@@ -84,10 +96,66 @@ class FuelStationService
             }
         }
 
-        return [
-            'data' => $this->fetchOpenStreetMapStations($west, $south, $east, $north),
-            'source' => 'OpenStreetMap',
-        ];
+        if ($result === null) {
+            try {
+                $result = [
+                    'data' => $this->fetchOpenStreetMapStations($west, $south, $east, $north),
+                    'source' => 'OpenStreetMap',
+                ];
+            } catch (Throwable $exception) {
+                if ($officialStations === []) {
+                    throw $exception;
+                }
+
+                $result = [
+                    'data' => [],
+                    'source' => '',
+                ];
+            }
+        }
+
+        if ($officialStations !== []) {
+            $result['data'] = $this->mergeOfficialPrices($result['data'], $officialStations);
+            $result['source'] = trim($result['source'].' + официальные сайты АЗС', ' +');
+        }
+
+        return $result;
+    }
+
+    private function mergeOfficialPrices(array $stations, array $officialStations): array
+    {
+        $merged = collect($stations)->values();
+
+        foreach ($officialStations as $officialStation) {
+            $matchIndex = $merged->search(
+                fn (array $station): bool => $this->distanceMeters(
+                    (float) $station['latitude'],
+                    (float) $station['longitude'],
+                    (float) $officialStation['latitude'],
+                    (float) $officialStation['longitude']
+                ) <= 150
+            );
+
+            if ($matchIndex === false) {
+                $merged->push($officialStation);
+                continue;
+            }
+
+            $station = $merged->get($matchIndex);
+            $merged->put($matchIndex, [
+                ...$station,
+                'name' => $officialStation['name'] ?: $station['name'],
+                'brand' => $officialStation['brand'] ?: $station['brand'],
+                'address' => $officialStation['address'] ?: $station['address'],
+                'prices' => $officialStation['prices'],
+                'priceLabel' => $officialStation['priceLabel'],
+                'updatedAt' => $officialStation['updatedAt'],
+                'osmUrl' => $officialStation['osmUrl'],
+                'priceSource' => $officialStation['priceSource'],
+            ]);
+        }
+
+        return $merged->values()->all();
     }
 
     private function mergeStations(array $tomTomStations, array $openStreetMapStations): array
@@ -116,7 +184,7 @@ class FuelStationService
 
             $merged->put($matchIndex, [
                 ...$tomTomStation,
-                'available' => $openStreetMapStation['available'] ?? $tomTomStation['available'],
+                'availability' => 'unknown',
                 'prices' => $prices,
                 'priceLabel' => $this->primaryPriceLabel($prices),
                 'updatedAt' => $tomTomStation['updatedAt'] ?? $openStreetMapStation['updatedAt'],
@@ -180,6 +248,7 @@ class FuelStationService
                 $station['prices'] = $priceData['prices'];
                 $station['priceLabel'] = $this->primaryPriceLabel($station['prices']);
                 $station['updatedAt'] = $priceData['updatedAt'];
+                $station['priceSource'] = $station['prices'] !== [] ? 'TomTom Fuel Prices' : '';
                 unset($station['fuelPriceId']);
 
                 return $station;
@@ -258,13 +327,14 @@ class FuelStationService
             'address' => data_get($item, 'address.freeformAddress', ''),
             'latitude' => (float) $latitude,
             'longitude' => (float) $longitude,
-            'available' => true,
+            'availability' => 'unknown',
             'prices' => [],
             'priceLabel' => 'Цена не опубликована',
             'openingHours' => $this->formatTomTomOpeningHours((array) data_get($item, 'poi.openingHours', [])),
             'updatedAt' => null,
             'osmUrl' => sprintf('https://www.tomtom.com/mapshare/tools/new/mapshare/#loc=%.6F,%.6F', $latitude, $longitude),
             'fuelPriceId' => data_get($item, 'dataSources.fuelPrice.id'),
+            'priceSource' => '',
         ];
     }
 
@@ -402,7 +472,7 @@ class FuelStationService
             'address' => $this->formatAddress($tags),
             'latitude' => (float) $latitude,
             'longitude' => (float) $longitude,
-            'available' => $this->hasPetrol($tags),
+            'availability' => 'unknown',
             'prices' => $prices,
             'priceLabel' => $this->primaryPriceLabel($prices),
             'openingHours' => $tags['opening_hours'] ?? '',
@@ -412,6 +482,7 @@ class FuelStationService
                 data_get($item, 'type', 'node'),
                 data_get($item, 'id')
             ),
+            'priceSource' => $prices !== [] ? 'Открытые данные OpenStreetMap' : '',
         ];
     }
 
@@ -443,25 +514,6 @@ class FuelStationService
         }
 
         return 'Цена не опубликована';
-    }
-
-    private function hasPetrol(array $tags): bool
-    {
-        $closed = in_array(mb_strtolower((string) ($tags['operational_status'] ?? '')), [
-            'closed',
-            'out_of_service',
-            'disused',
-        ], true);
-
-        if ($closed || ($tags['fuel'] ?? null) === 'no') {
-            return false;
-        }
-
-        $declaredPetrol = collect(self::PETROL_TAGS)
-            ->filter(fn (string $key): bool => array_key_exists($key, $tags));
-
-        return $declaredPetrol->isEmpty()
-            || $declaredPetrol->contains(fn (string $key): bool => ($tags[$key] ?? null) === 'yes');
     }
 
     private function formatAddress(array $tags): string

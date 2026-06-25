@@ -654,3 +654,11 @@ test('fuel stations load even while map tiles are still loading', () => {
     assert.match(scheduler, /getSource\(FUEL_STATION_SOURCE_ID\)/);
     assert.doesNotMatch(scheduler, /map\?\.loaded\(\)/);
 });
+
+test('fuel station popup does not claim fuel is available without confirmation', () => {
+    const source = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
+
+    assert.doesNotMatch(source, />Топливо есть</);
+    assert.doesNotMatch(source, /Наличие не подтверждено/);
+    assert.match(source, /properties\.name \|\| properties\.brand \|\| 'АЗС'/);
+});
