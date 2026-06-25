@@ -1430,18 +1430,37 @@ export function initParkingUi() {
     async function buildInAppRoute() {
         if (!state.selectedSpot) return;
 
+        const targetSpot = { ...state.selectedSpot };
+        const isHotReroute = Boolean(
+            state.navigationRoute
+            && state.userLocation
+            && document.body.classList.contains('is-navigation-mode'),
+        );
         const summary = document.querySelector('[data-route-summary]');
         const button = document.querySelector('[data-action="route-in-app"]');
         const previousButtonText = button?.textContent;
 
         try {
-            resetFailedRouteBuildState();
+            if (!isHotReroute) {
+                resetFailedRouteBuildState();
+            }
             startDeviceHeadingWatch();
             button?.setAttribute('disabled', 'disabled');
-            if (button) button.textContent = 'Строю...';
-            if (summary) summary.textContent = 'Строю маршрут от вашего местоположения...';
-            const location = await ensureRouteStartLocation();
-            const route = await buildRouteToSpot(location, state.selectedSpot);
+            if (button) button.textContent = isHotReroute ? 'Меняю...' : 'Строю...';
+            if (summary) summary.textContent = isHotReroute
+                ? 'Перестраиваю маршрут от текущей позиции...'
+                : 'Строю маршрут от вашего местоположения...';
+
+            if (isHotReroute) {
+                closeRoutePicker();
+                showToast(`Перестраиваю маршрут к «${targetSpot.title}»…`);
+            }
+
+            const location = isHotReroute ? state.userLocation : await ensureRouteStartLocation();
+            const route = await buildRouteToSpot(location, targetSpot, {
+                camera: isHotReroute ? 'none' : 'overview',
+                preferFast: isHotReroute,
+            });
             const trafficNote = getRouteBuildNote(route);
 
             if (summary) {
@@ -1452,16 +1471,19 @@ export function initParkingUi() {
                 `;
             }
 
-            enterNavigationMode(state.selectedSpot, route);
+            enterNavigationMode(targetSpot, route);
+            if (isHotReroute && !['tomtom-traffic', 'yandex-traffic'].includes(route.source)) {
+                window.setTimeout(refreshNavigationRoute, 250);
+            }
             closeRoutePicker();
-            showToast(`Маршрут: ${formatDuration(route.durationSeconds)}, ${formatDistance(route.distanceMeters)}.`);
+            showToast(`${isHotReroute ? 'Маршрут перестроен' : 'Маршрут'}: ${formatDuration(route.durationSeconds)}, ${formatDistance(route.distanceMeters)}.`);
         } catch (error) {
             if (!isGeolocationTimeoutError(error)) {
                 console.error('Failed to build in-app route.', error);
             }
-            const fallbackRoute = await buildEmergencyRouteToSelectedSpot().catch(() => null);
+            const fallbackRoute = await buildEmergencyRouteToSpot(targetSpot).catch(() => null);
 
-            if (fallbackRoute && state.selectedSpot) {
+            if (fallbackRoute && targetSpot && !isHotReroute) {
                 if (summary) {
                     summary.innerHTML = `
                         <strong>${formatDuration(fallbackRoute.durationSeconds)}</strong>
@@ -1470,14 +1492,21 @@ export function initParkingUi() {
                     `;
                 }
 
-                enterNavigationMode(state.selectedSpot, fallbackRoute);
+                enterNavigationMode(targetSpot, fallbackRoute);
                 showToast(`Маршрут: ${formatDuration(fallbackRoute.durationSeconds)}, ${formatDistance(fallbackRoute.distanceMeters)}.`);
                 return;
             }
 
-            resetFailedRouteBuildState();
+            if (!isHotReroute) {
+                resetFailedRouteBuildState();
+            }
             if (summary) summary.textContent = 'Не удалось построить маршрут: нужна геопозиция и координаты парковки.';
-            showToast('Не удалось построить маршрут. Проверьте геопозицию.', true);
+            showToast(
+                isHotReroute
+                    ? 'Не удалось перестроить маршрут. Продолжаем по прежнему.'
+                    : 'Не удалось построить маршрут. Проверьте геопозицию.',
+                true,
+            );
         } finally {
             button?.removeAttribute('disabled');
             if (button && previousButtonText) button.textContent = previousButtonText;
@@ -1986,6 +2015,13 @@ export function initParkingUi() {
                         <span data-navigation-compass-direction></span>
                     </div>
                 </div>
+                <div class="navigation-traffic-legend" data-navigation-traffic-legend aria-label="Цвета загруженности маршрута">
+                    <span><i class="is-free"></i>Свободно</span>
+                    <span><i class="is-slow"></i>Плотно</span>
+                    <span><i class="is-heavy"></i>Затор</span>
+                    <span><i class="is-jam"></i>Пробка</span>
+                    <small data-navigation-traffic-source></small>
+                </div>
             `;
                 document.body.append(guidance);
             }
@@ -2162,6 +2198,7 @@ export function initParkingUi() {
         }
 
         updateNavigationCompass();
+        updateNavigationTrafficLegend();
         const speedometer = document.querySelector('.navigation-speedometer');
         speedometer?.classList.toggle('is-speeding', isSpeeding);
         document.querySelector('.navigation-gps-alert')?.classList.toggle('hidden', state.navigationGpsAvailable);
@@ -2176,6 +2213,22 @@ export function initParkingUi() {
                 : 'Продолжаем по последней позиции',
         );
         renderCameraAlert();
+    }
+
+    function updateNavigationTrafficLegend() {
+        const legend = document.querySelector('[data-navigation-traffic-legend]');
+        const source = document.querySelector('[data-navigation-traffic-source]');
+        if (!legend || !source) return;
+
+        const hasTrafficSegments = ['tomtom-traffic', 'yandex-traffic']
+            .some((routeSource) => String(state.navigationRoute?.source || '').startsWith(routeSource))
+            && Array.isArray(state.navigationRoute?.segments)
+            && state.navigationRoute.segments.length > 0;
+
+        legend.classList.toggle('is-unavailable', !hasTrafficSegments);
+        source.textContent = hasTrafficSegments
+            ? 'Цвет линии показывает скорость потока'
+            : 'Для этого маршрута нет данных о пробках';
     }
 
     function hasReachedNavigationDestination(remainingDistance) {

@@ -18,8 +18,6 @@ let renderedUserLocation = null;
 let targetUserLocation = null;
 let isPickingMode = false;
 let isRouteDestinationPickingMode = false;
-let isTrafficSuppressedByRoute = false;
-let isTrafficForcedVisibleByUser = false;
 let routeManeuverMarker = null;
 let routeManeuverCoordinate = null;
 let fuelStationsLoadTimer = null;
@@ -580,8 +578,9 @@ const MAP_STYLE = {
             layout: {
                 'symbol-placement': 'line',
                 'text-field': ['coalesce', ['get', 'name:ru'], ['get', 'name']],
-                'text-font': ['Noto Sans Regular'],
-                'text-size': ['interpolate', ['linear'], ['zoom'], 12, 10, 16, 13],
+                'text-font': ['Noto Sans Bold'],
+                'text-size': ['interpolate', ['linear'], ['zoom'], 12, 10.5, 16, 13.5, 18, 14.5],
+                'text-letter-spacing': 0.01,
                 'text-rotation-alignment': 'map',
                 'text-pitch-alignment': 'viewport',
                 'text-keep-upright': true,
@@ -589,10 +588,11 @@ const MAP_STYLE = {
                 'text-allow-overlap': false,
             },
             paint: {
-                'text-color': '#364152',
-                'text-halo-color': 'rgba(255, 255, 255, 0.96)',
-                'text-halo-width': 2.2,
-                'text-opacity': 1,
+                'text-color': '#243247',
+                'text-halo-color': 'rgba(246, 250, 255, 0.92)',
+                'text-halo-width': 1.65,
+                'text-halo-blur': 0.35,
+                'text-opacity': 0.96,
             },
         },
         {
@@ -1046,7 +1046,7 @@ function addFuelMarkerImage(imageId, glowColor, coreColor) {
     context.strokeStyle = glowColor;
     context.lineWidth = 5;
     context.beginPath();
-    context.roundRect(22, 13, 60, 76, 17);
+    context.roundRect(24, 17, 58, 66, 16);
     context.fill();
     context.stroke();
     context.restore();
@@ -1055,7 +1055,7 @@ function addFuelMarkerImage(imageId, glowColor, coreColor) {
     context.shadowColor = glowColor;
     context.shadowBlur = 11;
     context.beginPath();
-    context.roundRect(33, 25, 38, 27, 7);
+    context.roundRect(34, 27, 36, 24, 7);
     context.fill();
     context.shadowColor = 'transparent';
 
@@ -1064,17 +1064,17 @@ function addFuelMarkerImage(imageId, glowColor, coreColor) {
     context.lineCap = 'round';
     context.lineJoin = 'round';
     context.beginPath();
-    context.moveTo(35, 68);
-    context.lineTo(69, 68);
-    context.moveTo(43, 61);
-    context.lineTo(43, 80);
-    context.moveTo(63, 61);
-    context.lineTo(63, 80);
-    context.moveTo(82, 31);
-    context.lineTo(94, 43);
-    context.lineTo(94, 69);
-    context.quadraticCurveTo(94, 80, 84, 80);
-    context.lineTo(82, 80);
+    context.moveTo(37, 66);
+    context.lineTo(69, 66);
+    context.moveTo(44, 60);
+    context.lineTo(44, 73);
+    context.moveTo(62, 60);
+    context.lineTo(62, 73);
+    context.moveTo(82, 33);
+    context.lineTo(92, 43);
+    context.lineTo(92, 65);
+    context.quadraticCurveTo(92, 73, 84, 73);
+    context.lineTo(82, 73);
     context.stroke();
 
     context.fillStyle = '#FFFFFF';
@@ -1149,10 +1149,10 @@ function addFuelStationSourceAndLayers() {
         filter: ['!', ['has', 'point_count']],
         layout: { visibility: 'none' },
         paint: {
-            'circle-radius': ['interpolate', ['linear'], ['zoom'], 9, 14, 15, 23],
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 9, 9, 15, 15],
             'circle-color': '#22D3EE',
-            'circle-blur': 0.86,
-            'circle-opacity': 0.52,
+            'circle-blur': 0.9,
+            'circle-opacity': 0.26,
         },
     });
 
@@ -1164,8 +1164,8 @@ function addFuelStationSourceAndLayers() {
         layout: {
             visibility: 'none',
             'icon-image': FUEL_MARKER_AVAILABLE_ID,
-            'icon-size': ['interpolate', ['linear'], ['zoom'], 9, 0.58, 14, 0.82, 18, 1],
-            'icon-anchor': 'bottom',
+            'icon-size': ['interpolate', ['linear'], ['zoom'], 9, 0.52, 14, 0.72, 18, 0.86],
+            'icon-anchor': 'center',
             'icon-allow-overlap': true,
             'icon-ignore-placement': true,
         },
@@ -1180,9 +1180,10 @@ function addFuelStationSourceAndLayers() {
         layout: {
             visibility: 'none',
             'text-field': ['get', 'priceLabel'],
-            'text-font': ['Noto Sans Bold'],
-            'text-size': ['interpolate', ['linear'], ['zoom'], 11, 10, 16, 12],
-            'text-offset': [0, 0.65],
+            'text-font': ['Noto Sans Regular'],
+            'text-size': ['interpolate', ['linear'], ['zoom'], 11, 10, 16, 11.5, 18, 12.5],
+            'text-letter-spacing': 0.01,
+            'text-offset': [0, 1.75],
             'text-anchor': 'top',
             'text-allow-overlap': false,
             'text-optional': true,
@@ -1190,7 +1191,8 @@ function addFuelStationSourceAndLayers() {
         paint: {
             'text-color': '#E6FFFF',
             'text-halo-color': 'rgba(3, 10, 24, 0.94)',
-            'text-halo-width': 2.4,
+            'text-halo-width': 1.8,
+            'text-halo-blur': 0.35,
         },
     });
 }
@@ -1517,9 +1519,9 @@ function updateVectorRoadLayerTheme(layerId) {
             'line-opacity': isSatellite ? 0 : ROAD_LEGACY_DETAIL_OPACITY(0.96),
         },
         'road-name': {
-            'text-color': isDark ? '#F8FAFC' : '#364152',
-            'text-halo-color': isDark ? 'rgba(8, 13, 24, 0.92)' : 'rgba(255, 255, 255, 0.96)',
-            'text-opacity': isSatellite ? 0 : 1,
+            'text-color': isDark ? '#EEF6FF' : '#243247',
+            'text-halo-color': isDark ? 'rgba(8, 13, 24, 0.86)' : 'rgba(246, 250, 255, 0.92)',
+            'text-opacity': isSatellite ? 0 : 0.96,
         },
         'place-label': {
             'text-color': isDark ? '#DDE8F7' : '#475569',
@@ -1605,15 +1607,9 @@ function bindTrafficToggle() {
 
     updateTrafficToggleButton(isTrafficLayerEnabled());
     button.addEventListener('click', () => {
-        const isStoredEnabled = isTrafficLayerEnabled();
-        const nextValue = isTrafficSuppressedByRoute && isStoredEnabled && !isTrafficForcedVisibleByUser
-            ? true
-            : !isStoredEnabled;
+        const nextValue = !isTrafficLayerEnabled();
 
-        if (nextValue !== isStoredEnabled) {
-            window.localStorage?.setItem(TRAFFIC_LAYER_STORAGE_KEY, nextValue ? '1' : '0');
-        }
-        isTrafficForcedVisibleByUser = nextValue;
+        window.localStorage?.setItem(TRAFFIC_LAYER_STORAGE_KEY, nextValue ? '1' : '0');
         setTrafficLayerVisibility(nextValue);
     });
 }
@@ -1629,12 +1625,16 @@ function updateTrafficToggleButton(isEnabled) {
 
     button.classList.toggle('is-active', isEnabled);
     button.classList.toggle('is-loading', false);
+    button.dataset.state = isEnabled ? 'on' : 'off';
     button.setAttribute('aria-pressed', String(isEnabled));
     button.setAttribute('aria-label', isEnabled ? 'Выключить пробки' : 'Включить пробки');
+    const stateLabel = button.querySelector('[data-traffic-state]');
+    if (stateLabel) stateLabel.textContent = isEnabled ? 'Вкл' : 'Выкл';
 }
 
 function setTrafficLayerVisibility(isVisible) {
     if (!map?.getLayer(TRAFFIC_FLOW_LAYER_ID)) {
+        updateTrafficToggleButton(isVisible);
         return;
     }
 
@@ -2851,7 +2851,7 @@ function interpolateBearing(current, target, factor) {
     return (current + (delta * factor) + 360) % 360;
 }
 
-export async function buildRouteToSpot(userLocation, spot, { camera = 'overview' } = {}) {
+export async function buildRouteToSpot(userLocation, spot, { camera = 'overview', preferFast = false } = {}) {
     if (!map || !userLocation || !spot) {
         throw new Error('Route cannot be built without map, user location and destination.');
     }
@@ -2867,7 +2867,12 @@ export async function buildRouteToSpot(userLocation, spot, { camera = 'overview'
 
     const directDistanceMeters = getDistanceMeters(start, finish);
     const cachedRoute = getCachedRoute(finish);
-    const routeRequest = fetchTrafficRoute(start, finish, directDistanceMeters);
+    const routeRequest = preferFast
+        ? Promise.any([
+            fetchOfficialTrafficRoute(start, finish),
+            wait(650).then(() => fetchOpenStreetMapRoute(start, finish, directDistanceMeters)),
+        ])
+        : fetchTrafficRoute(start, finish, directDistanceMeters);
     const route = await (cachedRoute
         ? Promise.race([
             routeRequest,
@@ -3191,8 +3196,7 @@ export function restoreActiveRoute(route) {
     keepNavigationLayersOrdered();
 }
 
-function setRouteTrafficMode(isActive) {
-    isTrafficSuppressedByRoute = isActive;
+function setRouteTrafficMode() {
     setTrafficLayerVisibility(isTrafficLayerEnabled());
 }
 
@@ -3682,16 +3686,22 @@ function findClosestRouteCoordinateIndex(current, coordinates) {
 
 async function fetchTrafficRoute(start, finish, directDistanceMeters) {
     try {
-        const route = await fetchYandexDrivingRoute(start, finish);
-
-        if (route?.geometry?.coordinates?.length) {
-            return route;
-        }
+        return await fetchOfficialTrafficRoute(start, finish);
     } catch {
         // Fall through to public OSRM only when Yandex is unavailable or not configured.
     }
 
     return fetchOpenStreetMapRoute(start, finish, directDistanceMeters);
+}
+
+async function fetchOfficialTrafficRoute(start, finish) {
+    const route = await fetchYandexDrivingRoute(start, finish);
+
+    if (!route?.geometry?.coordinates?.length) {
+        throw new Error('Traffic route service returned an empty route.');
+    }
+
+    return route;
 }
 
 async function fetchOpenStreetMapRoute(start, finish, directDistanceMeters) {

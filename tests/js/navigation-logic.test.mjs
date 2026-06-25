@@ -508,6 +508,40 @@ test('active route uses casing glow traffic color and a highlight layer', () => 
     assert.match(mapSource, /'free',\s*'#3478F6'/);
 });
 
+test('active route can be hot-rerouted without clearing navigation or waiting for fresh GPS', () => {
+    const formSource = readFileSync(new URL('../../resources/js/modules/parking-form.js', import.meta.url), 'utf8');
+    const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
+    const reroute = formSource.match(/async function buildInAppRoute[\s\S]*?async function buildEmergencyRouteToSelectedSpot/)?.[0] ?? '';
+
+    assert.match(reroute, /const isHotReroute = Boolean/);
+    assert.match(reroute, /const location = isHotReroute \? state\.userLocation : await ensureRouteStartLocation\(\)/);
+    assert.match(reroute, /preferFast: isHotReroute/);
+    assert.match(reroute, /closeRoutePicker\(\);[\s\S]*?Перестраиваю маршрут/);
+    assert.match(mapSource, /wait\(650\)\.then\(\(\) => fetchOpenStreetMapRoute/);
+});
+
+test('navigation explains route traffic colors and traffic button exposes an explicit state', () => {
+    const formSource = readFileSync(new URL('../../resources/js/modules/parking-form.js', import.meta.url), 'utf8');
+    const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
+    const viewSource = readFileSync(new URL('../../resources/views/pages/map.blade.php', import.meta.url), 'utf8');
+
+    assert.match(formSource, /navigation-traffic-legend/);
+    assert.match(formSource, /Цвет линии показывает скорость потока/);
+    assert.match(viewSource, /data-traffic-state>Выкл/);
+    assert.match(mapSource, /stateLabel\.textContent = isEnabled \? 'Вкл' : 'Выкл'/);
+    assert.match(mapSource, /const nextValue = !isTrafficLayerEnabled\(\)/);
+    assert.doesNotMatch(mapSource, /isTrafficSuppressedByRoute/);
+});
+
+test('fuel markers use a centered compact icon and improved map typography', () => {
+    const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
+
+    assert.match(mapSource, /id: 'road-name'[\s\S]*?'text-font': \['Noto Sans Bold'\]/);
+    assert.match(mapSource, /id: 'fuel-station-pin'[\s\S]*?'icon-anchor': 'center'/);
+    assert.match(mapSource, /id: 'fuel-station-price'[\s\S]*?'text-font': \['Noto Sans Regular'\]/);
+    assert.match(mapSource, /'circle-opacity': 0\.26/);
+});
+
 test('map labels only request font stacks available from OpenFreeMap', () => {
     const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
 

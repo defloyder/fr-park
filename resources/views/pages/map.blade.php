@@ -54,6 +54,7 @@
         <div class="map-control-stack liquid-glass" aria-label="Инструменты карты">
             <button class="map-control-button map-traffic-button" type="button" data-traffic-toggle aria-label="Включить пробки" aria-pressed="false">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="3" width="8" height="18" rx="3"></rect><circle cx="12" cy="8" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="16" r="1.5"></circle><path d="M6 7H4"></path><path d="M6 12H4"></path><path d="M6 17H4"></path><path d="M20 7h-2"></path><path d="M20 12h-2"></path><path d="M20 17h-2"></path></svg>
+                <span class="map-traffic-button__state" data-traffic-state>Выкл</span>
             </button>
             <div class="map-settings" data-map-settings>
                 <button class="map-control-button map-settings__trigger" type="button" data-map-settings-toggle aria-label="Настройки карты" aria-expanded="false">
