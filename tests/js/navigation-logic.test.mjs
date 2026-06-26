@@ -755,6 +755,18 @@ test('fuel popup only shows price metadata when a price exists and contains long
     assert.match(cssSource, /\.fuel-popup__status \{[\s\S]*?max-width: calc\(100% - 34px\);[\s\S]*?overflow-wrap: anywhere;[\s\S]*?white-space: normal;/);
 });
 
+test('fuel popup becomes a mobile bottom sheet instead of overflowing above the screen', () => {
+    const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
+    const cssSource = readFileSync(new URL('../../resources/css/map-ui.css', import.meta.url), 'utf8');
+
+    assert.match(mapSource, /function isFuelPopupSheetMode\(\)/);
+    assert.match(mapSource, /anchor: isSheetMode \? 'bottom' : undefined/);
+    assert.match(mapSource, /focusFuelStationForSheet\(feature\.geometry\.coordinates\)/);
+    assert.match(cssSource, /@media \(max-width: 640px\) \{[\s\S]*?\.fuel-station-popup\.maplibregl-popup \{[\s\S]*?position: fixed !important;[\s\S]*?bottom: calc\(82px \+ var\(--safe-bottom, 0px\)\) !important;/);
+    assert.match(cssSource, /\.fuel-station-popup \.maplibregl-popup-content \{[\s\S]*?max-height: min\(58vh, 470px\);[\s\S]*?overflow: hidden auto;/);
+    assert.match(cssSource, /\.fuel-station-popup \.maplibregl-popup-tip \{[\s\S]*?display: none;/);
+});
+
 test('fuel station card opens the existing route picker', () => {
     const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
     const uiSource = readFileSync(new URL('../../resources/js/modules/parking-form.js', import.meta.url), 'utf8');

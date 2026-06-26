@@ -2647,12 +2647,14 @@ function showFuelStationPopup(feature) {
     const sourceLink = hasPrices && isSafeHttpUrl(properties.osmUrl)
         ? `<a href="${escapeMapAttribute(properties.osmUrl)}" target="_blank" rel="noreferrer">Открыть источник</a>`
         : '';
+    const isSheetMode = isFuelPopupSheetMode();
     fuelStationPopup = new maplibregl.Popup({
         closeButton: true,
         closeOnClick: true,
-        offset: 30,
+        offset: isSheetMode ? 0 : 30,
+        anchor: isSheetMode ? 'bottom' : undefined,
         className: 'fuel-station-popup',
-        maxWidth: '330px',
+        maxWidth: isSheetMode ? 'none' : '330px',
     })
         .setLngLat(feature.geometry.coordinates)
         .setHTML(`
@@ -2685,6 +2687,26 @@ function showFuelStationPopup(feature) {
 
     fuelStationPopup.on('close', () => {
         fuelStationPopup = null;
+    });
+
+    if (isSheetMode) {
+        focusFuelStationForSheet(feature.geometry.coordinates);
+    }
+}
+
+function isFuelPopupSheetMode() {
+    return window.matchMedia?.('(max-width: 640px)').matches
+        || window.innerWidth <= 640;
+}
+
+function focusFuelStationForSheet(coordinates) {
+    if (!Array.isArray(coordinates) || coordinates.length < 2) return;
+
+    safeEaseTo({
+        center: coordinates,
+        offset: [0, -Math.min(170, Math.round(window.innerHeight * 0.22))],
+        duration: 220,
+        essential: true,
     });
 }
 
