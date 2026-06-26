@@ -29,6 +29,7 @@ let renderedFuelStationIds = new Set();
 let fuelStationPopup = null;
 let activeFuelStationId = null;
 let fuelPopupCameraSnapshot = null;
+let fuelPopupCameraTransitionUntil = 0;
 let isFuelLayerEnabled = false;
 let fuelStationsRateLimitedUntil = 0;
 
@@ -1333,6 +1334,10 @@ function setFuelLayerEnabled(enabled, { persist = false } = {}) {
 
 function scheduleFuelStationsLoad(delay = 260) {
     if (!isFuelLayerEnabled || !map?.getSource(FUEL_STATION_SOURCE_ID)) return;
+    if (isFuelPopupCameraTransitionActive()) {
+        window.clearTimeout(fuelStationsLoadTimer);
+        return;
+    }
 
     window.clearTimeout(fuelStationsLoadTimer);
     fuelStationsLoadTimer = window.setTimeout(loadFuelStationsInView, delay);
@@ -1340,6 +1345,7 @@ function scheduleFuelStationsLoad(delay = 260) {
 
 async function loadFuelStationsInView() {
     if (!isFuelLayerEnabled || !map) return;
+    if (isFuelPopupCameraTransitionActive()) return;
 
     const rateLimitDelay = fuelStationsRateLimitedUntil - Date.now();
     if (rateLimitDelay > 0) {
@@ -2551,7 +2557,7 @@ function bindMapEvents() {
     });
 
     map.on('moveend', () => {
-        if (isFuelLayerEnabled) {
+        if (isFuelLayerEnabled && !isFuelPopupCameraTransitionActive()) {
             scheduleFuelStationsLoad();
         }
     });
@@ -2715,6 +2721,7 @@ function isFuelPopupSheetMode() {
 function focusFuelStationForSheet(coordinates) {
     if (!Array.isArray(coordinates) || coordinates.length < 2) return;
 
+    markFuelPopupCameraTransition(520);
     safeEaseTo({
         center: coordinates,
         zoom: Math.max(map?.getZoom?.() ?? 0, 15.25),
@@ -2741,11 +2748,29 @@ function restoreFuelPopupCamera() {
     fuelPopupCameraSnapshot = null;
     if (!snapshot || !isFuelLayerEnabled || !isFuelPopupSheetMode()) return;
 
+    markFuelPopupCameraTransition(620);
     safeEaseTo({
         ...snapshot,
         duration: 260,
         essential: true,
     });
+
+    window.setTimeout(() => {
+        if (isFuelLayerEnabled && !fuelStationPopup) {
+            scheduleFuelStationsLoad(120);
+        }
+    }, 680);
+}
+
+function markFuelPopupCameraTransition(durationMs) {
+    fuelPopupCameraTransitionUntil = Math.max(
+        fuelPopupCameraTransitionUntil,
+        Date.now() + durationMs,
+    );
+}
+
+function isFuelPopupCameraTransitionActive() {
+    return Date.now() < fuelPopupCameraTransitionUntil;
 }
 
 function getFuelPriceUnavailableMessage(brand) {
@@ -4184,9 +4209,6 @@ function normalizeFuelStations(stations) {
 function renderFuelStations(stations) {
     const normalized = normalizeFuelStations(stations);
     renderedFuelStationIds = new Set(normalized.map(getFuelStationId));
-    if (!activeFuelStationId || !renderedFuelStationIds.has(activeFuelStationId)) {
-        closeFuelStationPopup({ restoreCamera: false });
-    }
     map?.getSource(FUEL_STATION_SOURCE_ID)?.setData(buildFuelStationFeatureCollection(normalized));
 }
 
