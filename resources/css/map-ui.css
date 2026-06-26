@@ -873,7 +873,10 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-settings__option:
         width: 100%;
         gap: 12px;
         padding: 14px;
-        padding-right: 50px;
+    }
+
+    .fuel-popup__head {
+        padding-right: 48px;
     }
 
     .fuel-popup__prices {

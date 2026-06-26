@@ -772,6 +772,8 @@ test('fuel popup becomes a mobile bottom sheet instead of overflowing above the 
     assert.match(cssSource, /\.fuel-station-popup \.maplibregl-popup-content \{[\s\S]*?max-height: min\(58vh, 470px\);[\s\S]*?overflow: hidden auto;/);
     assert.match(cssSource, /\.fuel-station-popup \.maplibregl-popup-tip \{[\s\S]*?display: none;/);
     assert.match(cssSource, /\.fuel-station-popup \.maplibregl-popup-close-button::before/);
+    assert.match(cssSource, /\.fuel-popup__head \{[\s\S]*?padding-right: 48px;/);
+    assert.doesNotMatch(cssSource, /\.fuel-popup \{[\s\S]*?padding-right: (?:50|58)px;/);
 });
 
 test('fuel station card opens the existing route picker', () => {
