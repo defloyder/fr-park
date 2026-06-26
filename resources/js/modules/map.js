@@ -27,6 +27,8 @@ let fuelStationsRetryTimer = null;
 let fuelStationsCache = new Map();
 let renderedFuelStationIds = new Set();
 let fuelStationPopup = null;
+let activeFuelStationId = null;
+let fuelPopupCameraSnapshot = null;
 let isFuelLayerEnabled = false;
 let fuelStationsRateLimitedUntil = 0;
 
@@ -2472,7 +2474,7 @@ function getTomTomTrafficKey() {
 }
 
 function bindMapEvents() {
-    window.addEventListener('fuel-station:route-opened', closeFuelStationPopup);
+    window.addEventListener('fuel-station:route-opened', () => closeFuelStationPopup({ restoreCamera: false }));
 
     map.on('click', 'clusters', async (event) => {
         await expandCluster(event);
@@ -2621,6 +2623,8 @@ function showFuelStationPopup(feature) {
     if (!isFuelLayerEnabled || !feature?.geometry?.coordinates) return;
 
     const properties = feature.properties ?? {};
+    const isSheetMode = isFuelPopupSheetMode();
+    const stationId = String(properties.stationId || '');
     let prices = {};
     try {
         prices = JSON.parse(properties.pricesJson || '{}');
@@ -2642,15 +2646,21 @@ function showFuelStationPopup(feature) {
     const normalizedName = String(stationName).trim().toLocaleLowerCase('ru-RU');
     const showAddress = stationAddress !== '' && normalizedAddress !== normalizedName;
     const noPriceMessage = getFuelPriceUnavailableMessage(properties.brand || properties.name);
+    const previousFuelPopupCameraSnapshot = isSheetMode ? fuelPopupCameraSnapshot : null;
 
-    closeFuelStationPopup();
+    closeFuelStationPopup({ restoreCamera: false });
     const sourceLink = hasPrices && isSafeHttpUrl(properties.osmUrl)
         ? `<a href="${escapeMapAttribute(properties.osmUrl)}" target="_blank" rel="noreferrer">Открыть источник</a>`
         : '';
-    const isSheetMode = isFuelPopupSheetMode();
+    if (isSheetMode) {
+        fuelPopupCameraSnapshot = previousFuelPopupCameraSnapshot ?? getFuelPopupCameraSnapshot();
+    }
+
+    activeFuelStationId = stationId;
+    document.body.classList.toggle('is-fuel-popup-open', isSheetMode);
     fuelStationPopup = new maplibregl.Popup({
         closeButton: true,
-        closeOnClick: true,
+        closeOnClick: !isSheetMode,
         offset: isSheetMode ? 0 : 30,
         anchor: isSheetMode ? 'bottom' : undefined,
         className: 'fuel-station-popup',
@@ -2687,6 +2697,9 @@ function showFuelStationPopup(feature) {
 
     fuelStationPopup.on('close', () => {
         fuelStationPopup = null;
+        activeFuelStationId = null;
+        document.body.classList.remove('is-fuel-popup-open');
+        restoreFuelPopupCamera();
     });
 
     if (isSheetMode) {
@@ -2704,8 +2717,33 @@ function focusFuelStationForSheet(coordinates) {
 
     safeEaseTo({
         center: coordinates,
+        zoom: Math.max(map?.getZoom?.() ?? 0, 15.25),
         offset: [0, -Math.min(170, Math.round(window.innerHeight * 0.22))],
-        duration: 220,
+        duration: 280,
+        essential: true,
+    });
+}
+
+function getFuelPopupCameraSnapshot() {
+    const center = map?.getCenter?.();
+    if (!center) return null;
+
+    return {
+        center: [center.lng, center.lat],
+        zoom: map.getZoom(),
+        bearing: map.getBearing(),
+        pitch: map.getPitch(),
+    };
+}
+
+function restoreFuelPopupCamera() {
+    const snapshot = fuelPopupCameraSnapshot;
+    fuelPopupCameraSnapshot = null;
+    if (!snapshot || !isFuelLayerEnabled || !isFuelPopupSheetMode()) return;
+
+    safeEaseTo({
+        ...snapshot,
+        duration: 260,
         essential: true,
     });
 }
@@ -4146,7 +4184,9 @@ function normalizeFuelStations(stations) {
 function renderFuelStations(stations) {
     const normalized = normalizeFuelStations(stations);
     renderedFuelStationIds = new Set(normalized.map(getFuelStationId));
-    closeFuelStationPopup();
+    if (!activeFuelStationId || !renderedFuelStationIds.has(activeFuelStationId)) {
+        closeFuelStationPopup({ restoreCamera: false });
+    }
     map?.getSource(FUEL_STATION_SOURCE_ID)?.setData(buildFuelStationFeatureCollection(normalized));
 }
 
@@ -4239,9 +4279,19 @@ function updateFuelLayerMenuState(state, count = 0) {
     );
 }
 
-function closeFuelStationPopup() {
+function closeFuelStationPopup({ restoreCamera = true } = {}) {
+    if (!restoreCamera) {
+        fuelPopupCameraSnapshot = null;
+    }
+
     fuelStationPopup?.remove();
     fuelStationPopup = null;
+    activeFuelStationId = null;
+    document.body.classList.remove('is-fuel-popup-open');
+
+    if (restoreCamera) {
+        restoreFuelPopupCamera();
+    }
 }
 
 function formatFuelUpdatedAt(value) {

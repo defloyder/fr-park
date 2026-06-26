@@ -760,11 +760,18 @@ test('fuel popup becomes a mobile bottom sheet instead of overflowing above the 
     const cssSource = readFileSync(new URL('../../resources/css/map-ui.css', import.meta.url), 'utf8');
 
     assert.match(mapSource, /function isFuelPopupSheetMode\(\)/);
+    assert.match(mapSource, /closeOnClick: !isSheetMode/);
     assert.match(mapSource, /anchor: isSheetMode \? 'bottom' : undefined/);
+    assert.match(mapSource, /document\.body\.classList\.toggle\('is-fuel-popup-open', isSheetMode\)/);
     assert.match(mapSource, /focusFuelStationForSheet\(feature\.geometry\.coordinates\)/);
+    assert.match(mapSource, /zoom: Math\.max\([\s\S]*?15\.25\)/);
+    assert.match(mapSource, /function restoreFuelPopupCamera\(\)/);
+    assert.match(mapSource, /renderedFuelStationIds\.has\(activeFuelStationId\)/);
+    assert.match(cssSource, /body\.is-fuel-popup-open \.map-control-stack/);
     assert.match(cssSource, /@media \(max-width: 640px\) \{[\s\S]*?\.fuel-station-popup\.maplibregl-popup \{[\s\S]*?position: fixed !important;[\s\S]*?bottom: calc\(82px \+ var\(--safe-bottom, 0px\)\) !important;/);
     assert.match(cssSource, /\.fuel-station-popup \.maplibregl-popup-content \{[\s\S]*?max-height: min\(58vh, 470px\);[\s\S]*?overflow: hidden auto;/);
     assert.match(cssSource, /\.fuel-station-popup \.maplibregl-popup-tip \{[\s\S]*?display: none;/);
+    assert.match(cssSource, /\.fuel-station-popup \.maplibregl-popup-close-button::before/);
 });
 
 test('fuel station card opens the existing route picker', () => {
@@ -814,7 +821,7 @@ test('fuel stations cluster on smaller zoom levels and clean stale popup state',
     assert.match(mapSource, /clusterMaxZoom: 12/);
     assert.match(mapSource, /fuel-station-cluster-count/);
     assert.match(mapSource, /renderedFuelStationIds/);
-    assert.match(mapSource, /function renderFuelStations[\s\S]*?closeFuelStationPopup\(\);[\s\S]*?setData/);
+    assert.match(mapSource, /function renderFuelStations[\s\S]*?renderedFuelStationIds\.has\(activeFuelStationId\)[\s\S]*?closeFuelStationPopup\(\{ restoreCamera: false \}\);[\s\S]*?setData/);
     assert.match(mapSource, /fuel-layer:changed/);
     assert.match(mapSource, /fuel-station:route-opened/);
 });
