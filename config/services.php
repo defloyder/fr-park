@@ -31,6 +31,10 @@ return [
         'key' => env('TOMTOM_API_KEY', env('TOMTOM_TRAFFIC_API_KEY')),
     ],
 
+    'tbank_fuel' => [
+        'endpoint' => env('TBANK_FUEL_ENDPOINT'),
+    ],
+
     'ses' => [
         'key' => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),

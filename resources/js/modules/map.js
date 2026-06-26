@@ -2635,6 +2635,11 @@ function showFuelStationPopup(feature) {
     try {
         prices = JSON.parse(properties.pricesJson || '{}');
     } catch {}
+    let availableFuelTypes = [];
+    try {
+        const parsedFuelTypes = JSON.parse(properties.availableFuelTypesJson || '[]');
+        availableFuelTypes = Array.isArray(parsedFuelTypes) ? parsedFuelTypes.filter(Boolean) : [];
+    } catch {}
 
     const priceRows = Object.entries(prices)
         .map(([fuel, price]) => `
@@ -2645,6 +2650,10 @@ function showFuelStationPopup(feature) {
         `)
         .join('');
     const hasPrices = priceRows !== '';
+    const availabilityRows = availableFuelTypes
+        .map((fuel) => `<span>${escapeMapHtml(fuel)}</span>`)
+        .join('');
+    const hasTbankAvailability = availabilityRows !== '' && properties.fuelAvailabilitySource;
     const updatedAt = hasPrices ? formatFuelUpdatedAt(properties.updatedAt) : '';
     const stationName = properties.name || properties.brand || 'АЗС';
     const stationAddress = String(properties.address || '').trim();
@@ -2682,9 +2691,16 @@ function showFuelStationPopup(feature) {
                 <div class="fuel-popup__prices">
                     ${priceRows || `<p class="fuel-popup__notice">${escapeMapHtml(noPriceMessage)}</p>`}
                 </div>
+                ${hasTbankAvailability ? `
+                    <div class="fuel-popup__availability">
+                        <small>Доступно в T-Bank для оплаты</small>
+                        <div>${availabilityRows}</div>
+                    </div>
+                ` : ''}
                 ${properties.openingHours ? `<p class="fuel-popup__hours">Режим: ${escapeMapHtml(properties.openingHours)}</p>` : ''}
                 ${updatedAt ? `<small>Данные обновлены: ${escapeMapHtml(updatedAt)}</small>` : ''}
                 ${hasPrices && properties.priceSource ? `<small>Источник цены: ${escapeMapHtml(properties.priceSource)}</small>` : ''}
+                ${hasTbankAvailability ? `<small>Источник доступности: ${escapeMapHtml(properties.fuelAvailabilitySource)}</small>` : ''}
                 <button
                     class="route-button fuel-popup__route"
                     type="button"
@@ -4260,10 +4276,13 @@ function buildFuelStationFeatureCollection(stations) {
                             ? station.priceLabel
                             : (station.brand || station.name || 'АЗС'),
                         pricesJson: JSON.stringify(prices),
+                        availableFuelTypesJson: JSON.stringify(station.availableFuelTypes || []),
                         openingHours: station.openingHours || '',
                         updatedAt: station.updatedAt || '',
                         osmUrl: station.osmUrl || '',
                         priceSource: station.priceSource || '',
+                        fuelAvailabilitySource: station.fuelAvailabilitySource || '',
+                        fuelAvailabilityUpdatedAt: station.fuelAvailabilityUpdatedAt || '',
                     },
                     geometry: {
                         type: 'Point',

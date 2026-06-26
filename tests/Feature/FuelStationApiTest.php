@@ -90,6 +90,57 @@ class FuelStationApiTest extends TestCase
         Http::assertSentCount(1);
     }
 
+    public function test_it_merges_tbank_available_fuel_types_without_claiming_stock(): void
+    {
+        config()->set('services.tbank_fuel.endpoint', 'https://example.test/tbank-fuel');
+
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), 'overpass-api.de')) {
+                return Http::response([
+                    'elements' => [[
+                        'type' => 'node',
+                        'id' => 501,
+                        'lat' => 55.75,
+                        'lon' => 37.61,
+                        'tags' => [
+                            'amenity' => 'fuel',
+                            'name' => 'TBank Test Fuel',
+                        ],
+                    ]],
+                ]);
+            }
+
+            if (str_contains($request->url(), 'example.test/tbank-fuel')) {
+                return Http::response([
+                    'stations' => [[
+                        'id' => 'tb-1',
+                        'name' => 'TBank Test Fuel',
+                        'brand' => 'TBank Brand',
+                        'address' => 'Moscow, Test street',
+                        'location' => ['lat' => 55.7504, 'lng' => 37.6104],
+                        'updatedAt' => '2026-06-26T08:00:00Z',
+                        'availableProducts' => [
+                            ['name' => '92', 'available' => true, 'price' => ['value' => 65.25]],
+                            ['name' => '95', 'available' => false, 'price' => ['value' => 72.10]],
+                            ['name' => 'Diesel', 'status' => 'available'],
+                        ],
+                    ]],
+                ]);
+            }
+
+            return Http::response([], 404);
+        });
+
+        $this->getJson('/api/fuel-stations?west=37.5&south=55.7&east=37.7&north=55.8')
+            ->assertOk()
+            ->assertJsonPath('data.0.availability', 'unknown')
+            ->assertJsonPath('data.0.availableFuelTypes.0', 'АИ-92')
+            ->assertJsonPath('data.0.availableFuelTypes.1', 'ДТ')
+            ->assertJsonMissingPath('data.0.availableFuelTypes.2')
+            ->assertJsonPath('data.0.prices.АИ-92', '65,25 ₽')
+            ->assertJsonPath('data.0.fuelAvailabilitySource', 'Сервис «Топливо» T-Bank');
+    }
+
     public function test_it_uses_tomtom_and_enriches_station_with_open_data_price(): void
     {
         config()->set('services.tomtom_traffic.key', 'tomtom-test-key');

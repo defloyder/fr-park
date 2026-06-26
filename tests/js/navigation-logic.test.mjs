@@ -751,8 +751,12 @@ test('fuel popup only shows price metadata when a price exists and contains long
 
     assert.match(mapSource, /const hasPrices = priceRows !== ''/);
     assert.match(mapSource, /hasPrices && properties\.priceSource/);
+    assert.match(mapSource, /availableFuelTypesJson/);
+    assert.match(mapSource, /fuelAvailabilitySource/);
+    assert.match(mapSource, /fuel-popup__availability/);
     assert.match(mapSource, /Официальная карта ЛУКОЙЛ показывает виды топлива, но не публикует цену этой АЗС/);
     assert.match(cssSource, /\.fuel-popup__status \{[\s\S]*?max-width: calc\(100% - 34px\);[\s\S]*?overflow-wrap: anywhere;[\s\S]*?white-space: normal;/);
+    assert.match(cssSource, /\.fuel-popup__availability \{[\s\S]*?display: grid;[\s\S]*?border-radius: 12px;/);
 });
 
 test('fuel popup becomes a mobile bottom sheet instead of overflowing above the screen', () => {

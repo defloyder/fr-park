@@ -61,6 +61,12 @@ class OfficialFuelPriceService
             // Third-party public price indexes are best-effort and must never block the fuel layer.
         }
 
+        try {
+            $stations = array_merge($stations, $this->tbankFuelStations($west, $south, $east, $north));
+        } catch (\Throwable) {
+            // T-Bank availability is an auxiliary signal and must not affect map responsiveness.
+        }
+
         return $stations;
     }
 
@@ -457,6 +463,15 @@ class OfficialFuelPriceService
     private function normalizeFuelTitle(string $title): string
     {
         $normalized = preg_replace('/\s+/u', ' ', trim($title)) ?: trim($title);
+        $upper = mb_strtoupper($normalized);
+
+        if (preg_match('/^(?:AI|АИ|АI|AИ)?[-\s]?(\d{2,3})$/u', $upper, $matches) === 1) {
+            return 'АИ-'.$matches[1];
+        }
+
+        if (in_array($upper, ['DT', 'DIESEL', 'ДИЗЕЛЬ', 'ДТ'], true)) {
+            return 'ДТ';
+        }
 
         $normalized = str_ireplace(['АИ ', 'Аи ', 'аи '], 'АИ-', $normalized);
         $normalized = preg_replace('/^Аи-/ui', 'АИ-', $normalized) ?: $normalized;
@@ -880,5 +895,306 @@ class OfficialFuelPriceService
                 return [$title => number_format($price, 2, ',', '').' ₽'];
             })
             ->all();
+    }
+
+    private function tbankFuelStations(float $west, float $south, float $east, float $north): array
+    {
+        $endpoint = trim((string) config('services.tbank_fuel.endpoint', ''));
+        if ($endpoint === '') {
+            return [];
+        }
+
+        $payload = Cache::remember(
+            'fuel-prices:tbank:'.sha1(implode(':', [$endpoint, $west, $south, $east, $north])),
+            now()->addMinutes(3),
+            fn (): array => Http::connectTimeout(2)
+                ->timeout(6)
+                ->withoutVerifying()
+                ->acceptJson()
+                ->withHeaders([
+                    'User-Agent' => 'Mozilla/5.0 AuralithMaps/1.0',
+                    'Referer' => 'https://www.tbank.ru/gorod/fuel/',
+                ])
+                ->get($endpoint, [
+                    'west' => $west,
+                    'south' => $south,
+                    'east' => $east,
+                    'north' => $north,
+                ])
+                ->throw()
+                ->json()
+        );
+
+        return collect($this->extractTbankStationCandidates((array) $payload))
+            ->map(function (array $station) use ($west, $south, $east, $north): ?array {
+                $latitude = $this->firstNumericValue($station, [
+                    'latitude',
+                    'lat',
+                    'coordinates.latitude',
+                    'coordinates.lat',
+                    'location.latitude',
+                    'location.lat',
+                    'point.latitude',
+                    'point.lat',
+                    'geo.lat',
+                ]);
+                $longitude = $this->firstNumericValue($station, [
+                    'longitude',
+                    'lon',
+                    'lng',
+                    'coordinates.longitude',
+                    'coordinates.lon',
+                    'coordinates.lng',
+                    'location.longitude',
+                    'location.lon',
+                    'location.lng',
+                    'point.longitude',
+                    'point.lon',
+                    'point.lng',
+                    'geo.lon',
+                    'geo.lng',
+                ]);
+
+                if ($latitude === null || $longitude === null) {
+                    return null;
+                }
+
+                if ($latitude < $south || $latitude > $north || $longitude < $west || $longitude > $east) {
+                    return null;
+                }
+
+                $availableFuelTypes = $this->tbankAvailableFuelTypes($station);
+                $prices = $this->tbankPrices($station);
+
+                if ($availableFuelTypes === [] && $prices === []) {
+                    return null;
+                }
+
+                $name = $this->firstStringValue($station, [
+                    'name',
+                    'title',
+                    'stationName',
+                    'fillingStation.name',
+                    'fillingStation.title',
+                    'brandName',
+                    'brand.name',
+                ]) ?: 'АЗС';
+                $brand = $this->firstStringValue($station, [
+                    'brand',
+                    'brandName',
+                    'brand.name',
+                    'companyName',
+                ]);
+
+                return [
+                    'id' => 'tbank-'.($this->firstStringValue($station, ['id', 'stationId', 'fillingStation.id']) ?: md5($name.$latitude.$longitude)),
+                    'name' => $name,
+                    'brand' => $brand,
+                    'address' => $this->firstStringValue($station, [
+                        'address',
+                        'address.full',
+                        'location.address',
+                        'fillingStation.address',
+                    ]),
+                    'latitude' => $latitude,
+                    'longitude' => $longitude,
+                    'availability' => 'unknown',
+                    'prices' => $prices,
+                    'priceLabel' => $prices !== [] ? $this->primaryPriceLabel($prices) : '',
+                    'openingHours' => $this->firstStringValue($station, ['openingHours', 'workTime', 'schedule']),
+                    'updatedAt' => $this->firstStringValue($station, ['updatedAt', 'updated_at', 'lastUpdate', 'pricesUpdatedAt']),
+                    'osmUrl' => 'https://www.tbank.ru/gorod/fuel/',
+                    'priceSource' => $prices !== [] ? 'Сервис «Топливо» T-Bank' : '',
+                    'availableFuelTypes' => $availableFuelTypes,
+                    'fuelAvailabilitySource' => $availableFuelTypes !== [] ? 'Сервис «Топливо» T-Bank' : '',
+                    'fuelAvailabilityUpdatedAt' => $this->firstStringValue($station, ['availabilityUpdatedAt', 'updatedAt', 'updated_at', 'lastUpdate']),
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    private function extractTbankStationCandidates(array $payload): array
+    {
+        foreach ([
+            'stations',
+            'data.stations',
+            'data.items',
+            'payload.stations',
+            'payload.items',
+            'result.stations',
+            'result.items',
+        ] as $path) {
+            $items = data_get($payload, $path);
+            if (is_array($items) && $items !== []) {
+                return array_values(array_filter($items, 'is_array'));
+            }
+        }
+
+        $candidates = [];
+        $walk = function (array $node) use (&$walk, &$candidates): void {
+            if (
+                $this->firstNumericValue($node, ['latitude', 'lat', 'location.lat', 'coordinates.lat']) !== null
+                && $this->firstNumericValue($node, ['longitude', 'lon', 'lng', 'location.lon', 'location.lng', 'coordinates.lon', 'coordinates.lng']) !== null
+                && (
+                    data_get($node, 'availableProducts') !== null
+                    || data_get($node, 'fuelProducts') !== null
+                    || data_get($node, 'products') !== null
+                    || data_get($node, 'fuels') !== null
+                )
+            ) {
+                $candidates[] = $node;
+
+                return;
+            }
+
+            foreach ($node as $value) {
+                if (is_array($value)) {
+                    $walk($value);
+                }
+            }
+        };
+
+        $walk($payload);
+
+        return $candidates;
+    }
+
+    private function tbankAvailableFuelTypes(array $station): array
+    {
+        $products = $this->firstArrayValue($station, [
+            'availableProducts',
+            'fuelProducts',
+            'products',
+            'fuels',
+            'fillingStation.availableProducts',
+            'fillingStation.fuelProducts',
+        ]);
+
+        if ($products === []) {
+            return [];
+        }
+
+        return collect($products)
+            ->map(function (mixed $product): ?string {
+                if (is_string($product) || is_numeric($product)) {
+                    return $this->normalizeFuelTitle((string) $product);
+                }
+
+                if (! is_array($product) || ! $this->tbankProductIsAvailable($product)) {
+                    return null;
+                }
+
+                return $this->normalizeFuelTitle($this->firstStringValue($product, [
+                    'name',
+                    'title',
+                    'shortTitle',
+                    'productName',
+                    'fuelType',
+                    'type',
+                    'code',
+                ]));
+            })
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function tbankPrices(array $station): array
+    {
+        $products = $this->firstArrayValue($station, [
+            'availableProducts',
+            'fuelProducts',
+            'products',
+            'fuels',
+            'fillingStation.availableProducts',
+            'fillingStation.fuelProducts',
+        ]);
+
+        if ($products === []) {
+            return [];
+        }
+
+        return collect($products)
+            ->mapWithKeys(function (mixed $product): array {
+                if (! is_array($product) || ! $this->tbankProductIsAvailable($product)) {
+                    return [];
+                }
+
+                $title = $this->normalizeFuelTitle($this->firstStringValue($product, [
+                    'name',
+                    'title',
+                    'shortTitle',
+                    'productName',
+                    'fuelType',
+                    'type',
+                    'code',
+                ]));
+                $price = $this->firstNumericValue($product, [
+                    'price',
+                    'price.value',
+                    'price.amount',
+                    'cost',
+                    'amount',
+                ]);
+
+                if ($title === '' || $price === null || $price <= 0 || $price > 500) {
+                    return [];
+                }
+
+                return [$title => number_format($price, 2, ',', '').' ₽'];
+            })
+            ->all();
+    }
+
+    private function tbankProductIsAvailable(array $product): bool
+    {
+        foreach (['available', 'isAvailable', 'enabled', 'active'] as $key) {
+            if (array_key_exists($key, $product) && $product[$key] === false) {
+                return false;
+            }
+        }
+
+        $status = mb_strtolower($this->firstStringValue($product, ['status', 'availability', 'state']));
+
+        return ! in_array($status, ['unavailable', 'disabled', 'inactive', 'soldout', 'sold_out', 'none', 'no'], true);
+    }
+
+    private function firstArrayValue(array $item, array $paths): array
+    {
+        foreach ($paths as $path) {
+            $value = data_get($item, $path);
+            if (is_array($value)) {
+                return $value;
+            }
+        }
+
+        return [];
+    }
+
+    private function firstNumericValue(array $item, array $paths): ?float
+    {
+        foreach ($paths as $path) {
+            $value = data_get($item, $path);
+            if (is_numeric($value)) {
+                return (float) $value;
+            }
+        }
+
+        return null;
+    }
+
+    private function firstStringValue(array $item, array $paths): string
+    {
+        foreach ($paths as $path) {
+            $value = data_get($item, $path);
+            if (is_scalar($value) && trim((string) $value) !== '') {
+                return trim((string) $value);
+            }
+        }
+
+        return '';
     }
 }

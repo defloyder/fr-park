@@ -165,17 +165,34 @@ class FuelStationService
             }
 
             $station = $merged->get($matchIndex);
-            $merged->put($matchIndex, [
+            $officialPrices = (array) ($officialStation['prices'] ?? []);
+            $stationPrices = (array) ($station['prices'] ?? []);
+
+            $mergedStation = [
                 ...$station,
                 'name' => $officialStation['name'] ?: $station['name'],
                 'brand' => $officialStation['brand'] ?: $station['brand'],
                 'address' => $officialStation['address'] ?: $station['address'],
-                'prices' => $officialStation['prices'],
-                'priceLabel' => $officialStation['priceLabel'],
-                'updatedAt' => $officialStation['updatedAt'],
-                'osmUrl' => $officialStation['osmUrl'],
-                'priceSource' => $officialStation['priceSource'],
-            ]);
+                'prices' => $officialPrices !== [] ? $officialPrices : $stationPrices,
+                'priceLabel' => $officialPrices !== []
+                    ? $officialStation['priceLabel']
+                    : ($station['priceLabel'] ?? ''),
+                'updatedAt' => $officialPrices !== []
+                    ? $officialStation['updatedAt']
+                    : ($station['updatedAt'] ?? null),
+                'osmUrl' => $officialStation['osmUrl'] ?: ($station['osmUrl'] ?? ''),
+                'priceSource' => $officialPrices !== []
+                    ? $officialStation['priceSource']
+                    : ($station['priceSource'] ?? ''),
+            ];
+
+            foreach (['availableFuelTypes', 'fuelAvailabilitySource', 'fuelAvailabilityUpdatedAt'] as $key) {
+                if (! empty($officialStation[$key])) {
+                    $mergedStation[$key] = $officialStation[$key];
+                }
+            }
+
+            $merged->put($matchIndex, $mergedStation);
         }
 
         return $merged->values()->all();
