@@ -90,7 +90,11 @@ export async function fetchFuelStations(bounds, { signal, detail = 'full' } = {}
     });
 
     if (!response.ok) {
-        throw new Error('Failed to load fuel stations');
+        const retryAfter = Number.parseInt(response.headers.get('Retry-After') || '', 10);
+        throw Object.assign(new Error('Failed to load fuel stations'), {
+            status: response.status,
+            retryAfter: Number.isFinite(retryAfter) ? retryAfter : null,
+        });
     }
 
     return response.json();

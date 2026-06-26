@@ -211,7 +211,7 @@ class FuelStationApiTest extends TestCase
 
         $this->getJson('/api/fuel-stations?west=37.3&south=55.7&east=37.5&north=55.8')
             ->assertOk()
-            ->assertJsonPath('meta.source', 'OpenStreetMap + официальные сайты АЗС')
+            ->assertJsonPath('meta.source', 'OpenStreetMap + источники цен АЗС')
             ->assertJsonPath('data.0.prices.АИ-95', '70,99 ₽')
             ->assertJsonPath('data.0.priceSource', 'Официальная карта АЗС «Татнефть»')
             ->assertJsonPath('data.0.availability', 'unknown');
@@ -355,6 +355,81 @@ class FuelStationApiTest extends TestCase
             ->assertJsonPath('data.0.name', 'Роснефть · АЗС 12')
             ->assertJsonPath('data.0.prices.АИ-95', '72,45 ₽')
             ->assertJsonPath('data.0.priceSource', 'Официальная карта АЗС «Роснефть»')
+            ->assertJsonPath('data.0.availability', 'unknown');
+    }
+
+    public function test_it_enriches_lukoil_teboil_and_eka_prices_from_russiabase_public_index(): void
+    {
+        config()->set('services.tomtom_traffic.key', null);
+
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), 'overpass-api.de')) {
+                return Http::response([
+                    'elements' => [[
+                        'type' => 'node',
+                        'id' => 50,
+                        'lat' => 55.60285,
+                        'lon' => 37.66899,
+                        'tags' => [
+                            'amenity' => 'fuel',
+                            'name' => 'Лукойл',
+                        ],
+                    ]],
+                ]);
+            }
+
+            if (str_contains($request->url(), 'russiabase.ru/prices?brand=119')) {
+                $payload = [
+                    'props' => [
+                        'pageProps' => [
+                            'listingMap' => [
+                                'listing' => [[
+                                    'poiid' => '2421',
+                                    'name' => 'ЛУКОЙЛ №77606',
+                                    'address' => 'г. Москва, ул. Липецкая, вл. 2 корп. 15',
+                                    'Y' => '55.60285',
+                                    'X' => '37.66899',
+                                    'brand_id' => '119',
+                                    'LastUpdate' => '26.06.2026',
+                                    'prices_updated' => '26.06.2026',
+                                    'prices' => [
+                                        'ai92' => ['value' => '65.11', 'name' => 'Аи-92'],
+                                        'ai95' => ['value' => '72.39', 'name' => 'Аи-95'],
+                                        'dt' => ['value' => '78.88', 'name' => 'ДТ'],
+                                    ],
+                                ]],
+                            ],
+                        ],
+                    ],
+                ];
+
+                return Http::response(
+                    '<script id="__NEXT_DATA__" type="application/json">'
+                    .json_encode($payload, JSON_UNESCAPED_UNICODE)
+                    .'</script>'
+                );
+            }
+
+            if (str_contains($request->url(), 'russiabase.ru/prices?brand=271')) {
+                return Http::response('<script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"listingMap":{"listing":[]}}}}</script>');
+            }
+
+            if (str_contains($request->url(), 'russiabase.ru/prices?brand=122')) {
+                return Http::response('<script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"listingMap":{"listing":[]}}}}</script>');
+            }
+
+            return Http::response([], 404);
+        });
+
+        $this->getJson('/api/fuel-stations?west=37.6&south=55.5&east=37.7&north=55.7')
+            ->assertOk()
+            ->assertJsonPath('meta.source', 'OpenStreetMap + источники цен АЗС')
+            ->assertJsonPath('data.0.name', 'ЛУКОЙЛ №77606')
+            ->assertJsonPath('data.0.brand', 'ЛУКОЙЛ')
+            ->assertJsonPath('data.0.prices.АИ-95', '72,39 ₽')
+            ->assertJsonPath('data.0.prices.ДТ', '78,88 ₽')
+            ->assertJsonPath('data.0.updatedAt', '26.06.2026')
+            ->assertJsonPath('data.0.priceSource', 'Публичный индекс цен RUSSIABASE · Лукойл')
             ->assertJsonPath('data.0.availability', 'unknown');
     }
 }

@@ -9,6 +9,24 @@ use Illuminate\Support\Facades\Http;
 
 class OfficialFuelPriceService
 {
+    private const RUSSIABASE_BRANDS = [
+        119 => [
+            'brand' => 'ЛУКОЙЛ',
+            'source' => 'Публичный индекс цен RUSSIABASE · Лукойл',
+            'url' => 'https://russiabase.ru/prices?brand=119',
+        ],
+        271 => [
+            'brand' => 'Teboil',
+            'source' => 'Публичный индекс цен RUSSIABASE · Teboil',
+            'url' => 'https://russiabase.ru/prices?brand=271',
+        ],
+        122 => [
+            'brand' => 'ЕКА',
+            'source' => 'Публичный индекс цен RUSSIABASE · ЕКА',
+            'url' => 'https://russiabase.ru/prices?brand=122',
+        ],
+    ];
+
     public function stationsForBounds(float $west, float $south, float $east, float $north): array
     {
         $stations = [];
@@ -35,6 +53,12 @@ class OfficialFuelPriceService
             $stations = array_merge($stations, $this->rosneftStations($west, $south, $east, $north));
         } catch (\Throwable) {
             // Rosneft embeds the public station data in its page, which can change independently.
+        }
+
+        try {
+            $stations = array_merge($stations, $this->russiabaseStations($west, $south, $east, $north));
+        } catch (\Throwable) {
+            // Third-party public price indexes are best-effort and must never block the fuel layer.
         }
 
         return $stations;
@@ -434,7 +458,10 @@ class OfficialFuelPriceService
     {
         $normalized = preg_replace('/\s+/u', ' ', trim($title)) ?: trim($title);
 
-        return str_ireplace(['АИ ', 'аи '], 'АИ-', $normalized);
+        $normalized = str_ireplace(['АИ ', 'Аи ', 'аи '], 'АИ-', $normalized);
+        $normalized = preg_replace('/^Аи-/ui', 'АИ-', $normalized) ?: $normalized;
+
+        return $normalized;
     }
 
     private function primaryPriceLabel(array $prices): string
@@ -708,5 +735,150 @@ class OfficialFuelPriceService
         }
 
         return $stations;
+    }
+
+    private function russiabaseStations(float $west, float $south, float $east, float $north): array
+    {
+        $stations = [];
+
+        foreach ($this->russiabaseBrandStations() as $brandId => $items) {
+            $brand = self::RUSSIABASE_BRANDS[(int) $brandId] ?? null;
+            if ($brand === null) {
+                continue;
+            }
+
+            foreach ($items as $item) {
+                $latitude = data_get($item, 'Y');
+                $longitude = data_get($item, 'X');
+                if (! is_numeric($latitude) || ! is_numeric($longitude)) {
+                    continue;
+                }
+
+                $latitude = (float) $latitude;
+                $longitude = (float) $longitude;
+                if ($latitude < $south || $latitude > $north || $longitude < $west || $longitude > $east) {
+                    continue;
+                }
+
+                $prices = $this->russiabasePrices((array) data_get($item, 'prices', []));
+                if ($prices === []) {
+                    continue;
+                }
+
+                $updatedAt = (string) (data_get($item, 'prices_updated') ?: data_get($item, 'LastUpdate') ?: '');
+
+                $stations[] = [
+                    'id' => 'russiabase-'.data_get($item, 'poiid'),
+                    'name' => (string) (data_get($item, 'name') ?: $brand['brand']),
+                    'brand' => $brand['brand'],
+                    'address' => (string) data_get($item, 'address', ''),
+                    'latitude' => $latitude,
+                    'longitude' => $longitude,
+                    'availability' => 'unknown',
+                    'prices' => $prices,
+                    'priceLabel' => $this->primaryPriceLabel($prices),
+                    'openingHours' => '',
+                    'updatedAt' => $updatedAt !== '' ? $updatedAt : null,
+                    'osmUrl' => $brand['url'],
+                    'priceSource' => $brand['source'],
+                ];
+            }
+        }
+
+        return $stations;
+    }
+
+    private function russiabaseBrandStations(): array
+    {
+        $stations = [];
+        $missing = [];
+
+        foreach (array_keys(self::RUSSIABASE_BRANDS) as $brandId) {
+            $cached = Cache::get("fuel-prices:russiabase:brand:{$brandId}");
+            if (is_array($cached)) {
+                $stations[$brandId] = $cached;
+            } else {
+                $missing[$brandId] = $brandId;
+            }
+        }
+
+        if ($missing === []) {
+            return $stations;
+        }
+
+        $responses = Http::pool(function (Pool $pool) use ($missing): void {
+            foreach ($missing as $brandId) {
+                $pool->as((string) $brandId)
+                    ->connectTimeout(3)
+                    ->timeout(10)
+                    ->withoutVerifying()
+                    ->withHeaders(['User-Agent' => 'Mozilla/5.0 AuralithMaps/1.0'])
+                    ->get("https://russiabase.ru/prices?brand={$brandId}");
+            }
+        }, 3);
+
+        foreach ($responses as $brandId => $response) {
+            if (! $response instanceof Response || ! $response->successful()) {
+                continue;
+            }
+
+            $brandStations = $this->parseRussiabaseStations($response->body());
+            $stations[(int) $brandId] = $brandStations;
+            Cache::put(
+                "fuel-prices:russiabase:brand:{$brandId}",
+                $brandStations,
+                now()->addMinutes(15)
+            );
+        }
+
+        return $stations;
+    }
+
+    private function parseRussiabaseStations(string $html): array
+    {
+        if (
+            preg_match(
+                '/<script\s+id="__NEXT_DATA__"\s+type="application\/json">(.*?)<\/script>/s',
+                $html,
+                $matches
+            ) !== 1
+        ) {
+            return [];
+        }
+
+        $payload = json_decode(
+            html_entity_decode($matches[1], ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+            true
+        );
+
+        if (! is_array($payload)) {
+            return [];
+        }
+
+        return collect((array) data_get($payload, 'props.pageProps.listingMap.listing', []))
+            ->filter(fn ($station): bool => is_array($station))
+            ->values()
+            ->all();
+    }
+
+    private function russiabasePrices(array $fuelItems): array
+    {
+        return collect($fuelItems)
+            ->mapWithKeys(function (array $fuel): array {
+                $value = data_get($fuel, 'value');
+                $title = $this->normalizeFuelTitle((string) data_get($fuel, 'name', ''));
+
+                if (! is_numeric($value) || $title === '') {
+                    return [];
+                }
+
+                $price = (float) $value;
+                if ($price <= 0 || $price > 500) {
+                    return [];
+                }
+
+                return [$title => number_format($price, 2, ',', '').' ₽'];
+            })
+            ->all();
     }
 }

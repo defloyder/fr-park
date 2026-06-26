@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\Api\GeocodeController;
 use App\Http\Controllers\Api\FuelStationController;
+use App\Http\Controllers\Api\GeocodeController;
 use App\Http\Controllers\Api\ParkingSpotController;
 use App\Http\Controllers\Api\RouteController;
 use App\Http\Controllers\Api\SessionController;
@@ -19,7 +19,7 @@ Route::get('geocode/reverse', [GeocodeController::class, 'reverse'])
     ->name('geocode.reverse');
 
 Route::get('fuel-stations', FuelStationController::class)
-    ->middleware('throttle:30,1')
+    ->middleware('throttle:180,1')
     ->name('fuel-stations.index');
 
 Route::get('routes/driving', [RouteController::class, 'driving'])

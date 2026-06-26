@@ -121,7 +121,7 @@ class FuelStationService
 
         if ($officialStations !== []) {
             $result['data'] = $this->mergeOfficialPrices($result['data'], $officialStations);
-            $result['source'] = trim($result['source'].' + официальные сайты АЗС', ' +');
+            $result['source'] = trim($result['source'].' + источники цен АЗС', ' +');
         }
 
         return $result;

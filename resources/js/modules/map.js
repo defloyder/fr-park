@@ -28,6 +28,7 @@ let fuelStationsCache = new Map();
 let renderedFuelStationIds = new Set();
 let fuelStationPopup = null;
 let isFuelLayerEnabled = false;
+let fuelStationsRateLimitedUntil = 0;
 
 const MOSCOW_CENTER = [37.6173, 55.7558];
 const MAP_CONTAINER_ID = 'parking-map';
@@ -40,6 +41,7 @@ const FUEL_STATION_SOURCE_ID = 'fuel-stations';
 const FUEL_STATION_MIN_ZOOM = 8.5;
 const FUEL_STATION_CACHE_TTL_MS = 5 * 60 * 1000;
 const FUEL_STATION_CACHE_LIMIT = 12;
+const FUEL_STATION_RATE_LIMIT_FALLBACK_MS = 30000;
 const PERSONAL_PLACE_SOURCE_ID = 'personal-places';
 const TRAFFIC_FLOW_SOURCE_ID = 'tomtom-traffic-flow';
 const TRAFFIC_FLOW_LAYER_ID = 'tomtom-traffic-flow';
@@ -1337,6 +1339,17 @@ function scheduleFuelStationsLoad(delay = 260) {
 async function loadFuelStationsInView() {
     if (!isFuelLayerEnabled || !map) return;
 
+    const rateLimitDelay = fuelStationsRateLimitedUntil - Date.now();
+    if (rateLimitDelay > 0) {
+        updateFuelLayerMenuState(renderedFuelStationIds.size ? 'stale' : 'loading', renderedFuelStationIds.size);
+        window.clearTimeout(fuelStationsRetryTimer);
+        fuelStationsRetryTimer = window.setTimeout(
+            () => scheduleFuelStationsLoad(0),
+            Math.min(rateLimitDelay + 250, FUEL_STATION_RATE_LIMIT_FALLBACK_MS),
+        );
+        return;
+    }
+
     const requestId = ++fuelStationsRequestId;
     fuelStationsAbortController?.abort('superseded');
     fuelStationsAbortController = null;
@@ -1375,6 +1388,7 @@ async function loadFuelStationsInView() {
             fastStations = normalizeFuelStations(fastResponse.data);
         } catch (error) {
             if (error?.name === 'AbortError') throw error;
+            if (isRateLimitError(error)) throw error;
         }
 
         if (requestId !== fuelStationsRequestId || !isFuelLayerEnabled) return;
@@ -1398,11 +1412,17 @@ async function loadFuelStationsInView() {
         if (requestId !== fuelStationsRequestId || !isFuelLayerEnabled) return;
         if (error?.name === 'AbortError' && requestController.signal.reason !== 'timeout') return;
 
+        if (isRateLimitError(error)) {
+            fuelStationsRateLimitedUntil = Date.now() + getFuelStationsRateLimitDelay(error);
+        }
+
         updateFuelLayerMenuState(renderedFuelStationIds.size ? 'stale' : 'error', renderedFuelStationIds.size);
         window.clearTimeout(fuelStationsRetryTimer);
         fuelStationsRetryTimer = window.setTimeout(
             () => scheduleFuelStationsLoad(0),
-            renderedFuelStationIds.size ? 60000 : 10000,
+            isRateLimitError(error)
+                ? getFuelStationsRateLimitDelay(error)
+                : (renderedFuelStationIds.size ? 60000 : 10000),
         );
     } finally {
         window.clearTimeout(requestTimeout);
@@ -1421,6 +1441,16 @@ function getRoundedFuelStationBounds(bounds) {
         east: Math.ceil(bounds.getEast() * precision) / precision,
         north: Math.ceil(bounds.getNorth() * precision) / precision,
     };
+}
+
+function isRateLimitError(error) {
+    return Number(error?.status) === 429;
+}
+
+function getFuelStationsRateLimitDelay(error) {
+    const retryAfterMs = Number(error?.retryAfter) > 0 ? Number(error.retryAfter) * 1000 : 0;
+
+    return Math.max(5000, retryAfterMs || FUEL_STATION_RATE_LIMIT_FALLBACK_MS);
 }
 
 function getSavedBaseMapLayer() {
