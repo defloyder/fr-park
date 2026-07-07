@@ -695,25 +695,43 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-settings__option:
 }
 
 .fuel-station-popup .maplibregl-popup-close-button {
+    top: 10px;
+    right: 10px;
     z-index: 2;
     display: inline-grid;
-    width: 40px;
-    height: 40px;
-    min-height: 40px;
+    width: 34px;
+    height: 34px;
+    min-height: 34px;
+    padding: 0;
     place-items: center;
-    color: #BE123C;
+    color: #B91C4F;
     font-size: 0;
     line-height: 1;
-    background: rgba(255, 240, 244, 0.92);
-    border: 1px solid rgba(225, 29, 72, 0.28);
-    border-radius: 15px;
-    box-shadow: 0 10px 26px rgba(94, 10, 37, 0.18);
+    background: rgba(255, 241, 246, 0.9);
+    border: 1px solid rgba(244, 114, 182, 0.46);
+    border-radius: 12px;
+    box-shadow:
+        0 8px 22px rgba(94, 10, 37, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.76);
+    transition:
+        color 0.16s ease,
+        background 0.16s ease,
+        border-color 0.16s ease,
+        transform 0.16s ease;
+}
+
+.fuel-station-popup .maplibregl-popup-close-button:hover,
+.fuel-station-popup .maplibregl-popup-close-button:focus-visible {
+    color: #9F1239;
+    background: rgba(255, 228, 236, 0.96);
+    border-color: rgba(244, 114, 182, 0.72);
+    transform: translateY(-1px);
 }
 
 .fuel-station-popup .maplibregl-popup-close-button::before,
 .fuel-station-popup .maplibregl-popup-close-button::after {
     position: absolute;
-    width: 14px;
+    width: 13px;
     height: 2px;
     background: currentColor;
     border-radius: 999px;
@@ -740,6 +758,7 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-settings__option:
     display: grid;
     min-width: 0;
     gap: 7px;
+    padding-right: 42px;
 }
 
 .fuel-popup__head h3 {
@@ -891,8 +910,8 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-settings__option:
     }
 
     .fuel-station-popup .maplibregl-popup-close-button {
-        top: 6px;
-        right: 6px;
+        top: 12px;
+        right: 12px;
     }
 
     .fuel-popup {
