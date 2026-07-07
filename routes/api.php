@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\FuelStationController;
 use App\Http\Controllers\Api\GeocodeController;
+use App\Http\Controllers\Api\MapDiagnosticsController;
 use App\Http\Controllers\Api\ParkingSpotController;
 use App\Http\Controllers\Api\RouteController;
 use App\Http\Controllers\Api\SessionController;
@@ -25,6 +26,10 @@ Route::get('fuel-stations', FuelStationController::class)
 Route::get('routes/driving', [RouteController::class, 'driving'])
     ->middleware('throttle:60,1')
     ->name('routes.driving');
+
+Route::post('map-diagnostics', MapDiagnosticsController::class)
+    ->middleware('throttle:30,1')
+    ->name('map-diagnostics.store');
 
 Route::post('navigation/speed-cameras', SpeedCameraController::class)
     ->middleware('throttle:30,1')

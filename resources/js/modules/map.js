@@ -34,6 +34,10 @@ let isFuelLayerEnabled = false;
 let fuelStationsRateLimitedUntil = 0;
 
 const MOSCOW_CENTER = [37.6173, 55.7558];
+const MAP_DIAGNOSTICS_ENDPOINT = '/api/map-diagnostics';
+const MAP_SLOW_BOOT_THRESHOLD_MS = 8000;
+const MAP_STUCK_BOOT_THRESHOLD_MS = 18000;
+const FUEL_STATION_SLOW_REQUEST_MS = 12000;
 const MAP_CONTAINER_ID = 'parking-map';
 const SOURCE_ID = 'parking-spots';
 const PENDING_SOURCE_ID = 'pending-parking-spot';
@@ -97,6 +101,17 @@ const ROAD_MARKING_LAYER_PATTERNS = [
     /^road_surfaces$/,
 ];
 const ROAD_MARKING_SOURCE_IDS = ['road-markings', 'road-details'];
+const mapDiagnostics = {
+    startedAt: nowMs(),
+    marks: { moduleLoaded: 0 },
+    counters: {
+        mapErrors: 0,
+        tileFailures: 0,
+        fuelErrors: 0,
+    },
+    details: {},
+    sentReasons: new Set(),
+};
 const FOLLOW_ZOOM = 17.75;
 const FOLLOW_PITCH = 68;
 const FOLLOW_SCREEN_OFFSET_RATIO = 0.24;
@@ -737,20 +752,140 @@ const SPEED_CAMERA_MARKER_ID = 'speed-camera-marker';
 const FUEL_MARKER_AVAILABLE_ID = 'fuel-marker-available';
 const FUEL_MARKER_UNAVAILABLE_ID = 'fuel-marker-unavailable';
 
+function nowMs() {
+    return typeof performance !== 'undefined' && typeof performance.now === 'function'
+        ? performance.now()
+        : Date.now();
+}
+
+function markMapDiagnostic(name, detail = null) {
+    if (!Object.prototype.hasOwnProperty.call(mapDiagnostics.marks, name)) {
+        mapDiagnostics.marks[name] = Math.round(nowMs() - mapDiagnostics.startedAt);
+    }
+
+    if (detail !== null) {
+        mapDiagnostics.details[name] = detail;
+    }
+}
+
+function setMapDiagnosticDetail(name, value) {
+    mapDiagnostics.details[name] = value;
+}
+
+function incrementMapDiagnosticCounter(name) {
+    mapDiagnostics.counters[name] = Number(mapDiagnostics.counters[name] || 0) + 1;
+}
+
+function scheduleMapDiagnosticsWatchdog() {
+    window.setTimeout(() => {
+        if (!mapDiagnostics.marks.mapReady) {
+            sendMapDiagnostics('map_slow_boot');
+        }
+    }, MAP_SLOW_BOOT_THRESHOLD_MS);
+
+    window.setTimeout(() => {
+        if (!mapDiagnostics.marks.mapReady) {
+            sendMapDiagnostics('map_stuck_boot', {}, { force: true });
+        }
+    }, MAP_STUCK_BOOT_THRESHOLD_MS);
+}
+
+function sendMapDiagnostics(reason, details = {}, { force = false } = {}) {
+    if (!force && mapDiagnostics.sentReasons.has(reason)) {
+        return;
+    }
+
+    if (mapDiagnostics.sentReasons.size >= 4) {
+        return;
+    }
+
+    mapDiagnostics.sentReasons.add(reason);
+
+    const payload = {
+        reason,
+        timings: mapDiagnostics.marks,
+        counters: mapDiagnostics.counters,
+        details: {
+            ...mapDiagnostics.details,
+            ...details,
+        },
+        device: getMapDiagnosticsDeviceInfo(),
+        page: window.location.pathname,
+    };
+
+    fetch(MAP_DIAGNOSTICS_ENDPOINT, {
+        method: 'POST',
+        credentials: 'same-origin',
+        keepalive: true,
+        headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+    }).catch(() => {
+        // Diagnostics must never affect the map experience.
+    });
+}
+
+function getMapDiagnosticsDeviceInfo() {
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    const device = {
+        online: navigator.onLine,
+        userAgent: navigator.userAgent,
+        language: navigator.language,
+        platform: navigator.platform,
+        viewport: `${window.innerWidth}x${window.innerHeight}`,
+        devicePixelRatio: window.devicePixelRatio || 1,
+        hardwareConcurrency: navigator.hardwareConcurrency || null,
+        deviceMemory: navigator.deviceMemory || null,
+        webglSupported: isWebGlSupported(),
+    };
+
+    if (connection) {
+        device.connection = {
+            effectiveType: connection.effectiveType || null,
+            downlink: connection.downlink || null,
+            rtt: connection.rtt || null,
+            saveData: Boolean(connection.saveData),
+        };
+    }
+
+    if (map) {
+        device.map = {
+            loaded: typeof map.loaded === 'function' ? map.loaded() : null,
+            zoom: Number(map.getZoom?.().toFixed(2)),
+            pitch: Number(map.getPitch?.().toFixed(1)),
+            bearing: Number(map.getBearing?.().toFixed(1)),
+            fuelLayerEnabled: isFuelLayerEnabled,
+            renderedFuelStations: renderedFuelStationIds.size,
+        };
+    }
+
+    return device;
+}
+
 export async function initParkingMap() {
     if (!document.getElementById(MAP_CONTAINER_ID)) {
         return;
     }
 
+    markMapDiagnostic('initCalled');
+
     if (!isWebGlSupported()) {
+        sendMapDiagnostics('webgl_unsupported', {}, { force: true });
         reportMapError('Карта не поддерживается в этом браузере. Попробуйте Chrome или Safari.', true);
         return;
     }
 
     try {
+        markMapDiagnostic('initMapStart');
         initMapLibreMap();
     } catch (error) {
         console.error('Map init failed', error);
+        incrementMapDiagnosticCounter('mapErrors');
+        sendMapDiagnostics('map_init_failed', {
+            message: String(error?.message || error),
+        }, { force: true });
         reportMapError('Не удалось загрузить карту. Проверьте соединение и обновите страницу.', true);
     }
 }
@@ -778,6 +913,8 @@ function initMapLibreMap() {
     document.body.classList.add('is-map-loading');
     document.body.classList.remove('is-map-ready');
 
+    markMapDiagnostic('mapConstructStart');
+
     map = new maplibregl.Map({
         container: MAP_CONTAINER_ID,
         center: MOSCOW_CENTER,
@@ -789,17 +926,37 @@ function initMapLibreMap() {
         fadeDuration: 0,
     });
 
+    markMapDiagnostic('mapConstructed');
+    scheduleMapDiagnosticsWatchdog();
+
     map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
 
     map.on('error', (event) => {
         const message = String(event?.error?.message || event?.error || '');
+        incrementMapDiagnosticCounter('mapErrors');
 
         if (message.includes('Failed to fetch') || message.includes('AJAXError')) {
+            incrementMapDiagnosticCounter('tileFailures');
+            if (mapDiagnostics.counters.tileFailures >= 4) {
+                sendMapDiagnostics('map_tile_failures', { lastTileError: message });
+            }
             console.warn('MapLibre tile/source request failed', message);
             return;
         }
 
+        sendMapDiagnostics('maplibre_error', { message }, { force: true });
         console.warn('MapLibre error', event.error);
+    });
+
+    map.once('sourcedata', (event) => {
+        markMapDiagnostic('firstSourceData', {
+            sourceId: event?.sourceId || '',
+            sourceDataType: event?.sourceDataType || '',
+        });
+    });
+
+    map.once('idle', () => {
+        markMapDiagnostic('firstIdle');
     });
 
     map.on('styledata', () => {
@@ -813,6 +970,7 @@ function initMapLibreMap() {
     bindPerformanceMode();
 
     map.once('load', async () => {
+        markMapDiagnostic('mapLoad');
         map.resize();
         setBaseMapLayer(getSavedBaseMapLayer());
         document.body.classList.remove('is-map-loading');
@@ -841,16 +999,28 @@ function initMapLibreMap() {
             removeRoadMarkingLayers();
             bindMapEvents();
             setFuelLayerEnabled(getSavedFuelLayerState(), { persist: false });
+            markMapDiagnostic('mapReady');
+            if (mapDiagnostics.marks.mapReady > MAP_SLOW_BOOT_THRESHOLD_MS) {
+                sendMapDiagnostics('map_ready_slow');
+            }
             window.dispatchEvent(new CustomEvent('map:ready'));
         } catch (error) {
             console.error('Map layers failed', error);
+            incrementMapDiagnosticCounter('mapErrors');
+            sendMapDiagnostics('map_layers_failed', {
+                message: String(error?.message || error),
+            }, { force: true });
             reportMapError('Не удалось отрисовать карту. Обновите страницу.', true);
             return;
         }
 
         try {
             scheduleParkingSpotsLoad();
-        } catch {
+        } catch (error) {
+            incrementMapDiagnosticCounter('mapErrors');
+            sendMapDiagnostics('parking_schedule_failed', {
+                message: String(error?.message || error),
+            }, { force: true });
             reportMapError('Не удалось загрузить точки. Проверьте соединение и попробуйте снова.');
         }
     });
@@ -925,10 +1095,24 @@ function scheduleParkingSpotsLoad() {
 }
 
 async function loadParkingSpots() {
+    const startedAt = nowMs();
+    markMapDiagnostic('parkingLoadStart');
     window.dispatchEvent(new CustomEvent('parking:loading'));
-    const response = await fetchParkingSpots();
-    renderParkingSpots(response.data);
-    window.dispatchEvent(new CustomEvent('parking:loaded', { detail: response.data }));
+    try {
+        const response = await fetchParkingSpots();
+        renderParkingSpots(response.data);
+        markMapDiagnostic('parkingLoaded');
+        setMapDiagnosticDetail('parkingLoadMs', Math.round(nowMs() - startedAt));
+        setMapDiagnosticDetail('parkingCount', Array.isArray(response.data) ? response.data.length : null);
+        window.dispatchEvent(new CustomEvent('parking:loaded', { detail: response.data }));
+    } catch (error) {
+        incrementMapDiagnosticCounter('mapErrors');
+        sendMapDiagnostics('parking_load_failed', {
+            message: String(error?.message || error),
+            parkingLoadMs: Math.round(nowMs() - startedAt),
+        });
+        throw error;
+    }
 }
 
 function addSpeedCameraSourceAndLayer() {
@@ -1385,15 +1569,21 @@ async function loadFuelStationsInView() {
     const requestTimeout = window.setTimeout(() => requestController.abort('timeout'), 45000);
     fuelStationsAbortController = requestController;
     updateFuelLayerMenuState(renderedFuelStationIds.size ? 'refreshing' : 'loading', renderedFuelStationIds.size);
+    const fuelRequestStartedAt = nowMs();
+    markMapDiagnostic('fuelRequestStart');
+    setMapDiagnosticDetail('fuelRequestBounds', requestBounds);
 
     try {
         let fastStations = [];
         try {
+            const fastStartedAt = nowMs();
             const fastResponse = await fetchFuelStations(requestBounds, {
                 signal: requestController.signal,
                 detail: 'fast',
             });
             fastStations = normalizeFuelStations(fastResponse.data);
+            setMapDiagnosticDetail('lastFuelFastMs', Math.round(nowMs() - fastStartedAt));
+            setMapDiagnosticDetail('lastFuelFastCount', fastStations.length);
         } catch (error) {
             if (error?.name === 'AbortError') throw error;
             if (isRateLimitError(error)) throw error;
@@ -1405,6 +1595,7 @@ async function loadFuelStationsInView() {
             updateFuelLayerMenuState('refreshing', fastStations.length);
         }
 
+        const fullStartedAt = nowMs();
         const response = await fetchFuelStations(requestBounds, {
             signal: requestController.signal,
             detail: 'full',
@@ -1413,16 +1604,37 @@ async function loadFuelStationsInView() {
 
         const stations = normalizeFuelStations(response.data);
         const finalStations = stations.length > 0 ? stations : fastStations;
+        const fullMs = Math.round(nowMs() - fullStartedAt);
+        const totalMs = Math.round(nowMs() - fuelRequestStartedAt);
+        setMapDiagnosticDetail('lastFuelFullMs', fullMs);
+        setMapDiagnosticDetail('lastFuelTotalMs', totalMs);
+        setMapDiagnosticDetail('lastFuelFullCount', stations.length);
+        setMapDiagnosticDetail('lastFuelMeta', response.meta || null);
+        if (totalMs > FUEL_STATION_SLOW_REQUEST_MS) {
+            sendMapDiagnostics('fuel_request_slow', {
+                fuelFullMs: fullMs,
+                fuelTotalMs: totalMs,
+                fuelFinalCount: finalStations.length,
+            });
+        }
         cacheFuelStations(cacheKey, finalStations);
         renderFuelStations(finalStations);
         updateFuelLayerMenuState(finalStations.length ? 'ready' : 'empty', finalStations.length);
     } catch (error) {
         if (requestId !== fuelStationsRequestId || !isFuelLayerEnabled) return;
         if (error?.name === 'AbortError' && requestController.signal.reason !== 'timeout') return;
+        incrementMapDiagnosticCounter('fuelErrors');
 
         if (isRateLimitError(error)) {
             fuelStationsRateLimitedUntil = Date.now() + getFuelStationsRateLimitDelay(error);
         }
+
+        sendMapDiagnostics('fuel_request_failed', {
+            message: String(error?.message || error),
+            status: error?.status || null,
+            reason: requestController.signal.reason || null,
+            fuelTotalMs: Math.round(nowMs() - fuelRequestStartedAt),
+        });
 
         updateFuelLayerMenuState(renderedFuelStationIds.size ? 'stale' : 'error', renderedFuelStationIds.size);
         window.clearTimeout(fuelStationsRetryTimer);
