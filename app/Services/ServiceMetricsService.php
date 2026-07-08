@@ -86,17 +86,58 @@ class ServiceMetricsService
         $fuelSum = 0;
         $fuelCount = 0;
         $reasons = array_fill_keys(self::MAP_REASONS, 0);
+        $metricKeys = [
+            'total' => [],
+            'tile_failures_observed' => [],
+            'map_ready_sum_ms' => [],
+            'map_ready_count' => [],
+            'fuel_sum_ms' => [],
+            'fuel_count' => [],
+        ];
+        $reasonKeys = [];
 
         foreach ($this->minuteKeys($minutes) as $minute) {
-            $total += (int) $this->cacheGet($this->key("map:minute:{$minute}:total"), 0);
-            $tileFailuresObserved += (int) $this->cacheGet($this->key("map:minute:{$minute}:tile_failures_observed"), 0);
-            $mapReadySum += (int) $this->cacheGet($this->key("map:minute:{$minute}:map_ready_sum_ms"), 0);
-            $mapReadyCount += (int) $this->cacheGet($this->key("map:minute:{$minute}:map_ready_count"), 0);
-            $fuelSum += (int) $this->cacheGet($this->key("map:minute:{$minute}:fuel_sum_ms"), 0);
-            $fuelCount += (int) $this->cacheGet($this->key("map:minute:{$minute}:fuel_count"), 0);
+            foreach ($metricKeys as $metric => $keys) {
+                $metricKeys[$metric][] = $this->key("map:minute:{$minute}:{$metric}");
+            }
 
             foreach (self::MAP_REASONS as $reason) {
-                $reasons[$reason] += (int) $this->cacheGet($this->key("map:minute:{$minute}:reason:{$reason}"), 0);
+                $reasonKeys[$reason][] = $this->key("map:minute:{$minute}:reason:{$reason}");
+            }
+        }
+
+        $values = $this->cacheMany(array_merge(
+            ...array_values($metricKeys),
+            ...array_values($reasonKeys),
+        ));
+
+        foreach ($metricKeys['total'] as $key) {
+            $total += (int) ($values[$key] ?? 0);
+        }
+
+        foreach ($metricKeys['tile_failures_observed'] as $key) {
+            $tileFailuresObserved += (int) ($values[$key] ?? 0);
+        }
+
+        foreach ($metricKeys['map_ready_sum_ms'] as $key) {
+            $mapReadySum += (int) ($values[$key] ?? 0);
+        }
+
+        foreach ($metricKeys['map_ready_count'] as $key) {
+            $mapReadyCount += (int) ($values[$key] ?? 0);
+        }
+
+        foreach ($metricKeys['fuel_sum_ms'] as $key) {
+            $fuelSum += (int) ($values[$key] ?? 0);
+        }
+
+        foreach ($metricKeys['fuel_count'] as $key) {
+            $fuelCount += (int) ($values[$key] ?? 0);
+        }
+
+        foreach ($reasonKeys as $reason => $keys) {
+            foreach ($keys as $key) {
+                $reasons[$reason] += (int) ($values[$key] ?? 0);
             }
         }
 
@@ -190,6 +231,25 @@ class ServiceMetricsService
             return Cache::get($key, $default);
         } catch (Throwable) {
             return $default;
+        }
+    }
+
+    /**
+     * Read counters in one cache call so an unavailable Redis does not multiply failures.
+     *
+     * @param  array<int, string>  $keys
+     * @return array<string, mixed>
+     */
+    private function cacheMany(array $keys): array
+    {
+        if ($keys === []) {
+            return [];
+        }
+
+        try {
+            return Cache::many(array_values(array_unique($keys)));
+        } catch (Throwable) {
+            return [];
         }
     }
 

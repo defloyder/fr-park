@@ -13,6 +13,7 @@ class AdminMetricsTest extends TestCase
     public function test_admin_can_open_service_metrics_even_when_redis_is_unavailable(): void
     {
         config(['auralith.admin_email' => 'admin@example.com']);
+        config(['cache.default' => 'redis']);
 
         $admin = User::factory()->create(['email' => 'admin@example.com']);
 

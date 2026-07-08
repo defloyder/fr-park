@@ -189,11 +189,27 @@ export function initAdminPanel() {
                 credentials: 'same-origin',
                 headers: { Accept: 'application/json' },
             });
-            if (!response.ok) throw new Error('metrics failed');
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
             renderMetrics((await response.json()).data ?? {});
-        } catch {
-            metricsDetails.innerHTML = '<p class="admin-metrics-empty">Метрики временно недоступны.</p>';
+        } catch (error) {
+            renderMetrics({
+                cache: {
+                    default_store: 'endpoint',
+                    session_driver: 'unknown',
+                    queue_connection: 'unknown',
+                    redis: {
+                        available: false,
+                        error: error?.message || 'request failed',
+                    },
+                },
+                map: {
+                    last_hour: { events: 0, tile_failures_observed: 0 },
+                    last_day: { events: 0, tile_failures_observed: 0 },
+                    latest: [],
+                },
+            });
+            metricsDetails.innerHTML = '<p class="admin-metrics-empty">Endpoint метрик не ответил. Проверь route/cache на сервере и повтори обновление.</p>';
         }
     }
 
