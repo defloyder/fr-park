@@ -42,6 +42,8 @@ export function initAdminPanel() {
     const photoDropzone = root.querySelector('[data-admin-photo-dropzone]');
     const photoInput = root.querySelector('[data-admin-photo-input]');
     const photoPreview = root.querySelector('[data-admin-photo-preview]');
+    const metricsSummary = root.querySelector('[data-admin-metrics-summary]');
+    const metricsDetails = root.querySelector('[data-admin-metrics-details]');
 
     root.addEventListener('click', async (event) => {
         const editButton = event.target.closest('[data-admin-edit]');
@@ -57,10 +59,14 @@ export function initAdminPanel() {
         if (themeButton) setAdminTheme(root, themeButton.dataset.adminThemeOption, true);
         if (event.target.closest('[data-admin-refresh]')) await loadSpots();
         if (event.target.closest('[data-admin-users-refresh]')) await loadUsers();
+        if (event.target.closest('[data-admin-metrics-refresh]')) await loadMetrics();
         if (event.target.closest('[data-admin-export-selected]')) exportSelected();
         if (event.target.closest('[data-admin-open-map]')) openMapModal();
         if (event.target.closest('[data-admin-open-users]')) {
             root.querySelector('.admin-users-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        if (event.target.closest('[data-admin-open-metrics]')) {
+            root.querySelector('.admin-metrics-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
         if (event.target.closest('[data-admin-close-map]')) closeMapModal();
         if (event.target === mapModal) closeMapModal();
@@ -152,6 +158,7 @@ export function initAdminPanel() {
 
     loadSpots();
     loadUsers();
+    loadMetrics();
 
     async function loadSpots() {
         const response = await fetch('/aura-vault-7f3c/spots', {
@@ -172,6 +179,89 @@ export function initAdminPanel() {
         const data = await response.json();
         users = data.data ?? [];
         renderUsers();
+    }
+
+    async function loadMetrics() {
+        if (!metricsSummary || !metricsDetails) return;
+
+        try {
+            const response = await fetch('/aura-vault-7f3c/metrics', {
+                credentials: 'same-origin',
+                headers: { Accept: 'application/json' },
+            });
+            if (!response.ok) throw new Error('metrics failed');
+
+            renderMetrics((await response.json()).data ?? {});
+        } catch {
+            metricsDetails.innerHTML = '<p class="admin-metrics-empty">Метрики временно недоступны.</p>';
+        }
+    }
+
+    function renderMetrics(metrics) {
+        const cache = metrics.cache ?? {};
+        const redis = cache.redis ?? {};
+        const hour = metrics.map?.last_hour ?? {};
+        const day = metrics.map?.last_day ?? {};
+        const latest = metrics.map?.latest ?? [];
+
+        metricsSummary.innerHTML = `
+            <article>
+                <span>Cache</span>
+                <strong>${escapeHtml(cache.default_store || 'unknown')}</strong>
+                <small>sessions: ${escapeHtml(cache.session_driver || 'unknown')} · queue: ${escapeHtml(cache.queue_connection || 'unknown')}</small>
+            </article>
+            <article class="${redis.available ? 'is-ok' : 'is-bad'}">
+                <span>Redis</span>
+                <strong>${redis.available ? 'OK' : 'Fail'}</strong>
+                <small>${redis.available ? `${Number(redis.latency_ms || 0)} ms` : escapeHtml(redis.error || 'unavailable')}</small>
+            </article>
+            <article>
+                <span>События / час</span>
+                <strong>${Number(hour.events || 0)}</strong>
+                <small>сутки: ${Number(day.events || 0)}</small>
+            </article>
+            <article class="${Number(hour.tile_failures_observed || 0) > 0 ? 'is-warn' : ''}">
+                <span>Ошибки тайлов / час</span>
+                <strong>${Number(hour.tile_failures_observed || 0)}</strong>
+                <small>сутки: ${Number(day.tile_failures_observed || 0)}</small>
+            </article>
+            <article>
+                <span>Карта готова</span>
+                <strong>${formatMs(hour.avg_map_ready_ms)}</strong>
+                <small>среднее за час</small>
+            </article>
+            <article>
+                <span>АЗС full</span>
+                <strong>${formatMs(hour.avg_fuel_request_ms)}</strong>
+                <small>среднее за час</small>
+            </article>
+        `;
+
+        const reasons = Object.entries(hour.reasons ?? {})
+            .sort((first, second) => Number(second[1]) - Number(first[1]))
+            .map(([reason, count]) => `<span>${escapeHtml(reason)}: ${Number(count)}</span>`)
+            .join('');
+
+        metricsDetails.innerHTML = `
+            <section>
+                <h3>Причины за час</h3>
+                <div class="admin-metrics-tags">${reasons || '<span>Нет событий</span>'}</div>
+            </section>
+            <section>
+                <h3>Последние события</h3>
+                ${latest.length > 0 ? `
+                    <div class="admin-metrics-events">
+                        ${latest.map((event) => `
+                            <article>
+                                <strong>${escapeHtml(event.reason || 'unknown')}</strong>
+                                <span>${formatDateTime(event.at)} · ${escapeHtml(event.viewport || '')} · ${escapeHtml(event.connection || '')}</span>
+                                <small>${escapeHtml(event.user_agent || '')}</small>
+                            </article>
+                        `).join('')}
+                    </div>
+                ` : '<p class="admin-metrics-empty">Проблемных событий пока нет.</p>'}
+            </section>
+        `;
     }
 
     function render() {
@@ -495,4 +585,27 @@ function formatDate(value) {
         month: '2-digit',
         year: 'numeric',
     }).format(new Date(value));
+}
+
+function formatDateTime(value) {
+    if (!value) return '—';
+
+    return new Intl.DateTimeFormat('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+    }).format(new Date(value));
+}
+
+function formatMs(value) {
+    const milliseconds = Number(value);
+
+    if (!Number.isFinite(milliseconds) || milliseconds <= 0) {
+        return '—';
+    }
+
+    return milliseconds >= 1000
+        ? `${(milliseconds / 1000).toFixed(1)}s`
+        : `${Math.round(milliseconds)}ms`;
 }

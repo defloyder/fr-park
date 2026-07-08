@@ -27,13 +27,17 @@ RUN apk add --no-cache \
         icu-dev \
         libzip-dev \
         postgresql-dev \
+        $PHPIZE_DEPS \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
     && docker-php-ext-install \
         intl \
         opcache \
         pcntl \
         pdo_mysql \
         pdo_pgsql \
-        zip
+        zip \
+    && apk del $PHPIZE_DEPS
 
 RUN { \
         echo 'upload_max_filesize=64M'; \

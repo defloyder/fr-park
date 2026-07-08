@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\ParkingSpotResource;
 use App\Models\ParkingSpot;
 use App\Models\User;
+use App\Services\ServiceMetricsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -43,6 +44,13 @@ class AdminController extends Controller
                     'created_at' => $user->created_at?->toISOString(),
                 ])
                 ->values(),
+        ]);
+    }
+
+    public function metrics(ServiceMetricsService $metrics): JsonResponse
+    {
+        return response()->json([
+            'data' => $metrics->snapshot(),
         ]);
     }
 

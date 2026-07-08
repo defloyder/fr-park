@@ -12,6 +12,9 @@
     <link rel="icon" type="image/png" href="{{ asset('images/ChatGPT Image Jun 1, 2026, 02_33_28 PM.png') }}?v=20260604">
     <link rel="manifest" href="{{ asset('site.webmanifest') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/ChatGPT Image Jun 1, 2026, 02_33_28 PM.png') }}?v=20260604">
+    <link rel="preconnect" href="https://tiles.openfreemap.org">
+    <link rel="preconnect" href="https://server.arcgisonline.com">
+    <link rel="preconnect" href="https://api.tomtom.com">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="app-shell">

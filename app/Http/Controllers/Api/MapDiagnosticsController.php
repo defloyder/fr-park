@@ -3,13 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\ServiceMetricsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class MapDiagnosticsController extends Controller
 {
-    public function __invoke(Request $request): JsonResponse
+    public function __invoke(Request $request, ServiceMetricsService $metrics): JsonResponse
     {
         $validated = $request->validate([
             'reason' => ['required', 'string', 'max:80'],
@@ -30,6 +31,8 @@ class MapDiagnosticsController extends Controller
             'ip' => $request->ip(),
             'user_agent' => substr((string) $request->userAgent(), 0, 255),
         ]);
+
+        $metrics->recordMapDiagnostic($validated);
 
         return response()->json(['ok' => true]);
     }

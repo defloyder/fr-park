@@ -3469,6 +3469,7 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
     grid-template-columns: minmax(220px, 260px) minmax(520px, 1fr) minmax(320px, 380px);
     grid-template-areas:
         "sidebar workspace editor"
+        "sidebar metrics metrics"
         "sidebar users users";
     align-items: start;
     gap: 16px;
@@ -3525,6 +3526,7 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
 .admin-sidebar,
 .admin-workspace,
 .admin-editor,
+.admin-metrics-panel,
 .admin-users-panel {
     min-width: 0;
     padding: 20px;
@@ -3559,6 +3561,12 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
 
 .admin-users-panel {
     grid-area: users;
+}
+
+.admin-metrics-panel {
+    grid-area: metrics;
+    display: grid;
+    gap: 16px;
 }
 
 .admin-sidebar .brand-lockup {
@@ -3631,6 +3639,120 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
     color: var(--admin-text);
     font-size: 1.25rem;
     font-weight: 950;
+}
+
+.admin-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.admin-metrics-grid article {
+    display: grid;
+    min-width: 0;
+    gap: 5px;
+    padding: 12px;
+    background: var(--admin-card-bg);
+    border: 1px solid var(--admin-control-border);
+    border-radius: 15px;
+}
+
+.admin-metrics-grid article.is-ok {
+    border-color: rgba(32, 201, 120, 0.36);
+}
+
+.admin-metrics-grid article.is-warn {
+    border-color: rgba(245, 158, 11, 0.42);
+}
+
+.admin-metrics-grid article.is-bad {
+    border-color: rgba(240, 19, 85, 0.44);
+}
+
+.admin-metrics-grid span,
+.admin-metrics-grid small,
+.admin-metrics-empty,
+.admin-metrics-events span,
+.admin-metrics-events small {
+    color: var(--admin-text-muted);
+    font-size: 0.68rem;
+    font-weight: 800;
+}
+
+.admin-metrics-grid strong {
+    overflow: hidden;
+    color: var(--admin-text);
+    font-size: 1.1rem;
+    font-weight: 950;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-metrics-details {
+    display: grid;
+    grid-template-columns: minmax(220px, 0.36fr) minmax(0, 1fr);
+    gap: 12px;
+}
+
+.admin-metrics-details section {
+    display: grid;
+    min-width: 0;
+    align-content: start;
+    gap: 10px;
+    padding: 12px;
+    background: var(--admin-card-bg-strong);
+    border: 1px solid var(--admin-control-border);
+    border-radius: 16px;
+}
+
+.admin-metrics-details h3 {
+    margin: 0;
+    color: var(--admin-text);
+    font-size: 0.9rem;
+}
+
+.admin-metrics-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.admin-metrics-tags span {
+    padding: 6px 8px;
+    color: var(--admin-text);
+    background: var(--admin-control-bg);
+    border: 1px solid var(--admin-control-border);
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 850;
+}
+
+.admin-metrics-events {
+    display: grid;
+    gap: 8px;
+}
+
+.admin-metrics-events article {
+    display: grid;
+    min-width: 0;
+    gap: 4px;
+    padding: 10px;
+    background: var(--admin-control-bg);
+    border: 1px solid var(--admin-control-border);
+    border-radius: 13px;
+}
+
+.admin-metrics-events strong,
+.admin-metrics-events span,
+.admin-metrics-events small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-metrics-events strong {
+    color: var(--admin-text);
+    font-size: 0.78rem;
 }
 
 .admin-nav {
@@ -4094,12 +4216,17 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
         grid-template-columns: minmax(210px, 240px) minmax(0, 1fr);
         grid-template-areas:
             "sidebar workspace"
+            "sidebar metrics"
             "sidebar users"
             "sidebar editor";
     }
 
     .admin-editor {
         scroll-margin-top: 16px;
+    }
+
+    .admin-metrics-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
 
@@ -4110,6 +4237,7 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
         grid-template-areas:
             "sidebar"
             "workspace"
+            "metrics"
             "users"
             "editor";
         gap: 10px;
@@ -4123,6 +4251,7 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
     .admin-sidebar,
     .admin-workspace,
     .admin-editor,
+    .admin-metrics-panel,
     .admin-users-panel {
         padding: 14px;
         border-radius: 18px;
@@ -4184,6 +4313,14 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
     }
 
     .admin-filters {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-metrics-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .admin-metrics-details {
         grid-template-columns: 1fr;
     }
 
@@ -4358,6 +4495,10 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
     }
 
     .admin-bulk-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-metrics-grid {
         grid-template-columns: 1fr;
     }
 

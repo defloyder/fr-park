@@ -779,7 +779,6 @@ function incrementMapDiagnosticCounter(name) {
 function scheduleMapDiagnosticsWatchdog() {
     window.setTimeout(() => {
         if (!mapDiagnostics.marks.mapReady) {
-            reportMapError('Карта загружается дольше обычного. Если вы без VPN и подложка не появляется, вероятно, плохо доступен внешний источник карты.');
             sendMapDiagnostics('map_slow_boot');
         }
     }, MAP_SLOW_BOOT_THRESHOLD_MS);
@@ -940,10 +939,6 @@ function initMapLibreMap() {
             incrementMapDiagnosticCounter('tileFailures');
             if (mapDiagnostics.counters.tileFailures >= 4) {
                 sendMapDiagnostics('map_tile_failures', { lastTileError: message });
-            }
-            if (mapDiagnostics.counters.tileFailures >= 6 && !mapDiagnostics.details.tileWarningShown) {
-                setMapDiagnosticDetail('tileWarningShown', true);
-                reportMapError('Подложка карты загружается нестабильно. Проверьте соединение: внешний источник тайлов может быть недоступен у провайдера.');
             }
             console.warn('MapLibre tile/source request failed', message);
             return;

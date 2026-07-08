@@ -23,6 +23,7 @@
             <nav class="admin-nav">
                 <button type="button" data-admin-open-map title="Открыть карту">Карта</button>
                 <button type="button" data-admin-open-users>Пользователи</button>
+                <button type="button" data-admin-open-metrics>Метрики</button>
                 <a href="/api/parking-spots/export" data-admin-export-all>Экспорт JSON</a>
             </nav>
 
@@ -94,6 +95,23 @@
                     <tbody data-admin-rows></tbody>
                 </table>
             </div>
+        </section>
+
+        <section class="admin-metrics-panel liquid-glass">
+            <header class="admin-header">
+                <div>
+                    <span class="eyebrow">Service health</span>
+                    <h2>Работа сервиса</h2>
+                </div>
+                <button class="ghost-button" type="button" data-admin-metrics-refresh>Обновить</button>
+            </header>
+            <div class="admin-metrics-grid" data-admin-metrics-summary>
+                <article><span>Cache</span><strong>...</strong></article>
+                <article><span>Redis</span><strong>...</strong></article>
+                <article><span>События / час</span><strong>0</strong></article>
+                <article><span>Ошибки тайлов / час</span><strong>0</strong></article>
+            </div>
+            <div class="admin-metrics-details" data-admin-metrics-details></div>
         </section>
 
         <aside class="admin-editor liquid-glass">

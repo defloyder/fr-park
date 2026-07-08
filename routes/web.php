@@ -14,6 +14,7 @@ Route::middleware('admin')->prefix('aura-vault-7f3c')->name('admin.')->group(fun
     Route::get('/spots', [AdminController::class, 'spots'])->name('spots');
     Route::post('/spots/bulk', [AdminController::class, 'bulk'])->name('spots.bulk');
     Route::get('/users', [AdminController::class, 'users'])->name('users');
+    Route::get('/metrics', [AdminController::class, 'metrics'])->name('metrics');
     Route::patch('/users/{user}/admin', [AdminController::class, 'toggleAdmin'])->name('users.admin');
 });
 
