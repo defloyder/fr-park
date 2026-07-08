@@ -219,9 +219,12 @@ export function initAdminPanel() {
         const hour = metrics.map?.last_hour ?? {};
         const day = metrics.map?.last_day ?? {};
         const latest = metrics.map?.latest ?? [];
+        const cacheUsesRedis = cache.default_store === 'redis'
+            && cache.session_driver === 'redis'
+            && cache.queue_connection === 'redis';
 
         metricsSummary.innerHTML = `
-            <article>
+            <article class="${cacheUsesRedis ? 'is-ok' : 'is-warn'}">
                 <span>Cache</span>
                 <strong>${escapeHtml(cache.default_store || 'unknown')}</strong>
                 <small>sessions: ${escapeHtml(cache.session_driver || 'unknown')} · queue: ${escapeHtml(cache.queue_connection || 'unknown')}</small>

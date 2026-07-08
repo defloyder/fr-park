@@ -10,7 +10,16 @@ services:
       APP_DOMAIN: ${APP_DOMAIN:-park.auralith.ru}
       APP_IP: ${APP_IP:-185.117.152.106}
       DB_HOST: postgres
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      SESSION_CONNECTION: default
+      QUEUE_CONNECTION: redis
       REDIS_HOST: redis
+      REDIS_CLIENT: phpredis
+      REDIS_DB: 0
+      REDIS_CACHE_DB: 1
+      REDIS_QUEUE: default
+      REDIS_QUEUE_CONNECTION: default
     ports:
       - "80:80"
       - "443:443"
