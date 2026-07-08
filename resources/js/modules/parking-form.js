@@ -165,6 +165,27 @@ export function initParkingUi() {
 
     if (!card || !sheet || !form) return;
 
+    const syncOverlayBodyClasses = () => {
+        const isVisible = (element) => Boolean(element && !element.classList.contains('hidden'));
+
+        document.body.classList.toggle('is-spot-card-open', isVisible(card));
+        document.body.classList.toggle('is-spot-list-open', isVisible(list));
+        document.body.classList.toggle('is-search-panel-open', isVisible(searchPanel));
+        document.body.classList.toggle('is-profile-panel-open', isVisible(profilePanel));
+        document.body.classList.toggle('is-pick-panel-open', isVisible(pickPanel));
+        document.body.classList.toggle('is-route-picker-open', Boolean(document.querySelector('.route-picker.is-visible')));
+    };
+
+    const overlayObserver = new MutationObserver(syncOverlayBodyClasses);
+    [card, list, searchPanel, profilePanel, pickPanel, sheet, navigatorPanel]
+        .filter(Boolean)
+        .forEach((element) => overlayObserver.observe(element, {
+            attributes: true,
+            attributeFilter: ['class'],
+        }));
+    overlayObserver.observe(document.body, { childList: true });
+    syncOverlayBodyClasses();
+
     document.addEventListener('click', (event) => {
         const action = event.target.closest('[data-action]')?.dataset.action;
         if (!action) return;
@@ -1244,7 +1265,11 @@ export function initParkingUi() {
             <div class="route-picker__summary" data-route-summary></div>
         `;
         document.body.append(modal);
-        window.setTimeout(() => modal.classList.add('is-visible'), 20);
+        syncOverlayBodyClasses();
+        window.setTimeout(() => {
+            modal.classList.add('is-visible');
+            syncOverlayBodyClasses();
+        }, 20);
     }
 
     function openFuelStationRoute(button) {
@@ -1271,7 +1296,11 @@ export function initParkingUi() {
         if (!modal) return;
 
         modal.classList.remove('is-visible');
-        window.setTimeout(() => modal.remove(), 180);
+        syncOverlayBodyClasses();
+        window.setTimeout(() => {
+            modal.remove();
+            syncOverlayBodyClasses();
+        }, 180);
     }
 
     function openNavigatorPanel() {

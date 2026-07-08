@@ -18,10 +18,10 @@
     --dark-panel: rgba(5, 13, 31, 0.92);
     --dark-border: rgba(34, 200, 255, 0.24);
     --dark-text: #f8fbff;
-    --safe-top: env(safe-area-inset-top);
-    --safe-right: env(safe-area-inset-right);
-    --safe-bottom: env(safe-area-inset-bottom);
-    --safe-left: env(safe-area-inset-left);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
 }
 
 * {
@@ -90,7 +90,9 @@ h2 {
     position: fixed;
     inset: 0;
     width: 100vw;
+    height: 100vh;
     height: 100svh;
+    min-height: 100vh;
     min-height: 100svh;
     overflow: hidden;
     background:
@@ -125,6 +127,7 @@ body.is-navigation-mode .map-screen {
     inset: 0;
     z-index: 1;
     width: 100%;
+    min-height: 100vh;
     min-height: 100svh;
     touch-action: none;
 }
@@ -291,11 +294,17 @@ body.is-navigation-mode .brand-mark--maps__text-accent {
 }
 
 body:has(.spot-list:not(.hidden)) .map-control-stack,
+body.is-spot-list-open .map-control-stack,
 body:has(.search-panel:not(.hidden)) .map-control-stack,
+body.is-search-panel-open .map-control-stack,
 body:has(.profile-panel:not(.hidden)) .map-control-stack,
+body.is-profile-panel-open .map-control-stack,
 body:has(.bottom-sheet:not(.hidden)) .map-control-stack,
+body.is-sheet-open .map-control-stack,
 body:has(.spot-card:not(.hidden)) .map-control-stack,
+body.is-spot-card-open .map-control-stack,
 body:has(.route-picker.is-visible) .map-control-stack,
+body.is-route-picker-open .map-control-stack,
 body:has(.navigator-panel:not(.hidden)) .map-control-stack,
 body.is-navigator-panel-open .map-control-stack,
 body.is-fuel-popup-open .map-control-stack,
@@ -4642,19 +4651,26 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
     }
 
     body:has(.spot-list:not(.hidden)) .map-control-stack,
+    body.is-spot-list-open .map-control-stack,
     body:has(.search-panel:not(.hidden)) .map-control-stack,
+    body.is-search-panel-open .map-control-stack,
     body:has(.profile-panel:not(.hidden)) .map-control-stack,
+    body.is-profile-panel-open .map-control-stack,
     body:has(.bottom-sheet:not(.hidden)) .map-control-stack,
+    body.is-sheet-open .map-control-stack,
     body:has(.spot-card:not(.hidden)) .map-control-stack,
+    body.is-spot-card-open .map-control-stack,
     body:has(.navigator-panel:not(.hidden)) .map-control-stack,
     body.is-navigator-panel-open .map-control-stack,
-    body:has(.route-picker.is-visible) .map-control-stack {
+    body:has(.route-picker.is-visible) .map-control-stack,
+    body.is-route-picker-open .map-control-stack {
         opacity: 0;
         pointer-events: none;
         transform: translateX(10px);
     }
 
     .pick-panel:not(.hidden) ~ .map-control-stack,
+    body.is-pick-panel-open .map-control-stack,
     body:has(.pick-panel:not(.hidden)) .map-control-stack {
         opacity: 0;
         pointer-events: none;
