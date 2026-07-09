@@ -14,6 +14,7 @@ import {
     MeshStandardMaterial,
     Scene,
     Shape,
+    SphereGeometry,
     Vector3,
     WebGLRenderer,
 } from 'three';
@@ -106,8 +107,8 @@ const FUEL_LAYER_STORAGE_KEY = 'auralith:fuel-layer-enabled';
 const USER_LOCATION_ICON_STORAGE_KEY = 'auralith:user-location-icon';
 const USER_LOCATION_ICON_PREFIX = 'user-location-';
 const USER_LOCATION_MODEL_LENGTH_METERS = 6.2;
-const USER_LOCATION_MODEL_ALTITUDE_METERS = 1.2;
-const USER_LOCATION_MODEL_VISUAL_SCALE = 1.45;
+const USER_LOCATION_MODEL_ALTITUDE_METERS = 1.8;
+const USER_LOCATION_MODEL_VISUAL_SCALE = 1.85;
 const ROAD_MARKING_LAYER_PATTERNS = [
     /^road_marking_/,
     /^base_road_lane_marking_/,
@@ -2574,9 +2575,6 @@ function addUserLocationSourceAndLayer() {
             'icon-allow-overlap': true,
             'icon-ignore-placement': true,
         },
-        paint: {
-            'icon-opacity': ['case', ['boolean', ['get', 'modelVisible'], false], 0, 1],
-        },
     });
 
     map.addLayer({
@@ -2592,9 +2590,6 @@ function addUserLocationSourceAndLayer() {
             'icon-rotation-alignment': 'viewport',
             'icon-allow-overlap': true,
             'icon-ignore-placement': true,
-        },
-        paint: {
-            'icon-opacity': ['case', ['boolean', ['get', 'modelVisible'], false], 0, 1],
         },
     });
 }
@@ -2889,6 +2884,28 @@ function addVehicleLights(group, profile, materials, chassis) {
         light.position.set(x, y, lightZ);
         group.add(light);
     });
+
+    [
+        [-profile.width * 0.25, profile.length * 0.515, materials.headlightGlow],
+        [profile.width * 0.25, profile.length * 0.515, materials.headlightGlow],
+        [-profile.width * 0.30, -profile.length * 0.515, materials.tailGlow],
+        [profile.width * 0.30, -profile.length * 0.515, materials.tailGlow],
+    ].forEach(([x, y, material]) => {
+        const bulb = new Mesh(new SphereGeometry(profile.width * 0.075, 16, 8), material);
+        bulb.scale.y = 0.45;
+        bulb.position.set(x, y, lightZ + 0.02);
+        group.add(bulb);
+    });
+
+    const rearBar = new Mesh(new BoxGeometry(profile.width * 0.58, 0.045, 0.055), materials.tailGlow);
+    rearBar.position.set(0, -profile.length * 0.518, lightZ + 0.04);
+    group.add(rearBar);
+
+    [-1, 1].forEach((side) => {
+        const sideMarker = new Mesh(new BoxGeometry(0.045, profile.length * 0.28, 0.045), materials.runningLight);
+        sideMarker.position.set(side * (profile.width / 2 + 0.035), profile.length * 0.08, lightZ - 0.04);
+        group.add(sideMarker);
+    });
 }
 
 function addVehicleDetails(group, profile, materials, chassis, roof) {
@@ -2917,9 +2934,11 @@ function addVehicleDetails(group, profile, materials, chassis, roof) {
     }
 
     if (profile.evGlow) {
-        const glow = new Mesh(new BoxGeometry(profile.width * 0.92, profile.length * 0.78, 0.025), materials.glow);
-        glow.position.set(0, -0.02, profile.rideHeight + 0.08);
-        group.add(glow);
+        [-1, 1].forEach((side) => {
+            const glow = new Mesh(new BoxGeometry(0.055, profile.length * 0.62, 0.04), materials.glow);
+            glow.position.set(side * (profile.width / 2 + 0.045), -0.04, chassis.position.z + profile.bodyHeight * 0.10);
+            group.add(glow);
+        });
     }
 }
 
@@ -3009,7 +3028,25 @@ function createNavigationVehicleMaterials(profile) {
         glow: new MeshBasicMaterial({
             color: accentColor,
             transparent: true,
-            opacity: 0.20,
+            opacity: 0.58,
+            depthWrite: false,
+        }),
+        headlightGlow: new MeshBasicMaterial({
+            color: 0xdff8ff,
+            transparent: true,
+            opacity: 0.96,
+            depthWrite: false,
+        }),
+        tailGlow: new MeshBasicMaterial({
+            color: 0xff1748,
+            transparent: true,
+            opacity: 0.98,
+            depthWrite: false,
+        }),
+        runningLight: new MeshBasicMaterial({
+            color: accentColor,
+            transparent: true,
+            opacity: 0.74,
             depthWrite: false,
         }),
         headlight: new MeshStandardMaterial({
@@ -3803,7 +3840,6 @@ function renderUserLocationFeature(location) {
                 fallbackHeading: getUserLocationFallbackHeading(location),
                 mode: location.headingMode,
                 iconImage: getUserLocationIconImage(),
-                modelVisible: isUserLocationModelLayerVisible,
             },
             geometry: {
                 type: 'Point',
