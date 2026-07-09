@@ -2573,7 +2573,7 @@ function addUserLocationSourceAndLayer() {
             'icon-ignore-placement': true,
         },
         paint: {
-            'icon-opacity': ['case', ['boolean', ['get', 'modelVisible'], false], 0.34, 1],
+            'icon-opacity': ['case', ['boolean', ['get', 'modelVisible'], false], 0, 1],
         },
     });
 
@@ -2592,7 +2592,7 @@ function addUserLocationSourceAndLayer() {
             'icon-ignore-placement': true,
         },
         paint: {
-            'icon-opacity': ['case', ['boolean', ['get', 'modelVisible'], false], 0.34, 1],
+            'icon-opacity': ['case', ['boolean', ['get', 'modelVisible'], false], 0, 1],
         },
     });
 }
@@ -2737,7 +2737,7 @@ function getUserLocationModelHeading(location) {
         return 0;
     }
 
-    return normalizeDegrees(heading + Number(map?.getBearing?.() || 0));
+    return normalizeDegrees(heading);
 }
 
 function syncUserLocationModelRenderer(renderer, layerMap) {

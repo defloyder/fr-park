@@ -164,7 +164,8 @@ test('navigation GPS cursor is locked to route segment heading', () => {
     assert.match(mapSource, /id: 'user-navigation-dot'/);
     assert.match(mapSource, /fallbackHeading: getUserLocationFallbackHeading/);
     assert.match(mapSource, /function getUserLocationModelHeading/);
-    assert.match(mapSource, /heading \+ Number\(map\?\.getBearing\?\.\(\) \|\| 0\)/);
+    assert.match(mapSource, /return normalizeDegrees\(heading\);/);
+    assert.doesNotMatch(mapSource, /heading \+ Number\(map\?\.getBearing\?\.\(\) \|\| 0\)/);
     assert.match(mapSource, /'icon-rotation-alignment': 'viewport'/);
 });
 
