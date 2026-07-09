@@ -19,6 +19,10 @@ import {
     shouldShowNavigationGpsWarning,
     smoothCompassHeading,
 } from '../../resources/js/modules/navigation-logic.js';
+import {
+    getMapUiTheme,
+    normalizeMapLayerId,
+} from '../../resources/js/modules/map-theme.js';
 
 const route = {
     geometry: {
@@ -295,6 +299,12 @@ test('close controls stay red across map themes', () => {
 
 test('map settings expose selectable GPS cursor icons', () => {
     const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
+    const vehicleEntrySource = readFileSync(new URL('../../resources/js/modules/navigation-vehicle-models.js', import.meta.url), 'utf8');
+    const vehicleIndexSource = readFileSync(new URL('../../resources/js/modules/navigation-vehicle-models/index.js', import.meta.url), 'utf8');
+    const carModelSource = readFileSync(new URL('../../resources/js/modules/navigation-vehicle-models/car-model.js', import.meta.url), 'utf8');
+    const vehicleMaterialsSource = readFileSync(new URL('../../resources/js/modules/navigation-vehicle-models/vehicle-materials.js', import.meta.url), 'utf8');
+    const vehiclePartsSource = readFileSync(new URL('../../resources/js/modules/navigation-vehicle-models/vehicle-parts.js', import.meta.url), 'utf8');
+    const vehicleProfilesSource = readFileSync(new URL('../../resources/js/modules/navigation-vehicle-models/vehicle-profiles.js', import.meta.url), 'utf8');
     const viewSource = readFileSync(new URL('../../resources/views/pages/map.blade.php', import.meta.url), 'utf8');
     const cssSource = readFileSync(new URL('../../resources/css/map-ui.css', import.meta.url), 'utf8');
 
@@ -308,20 +318,28 @@ test('map settings expose selectable GPS cursor icons', () => {
     assert.match(mapSource, /type: 'custom'/);
     assert.match(mapSource, /renderingMode: '3d'/);
     assert.match(mapSource, /new WebGLRenderer/);
-    assert.match(mapSource, /BoxGeometry/);
-    assert.match(mapSource, /MeshBasicMaterial/);
-    assert.match(mapSource, /SphereGeometry/);
+    assert.match(mapSource, /from '\.\/navigation-vehicle-models'/);
+    assert.doesNotMatch(mapSource, /BoxGeometry|SphereGeometry|MeshBasicMaterial|getNavigationVehicleProfile/);
+    assert.match(vehicleEntrySource, /from '\.\/navigation-vehicle-models\/index\.js'/);
+    assert.match(vehicleIndexSource, /createNavigationVehicleModel/);
+    assert.match(carModelSource, /BoxGeometry/);
+    assert.match(carModelSource, /SphereGeometry/);
+    assert.match(carModelSource, /addVehicleVerticalBodySides/);
+    assert.match(vehicleMaterialsSource, /MeshBasicMaterial/);
+    assert.match(vehiclePartsSource, /rotation\.z = Math\.PI \/ 2/);
     assert.match(mapSource, /USER_LOCATION_MODEL_ALTITUDE_METERS/);
     assert.match(mapSource, /USER_LOCATION_MODEL_VISUAL_SCALE/);
-    assert.match(mapSource, /getNavigationVehicleProfile/);
-    assert.match(mapSource, /vehicle-car-\$\{iconId\}/);
-    assert.match(mapSource, /addVehicleShadow/);
-    assert.match(mapSource, /addVehicleWheels/);
-    assert.match(mapSource, /addVehicleDetails/);
-    assert.match(mapSource, /headlightGlow/);
-    assert.match(mapSource, /tailGlow/);
-    assert.match(mapSource, /runningLight/);
-    assert.match(mapSource, /'auralith-nav-graphite': \{/);
+    assert.match(mapSource, /USER_LOCATION_MODEL_VERTICAL_SCALE/);
+    assert.match(mapSource, /scale \* USER_LOCATION_MODEL_VERTICAL_SCALE/);
+    assert.match(vehicleProfilesSource, /getNavigationVehicleProfile/);
+    assert.match(carModelSource, /vehicle-car-\$\{iconId\}/);
+    assert.match(carModelSource, /addVehicleShadow/);
+    assert.match(carModelSource, /addVehicleWheels/);
+    assert.match(carModelSource, /addVehicleDetails/);
+    assert.match(vehicleMaterialsSource, /headlightGlow/);
+    assert.match(vehicleMaterialsSource, /tailGlow/);
+    assert.match(vehicleMaterialsSource, /runningLight/);
+    assert.match(vehicleProfilesSource, /'auralith-nav-graphite': \{/);
     assert.match(mapSource, /syncUserLocationModelRenderer/);
     assert.match(mapSource, /clearDepth\(\)/);
     assert.match(mapSource, /markUserLocationModelVisible/);
@@ -531,7 +549,8 @@ test('navigation cockpit inverts against the active map and keeps alerts compact
     const cssSource = readFileSync(new URL('../../resources/css/map-ui.css', import.meta.url), 'utf8');
     const formSource = readFileSync(new URL('../../resources/js/modules/parking-form.js', import.meta.url), 'utf8');
 
-    assert.match(cssSource, /body\[data-map-layer="dark"\]\.is-navigation-mode,[\s\S]*?--nav-surface: linear-gradient\(145deg, rgba\(255, 255, 255, 0\.97\)/);
+    assert.match(cssSource, /body\[data-map-ui-theme="light"\]\.is-navigation-mode \{[\s\S]*?--nav-surface: linear-gradient\(145deg, rgba\(255, 255, 255, 0\.97\)/);
+    assert.match(cssSource, /body\[data-map-ui-theme="dark"\]\.is-navigation-mode \{[\s\S]*?--nav-surface: linear-gradient\(145deg, rgba\(7, 18, 40, 0\.96\)/);
     assert.match(cssSource, /body\.is-navigation-mode \{[\s\S]*?--nav-surface: linear-gradient\(145deg, rgba\(7, 18, 40, 0\.96\)/);
     assert.match(cssSource, /body\.is-navigation-mode \.route-maneuver-hint \{[\s\S]*?background: var\(--nav-surface\)/);
     assert.match(cssSource, /\.navigation-gps-alert \{[\s\S]*?grid-template-columns: 8px auto minmax\(0, 1fr\)/);
@@ -618,13 +637,20 @@ test('primary mobile controls keep at least 44 pixel touch targets', () => {
 
 test('map chrome uses inverse contrast for light and dark map themes', () => {
     const cssSource = readFileSync(new URL('../../resources/css/map-ui.css', import.meta.url), 'utf8');
+    const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
 
-    assert.match(cssSource, /body\[data-map-layer="light"\]:not\(\.is-navigation-mode\) \.top-panel,[\s\S]*?color: #f8fbff;/);
-    assert.match(cssSource, /body\[data-map-layer="light"\]:not\(\.is-navigation-mode\) \.brand-mark--maps__text-main,[\s\S]*?color: #f8fbff;/);
-    assert.match(cssSource, /body\[data-map-layer="dark"\]:not\(\.is-navigation-mode\) \.top-panel,[\s\S]*?color: #071126;/);
-    assert.match(cssSource, /body\[data-map-layer="dark"\]:not\(\.is-navigation-mode\) \.brand-mark--maps__text-main,[\s\S]*?color: #071126;/);
-    assert.match(cssSource, /body\[data-map-layer="dark"\]:not\(\.is-navigation-mode\) \.map-settings__panel,[\s\S]*?background: linear-gradient\(145deg, rgba\(255, 255, 255, 0\.95\)/);
-    assert.match(cssSource, /body\[data-map-layer="light"\]:not\(\.is-navigation-mode\) \.map-settings__panel,[\s\S]*?rgba\(9, 21, 46, 0\.94\)/);
+    assert.equal(normalizeMapLayerId('unknown'), 'light');
+    assert.equal(getMapUiTheme('light').uiTheme, 'dark');
+    assert.equal(getMapUiTheme('dark').uiTheme, 'light');
+    assert.equal(getMapUiTheme('satellite').uiTheme, 'light');
+    assert.match(mapSource, /import \{ MAP_LAYER_IDS, applyMapUiTheme, normalizeMapLayerId \} from '\.\/map-theme'/);
+    assert.match(mapSource, /applyMapUiTheme\(nextLayerId\)/);
+    assert.match(cssSource, /body\[data-map-ui-theme="dark"\] \{[\s\S]*?--map-ui-surface: linear-gradient\(145deg, rgba\(5, 15, 35, 0\.94\)/);
+    assert.match(cssSource, /body\[data-map-ui-theme="light"\] \{[\s\S]*?--map-ui-surface: linear-gradient\(145deg, rgba\(255, 255, 255, 0\.96\)/);
+    assert.match(cssSource, /body\[data-map-ui-theme\]:not\(\.is-navigation-mode\) \.top-panel,[\s\S]*?\.layer-switcher__panel/);
+    assert.match(cssSource, /body\[data-map-ui-theme\]:not\(\.is-navigation-mode\) \.map-control-button,[\s\S]*?\.layer-switcher__option/);
+    assert.match(cssSource, /color: var\(--map-ui-text\);/);
+    assert.match(cssSource, /background: var\(--map-ui-surface\);/);
 });
 
 test('light map style exposes detailed green areas and a clear road hierarchy', () => {

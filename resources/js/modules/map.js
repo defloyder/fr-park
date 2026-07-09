@@ -1,20 +1,10 @@
 import maplibregl from 'maplibre-gl';
 import {
-    BoxGeometry,
     Camera,
-    Color,
-    CylinderGeometry,
     DirectionalLight,
-    ExtrudeGeometry,
-    Group,
     HemisphereLight,
     Matrix4,
-    Mesh,
-    MeshBasicMaterial,
-    MeshStandardMaterial,
     Scene,
-    Shape,
-    SphereGeometry,
     Vector3,
     WebGLRenderer,
 } from 'three';
@@ -25,6 +15,8 @@ import {
     reverseGeocode,
 } from './parking-api';
 import { getClosestRouteProjection, isManualMapInteraction } from './navigation-logic';
+import { MAP_LAYER_IDS, applyMapUiTheme, normalizeMapLayerId } from './map-theme';
+import { applyNavigationVehicleStyle, createNavigationVehicleModel } from './navigation-vehicle-models';
 import { addRoadDetails } from '../utils/map/addRoadDetails';
 
 let map = null;
@@ -99,7 +91,6 @@ const USER_LOCATION_ICON_OPTIONS = [
     { id: 'auralith-nav-cyan', label: 'Cyan EV', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-cyan.png` },
     { id: 'auralith-nav-graphite', label: 'Graphite SUV', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-graphite.png` },
 ];
-const BASE_LAYER_IDS = ['light', 'dark', 'satellite'];
 const DEFAULT_BASE_LAYER_ID = 'light';
 const BASE_LAYER_STORAGE_KEY = 'auralith:map-layer';
 const ROUTE_CACHE_STORAGE_KEY = 'auralith:last-driving-route';
@@ -108,8 +99,9 @@ const FUEL_LAYER_STORAGE_KEY = 'auralith:fuel-layer-enabled';
 const USER_LOCATION_ICON_STORAGE_KEY = 'auralith:user-location-icon';
 const USER_LOCATION_ICON_PREFIX = 'user-location-';
 const USER_LOCATION_MODEL_LENGTH_METERS = 6.2;
-const USER_LOCATION_MODEL_ALTITUDE_METERS = 1.8;
+const USER_LOCATION_MODEL_ALTITUDE_METERS = 0.18;
 const USER_LOCATION_MODEL_VISUAL_SCALE = 1.85;
+const USER_LOCATION_MODEL_VERTICAL_SCALE = 1.28;
 const ROAD_MARKING_LAYER_PATTERNS = [
     /^road_marking_/,
     /^base_road_lane_marking_/,
@@ -899,6 +891,7 @@ export async function initParkingMap() {
         return;
     }
 
+    applyMapUiTheme(getSavedBaseMapLayer());
     markMapDiagnostic('initCalled');
 
     if (!isWebGlSupported()) {
@@ -1707,32 +1700,30 @@ function getFuelStationsRateLimitDelay(error) {
 function getSavedBaseMapLayer() {
     const savedLayer = window.localStorage?.getItem(BASE_LAYER_STORAGE_KEY);
 
-    return BASE_LAYER_IDS.includes(savedLayer) ? savedLayer : DEFAULT_BASE_LAYER_ID;
+    return normalizeMapLayerId(savedLayer);
 }
 
 function setBaseMapLayer(layerId = DEFAULT_BASE_LAYER_ID, { persist = false } = {}) {
-    if (!BASE_LAYER_IDS.includes(layerId)) {
-        return;
-    }
+    const nextLayerId = normalizeMapLayerId(layerId);
 
-    BASE_LAYER_IDS.forEach((id) => {
+    MAP_LAYER_IDS.forEach((id) => {
         const mapLayerId = `basemap-${id}`;
 
         if (map?.getLayer(mapLayerId)) {
             try {
-                map.setLayoutProperty(mapLayerId, 'visibility', id === layerId ? 'visible' : 'none');
+                map.setLayoutProperty(mapLayerId, 'visibility', id === nextLayerId ? 'visible' : 'none');
             } catch {}
         }
     });
-    updateVectorRoadLayerTheme(layerId);
+    updateVectorRoadLayerTheme(nextLayerId);
 
-    document.body.dataset.mapLayer = layerId;
+    applyMapUiTheme(nextLayerId);
     if (persist) {
-        window.localStorage?.setItem(BASE_LAYER_STORAGE_KEY, layerId);
+        window.localStorage?.setItem(BASE_LAYER_STORAGE_KEY, nextLayerId);
     }
 
     document.querySelectorAll('[data-map-layer]').forEach((button) => {
-        button.classList.toggle('is-active', button.dataset.mapLayer === layerId);
+        button.classList.toggle('is-active', button.dataset.mapLayer === nextLayerId);
     });
 }
 
@@ -2621,7 +2612,11 @@ function createUserLocationModelLayer() {
                 this.layerMap = layerMap;
                 this.camera = new Camera();
                 this.scene = new Scene();
-                this.model = createNavigationVehicleModel();
+                this.model = createNavigationVehicleModel({
+                    iconOptions: USER_LOCATION_ICON_OPTIONS,
+                    defaultIconId: DEFAULT_USER_LOCATION_ICON_ID,
+                    modelLengthMeters: USER_LOCATION_MODEL_LENGTH_METERS,
+                });
                 this.scene.add(this.model);
                 this.scene.add(new HemisphereLight(0xffffff, 0x27364d, 1.85));
 
@@ -2680,7 +2675,7 @@ function createUserLocationModelLayer() {
                 const heading = getUserLocationModelHeading(location);
                 const worldMatrix = new Matrix4()
                     .makeTranslation(coordinate.x, coordinate.y, coordinate.z)
-                    .scale(new Vector3(scale, -scale, scale))
+                    .scale(new Vector3(scale, -scale, scale * USER_LOCATION_MODEL_VERTICAL_SCALE))
                     .multiply(new Matrix4().makeRotationZ(-degreesToRadians(heading)));
 
                 this.camera.projectionMatrix = new Matrix4()
@@ -2770,494 +2765,6 @@ function isRenderableUserLocationModel(location) {
             && Number.isFinite(Number(location.latitude))
             && Number.isFinite(Number(location.longitude))
     );
-}
-
-function createNavigationVehicleModel() {
-    const group = new Group();
-    const arrow = createNavigationArrowModel();
-    const cars = USER_LOCATION_ICON_OPTIONS
-        .filter((option) => option.id !== 'auralith-nav-arrow')
-        .map((option) => createNavigationCarModel(option.id));
-
-    arrow.name = 'vehicle-arrow';
-    group.add(arrow, ...cars);
-    applyNavigationVehicleStyle(group, DEFAULT_USER_LOCATION_ICON_ID);
-
-    return group;
-}
-
-function createNavigationCarModel(iconId) {
-    const profile = getNavigationVehicleProfile(iconId);
-    const group = new Group();
-    const materials = createNavigationVehicleMaterials(profile);
-
-    group.name = `vehicle-car-${iconId}`;
-    group.userData.iconId = iconId;
-
-    addVehicleShadow(group, profile);
-
-    const lower = createRoundedVehiclePart(profile.width * 1.08, profile.length * 0.92, profile.lowerHeight, profile.radius * 0.9, materials.side);
-    lower.position.z = profile.rideHeight + (profile.lowerHeight / 2);
-    lower.userData.role = 'side';
-    group.add(lower);
-
-    const chassis = createRoundedVehiclePart(profile.width, profile.length, profile.bodyHeight, profile.radius, materials.body);
-    chassis.position.z = profile.rideHeight + profile.lowerHeight + (profile.bodyHeight / 2);
-    chassis.userData.role = 'body';
-    group.add(chassis);
-
-    const bonnet = createRoundedVehiclePart(profile.width * 0.82, profile.length * 0.24, profile.panelHeight, profile.radius * 0.45, materials.bodyHighlight);
-    bonnet.position.set(0, profile.length * 0.24, chassis.position.z + (profile.bodyHeight / 2) + 0.035);
-    bonnet.userData.role = 'body-highlight';
-    group.add(bonnet);
-
-    const rearDeck = createRoundedVehiclePart(profile.width * 0.78, profile.length * 0.20, profile.panelHeight, profile.radius * 0.42, materials.bodyHighlight);
-    rearDeck.position.set(0, -profile.length * 0.32, chassis.position.z + (profile.bodyHeight / 2) + 0.04);
-    rearDeck.userData.role = 'body-highlight';
-    group.add(rearDeck);
-
-    const cabin = createRoundedVehiclePart(profile.cabinWidth, profile.cabinLength, profile.cabinHeight, profile.radius * 0.62, materials.glass);
-    cabin.position.set(0, profile.cabinY, chassis.position.z + (profile.bodyHeight / 2) + (profile.cabinHeight / 2));
-    cabin.userData.role = 'glass';
-    group.add(cabin);
-
-    const roof = createRoundedVehiclePart(profile.roofWidth, profile.roofLength, profile.roofHeight, profile.radius * 0.5, materials.body);
-    roof.position.set(0, profile.roofY, cabin.position.z + (profile.cabinHeight / 2) + (profile.roofHeight / 2) - 0.02);
-    roof.userData.role = 'body';
-    group.add(roof);
-
-    addVehicleGlassPanels(group, profile, materials, chassis, cabin);
-    addVehicleWheels(group, profile, materials);
-    addVehicleLights(group, profile, materials, chassis);
-    addVehicleDetails(group, profile, materials, chassis, roof);
-
-    return group;
-}
-
-function addVehicleShadow(group, profile) {
-    const shadow = new Mesh(
-        new CylinderGeometry(1, 1, 0.025, 48),
-        new MeshBasicMaterial({
-            color: 0x000000,
-            transparent: true,
-            opacity: profile.shadowOpacity,
-            depthWrite: false,
-        }),
-    );
-    shadow.rotation.x = Math.PI / 2;
-    shadow.scale.set(profile.width * 0.68, profile.length * 0.54, 1);
-    shadow.position.z = 0.035;
-    group.add(shadow);
-}
-
-function addVehicleGlassPanels(group, profile, materials, chassis, cabin) {
-    const topZ = chassis.position.z + (profile.bodyHeight / 2) + 0.08;
-    const windscreen = createVehiclePanel(profile.width * 0.58, profile.length * 0.13, 0.05, materials.glass);
-    windscreen.position.set(0, profile.cabinY + (profile.cabinLength * 0.34), topZ);
-    group.add(windscreen);
-
-    const rearGlass = createVehiclePanel(profile.width * 0.55, profile.length * 0.12, 0.05, materials.glass);
-    rearGlass.position.set(0, profile.cabinY - (profile.cabinLength * 0.42), topZ - 0.03);
-    group.add(rearGlass);
-
-    [-1, 1].forEach((side) => {
-        const sideGlass = new Mesh(
-            new BoxGeometry(0.045, profile.cabinLength * 0.58, profile.cabinHeight * 0.42),
-            materials.glass,
-        );
-        sideGlass.position.set(side * (profile.cabinWidth / 2 + 0.035), profile.cabinY - 0.05, cabin.position.z + 0.02);
-        group.add(sideGlass);
-    });
-}
-
-function addVehicleWheels(group, profile, materials) {
-    [
-        [-1, profile.frontWheelY],
-        [1, profile.frontWheelY],
-        [-1, profile.rearWheelY],
-        [1, profile.rearWheelY],
-    ].forEach(([side, y]) => {
-        const wheel = new Mesh(new CylinderGeometry(profile.wheelRadius, profile.wheelRadius, profile.wheelWidth, 32), materials.wheel);
-        wheel.rotation.y = Math.PI / 2;
-        wheel.position.set(side * profile.wheelX, y, profile.rideHeight + profile.wheelRadius * 0.78);
-        group.add(wheel);
-
-        const rim = new Mesh(new CylinderGeometry(profile.wheelRadius * 0.58, profile.wheelRadius * 0.58, profile.wheelWidth + 0.018, 24), materials.rim);
-        rim.rotation.y = Math.PI / 2;
-        rim.position.copy(wheel.position);
-        group.add(rim);
-    });
-}
-
-function addVehicleLights(group, profile, materials, chassis) {
-    const lightZ = chassis.position.z + (profile.bodyHeight * 0.22);
-    [
-        [-profile.width * 0.25, profile.length * 0.50, materials.headlight],
-        [profile.width * 0.25, profile.length * 0.50, materials.headlight],
-        [-profile.width * 0.28, -profile.length * 0.50, materials.tail],
-        [profile.width * 0.28, -profile.length * 0.50, materials.tail],
-    ].forEach(([x, y, material]) => {
-        const light = createVehiclePanel(profile.width * 0.20, 0.11, 0.055, material);
-        light.position.set(x, y, lightZ);
-        group.add(light);
-    });
-
-    [
-        [-profile.width * 0.25, profile.length * 0.515, materials.headlightGlow],
-        [profile.width * 0.25, profile.length * 0.515, materials.headlightGlow],
-        [-profile.width * 0.30, -profile.length * 0.515, materials.tailGlow],
-        [profile.width * 0.30, -profile.length * 0.515, materials.tailGlow],
-    ].forEach(([x, y, material]) => {
-        const bulb = new Mesh(new SphereGeometry(profile.width * 0.075, 16, 8), material);
-        bulb.scale.y = 0.45;
-        bulb.position.set(x, y, lightZ + 0.02);
-        group.add(bulb);
-    });
-
-    const rearBar = new Mesh(new BoxGeometry(profile.width * 0.58, 0.045, 0.055), materials.tailGlow);
-    rearBar.position.set(0, -profile.length * 0.518, lightZ + 0.04);
-    group.add(rearBar);
-
-    [-1, 1].forEach((side) => {
-        const sideMarker = new Mesh(new BoxGeometry(0.045, profile.length * 0.28, 0.045), materials.runningLight);
-        sideMarker.position.set(side * (profile.width / 2 + 0.035), profile.length * 0.08, lightZ - 0.04);
-        group.add(sideMarker);
-    });
-}
-
-function addVehicleDetails(group, profile, materials, chassis, roof) {
-    const stripe = new Mesh(new BoxGeometry(profile.width * 0.11, profile.length * 0.68, 0.035), materials.accent);
-    stripe.position.set(0, profile.length * 0.02, chassis.position.z + (profile.bodyHeight / 2) + 0.07);
-    group.add(stripe);
-
-    [-1, 1].forEach((side) => {
-        const mirror = new Mesh(new BoxGeometry(0.16, 0.24, 0.08), materials.bodyHighlight);
-        mirror.position.set(side * (profile.width / 2 + 0.13), profile.cabinY + (profile.cabinLength * 0.28), chassis.position.z + profile.bodyHeight * 0.62);
-        group.add(mirror);
-    });
-
-    if (profile.spoiler) {
-        const spoiler = new Mesh(new BoxGeometry(profile.width * 0.82, 0.14, 0.09), materials.accent);
-        spoiler.position.set(0, -profile.length * 0.48, roof.position.z + (profile.roofHeight / 2) + 0.02);
-        group.add(spoiler);
-    }
-
-    if (profile.rails) {
-        [-1, 1].forEach((side) => {
-            const rail = new Mesh(new BoxGeometry(0.06, profile.roofLength * 0.92, 0.09), materials.accent);
-            rail.position.set(side * profile.roofWidth * 0.40, profile.roofY, roof.position.z + (profile.roofHeight / 2) + 0.08);
-            group.add(rail);
-        });
-    }
-
-    if (profile.evGlow) {
-        [-1, 1].forEach((side) => {
-            const glow = new Mesh(new BoxGeometry(0.055, profile.length * 0.62, 0.04), materials.glow);
-            glow.position.set(side * (profile.width / 2 + 0.045), -0.04, chassis.position.z + profile.bodyHeight * 0.10);
-            group.add(glow);
-        });
-    }
-}
-
-function createNavigationArrowModel() {
-    const group = new Group();
-    const sideMaterial = new MeshStandardMaterial({
-        color: 0x17224c,
-        roughness: 0.24,
-        metalness: 0.62,
-    });
-    const topMaterial = new MeshStandardMaterial({
-        color: 0x1fa8ff,
-        roughness: 0.14,
-        metalness: 0.72,
-        emissive: 0x063b7e,
-        emissiveIntensity: 0.18,
-    });
-    const shape = new Shape();
-    shape.moveTo(0, 3.45);
-    shape.lineTo(1.55, -2.20);
-    shape.lineTo(0, -1.34);
-    shape.lineTo(-1.55, -2.20);
-    shape.closePath();
-
-    const geometry = new ExtrudeGeometry(shape, {
-        depth: 0.50,
-        bevelEnabled: true,
-        bevelSize: 0.08,
-        bevelThickness: 0.10,
-        bevelSegments: 4,
-    });
-    geometry.translate(0, 0, 0.20);
-
-    const arrow = new Mesh(geometry, [topMaterial, sideMaterial]);
-    arrow.userData.role = 'arrow';
-    group.add(arrow);
-
-    return group;
-}
-
-function createNavigationVehicleMaterials(profile) {
-    const color = new Color(profile.bodyColor);
-    const sideColor = color.clone().multiplyScalar(profile.sideShade);
-    const accentColor = new Color(profile.accentColor);
-
-    return {
-        body: new MeshStandardMaterial({
-            color,
-            roughness: profile.roughness,
-            metalness: profile.metalness,
-            emissive: color.clone().multiplyScalar(profile.emissive),
-        }),
-        bodyHighlight: new MeshStandardMaterial({
-            color: color.clone().multiplyScalar(1.18),
-            roughness: profile.roughness * 0.9,
-            metalness: Math.min(0.88, profile.metalness + 0.08),
-            emissive: color.clone().multiplyScalar(profile.emissive * 0.75),
-        }),
-        side: new MeshStandardMaterial({
-            color: sideColor,
-            roughness: profile.roughness + 0.06,
-            metalness: Math.min(0.9, profile.metalness + 0.08),
-        }),
-        glass: new MeshStandardMaterial({
-            color: 0x071321,
-            roughness: 0.08,
-            metalness: 0.42,
-            transparent: true,
-            opacity: 0.92,
-        }),
-        wheel: new MeshStandardMaterial({
-            color: 0x070b12,
-            roughness: 0.36,
-            metalness: 0.28,
-        }),
-        rim: new MeshStandardMaterial({
-            color: profile.rimColor,
-            roughness: 0.20,
-            metalness: 0.82,
-        }),
-        accent: new MeshStandardMaterial({
-            color: accentColor,
-            roughness: 0.16,
-            metalness: 0.70,
-            emissive: accentColor.clone().multiplyScalar(0.16),
-        }),
-        glow: new MeshBasicMaterial({
-            color: accentColor,
-            transparent: true,
-            opacity: 0.58,
-            depthWrite: false,
-        }),
-        headlightGlow: new MeshBasicMaterial({
-            color: 0xdff8ff,
-            transparent: true,
-            opacity: 0.96,
-            depthWrite: false,
-        }),
-        tailGlow: new MeshBasicMaterial({
-            color: 0xff1748,
-            transparent: true,
-            opacity: 0.98,
-            depthWrite: false,
-        }),
-        runningLight: new MeshBasicMaterial({
-            color: accentColor,
-            transparent: true,
-            opacity: 0.74,
-            depthWrite: false,
-        }),
-        headlight: new MeshStandardMaterial({
-            color: 0xeaf8ff,
-            emissive: 0x6ed8ff,
-            emissiveIntensity: 0.62,
-            roughness: 0.12,
-            metalness: 0.16,
-        }),
-        tail: new MeshStandardMaterial({
-            color: 0xff264a,
-            emissive: 0xff1e45,
-            emissiveIntensity: 0.72,
-            roughness: 0.18,
-            metalness: 0.08,
-        }),
-    };
-}
-
-function getNavigationVehicleProfile(iconId) {
-    const base = {
-        iconId,
-        bodyColor: getNavigationVehicleColor(iconId),
-        accentColor: '#7dd3fc',
-        rimColor: 0xdde7f2,
-        length: USER_LOCATION_MODEL_LENGTH_METERS,
-        width: 2.34,
-        lowerHeight: 0.24,
-        bodyHeight: 0.56,
-        panelHeight: 0.045,
-        cabinWidth: 1.46,
-        cabinLength: 2.20,
-        cabinY: -0.14,
-        cabinHeight: 0.48,
-        roofWidth: 1.18,
-        roofLength: 1.10,
-        roofY: -0.35,
-        roofHeight: 0.20,
-        radius: 0.34,
-        rideHeight: 0.18,
-        wheelRadius: 0.38,
-        wheelWidth: 0.36,
-        wheelX: 1.24,
-        frontWheelY: 1.66,
-        rearWheelY: -1.76,
-        roughness: 0.18,
-        metalness: 0.66,
-        emissive: 0.08,
-        sideShade: 0.46,
-        shadowOpacity: 0.26,
-        spoiler: true,
-        rails: false,
-        evGlow: false,
-    };
-
-    return {
-        'auralith-nav-black': {
-            ...base,
-            bodyColor: '#101827',
-            accentColor: '#38bdf8',
-            rimColor: 0xcbd5e1,
-            length: 6.35,
-            width: 2.42,
-            cabinY: -0.10,
-            roofY: -0.32,
-            spoiler: true,
-        },
-        'auralith-nav-red': {
-            ...base,
-            bodyColor: '#ef233c',
-            accentColor: '#f8fafc',
-            rimColor: 0xf1f5f9,
-            length: 6.28,
-            width: 2.36,
-            cabinY: -0.08,
-            roofY: -0.28,
-            spoiler: true,
-        },
-        'auralith-nav-white': {
-            ...base,
-            bodyColor: '#f8fbff',
-            accentColor: '#2563eb',
-            rimColor: 0x94a3b8,
-            length: 6.18,
-            width: 2.30,
-            metalness: 0.48,
-            roughness: 0.24,
-            sideShade: 0.76,
-            shadowOpacity: 0.22,
-            spoiler: false,
-        },
-        'auralith-nav-cyan': {
-            ...base,
-            bodyColor: '#20d5f5',
-            accentColor: '#a7f3d0',
-            rimColor: 0xe0fbff,
-            length: 6.05,
-            width: 2.26,
-            cabinLength: 2.46,
-            cabinY: -0.02,
-            roofLength: 1.28,
-            roofY: -0.18,
-            emissive: 0.12,
-            evGlow: true,
-            spoiler: false,
-        },
-        'auralith-nav-graphite': {
-            ...base,
-            bodyColor: '#3f4654',
-            accentColor: '#67e8f9',
-            rimColor: 0xe2e8f0,
-            length: 6.70,
-            width: 2.58,
-            lowerHeight: 0.32,
-            bodyHeight: 0.70,
-            cabinWidth: 1.68,
-            cabinLength: 2.58,
-            cabinY: -0.22,
-            cabinHeight: 0.62,
-            roofWidth: 1.42,
-            roofLength: 1.52,
-            roofY: -0.44,
-            roofHeight: 0.24,
-            rideHeight: 0.28,
-            wheelRadius: 0.44,
-            wheelWidth: 0.42,
-            wheelX: 1.38,
-            frontWheelY: 1.78,
-            rearWheelY: -1.90,
-            radius: 0.30,
-            spoiler: false,
-            rails: true,
-            shadowOpacity: 0.30,
-        },
-    }[iconId] ?? base;
-}
-
-function createRoundedVehiclePart(width, length, height, radius, material) {
-    const x = width / 2;
-    const y = length / 2;
-    const r = Math.min(radius, x, y);
-    const shape = new Shape();
-
-    shape.moveTo(-x + r, -y);
-    shape.lineTo(x - r, -y);
-    shape.quadraticCurveTo(x, -y, x, -y + r);
-    shape.lineTo(x, y - r);
-    shape.quadraticCurveTo(x, y, x - r, y);
-    shape.lineTo(-x + r, y);
-    shape.quadraticCurveTo(-x, y, -x, y - r);
-    shape.lineTo(-x, -y + r);
-    shape.quadraticCurveTo(-x, -y, -x + r, -y);
-
-    const geometry = new ExtrudeGeometry(shape, {
-        depth: height,
-        bevelEnabled: true,
-        bevelSize: Math.min(0.08, height * 0.35),
-        bevelThickness: Math.min(0.08, height * 0.35),
-        bevelSegments: 4,
-    });
-    geometry.translate(0, 0, -height / 2);
-
-    return new Mesh(geometry, material);
-}
-
-function createVehiclePanel(width, length, height, material) {
-    const mesh = createRoundedVehiclePart(width, length, height, Math.min(width, length) * 0.18, material);
-    mesh.rotation.x = 0;
-
-    return mesh;
-}
-
-function applyNavigationVehicleStyle(model, iconId) {
-    const arrow = model.getObjectByName('vehicle-arrow');
-    const isArrow = iconId === 'auralith-nav-arrow';
-
-    model.children.forEach((child) => {
-        if (child.name?.startsWith('vehicle-car-')) {
-            child.visible = !isArrow && child.userData.iconId === iconId;
-        }
-    });
-    if (arrow) {
-        arrow.visible = isArrow;
-    }
-}
-
-function getNavigationVehicleColor(iconId) {
-    return {
-        'auralith-nav-black': '#111827',
-        'auralith-nav-red': '#ef233c',
-        'auralith-nav-white': '#f8fbff',
-        'auralith-nav-cyan': '#20d5f5',
-        'auralith-nav-graphite': '#3f4654',
-    }[iconId] ?? '#1f8cff';
 }
 
 function degreesToRadians(value) {

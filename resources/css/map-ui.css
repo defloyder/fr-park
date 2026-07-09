@@ -5711,3 +5711,184 @@ body.is-navigation-mode .top-panel .brand-mark--maps {
         bottom: calc(92px + var(--safe-bottom));
     }
 }
+
+body[data-map-ui-theme="dark"] {
+    --map-ui-surface: linear-gradient(145deg, rgba(5, 15, 35, 0.94), rgba(13, 31, 67, 0.84));
+    --map-ui-surface-soft: linear-gradient(145deg, rgba(5, 15, 35, 0.88), rgba(13, 31, 67, 0.76));
+    --map-ui-control: rgba(8, 20, 44, 0.90);
+    --map-ui-field: rgba(12, 27, 58, 0.64);
+    --map-ui-item: linear-gradient(145deg, rgba(14, 38, 80, 0.78), rgba(9, 25, 54, 0.64));
+    --map-ui-text: #f8fbff;
+    --map-ui-text-strong: #ffffff;
+    --map-ui-muted: rgba(226, 239, 255, 0.76);
+    --map-ui-placeholder: rgba(226, 239, 255, 0.48);
+    --map-ui-border: rgba(105, 188, 255, 0.30);
+    --map-ui-border-strong: rgba(105, 188, 255, 0.42);
+    --map-ui-shadow: 0 22px 56px rgba(0, 12, 34, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    --map-ui-control-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.13);
+    --map-ui-active-control: linear-gradient(135deg, rgba(41, 184, 255, 0.26), rgba(124, 61, 255, 0.22));
+    --map-ui-active-text: #ffffff;
+}
+
+body[data-map-ui-theme="light"] {
+    --map-ui-surface: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(229, 243, 250, 0.90));
+    --map-ui-surface-soft: linear-gradient(145deg, rgba(247, 252, 255, 0.92), rgba(225, 241, 248, 0.82));
+    --map-ui-control: rgba(255, 255, 255, 0.80);
+    --map-ui-field: rgba(239, 249, 253, 0.78);
+    --map-ui-item: linear-gradient(145deg, rgba(255, 255, 255, 0.82), rgba(232, 246, 252, 0.76));
+    --map-ui-text: #071126;
+    --map-ui-text-strong: #071126;
+    --map-ui-muted: rgba(7, 17, 38, 0.66);
+    --map-ui-placeholder: rgba(7, 17, 38, 0.46);
+    --map-ui-border: rgba(100, 116, 139, 0.22);
+    --map-ui-border-strong: rgba(58, 137, 166, 0.30);
+    --map-ui-shadow: 0 22px 52px rgba(15, 23, 42, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.92);
+    --map-ui-control-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.94);
+    --map-ui-active-control: linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(34, 211, 238, 0.18));
+    --map-ui-active-text: #071126;
+}
+
+body[data-map-ui-theme]:not(.is-navigation-mode) .top-panel,
+body[data-map-ui-theme]:not(.is-navigation-mode) .floating-nav,
+body[data-map-ui-theme]:not(.is-navigation-mode) .map-control-stack,
+body[data-map-ui-theme]:not(.is-navigation-mode) .map-settings__panel,
+body[data-map-ui-theme]:not(.is-navigation-mode) .layer-switcher__panel,
+body[data-map-ui-theme]:not(.is-navigation-mode) .spot-card,
+body[data-map-ui-theme]:not(.is-navigation-mode) .spot-list,
+body[data-map-ui-theme]:not(.is-navigation-mode) .search-panel,
+body[data-map-ui-theme]:not(.is-navigation-mode) .profile-panel,
+body[data-map-ui-theme]:not(.is-navigation-mode) .bottom-sheet,
+body[data-map-ui-theme]:not(.is-navigation-mode) .route-picker,
+body[data-map-ui-theme]:not(.is-navigation-mode) .navigator-panel,
+body[data-map-ui-theme]:not(.is-navigation-mode) .status-panel {
+    color: var(--map-ui-text);
+    background: var(--map-ui-surface);
+    border-color: var(--map-ui-border);
+    box-shadow: var(--map-ui-shadow);
+}
+
+body[data-map-ui-theme]:not(.is-navigation-mode) .map-control-button,
+body[data-map-ui-theme]:not(.is-navigation-mode) .map-settings__option,
+body[data-map-ui-theme]:not(.is-navigation-mode) .layer-switcher__option,
+body[data-map-ui-theme]:not(.is-navigation-mode) .icon-button,
+body[data-map-ui-theme]:not(.is-navigation-mode) .spot-card__close,
+body[data-map-ui-theme]:not(.is-navigation-mode) .route-picker__close,
+body[data-map-ui-theme]:not(.is-navigation-mode) .photo-lightbox__close,
+body[data-map-ui-theme]:not(.is-navigation-mode) .ghost-button,
+body[data-map-ui-theme]:not(.is-navigation-mode) .edit-button,
+body[data-map-ui-theme]:not(.is-navigation-mode) .favorite-button,
+body[data-map-ui-theme]:not(.is-navigation-mode) .copy-address-button,
+body[data-map-ui-theme]:not(.is-navigation-mode) .field-icon-button {
+    color: var(--map-ui-text);
+    background: var(--map-ui-control);
+    border-color: var(--map-ui-border);
+    box-shadow: var(--map-ui-control-shadow);
+}
+
+body[data-map-ui-theme]:not(.is-navigation-mode) .map-control-button:hover,
+body[data-map-ui-theme]:not(.is-navigation-mode) .map-settings__option:hover,
+body[data-map-ui-theme]:not(.is-navigation-mode) .layer-switcher__option:hover,
+body[data-map-ui-theme]:not(.is-navigation-mode) .map-settings__option.is-active,
+body[data-map-ui-theme]:not(.is-navigation-mode) .layer-switcher__option.is-active,
+body[data-map-ui-theme]:not(.is-navigation-mode) .nav-button.is-active {
+    color: var(--map-ui-active-text);
+    background: var(--map-ui-active-control);
+    border-color: var(--map-ui-border-strong);
+}
+
+body[data-map-ui-theme]:not(.is-navigation-mode) .brand-mark--maps__text-main,
+body[data-map-ui-theme]:not(.is-navigation-mode) .nav-button,
+body[data-map-ui-theme]:not(.is-navigation-mode) .panel-header h2,
+body[data-map-ui-theme]:not(.is-navigation-mode) .spot-card h2,
+body[data-map-ui-theme]:not(.is-navigation-mode) .profile-user strong,
+body[data-map-ui-theme]:not(.is-navigation-mode) .install-app-panel strong,
+body[data-map-ui-theme]:not(.is-navigation-mode) .spot-list__content strong,
+body[data-map-ui-theme]:not(.is-navigation-mode) .search-result strong,
+body[data-map-ui-theme]:not(.is-navigation-mode) .favorite-item strong,
+body[data-map-ui-theme]:not(.is-navigation-mode) .route-picker h3,
+body[data-map-ui-theme]:not(.is-navigation-mode) .route-option strong {
+    color: var(--map-ui-text-strong);
+}
+
+body[data-map-ui-theme]:not(.is-navigation-mode) .spot-list__content small,
+body[data-map-ui-theme]:not(.is-navigation-mode) .search-result small,
+body[data-map-ui-theme]:not(.is-navigation-mode) .favorite-item small,
+body[data-map-ui-theme]:not(.is-navigation-mode) .spot-card__address,
+body[data-map-ui-theme]:not(.is-navigation-mode) .spot-card__description,
+body[data-map-ui-theme]:not(.is-navigation-mode) .spot-detail p,
+body[data-map-ui-theme]:not(.is-navigation-mode) .profile-user span,
+body[data-map-ui-theme]:not(.is-navigation-mode) .install-app-panel span,
+body[data-map-ui-theme]:not(.is-navigation-mode) .search-field,
+body[data-map-ui-theme]:not(.is-navigation-mode) .spot-form label,
+body[data-map-ui-theme]:not(.is-navigation-mode) .auth-form label,
+body[data-map-ui-theme]:not(.is-navigation-mode) .navigator-panel label,
+body[data-map-ui-theme]:not(.is-navigation-mode) .navigator-panel__hint,
+body[data-map-ui-theme]:not(.is-navigation-mode) .route-option small,
+body[data-map-ui-theme]:not(.is-navigation-mode) .route-picker__note {
+    color: var(--map-ui-muted);
+}
+
+body[data-map-ui-theme]:not(.is-navigation-mode) .search-field input,
+body[data-map-ui-theme]:not(.is-navigation-mode) .search-field select,
+body[data-map-ui-theme]:not(.is-navigation-mode) .spot-form input,
+body[data-map-ui-theme]:not(.is-navigation-mode) .spot-form textarea,
+body[data-map-ui-theme]:not(.is-navigation-mode) .spot-form select,
+body[data-map-ui-theme]:not(.is-navigation-mode) .auth-form input,
+body[data-map-ui-theme]:not(.is-navigation-mode) .spot-detail,
+body[data-map-ui-theme]:not(.is-navigation-mode) .install-app-panel,
+body[data-map-ui-theme]:not(.is-navigation-mode) .profile-user,
+body[data-map-ui-theme]:not(.is-navigation-mode) .photo-dropzone,
+body[data-map-ui-theme]:not(.is-navigation-mode) .spot-card__meta span,
+body[data-map-ui-theme]:not(.is-navigation-mode) .spot-card__address,
+body[data-map-ui-theme]:not(.is-navigation-mode) .spot-list__item,
+body[data-map-ui-theme]:not(.is-navigation-mode) .search-result,
+body[data-map-ui-theme]:not(.is-navigation-mode) .favorite-item,
+body[data-map-ui-theme]:not(.is-navigation-mode) .route-option,
+body[data-map-ui-theme]:not(.is-navigation-mode) .navigator-panel input,
+body[data-map-ui-theme]:not(.is-navigation-mode) .navigator-suggestion,
+body[data-map-ui-theme]:not(.is-navigation-mode) .navigator-place,
+body[data-map-ui-theme]:not(.is-navigation-mode) .navigator-suggestions__loading {
+    color: var(--map-ui-text);
+    background: var(--map-ui-field);
+    border-color: var(--map-ui-border);
+}
+
+body[data-map-ui-theme]:not(.is-navigation-mode) .spot-list__item,
+body[data-map-ui-theme]:not(.is-navigation-mode) .search-result,
+body[data-map-ui-theme]:not(.is-navigation-mode) .favorite-item {
+    background: var(--map-ui-item);
+}
+
+body[data-map-ui-theme]:not(.is-navigation-mode) .search-field input::placeholder,
+body[data-map-ui-theme]:not(.is-navigation-mode) .spot-form input::placeholder,
+body[data-map-ui-theme]:not(.is-navigation-mode) .spot-form textarea::placeholder,
+body[data-map-ui-theme]:not(.is-navigation-mode) .auth-form input::placeholder,
+body[data-map-ui-theme]:not(.is-navigation-mode) .navigator-panel input::placeholder,
+body[data-map-ui-theme]:not(.is-navigation-mode) .navigator-suggestion small,
+body[data-map-ui-theme]:not(.is-navigation-mode) .navigator-place small {
+    color: var(--map-ui-placeholder);
+}
+
+body[data-map-ui-theme="dark"].is-navigation-mode {
+    --nav-surface: linear-gradient(145deg, rgba(7, 18, 40, 0.96), rgba(13, 31, 67, 0.90));
+    --nav-surface-soft: rgba(13, 29, 60, 0.90);
+    --nav-control: rgba(10, 25, 53, 0.94);
+    --nav-text: #f8fbff;
+    --nav-muted: rgba(224, 237, 255, 0.72);
+    --nav-line: rgba(132, 190, 255, 0.20);
+    --nav-border: rgba(105, 188, 255, 0.30);
+    --nav-shadow: 0 18px 46px rgba(0, 10, 32, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.13);
+    --nav-road-hint: #63d8ff;
+}
+
+body[data-map-ui-theme="light"].is-navigation-mode {
+    --nav-surface: linear-gradient(145deg, rgba(255, 255, 255, 0.97), rgba(232, 242, 250, 0.92));
+    --nav-surface-soft: rgba(245, 250, 255, 0.92);
+    --nav-control: rgba(255, 255, 255, 0.92);
+    --nav-text: #071126;
+    --nav-muted: rgba(15, 35, 60, 0.62);
+    --nav-line: rgba(71, 85, 105, 0.16);
+    --nav-border: rgba(148, 163, 184, 0.30);
+    --nav-shadow: 0 18px 44px rgba(2, 8, 23, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.88);
+    --nav-road-hint: #2563eb;
+}
