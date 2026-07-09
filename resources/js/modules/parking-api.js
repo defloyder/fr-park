@@ -101,18 +101,16 @@ export async function fetchFuelStations(bounds, { signal, detail = 'full' } = {}
 }
 
 export async function createParkingSpot(payload) {
-    const response = await fetch('/api/parking-spots', {
+    const response = await fetchWithCsrfRetry('/api/parking-spots', () => ({
         method: 'POST',
         credentials: 'same-origin',
         headers: {
             'Content-Type': 'application/json',
             Accept: 'application/json',
-            'X-CSRF-TOKEN': document
-                .querySelector('meta[name="csrf-token"]')
-                ?.getAttribute('content'),
+            ...csrfHeader(),
         },
         body: JSON.stringify(payload),
-    });
+    }));
 
     const data = await readJson(response);
 
@@ -124,18 +122,16 @@ export async function createParkingSpot(payload) {
 }
 
 export async function updateParkingSpot(id, payload) {
-    const response = await fetch(`/api/parking-spots/${id}`, {
+    const response = await fetchWithCsrfRetry(`/api/parking-spots/${id}`, () => ({
         method: 'PATCH',
         credentials: 'same-origin',
         headers: {
             'Content-Type': 'application/json',
             Accept: 'application/json',
-            'X-CSRF-TOKEN': document
-                .querySelector('meta[name="csrf-token"]')
-                ?.getAttribute('content'),
+            ...csrfHeader(),
         },
         body: JSON.stringify(payload),
-    });
+    }));
 
     const data = await readJson(response);
 
@@ -147,19 +143,19 @@ export async function updateParkingSpot(id, payload) {
 }
 
 export async function uploadParkingPhoto(file) {
-    const formData = new FormData();
-    formData.append('photo', file, getPhotoUploadFileName(file));
+    const response = await fetchWithCsrfRetry('/api/parking-spots/photo', () => {
+        const formData = new FormData();
+        formData.append('photo', file, getPhotoUploadFileName(file));
 
-    const response = await fetch('/api/parking-spots/photo', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: {
-            Accept: 'application/json',
-            'X-CSRF-TOKEN': document
-                .querySelector('meta[name="csrf-token"]')
-                ?.getAttribute('content'),
-        },
-        body: formData,
+        return {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                Accept: 'application/json',
+                ...csrfHeader(),
+            },
+            body: formData,
+        };
     });
 
     const data = await readJson(response);
@@ -323,26 +319,26 @@ function getPhotoUploadFileName(file) {
 }
 
 export async function importParkingSpots({ file = null, text = '' }) {
-    const formData = new FormData();
+    const response = await fetchWithCsrfRetry('/api/parking-spots/import', () => {
+        const formData = new FormData();
 
-    if (file) {
-        formData.append('json_file', file);
-    }
+        if (file) {
+            formData.append('json_file', file);
+        }
 
-    if (text.trim()) {
-        formData.append('json_text', text.trim());
-    }
+        if (text.trim()) {
+            formData.append('json_text', text.trim());
+        }
 
-    const response = await fetch('/api/parking-spots/import', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: {
-            Accept: 'application/json',
-            'X-CSRF-TOKEN': document
-                .querySelector('meta[name="csrf-token"]')
-                ?.getAttribute('content'),
-        },
-        body: formData,
+        return {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                Accept: 'application/json',
+                ...csrfHeader(),
+            },
+            body: formData,
+        };
     });
 
     const data = await readJson(response);
@@ -367,16 +363,14 @@ export function getParkingSpotsExportUrl(ids = []) {
 }
 
 export async function deleteParkingSpot(id) {
-    const response = await fetch(`/api/parking-spots/${id}`, {
+    const response = await fetchWithCsrfRetry(`/api/parking-spots/${id}`, () => ({
         method: 'DELETE',
         credentials: 'same-origin',
         headers: {
             Accept: 'application/json',
-            'X-CSRF-TOKEN': document
-                .querySelector('meta[name="csrf-token"]')
-                ?.getAttribute('content'),
+            ...csrfHeader(),
         },
-    });
+    }));
 
     if (!response.ok) {
         throw new Error('Failed to delete parking spot');
@@ -424,16 +418,16 @@ export async function fetchDrivingRoute(from, to) {
 }
 
 export async function fetchRouteSpeedCameras(coordinates) {
-    const response = await fetch('/api/navigation/speed-cameras', {
+    const response = await fetchWithCsrfRetry('/api/navigation/speed-cameras', () => ({
         method: 'POST',
         credentials: 'same-origin',
         headers: {
             Accept: 'application/json',
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+            ...csrfHeader(),
         },
         body: JSON.stringify({ coordinates }),
-    });
+    }));
 
     if (!response.ok) {
         throw new Error('Failed to load speed cameras');
@@ -458,18 +452,16 @@ export async function fetchAccountSession() {
 }
 
 export async function submitAuth(mode, payload) {
-    const response = await fetch(`/account/${mode}`, {
+    const response = await fetchWithCsrfRetry(`/account/${mode}`, () => ({
         method: 'POST',
         credentials: 'same-origin',
         headers: {
             'Content-Type': 'application/json',
             Accept: 'application/json',
-            'X-CSRF-TOKEN': document
-                .querySelector('meta[name="csrf-token"]')
-                ?.getAttribute('content'),
+            ...csrfHeader(),
         },
         body: JSON.stringify(payload),
-    });
+    }));
 
     const data = await readJson(response);
 
@@ -481,16 +473,14 @@ export async function submitAuth(mode, payload) {
 }
 
 export async function logoutAccount() {
-    const response = await fetch('/account/logout', {
+    const response = await fetchWithCsrfRetry('/account/logout', () => ({
         method: 'POST',
         credentials: 'same-origin',
         headers: {
             Accept: 'application/json',
-            'X-CSRF-TOKEN': document
-                .querySelector('meta[name="csrf-token"]')
-                ?.getAttribute('content'),
+            ...csrfHeader(),
         },
-    });
+    }));
 
     if (!response.ok) {
         throw new Error('Failed to logout');
@@ -515,16 +505,14 @@ export async function fetchFavorites() {
 }
 
 export async function toggleFavoriteSpot(id) {
-    const response = await fetch(`/account/favorites/${id}/toggle`, {
+    const response = await fetchWithCsrfRetry(`/account/favorites/${id}/toggle`, () => ({
         method: 'POST',
         credentials: 'same-origin',
         headers: {
             Accept: 'application/json',
-            'X-CSRF-TOKEN': document
-                .querySelector('meta[name="csrf-token"]')
-                ?.getAttribute('content'),
+            ...csrfHeader(),
         },
-    });
+    }));
 
     const data = await readJson(response);
 
@@ -548,18 +536,16 @@ export async function deletePersonalPlace(id) {
 }
 
 async function sendPersonalPlaceRequest(url, method, payload = null) {
-    const response = await fetch(url, {
+    const response = await fetchWithCsrfRetry(url, () => ({
         method,
         credentials: 'same-origin',
         headers: {
             Accept: 'application/json',
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document
-                .querySelector('meta[name="csrf-token"]')
-                ?.getAttribute('content'),
+            ...csrfHeader(),
         },
         body: payload ? JSON.stringify(payload) : undefined,
-    });
+    }));
     const data = await readJson(response);
 
     if (!response.ok) {
@@ -577,6 +563,54 @@ function syncCsrfToken(data) {
     }
 
     return data;
+}
+
+export async function csrfFetch(url, optionsFactory) {
+    return fetchWithCsrfRetry(url, optionsFactory);
+}
+
+async function fetchWithCsrfRetry(url, optionsFactory) {
+    let response = await fetch(url, withCsrfOptions(optionsFactory()));
+
+    if (response.status !== 419) {
+        return response;
+    }
+
+    await refreshCsrfToken();
+
+    return fetch(url, withCsrfOptions(optionsFactory()));
+}
+
+async function refreshCsrfToken() {
+    const response = await fetch('/account/session', {
+        credentials: 'same-origin',
+        headers: {
+            Accept: 'application/json',
+            'Cache-Control': 'no-cache',
+        },
+    });
+
+    if (response.ok) {
+        syncCsrfToken(await response.json());
+    }
+}
+
+function csrfHeader() {
+    return {
+        'X-CSRF-TOKEN': document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute('content') ?? '',
+    };
+}
+
+function withCsrfOptions(options) {
+    return {
+        ...options,
+        headers: {
+            ...(options.headers ?? {}),
+            ...csrfHeader(),
+        },
+    };
 }
 
 async function readJson(response) {

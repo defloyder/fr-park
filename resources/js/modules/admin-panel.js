@@ -1,4 +1,5 @@
 import {
+    csrfFetch,
     deleteParkingSpot,
     importParkingSpots,
     isUploadableParkingPhoto,
@@ -433,16 +434,15 @@ export function initAdminPanel() {
             return;
         }
 
-        const response = await fetch('/aura-vault-7f3c/spots/bulk', {
+        const response = await csrfFetch('/aura-vault-7f3c/spots/bulk', () => ({
             method: 'POST',
             credentials: 'same-origin',
             headers: {
                 'Content-Type': 'application/json',
                 Accept: 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
             },
             body: JSON.stringify({ ids, action, ...extra }),
-        });
+        }));
         const data = await response.json();
         data.data?.forEach(upsert);
         selectedIds.clear();
@@ -450,16 +450,15 @@ export function initAdminPanel() {
     }
 
     async function toggleUserAdmin(id, isAdmin) {
-        const response = await fetch(`/aura-vault-7f3c/users/${id}/admin`, {
+        const response = await csrfFetch(`/aura-vault-7f3c/users/${id}/admin`, () => ({
             method: 'PATCH',
             credentials: 'same-origin',
             headers: {
                 'Content-Type': 'application/json',
                 Accept: 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
             },
             body: JSON.stringify({ is_admin: isAdmin }),
-        });
+        }));
         const data = await response.json();
 
         if (!response.ok) {
