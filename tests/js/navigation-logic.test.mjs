@@ -163,7 +163,8 @@ test('navigation GPS cursor is locked to route segment heading', () => {
     assert.match(getRouteMarkerHeading, /routeBearing/);
     assert.match(mapSource, /id: 'user-navigation-dot'/);
     assert.match(mapSource, /fallbackHeading: getUserLocationFallbackHeading/);
-    assert.match(mapSource, /heading - Number\(map\?\.getBearing\?\.\(\) \|\| 0\)/);
+    assert.match(mapSource, /function getUserLocationModelHeading/);
+    assert.match(mapSource, /heading \+ Number\(map\?\.getBearing\?\.\(\) \|\| 0\)/);
     assert.match(mapSource, /'icon-rotation-alignment': 'viewport'/);
 });
 
@@ -306,6 +307,8 @@ test('map settings expose selectable GPS cursor icons', () => {
     assert.match(mapSource, /USER_LOCATION_MODEL_VISUAL_SCALE/);
     assert.match(mapSource, /syncUserLocationModelRenderer/);
     assert.match(mapSource, /clearDepth\(\)/);
+    assert.match(mapSource, /markUserLocationModelVisible/);
+    assert.match(mapSource, /modelVisible: isUserLocationModelLayerVisible/);
     assert.match(mapSource, /MercatorCoordinate\.fromLngLat/);
     assert.doesNotMatch(mapSource, /kenney|quaternius|PolyPizza|removePolyPizzaBackground/);
     assert.match(mapSource, /settings\.classList\.remove\('is-open'\)/);

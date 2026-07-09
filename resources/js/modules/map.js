@@ -35,6 +35,7 @@ let renderedUserLocation = null;
 let targetUserLocation = null;
 let userLocationModelLayer = null;
 let isUserLocationModelLayerReady = false;
+let isUserLocationModelLayerVisible = false;
 let isPickingMode = false;
 let isRouteDestinationPickingMode = false;
 let routeManeuverMarker = null;
@@ -2571,6 +2572,9 @@ function addUserLocationSourceAndLayer() {
             'icon-allow-overlap': true,
             'icon-ignore-placement': true,
         },
+        paint: {
+            'icon-opacity': ['case', ['boolean', ['get', 'modelVisible'], false], 0.34, 1],
+        },
     });
 
     map.addLayer({
@@ -2586,6 +2590,9 @@ function addUserLocationSourceAndLayer() {
             'icon-rotation-alignment': 'viewport',
             'icon-allow-overlap': true,
             'icon-ignore-placement': true,
+        },
+        paint: {
+            'icon-opacity': ['case', ['boolean', ['get', 'modelVisible'], false], 0.34, 1],
         },
     });
 }
@@ -2641,6 +2648,8 @@ function createUserLocationModelLayer() {
             } catch (error) {
                 this.renderFailed = true;
                 isUserLocationModelLayerReady = false;
+                isUserLocationModelLayerVisible = false;
+                refreshRenderedUserLocationFeature();
                 console.warn('3D GPS cursor renderer disabled.', error);
             }
         },
@@ -2670,7 +2679,7 @@ function createUserLocationModelLayer() {
                     USER_LOCATION_MODEL_ALTITUDE_METERS,
                 );
                 const scale = coordinate.meterInMercatorCoordinateUnits() * USER_LOCATION_MODEL_VISUAL_SCALE;
-                const heading = Number.isFinite(Number(location.heading)) ? Number(location.heading) : 0;
+                const heading = getUserLocationModelHeading(location);
                 const worldMatrix = new Matrix4()
                     .makeTranslation(coordinate.x, coordinate.y, coordinate.z)
                     .scale(new Vector3(scale, -scale, scale))
@@ -2682,9 +2691,12 @@ function createUserLocationModelLayer() {
                 this.renderer.resetState();
                 this.renderer.clearDepth();
                 this.renderer.render(this.scene, this.camera);
+                markUserLocationModelVisible();
             } catch (error) {
                 this.renderFailed = true;
                 isUserLocationModelLayerReady = false;
+                isUserLocationModelLayerVisible = false;
+                refreshRenderedUserLocationFeature();
                 console.warn('3D GPS cursor render failed.', error);
             }
         },
@@ -2704,8 +2716,28 @@ function createUserLocationModelLayer() {
             this.model = null;
             this.layerMap = null;
             isUserLocationModelLayerReady = false;
+            isUserLocationModelLayerVisible = false;
         },
     };
+}
+
+function markUserLocationModelVisible() {
+    if (isUserLocationModelLayerVisible) {
+        return;
+    }
+
+    isUserLocationModelLayerVisible = true;
+    refreshRenderedUserLocationFeature();
+}
+
+function getUserLocationModelHeading(location) {
+    const heading = Number(location?.heading);
+
+    if (!Number.isFinite(heading)) {
+        return 0;
+    }
+
+    return normalizeDegrees(heading + Number(map?.getBearing?.() || 0));
 }
 
 function syncUserLocationModelRenderer(renderer, layerMap) {
@@ -3556,6 +3588,7 @@ function renderUserLocationFeature(location) {
                 fallbackHeading: getUserLocationFallbackHeading(location),
                 mode: location.headingMode,
                 iconImage: getUserLocationIconImage(),
+                modelVisible: isUserLocationModelLayerVisible,
             },
             geometry: {
                 type: 'Point',
@@ -3588,11 +3621,7 @@ function getUserLocationFallbackHeading(location) {
         return 0;
     }
 
-    if (location?.headingMode !== 'navigation') {
-        return heading;
-    }
-
-    return normalizeDegrees(heading - Number(map?.getBearing?.() || 0));
+    return normalizeDegrees(heading);
 }
 
 function startUserLocationAnimation() {
