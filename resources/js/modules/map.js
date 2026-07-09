@@ -65,14 +65,14 @@ const POI_ICON_IMAGE_IDS = {
     fuel: 'poi-fuel',
 };
 const GPS_CURSOR_ASSET_BASE = '/assets/gps-cursors/';
-const DEFAULT_USER_LOCATION_ICON_ID = 'quaternius-car-blue';
+const DEFAULT_USER_LOCATION_ICON_ID = 'kenney-car-blue';
 const USER_LOCATION_ICON_OPTIONS = [
-    { id: 'quaternius-car-blue', label: 'Sedan', image: `${GPS_CURSOR_ASSET_BASE}quaternius-car-blue.webp` },
-    { id: 'quaternius-sports-orange', label: 'Sport', image: `${GPS_CURSOR_ASSET_BASE}quaternius-sports-orange.webp` },
-    { id: 'quaternius-sports-red', label: 'Coupe', image: `${GPS_CURSOR_ASSET_BASE}quaternius-sports-red.webp` },
-    { id: 'quaternius-suv-green', label: 'SUV', image: `${GPS_CURSOR_ASSET_BASE}quaternius-suv-green.webp` },
-    { id: 'quaternius-taxi', label: 'Taxi', image: `${GPS_CURSOR_ASSET_BASE}quaternius-taxi.webp` },
-    { id: 'quaternius-police', label: 'Police', image: `${GPS_CURSOR_ASSET_BASE}quaternius-police.webp` },
+    { id: 'kenney-car-blue', label: 'Blue car', image: `${GPS_CURSOR_ASSET_BASE}kenney-car-blue.png` },
+    { id: 'kenney-car-red', label: 'Red car', image: `${GPS_CURSOR_ASSET_BASE}kenney-car-red.png` },
+    { id: 'kenney-car-green', label: 'Green car', image: `${GPS_CURSOR_ASSET_BASE}kenney-car-green.png` },
+    { id: 'kenney-car-yellow', label: 'Yellow car', image: `${GPS_CURSOR_ASSET_BASE}kenney-car-yellow.png` },
+    { id: 'kenney-car-black', label: 'Black car', image: `${GPS_CURSOR_ASSET_BASE}kenney-car-black.png` },
+    { id: 'kenney-car-sport-blue', label: 'Sport car', image: `${GPS_CURSOR_ASSET_BASE}kenney-car-sport-blue.png` },
 ];
 const BASE_LAYER_IDS = ['light', 'dark', 'satellite'];
 const DEFAULT_BASE_LAYER_ID = 'light';
@@ -2029,7 +2029,7 @@ function addUserLocationIconImage(option) {
     const imageName = getUserLocationIconImage(option.id);
 
     if (option.image) {
-        return addRasterImage(imageName, option.image, { size: 112 }).catch(() => (
+        return addRasterImage(imageName, option.image, { size: 152 }).catch(() => (
             addSvgImage(imageName, createUserLocationSvg(), { width: 64, height: 64 })
         ));
     }
@@ -2168,9 +2168,6 @@ function createTransparentCursorImage(image, size) {
     sourceContext.drawImage(image, 0, 0, sourceCanvas.width, sourceCanvas.height);
 
     const sourceImage = sourceContext.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
-    removePolyPizzaBackground(sourceImage);
-    sourceContext.putImageData(sourceImage, 0, 0);
-
     const crop = getVisibleImageBounds(sourceImage);
     const outputCanvas = document.createElement('canvas');
     outputCanvas.width = size;
@@ -2190,62 +2187,6 @@ function createTransparentCursorImage(image, size) {
     outputContext.drawImage(sourceCanvas, crop.x, crop.y, crop.width, crop.height, x, y, width, height);
 
     return outputContext.getImageData(0, 0, size, size);
-}
-
-function removePolyPizzaBackground(imageData) {
-    const pixels = imageData.data;
-    const backdropSamples = getBackdropSamples(imageData);
-
-    for (let index = 0; index < pixels.length; index += 4) {
-        const red = pixels[index];
-        const green = pixels[index + 1];
-        const blue = pixels[index + 2];
-        const alpha = pixels[index + 3];
-        const backdropDistance = getNearestColorDistance(red, green, blue, backdropSamples);
-        const matchedBackdrop = backdropDistance < 68 && blue > red * 1.1 && blue > green * 1.02;
-        const softBackdrop = backdropDistance < 92 && blue > 65 && blue > red * 1.22 && green < blue * 0.78;
-
-        if (matchedBackdrop || softBackdrop) {
-            pixels[index + 3] = 0;
-        } else if (alpha > 0 && backdropDistance < 110 && blue > 58 && blue > red * 1.08 && blue > green) {
-            pixels[index + 3] = Math.round(alpha * 0.22);
-        }
-    }
-}
-
-function getBackdropSamples(imageData) {
-    const maxX = imageData.width - 1;
-    const maxY = imageData.height - 1;
-    const midX = Math.round(maxX / 2);
-    const midY = Math.round(maxY / 2);
-
-    return [
-        getPixelColor(imageData, 0, 0),
-        getPixelColor(imageData, midX, 0),
-        getPixelColor(imageData, maxX, 0),
-        getPixelColor(imageData, 0, midY),
-        getPixelColor(imageData, maxX, midY),
-        getPixelColor(imageData, 0, maxY),
-        getPixelColor(imageData, midX, maxY),
-        getPixelColor(imageData, maxX, maxY),
-    ];
-}
-
-function getPixelColor(imageData, x, y) {
-    const index = (y * imageData.width + x) * 4;
-
-    return [imageData.data[index], imageData.data[index + 1], imageData.data[index + 2]];
-}
-
-function getNearestColorDistance(red, green, blue, samples) {
-    let distance = Infinity;
-
-    samples.forEach(([sampleRed, sampleGreen, sampleBlue]) => {
-        const currentDistance = Math.hypot(red - sampleRed, green - sampleGreen, blue - sampleBlue);
-        distance = Math.min(distance, currentDistance);
-    });
-
-    return distance;
 }
 
 function getVisibleImageBounds(imageData) {
@@ -2597,8 +2538,8 @@ function addUserLocationSourceAndLayer() {
         filter: ['!=', ['get', 'mode'], 'navigation'],
         layout: {
             'icon-image': ['get', 'iconImage'],
-            'icon-size': ['interpolate', ['linear'], ['zoom'], 12, 0.58, 16, 0.74, 18, 0.86],
-            'icon-rotate': ['coalesce', ['to-number', ['get', 'heading']], 0],
+            'icon-size': ['interpolate', ['linear'], ['zoom'], 12, 0.78, 16, 0.98, 18, 1.12],
+            'icon-rotate': 0,
             'icon-pitch-alignment': 'viewport',
             'icon-rotation-alignment': 'viewport',
             'icon-allow-overlap': true,
@@ -2613,7 +2554,7 @@ function addUserLocationSourceAndLayer() {
         filter: ['==', ['get', 'mode'], 'navigation'],
         layout: {
             'icon-image': ['get', 'iconImage'],
-            'icon-size': ['interpolate', ['linear'], ['zoom'], 12, 0.56, 16, 0.72, 18, 0.84],
+            'icon-size': ['interpolate', ['linear'], ['zoom'], 12, 0.82, 16, 0.98, 18, 1.08],
             'icon-rotate': ['coalesce', ['to-number', ['get', 'heading']], 0],
             'icon-pitch-alignment': 'viewport',
             'icon-rotation-alignment': 'map',

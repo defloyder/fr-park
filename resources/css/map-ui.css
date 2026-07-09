@@ -504,8 +504,7 @@ body[data-map-layer="light"]:not(.is-navigation-mode) .layer-switcher__option {
 
 .map-settings__preview img {
     display: block;
-    object-fit: cover;
-    border-radius: 12px;
+    object-fit: contain;
     filter: drop-shadow(0 5px 5px rgba(2, 6, 23, 0.24));
 }
 
@@ -5567,47 +5566,54 @@ body.is-navigation-mode .top-panel .brand-mark--maps {
     body.is-navigation-mode .navigation-guidance {
         top: calc(46px + var(--safe-top));
         left: max(8px, var(--safe-left));
-        width: min(292px, calc(100vw - 122px));
+        width: min(228px, calc(100vw - 154px));
         min-height: 0;
-        grid-template-columns: 44px minmax(0, 1fr);
+        grid-template-columns: 38px minmax(0, 1fr);
         grid-template-rows: auto auto;
-        gap: 7px 9px;
-        padding: 9px;
-        border-radius: 17px;
+        gap: 5px 8px;
+        padding: 8px;
+        border-radius: 15px;
     }
 
     .navigation-guidance__arrow {
-        width: 42px;
-        height: 42px;
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+    }
+
+    .navigation-guidance__arrow svg {
+        width: 30px;
+        height: 30px;
     }
 
     .navigation-guidance strong {
-        font-size: 1.18rem;
+        font-size: 1rem;
     }
 
     .navigation-guidance span[data-navigation-instruction] {
-        font-size: 0.72rem;
-        line-height: 1.2;
+        margin-top: 2px;
+        font-size: 0.66rem;
+        line-height: 1.12;
     }
 
     .navigation-guidance small[data-navigation-road-hint] {
-        font-size: 0.58rem;
+        font-size: 0.56rem;
     }
 
     .navigation-compass {
         display: grid;
-        grid-template-columns: 34px 1px minmax(0, 1fr);
-        gap: 7px;
-        padding-top: 6px;
+        grid-template-columns: 30px 1px minmax(0, 1fr);
+        gap: 6px;
+        padding-top: 5px;
     }
 
     .navigation-compass::before {
-        height: 32px;
+        height: 28px;
     }
 
     .navigation-compass__dial {
-        width: 34px;
-        height: 34px;
+        width: 30px;
+        height: 30px;
     }
 
     .navigation-compass__cardinal {
@@ -5627,12 +5633,12 @@ body.is-navigation-mode .top-panel .brand-mark--maps {
     }
 
     .navigation-compass__readout strong {
-        font-size: 0.82rem;
+        font-size: 0.76rem;
     }
 
     .navigation-compass__readout span {
         margin-top: 1px;
-        font-size: 0.54rem;
+        font-size: 0.52rem;
     }
 
     .navigation-gps-alert {

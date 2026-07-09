@@ -1,17 +1,22 @@
 # GPS cursor assets
 
-Vehicle cursor images are based on CC0 model renders from the Quaternius Cars Bundle on Poly Pizza:
-https://poly.pizza/bundle/Cars-Bundle-FE5IWe6OMk
+Vehicle cursor PNG files are taken from Kenney Racing Pack:
+https://kenney.nl/assets/racing-pack
 
-Poly Pizza lists the bundle as free for personal and commercial use, and the included car models as CC0 1.0.
+Kenney lists this pack as:
 
-Used source previews:
+- Tags: `top-down`, `vehicle`, `car`, `racing`
+- Category: `2D`
+- Files: 420
+- License: Creative Commons CC0
 
-- Car, public id `Cz6yDaUcM9`: `quaternius-car-blue.webp`
-- Sports Car, public id `1mkmFkAz5v`: `quaternius-sports-orange.webp`
-- Sports Car, public id `OyqKvX9xNh`: `quaternius-sports-red.webp`
-- SUV, public id `xsMtZhBkxL`: `quaternius-suv-green.webp`
-- Taxi, public id `x43lOScTpN`: `quaternius-taxi.webp`
-- Police Car, public id `BwwnUrWGmV`: `quaternius-police.webp`
+The original download also includes vector source files. The app uses the separate transparent PNG car files as MapLibre symbol sprites so the navigation cursor stays top-down, readable, and stable on the map.
 
-MapLibre symbol layers use 2D images, so the app registers these model renders as canvas sprites and removes the Poly Pizza preview background at runtime.
+Used files:
+
+- `PNG/Cars/car_blue_1.png` -> `kenney-car-blue.png`
+- `PNG/Cars/car_red_1.png` -> `kenney-car-red.png`
+- `PNG/Cars/car_green_1.png` -> `kenney-car-green.png`
+- `PNG/Cars/car_yellow_1.png` -> `kenney-car-yellow.png`
+- `PNG/Cars/car_black_1.png` -> `kenney-car-black.png`
+- `PNG/Cars/car_blue_5.png` -> `kenney-car-sport-blue.png`
