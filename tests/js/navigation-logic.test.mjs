@@ -304,8 +304,16 @@ test('map settings expose selectable GPS cursor icons', () => {
     assert.match(mapSource, /type: 'custom'/);
     assert.match(mapSource, /renderingMode: '3d'/);
     assert.match(mapSource, /new WebGLRenderer/);
+    assert.match(mapSource, /BoxGeometry/);
+    assert.match(mapSource, /MeshBasicMaterial/);
     assert.match(mapSource, /USER_LOCATION_MODEL_ALTITUDE_METERS/);
     assert.match(mapSource, /USER_LOCATION_MODEL_VISUAL_SCALE/);
+    assert.match(mapSource, /getNavigationVehicleProfile/);
+    assert.match(mapSource, /vehicle-car-\$\{iconId\}/);
+    assert.match(mapSource, /addVehicleShadow/);
+    assert.match(mapSource, /addVehicleWheels/);
+    assert.match(mapSource, /addVehicleDetails/);
+    assert.match(mapSource, /'auralith-nav-graphite': \{/);
     assert.match(mapSource, /syncUserLocationModelRenderer/);
     assert.match(mapSource, /clearDepth\(\)/);
     assert.match(mapSource, /markUserLocationModelVisible/);
