@@ -30,6 +30,7 @@ let spotsCache = [];
 let pendingMarker = null;
 let addressRequestId = 0;
 let userLocationRenderFrame = null;
+let userLocationFeatureRefreshFrame = null;
 let renderedUserLocation = null;
 let targetUserLocation = null;
 let userLocationModelLayer = null;
@@ -102,6 +103,8 @@ const FUEL_LAYER_STORAGE_KEY = 'auralith:fuel-layer-enabled';
 const USER_LOCATION_ICON_STORAGE_KEY = 'auralith:user-location-icon';
 const USER_LOCATION_ICON_PREFIX = 'user-location-';
 const USER_LOCATION_MODEL_LENGTH_METERS = 6.2;
+const USER_LOCATION_MODEL_ALTITUDE_METERS = 1.2;
+const USER_LOCATION_MODEL_VISUAL_SCALE = 1.45;
 const ROAD_MARKING_LAYER_PATTERNS = [
     /^road_marking_/,
     /^base_road_lane_marking_/,
@@ -2363,6 +2366,8 @@ function bindPerformanceMode() {
         dispatchManualMapInteraction(event);
         detachNavigationOnManualInteraction(event);
     });
+    map.on('rotate', refreshRenderedUserLocationFeature);
+    map.on('pitch', () => map?.triggerRepaint());
     map.on('pitchstart', (event) => {
         dispatchManualMapInteraction(event);
         detachNavigationOnManualInteraction(event);
@@ -2576,9 +2581,9 @@ function addUserLocationSourceAndLayer() {
         layout: {
             'icon-image': ['get', 'iconImage'],
             'icon-size': ['interpolate', ['linear'], ['zoom'], 12, 0.82, 16, 0.98, 18, 1.08],
-            'icon-rotate': ['coalesce', ['to-number', ['get', 'heading']], 0],
+            'icon-rotate': ['coalesce', ['to-number', ['get', 'fallbackHeading']], 0],
             'icon-pitch-alignment': 'viewport',
-            'icon-rotation-alignment': 'map',
+            'icon-rotation-alignment': 'viewport',
             'icon-allow-overlap': true,
             'icon-ignore-placement': true,
         },
@@ -2658,11 +2663,13 @@ function createUserLocationModelLayer() {
                     this.activeIconId = selectedIcon;
                 }
 
+                syncUserLocationModelRenderer(this.renderer, this.layerMap);
+
                 const coordinate = maplibregl.MercatorCoordinate.fromLngLat(
                     [Number(location.longitude), Number(location.latitude)],
-                    0.25,
+                    USER_LOCATION_MODEL_ALTITUDE_METERS,
                 );
-                const scale = coordinate.meterInMercatorCoordinateUnits();
+                const scale = coordinate.meterInMercatorCoordinateUnits() * USER_LOCATION_MODEL_VISUAL_SCALE;
                 const heading = Number.isFinite(Number(location.heading)) ? Number(location.heading) : 0;
                 const worldMatrix = new Matrix4()
                     .makeTranslation(coordinate.x, coordinate.y, coordinate.z)
@@ -2673,6 +2680,7 @@ function createUserLocationModelLayer() {
                     .fromArray(matrix)
                     .multiply(worldMatrix);
                 this.renderer.resetState();
+                this.renderer.clearDepth();
                 this.renderer.render(this.scene, this.camera);
             } catch (error) {
                 this.renderFailed = true;
@@ -2698,6 +2706,16 @@ function createUserLocationModelLayer() {
             isUserLocationModelLayerReady = false;
         },
     };
+}
+
+function syncUserLocationModelRenderer(renderer, layerMap) {
+    const canvas = layerMap?.getCanvas?.();
+
+    if (!canvas) {
+        return;
+    }
+
+    renderer.setSize(canvas.width, canvas.height, false);
 }
 
 function isRenderableUserLocationModel(location) {
@@ -2943,6 +2961,10 @@ function getNavigationVehicleColor(iconId) {
 
 function degreesToRadians(value) {
     return (Number(value) || 0) * Math.PI / 180;
+}
+
+function normalizeDegrees(value) {
+    return ((Number(value) % 360) + 360) % 360;
 }
 
 function addRouteSourceAndLayer() {
@@ -3531,6 +3553,7 @@ function renderUserLocationFeature(location) {
             properties: {
                 accuracy: location.accuracy,
                 heading: location.heading,
+                fallbackHeading: getUserLocationFallbackHeading(location),
                 mode: location.headingMode,
                 iconImage: getUserLocationIconImage(),
             },
@@ -3543,6 +3566,33 @@ function renderUserLocationFeature(location) {
     if (isUserLocationModelLayerReady) {
         map?.triggerRepaint();
     }
+}
+
+function refreshRenderedUserLocationFeature() {
+    if (userLocationFeatureRefreshFrame || !renderedUserLocation || !map?.getSource(USER_LOCATION_SOURCE_ID)) {
+        return;
+    }
+
+    userLocationFeatureRefreshFrame = window.requestAnimationFrame(() => {
+        userLocationFeatureRefreshFrame = null;
+        if (renderedUserLocation && map?.getSource(USER_LOCATION_SOURCE_ID)) {
+            renderUserLocationFeature(renderedUserLocation);
+        }
+    });
+}
+
+function getUserLocationFallbackHeading(location) {
+    const heading = Number(location?.heading);
+
+    if (!Number.isFinite(heading)) {
+        return 0;
+    }
+
+    if (location?.headingMode !== 'navigation') {
+        return heading;
+    }
+
+    return normalizeDegrees(heading - Number(map?.getBearing?.() || 0));
 }
 
 function startUserLocationAnimation() {
