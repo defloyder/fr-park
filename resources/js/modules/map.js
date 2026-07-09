@@ -65,14 +65,14 @@ const POI_ICON_IMAGE_IDS = {
     fuel: 'poi-fuel',
 };
 const GPS_CURSOR_ASSET_BASE = '/assets/gps-cursors/';
-const DEFAULT_USER_LOCATION_ICON_ID = 'kenney-car-blue';
+const DEFAULT_USER_LOCATION_ICON_ID = 'auralith-nav-arrow';
 const USER_LOCATION_ICON_OPTIONS = [
-    { id: 'kenney-car-blue', label: 'Blue car', image: `${GPS_CURSOR_ASSET_BASE}kenney-car-blue.png` },
-    { id: 'kenney-car-red', label: 'Red car', image: `${GPS_CURSOR_ASSET_BASE}kenney-car-red.png` },
-    { id: 'kenney-car-green', label: 'Green car', image: `${GPS_CURSOR_ASSET_BASE}kenney-car-green.png` },
-    { id: 'kenney-car-yellow', label: 'Yellow car', image: `${GPS_CURSOR_ASSET_BASE}kenney-car-yellow.png` },
-    { id: 'kenney-car-black', label: 'Black car', image: `${GPS_CURSOR_ASSET_BASE}kenney-car-black.png` },
-    { id: 'kenney-car-sport-blue', label: 'Sport car', image: `${GPS_CURSOR_ASSET_BASE}kenney-car-sport-blue.png` },
+    { id: 'auralith-nav-arrow', label: 'Auralith arrow', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-arrow.png` },
+    { id: 'auralith-nav-black', label: 'Black GT', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-black.png` },
+    { id: 'auralith-nav-red', label: 'Red GT', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-red.png` },
+    { id: 'auralith-nav-white', label: 'White GT', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-white.png` },
+    { id: 'auralith-nav-cyan', label: 'Cyan EV', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-cyan.png` },
+    { id: 'auralith-nav-graphite', label: 'Graphite SUV', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-graphite.png` },
 ];
 const BASE_LAYER_IDS = ['light', 'dark', 'satellite'];
 const DEFAULT_BASE_LAYER_ID = 'light';
@@ -2029,7 +2029,7 @@ function addUserLocationIconImage(option) {
     const imageName = getUserLocationIconImage(option.id);
 
     if (option.image) {
-        return addRasterImage(imageName, option.image, { size: 152 }).catch(() => (
+        return addRasterImage(imageName, option.image, { size: 120 }).catch(() => (
             addSvgImage(imageName, createUserLocationSvg(), { width: 64, height: 64 })
         ));
     }

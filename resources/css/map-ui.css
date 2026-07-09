@@ -5566,54 +5566,52 @@ body.is-navigation-mode .top-panel .brand-mark--maps {
     body.is-navigation-mode .navigation-guidance {
         top: calc(46px + var(--safe-top));
         left: max(8px, var(--safe-left));
-        width: min(228px, calc(100vw - 154px));
+        width: min(238px, calc(100vw - 154px));
         min-height: 0;
-        grid-template-columns: 38px minmax(0, 1fr);
+        grid-template-columns: 44px minmax(0, 1fr);
         grid-template-rows: auto auto;
-        gap: 5px 8px;
-        padding: 8px;
-        border-radius: 15px;
+        gap: 7px 9px;
+        padding: 9px;
+        border-radius: 17px;
     }
 
     .navigation-guidance__arrow {
-        width: 38px;
-        height: 38px;
-        border-radius: 12px;
+        width: 42px;
+        height: 42px;
     }
 
     .navigation-guidance__arrow svg {
-        width: 30px;
-        height: 30px;
+        width: 32px;
+        height: 32px;
     }
 
     .navigation-guidance strong {
-        font-size: 1rem;
+        font-size: 1.18rem;
     }
 
     .navigation-guidance span[data-navigation-instruction] {
-        margin-top: 2px;
-        font-size: 0.66rem;
-        line-height: 1.12;
+        font-size: 0.72rem;
+        line-height: 1.2;
     }
 
     .navigation-guidance small[data-navigation-road-hint] {
-        font-size: 0.56rem;
+        font-size: 0.58rem;
     }
 
     .navigation-compass {
         display: grid;
-        grid-template-columns: 30px 1px minmax(0, 1fr);
-        gap: 6px;
-        padding-top: 5px;
+        grid-template-columns: 34px 1px minmax(0, 1fr);
+        gap: 7px;
+        padding-top: 6px;
     }
 
     .navigation-compass::before {
-        height: 28px;
+        height: 32px;
     }
 
     .navigation-compass__dial {
-        width: 30px;
-        height: 30px;
+        width: 34px;
+        height: 34px;
     }
 
     .navigation-compass__cardinal {
@@ -5633,12 +5631,12 @@ body.is-navigation-mode .top-panel .brand-mark--maps {
     }
 
     .navigation-compass__readout strong {
-        font-size: 0.76rem;
+        font-size: 0.82rem;
     }
 
     .navigation-compass__readout span {
         margin-top: 1px;
-        font-size: 0.52rem;
+        font-size: 0.54rem;
     }
 
     .navigation-gps-alert {

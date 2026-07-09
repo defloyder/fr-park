@@ -1,22 +1,20 @@
 # GPS cursor assets
 
-Vehicle cursor PNG files are taken from Kenney Racing Pack:
-https://kenney.nl/assets/racing-pack
+These navigation cursor PNG files are project-owned generated assets created for Auralith Maps with the built-in image generation workflow, then locally chroma-keyed and cropped into transparent 256x256 sprites.
 
-Kenney lists this pack as:
+Generation prompt summary:
 
-- Tags: `top-down`, `vehicle`, `car`, `racing`
-- Category: `2D`
-- Files: 420
-- License: Creative Commons CC0
-
-The original download also includes vector source files. The app uses the separate transparent PNG car files as MapLibre symbol sprites so the navigation cursor stays top-down, readable, and stable on the map.
+- premium glossy 3D top-down navigation cursor icons
+- original and unbranded
+- 3 columns x 2 rows sprite sheet
+- blue futuristic arrow, black sport car, red sport car, white premium car, cyan electric car, graphite SUV
+- flat `#ff00ff` chroma-key background, removed locally
 
 Used files:
 
-- `PNG/Cars/car_blue_1.png` -> `kenney-car-blue.png`
-- `PNG/Cars/car_red_1.png` -> `kenney-car-red.png`
-- `PNG/Cars/car_green_1.png` -> `kenney-car-green.png`
-- `PNG/Cars/car_yellow_1.png` -> `kenney-car-yellow.png`
-- `PNG/Cars/car_black_1.png` -> `kenney-car-black.png`
-- `PNG/Cars/car_blue_5.png` -> `kenney-car-sport-blue.png`
+- `auralith-nav-arrow.png`
+- `auralith-nav-black.png`
+- `auralith-nav-red.png`
+- `auralith-nav-white.png`
+- `auralith-nav-cyan.png`
+- `auralith-nav-graphite.png`

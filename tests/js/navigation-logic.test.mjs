@@ -291,18 +291,18 @@ test('map settings expose selectable GPS cursor icons', () => {
     const cssSource = readFileSync(new URL('../../resources/css/map-ui.css', import.meta.url), 'utf8');
 
     assert.match(viewSource, /data-map-settings-toggle/);
-    assert.match(mapSource, /kenney-car-blue/);
-    assert.match(mapSource, /kenney-car-red/);
-    assert.match(mapSource, /kenney-car-sport-blue/);
+    assert.match(mapSource, /auralith-nav-arrow/);
+    assert.match(mapSource, /auralith-nav-black/);
+    assert.match(mapSource, /auralith-nav-graphite/);
     assert.match(mapSource, /DEFAULT_USER_LOCATION_ICON_ID/);
     assert.match(mapSource, /addRasterImage/);
-    assert.doesNotMatch(mapSource, /quaternius|PolyPizza|removePolyPizzaBackground/);
+    assert.doesNotMatch(mapSource, /kenney|quaternius|PolyPizza|removePolyPizzaBackground/);
     assert.match(mapSource, /settings\.classList\.remove\('is-open'\)/);
     assert.match(mapSource, /iconImage: getUserLocationIconImage/);
     assert.match(mapSource, /id: 'user-location-dot'[\s\S]*'icon-rotate': 0/);
     assert.match(cssSource, /\.map-settings__grid/);
     assert.match(cssSource, /\.map-settings__preview img/);
-    assert.match(cssSource, /width: min\(228px, calc\(100vw - 154px\)\)/);
+    assert.match(cssSource, /width: min\(238px, calc\(100vw - 154px\)\)/);
     assert.match(cssSource, /right: calc\(100% \+ 12px\)/);
     assert.match(cssSource, /width: min\(250px, calc\(100vw - 120px\)\)/);
 });
