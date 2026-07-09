@@ -291,14 +291,16 @@ test('map settings expose selectable GPS cursor icons', () => {
     const cssSource = readFileSync(new URL('../../resources/css/map-ui.css', import.meta.url), 'utf8');
 
     assert.match(viewSource, /data-map-settings-toggle/);
-    assert.match(mapSource, /redbull-f1/);
-    assert.match(mapSource, /ferrari-f1/);
-    assert.match(mapSource, /createPlaneSvg/);
-    assert.match(mapSource, /createHelicopterSvg/);
-    assert.match(mapSource, /createBuranSvg/);
+    assert.match(mapSource, /quaternius-car-blue/);
+    assert.match(mapSource, /quaternius-sports-orange/);
+    assert.match(mapSource, /quaternius-police/);
+    assert.match(mapSource, /DEFAULT_USER_LOCATION_ICON_ID/);
+    assert.match(mapSource, /addRasterImage/);
+    assert.match(mapSource, /removePolyPizzaBackground/);
     assert.match(mapSource, /settings\.classList\.remove\('is-open'\)/);
     assert.match(mapSource, /iconImage: getUserLocationIconImage/);
     assert.match(cssSource, /\.map-settings__grid/);
+    assert.match(cssSource, /\.map-settings__preview img/);
     assert.match(cssSource, /right: calc\(100% \+ 12px\)/);
     assert.match(cssSource, /width: min\(250px, calc\(100vw - 120px\)\)/);
 });

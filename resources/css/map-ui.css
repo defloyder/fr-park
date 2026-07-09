@@ -491,9 +491,22 @@ body[data-map-layer="light"]:not(.is-navigation-mode) .layer-switcher__option {
 }
 
 .map-settings__preview,
-.map-settings__preview svg {
+.map-settings__preview svg,
+.map-settings__preview img {
     width: 42px;
     height: 42px;
+}
+
+.map-settings__preview {
+    display: grid;
+    place-items: center;
+}
+
+.map-settings__preview img {
+    display: block;
+    object-fit: cover;
+    border-radius: 12px;
+    filter: drop-shadow(0 5px 5px rgba(2, 6, 23, 0.24));
 }
 
 .map-settings__option small {

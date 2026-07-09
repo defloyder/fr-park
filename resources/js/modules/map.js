@@ -64,13 +64,15 @@ const POI_ICON_IMAGE_IDS = {
     hospital: 'poi-hospital',
     fuel: 'poi-fuel',
 };
+const GPS_CURSOR_ASSET_BASE = '/assets/gps-cursors/';
+const DEFAULT_USER_LOCATION_ICON_ID = 'quaternius-car-blue';
 const USER_LOCATION_ICON_OPTIONS = [
-    { id: 'auralith', label: 'Auralith', svg: createUserLocationSvg },
-    { id: 'redbull-f1', label: 'Red Bull F1', svg: createRedBullF1Svg },
-    { id: 'ferrari-f1', label: 'Ferrari F1', svg: createFerrariF1Svg },
-    { id: 'plane', label: 'Самолет', svg: createPlaneSvg },
-    { id: 'helicopter', label: 'Вертолет', svg: createHelicopterSvg },
-    { id: 'buran', label: 'Буран', svg: createBuranSvg },
+    { id: 'quaternius-car-blue', label: 'Sedan', image: `${GPS_CURSOR_ASSET_BASE}quaternius-car-blue.webp` },
+    { id: 'quaternius-sports-orange', label: 'Sport', image: `${GPS_CURSOR_ASSET_BASE}quaternius-sports-orange.webp` },
+    { id: 'quaternius-sports-red', label: 'Coupe', image: `${GPS_CURSOR_ASSET_BASE}quaternius-sports-red.webp` },
+    { id: 'quaternius-suv-green', label: 'SUV', image: `${GPS_CURSOR_ASSET_BASE}quaternius-suv-green.webp` },
+    { id: 'quaternius-taxi', label: 'Taxi', image: `${GPS_CURSOR_ASSET_BASE}quaternius-taxi.webp` },
+    { id: 'quaternius-police', label: 'Police', image: `${GPS_CURSOR_ASSET_BASE}quaternius-police.webp` },
 ];
 const BASE_LAYER_IDS = ['light', 'dark', 'satellite'];
 const DEFAULT_BASE_LAYER_ID = 'light';
@@ -1956,8 +1958,8 @@ function bindMapSettings() {
         <span class="map-settings__title">GPS курсор</span>
         <div class="map-settings__grid">
             ${USER_LOCATION_ICON_OPTIONS.map((option) => `
-                <button class="map-settings__option" type="button" data-user-location-icon="${option.id}">
-                    <span class="map-settings__preview">${option.svg()}</span>
+                <button class="map-settings__option" type="button" data-user-location-icon="${option.id}" aria-label="${option.label}">
+                    <span class="map-settings__preview">${renderUserLocationIconPreview(option)}</span>
                     <small>${option.label}</small>
                 </button>
             `).join('')}
@@ -2011,8 +2013,28 @@ async function addMarkerImages() {
         addSvgImage(`parking-marker-${status}`, createMarkerSvg(...colors), { width: 40, height: 48 })
     )));
     await Promise.all(USER_LOCATION_ICON_OPTIONS.map((option) => (
-        addSvgImage(getUserLocationIconImage(option.id), option.svg(), { width: 56, height: 56 })
+        addUserLocationIconImage(option)
     )));
+}
+
+function renderUserLocationIconPreview(option) {
+    if (option.image) {
+        return `<img src="${option.image}" alt="" loading="lazy" decoding="async">`;
+    }
+
+    return option.svg();
+}
+
+function addUserLocationIconImage(option) {
+    const imageName = getUserLocationIconImage(option.id);
+
+    if (option.image) {
+        return addRasterImage(imageName, option.image, { size: 112 }).catch(() => (
+            addSvgImage(imageName, createUserLocationSvg(), { width: 64, height: 64 })
+        ));
+    }
+
+    return addSvgImage(imageName, option.svg(), { width: 64, height: 64 });
 }
 
 function addClusterCountImages() {
@@ -2052,6 +2074,7 @@ function addClusterCountImage(label) {
 }
 
 const pendingSvgImages = new Map();
+const pendingRasterImages = new Map();
 
 function addSvgImage(name, svg, { width = 40, height = 48 } = {}) {
     if (map.hasImage(name)) {
@@ -2091,6 +2114,175 @@ function addSvgImage(name, svg, { width = 40, height = 48 } = {}) {
     );
 
     return pendingSvgImages.get(name);
+}
+
+function addRasterImage(name, src, { size = 96 } = {}) {
+    if (map.hasImage(name)) {
+        return Promise.resolve();
+    }
+
+    if (pendingRasterImages.has(name)) {
+        return pendingRasterImages.get(name);
+    }
+
+    const promise = new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => {
+            try {
+                if (!map?.hasImage(name)) {
+                    map?.addImage(name, createTransparentCursorImage(image, size), { pixelRatio: 2 });
+                }
+                resolve();
+            } catch (error) {
+                if (map?.hasImage(name) || String(error?.message ?? '').includes('already exists')) {
+                    resolve();
+                    return;
+                }
+
+                reject(error);
+            }
+        };
+        image.onerror = reject;
+        image.src = src;
+    });
+
+    pendingRasterImages.set(
+        name,
+        promise.finally(() => {
+            pendingRasterImages.delete(name);
+        })
+    );
+
+    return pendingRasterImages.get(name);
+}
+
+function createTransparentCursorImage(image, size) {
+    const naturalWidth = image.naturalWidth || image.width;
+    const naturalHeight = image.naturalHeight || image.height;
+    const sourceScale = Math.min(1, 280 / Math.max(naturalWidth, naturalHeight));
+    const sourceCanvas = document.createElement('canvas');
+    sourceCanvas.width = Math.max(1, Math.round(naturalWidth * sourceScale));
+    sourceCanvas.height = Math.max(1, Math.round(naturalHeight * sourceScale));
+
+    const sourceContext = sourceCanvas.getContext('2d', { willReadFrequently: true });
+    sourceContext.drawImage(image, 0, 0, sourceCanvas.width, sourceCanvas.height);
+
+    const sourceImage = sourceContext.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+    removePolyPizzaBackground(sourceImage);
+    sourceContext.putImageData(sourceImage, 0, 0);
+
+    const crop = getVisibleImageBounds(sourceImage);
+    const outputCanvas = document.createElement('canvas');
+    outputCanvas.width = size;
+    outputCanvas.height = size;
+
+    const outputContext = outputCanvas.getContext('2d');
+    const padding = Math.round(size * 0.08);
+    const available = size - padding * 2;
+    const scale = Math.min(available / crop.width, available / crop.height);
+    const width = crop.width * scale;
+    const height = crop.height * scale;
+    const x = (size - width) / 2;
+    const y = (size - height) / 2;
+
+    outputContext.clearRect(0, 0, size, size);
+    outputContext.filter = 'drop-shadow(0 9px 5px rgba(2, 6, 23, 0.42))';
+    outputContext.drawImage(sourceCanvas, crop.x, crop.y, crop.width, crop.height, x, y, width, height);
+
+    return outputContext.getImageData(0, 0, size, size);
+}
+
+function removePolyPizzaBackground(imageData) {
+    const pixels = imageData.data;
+    const backdropSamples = getBackdropSamples(imageData);
+
+    for (let index = 0; index < pixels.length; index += 4) {
+        const red = pixels[index];
+        const green = pixels[index + 1];
+        const blue = pixels[index + 2];
+        const alpha = pixels[index + 3];
+        const backdropDistance = getNearestColorDistance(red, green, blue, backdropSamples);
+        const matchedBackdrop = backdropDistance < 68 && blue > red * 1.1 && blue > green * 1.02;
+        const softBackdrop = backdropDistance < 92 && blue > 65 && blue > red * 1.22 && green < blue * 0.78;
+
+        if (matchedBackdrop || softBackdrop) {
+            pixels[index + 3] = 0;
+        } else if (alpha > 0 && backdropDistance < 110 && blue > 58 && blue > red * 1.08 && blue > green) {
+            pixels[index + 3] = Math.round(alpha * 0.22);
+        }
+    }
+}
+
+function getBackdropSamples(imageData) {
+    const maxX = imageData.width - 1;
+    const maxY = imageData.height - 1;
+    const midX = Math.round(maxX / 2);
+    const midY = Math.round(maxY / 2);
+
+    return [
+        getPixelColor(imageData, 0, 0),
+        getPixelColor(imageData, midX, 0),
+        getPixelColor(imageData, maxX, 0),
+        getPixelColor(imageData, 0, midY),
+        getPixelColor(imageData, maxX, midY),
+        getPixelColor(imageData, 0, maxY),
+        getPixelColor(imageData, midX, maxY),
+        getPixelColor(imageData, maxX, maxY),
+    ];
+}
+
+function getPixelColor(imageData, x, y) {
+    const index = (y * imageData.width + x) * 4;
+
+    return [imageData.data[index], imageData.data[index + 1], imageData.data[index + 2]];
+}
+
+function getNearestColorDistance(red, green, blue, samples) {
+    let distance = Infinity;
+
+    samples.forEach(([sampleRed, sampleGreen, sampleBlue]) => {
+        const currentDistance = Math.hypot(red - sampleRed, green - sampleGreen, blue - sampleBlue);
+        distance = Math.min(distance, currentDistance);
+    });
+
+    return distance;
+}
+
+function getVisibleImageBounds(imageData) {
+    const pixels = imageData.data;
+    let minX = imageData.width;
+    let minY = imageData.height;
+    let maxX = 0;
+    let maxY = 0;
+
+    for (let y = 0; y < imageData.height; y += 1) {
+        for (let x = 0; x < imageData.width; x += 1) {
+            if (pixels[(y * imageData.width + x) * 4 + 3] <= 12) {
+                continue;
+            }
+
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x);
+            maxY = Math.max(maxY, y);
+        }
+    }
+
+    if (maxX <= minX || maxY <= minY) {
+        return { x: 0, y: 0, width: imageData.width, height: imageData.height };
+    }
+
+    const inset = Math.max(4, Math.round(Math.min(imageData.width, imageData.height) * 0.02));
+
+    const x = Math.max(0, minX - inset);
+    const y = Math.max(0, minY - inset);
+
+    return {
+        x,
+        y,
+        width: Math.min(imageData.width - x, maxX - minX + 1 + inset * 2),
+        height: Math.min(imageData.height - y, maxY - minY + 1 + inset * 2),
+    };
 }
 
 function createMarkerSvg(fill, accent) {
@@ -2142,161 +2334,10 @@ function createUserLocationSvg() {
 </svg>`;
 }
 
-function createRedBullF1Svg() {
-    return createFormulaCarSvg({
-        bodyColor: '#08111F',
-        sideColor: '#123B8C',
-        accentColor: '#F97316',
-        noseColor: '#FACC15',
-        wingColor: '#050A14',
-        haloColor: '#1E293B',
-        label: '1',
-    });
-}
-
-function createFerrariF1Svg() {
-    return createFormulaCarSvg({
-        bodyColor: '#DC1628',
-        sideColor: '#7F0C17',
-        accentColor: '#FFFFFF',
-        noseColor: '#F59E0B',
-        wingColor: '#080B12',
-        haloColor: '#1F2937',
-        label: '44',
-    });
-}
-
-function createFormulaCarSvg({ bodyColor, sideColor, accentColor, noseColor, wingColor, haloColor, label }) {
-    return `
-<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
-  <defs>
-    <linearGradient id="f1-body-${label}" x1="27" y1="86" x2="69" y2="8" gradientUnits="userSpaceOnUse">
-      <stop stop-color="${sideColor}"/>
-      <stop offset=".38" stop-color="${bodyColor}"/>
-      <stop offset=".72" stop-color="${bodyColor}"/>
-      <stop offset="1" stop-color="${accentColor}"/>
-    </linearGradient>
-    <linearGradient id="f1-nose-${label}" x1="42" y1="9" x2="54" y2="77" gradientUnits="userSpaceOnUse">
-      <stop stop-color="${noseColor}"/>
-      <stop offset=".5" stop-color="${bodyColor}"/>
-      <stop offset="1" stop-color="${sideColor}"/>
-    </linearGradient>
-    <radialGradient id="f1-tyre-${label}" cx="50%" cy="42%" r="62%">
-      <stop stop-color="#334155"/>
-      <stop offset=".38" stop-color="#05070B"/>
-      <stop offset=".74" stop-color="#020308"/>
-      <stop offset="1" stop-color="#111827"/>
-    </radialGradient>
-    <linearGradient id="f1-shine-${label}" x1="35" y1="12" x2="58" y2="70" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#FFFFFF" stop-opacity=".78"/>
-      <stop offset=".28" stop-color="#FFFFFF" stop-opacity=".20"/>
-      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
-    </linearGradient>
-    <filter id="f1-shadow-${label}" x="-35%" y="-35%" width="170%" height="175%">
-      <feDropShadow dx="0" dy="9" stdDeviation="5" flood-color="#020617" flood-opacity="0.48"/>
-    </filter>
-    <filter id="f1-glow-${label}" x="-35%" y="-35%" width="170%" height="170%">
-      <feDropShadow dx="0" dy="0" stdDeviation="1.2" flood-color="#FFFFFF" flood-opacity="0.35"/>
-    </filter>
-  </defs>
-  <g filter="url(#f1-shadow-${label})">
-    <ellipse cx="22" cy="28" rx="9" ry="14" fill="url(#f1-tyre-${label})" transform="rotate(-5 22 28)"/>
-    <ellipse cx="74" cy="28" rx="9" ry="14" fill="url(#f1-tyre-${label})" transform="rotate(5 74 28)"/>
-    <ellipse cx="19" cy="66" rx="10" ry="15" fill="url(#f1-tyre-${label})" transform="rotate(-6 19 66)"/>
-    <ellipse cx="77" cy="66" rx="10" ry="15" fill="url(#f1-tyre-${label})" transform="rotate(6 77 66)"/>
-    <path fill="#111827" opacity=".95" d="M16 16h64l7 8-7 8H16l-7-8 7-8ZM12 75h72l7 8-7 7H12l-7-7 7-8Z"/>
-    <path fill="${wingColor}" stroke="#CBD5E1" stroke-width="1.2" d="M18 18h60l4 5-4 5H18l-4-5 4-5ZM14 77h68l4 5-4 5H14l-4-5 4-5Z"/>
-    <path fill="#0B1020" d="M27 29h12l4 8-6 9H25l-6-10 8-7ZM57 29h12l8 7-6 10H59l-6-9 4-8ZM27 58h12l4 10-7 11H23l-6-12 10-9ZM57 58h12l10 9-6 12H60l-7-11 4-10Z"/>
-    <path fill="#1F2937" opacity=".96" d="M27 31h9l3 6-4 6h-8l-4-7 4-5ZM60 31h9l4 5-4 7h-8l-4-6 3-6ZM27 61h9l3 7-5 8h-8l-5-8 6-7ZM60 61h9l6 7-5 8h-8l-5-8 3-7Z"/>
-    <path fill="${wingColor}" d="M31 31h34v6H31zM28 67h40v7H28z"/>
-    <path fill="url(#f1-body-${label})" stroke="#F8FAFC" stroke-width="2.2" d="M48 7c8 9 12 23 12 42 0 20-4 34-12 41-8-7-12-21-12-41 0-19 4-33 12-42Z"/>
-    <path fill="url(#f1-nose-${label})" d="M48 12c4 9 6 22 6 38 0 15-2 26-6 32-4-6-6-17-6-32 0-16 2-29 6-38Z"/>
-    <path fill="${accentColor}" opacity=".88" d="M42 19c-4 8-6 17-6 28h5c0-11 2-20 5-27l2-5-6 4ZM54 19c4 8 6 17 6 28h-5c0-11-2-20-5-27l-2-5 6 4Z"/>
-    <path fill="${haloColor}" stroke="#F8FAFC" stroke-width="1.4" d="M48 36c7 0 12 6 12 14 0 7-5 13-12 13S36 57 36 50c0-8 5-14 12-14Zm0 6c-4 0-6 3-6 8 0 4 2 7 6 7s6-3 6-7c0-5-2-8-6-8Z"/>
-    <ellipse cx="48" cy="50" rx="5.5" ry="8" fill="#030712"/>
-    <path fill="url(#f1-shine-${label})" d="M45 13c-3 12-4 23-4 36 0 15 2 24 5 30-1-18 0-42 4-64l-5-2Z"/>
-    <path fill="none" stroke="#F8FAFC" stroke-width="1.5" stroke-linecap="round" opacity=".72" d="M34 42l-12-8M62 42l12-8M35 64l-17 12M61 64l17 12M39 81h18"/>
-    <text x="48" y="31" text-anchor="middle" fill="#fff" stroke="#020617" stroke-width="2" paint-order="stroke" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="950">${label}</text>
-  </g>
-</svg>`;
-}
-
-function createPlaneSvg() {
-    return `
-<svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 52 52">
-  <defs><linearGradient id="plane" x1="10" y1="46" x2="42" y2="6"><stop stop-color="#0EA5E9"/><stop offset=".48" stop-color="#E0F2FE"/><stop offset="1" stop-color="#FFFFFF"/></linearGradient><filter id="shadow" x="-35%" y="-35%" width="170%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="4" flood-color="#061018" flood-opacity="0.34"/></filter></defs>
-  <g filter="url(#shadow)">
-    <path fill="url(#plane)" stroke="#fff" stroke-width="2" d="M26 3c3 5 5 12 5 21l17 12c1 1 1 4-1 5l-16-5-1 8 5 4-2 3-7-3-7 3-2-3 5-4-1-8-16 5c-2-1-2-4-1-5l17-12c0-9 2-16 5-21Z"/>
-    <path fill="#0F172A" opacity=".72" d="M26 12c2 4 3 8 3 13l-3 3-3-3c0-5 1-9 3-13Z"/>
-    <path fill="#38BDF8" d="M23 35h6l-1 7h-4l-1-7Z"/>
-  </g>
-</svg>`;
-}
-
-function createHelicopterSvg() {
-    return `
-<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
-  <defs>
-    <linearGradient id="heli-body" x1="22" y1="82" x2="68" y2="18" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#172A22"/>
-      <stop offset=".42" stop-color="#315344"/>
-      <stop offset=".72" stop-color="#4B6355"/>
-      <stop offset="1" stop-color="#A3B2A7"/>
-    </linearGradient>
-    <linearGradient id="heli-glass" x1="31" y1="33" x2="55" y2="59" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#D8F3FF"/>
-      <stop offset=".38" stop-color="#68B5C7"/>
-      <stop offset="1" stop-color="#0F172A"/>
-    </linearGradient>
-    <filter id="heli-shadow" x="-35%" y="-35%" width="170%" height="170%">
-      <feDropShadow dx="0" dy="9" stdDeviation="5" flood-color="#020617" flood-opacity=".44"/>
-    </filter>
-    <filter id="rotor-blur" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation=".55"/>
-    </filter>
-  </defs>
-  <g filter="url(#heli-shadow)">
-    <g filter="url(#rotor-blur)" opacity=".82">
-      <path stroke="#DCE7E1" stroke-width="4" stroke-linecap="round" d="M13 13 83 83M83 13 13 83"/>
-      <path stroke="#94A3B8" stroke-width="2" stroke-linecap="round" d="M17 18 79 78M79 18 17 78"/>
-    </g>
-    <path stroke="#121A17" stroke-width="7" stroke-linecap="round" d="M48 48 80 54"/>
-    <path stroke="#8AA099" stroke-width="3" stroke-linecap="round" d="M79 45v18M70 49l10 5-11 5"/>
-    <path fill="#1F352C" d="M22 53 8 61v7l18-3 8-6-12-6ZM74 53l14 8v7l-18-3-8-6 12-6Z"/>
-    <path fill="url(#heli-body)" stroke="#E6F0EA" stroke-width="2.2" d="M48 18c13 5 21 18 21 35 0 17-9 29-21 34-12-5-21-17-21-34 0-17 8-30 21-35Z"/>
-    <path fill="#203B31" opacity=".95" d="M35 49c0-12 5-22 13-27 8 5 13 15 13 27 0 10-5 18-13 22-8-4-13-12-13-22Z"/>
-    <path fill="url(#heli-glass)" stroke="#D9E7E2" stroke-width="1.4" d="M38 38c2-8 6-13 10-16 4 3 8 8 10 16-3 4-7 6-10 6s-7-2-10-6Z"/>
-    <path fill="#111827" opacity=".86" d="M39 47h18c2 0 4 2 4 5s-2 5-4 5H39c-2 0-4-2-4-5s2-5 4-5Z"/>
-    <path fill="#6B7F71" d="M32 62h32l-5 13H37l-5-13Z"/>
-    <path fill="#0F1F19" d="M38 73h20l-3 7H41l-3-7Z"/>
-    <path stroke="#DCE7E1" stroke-width="3" stroke-linecap="round" d="M28 82h40M34 76v10M62 76v10"/>
-    <path stroke="#101A16" stroke-width="3" stroke-linecap="round" d="M20 58h15M61 58h15"/>
-    <circle cx="28" cy="58" r="4" fill="#111827" stroke="#DCE7E1" stroke-width="1.3"/>
-    <circle cx="68" cy="58" r="4" fill="#111827" stroke="#DCE7E1" stroke-width="1.3"/>
-    <circle cx="48" cy="48" r="5" fill="#E5E7EB" stroke="#111827" stroke-width="1.4"/>
-    <path fill="none" stroke="#F8FAFC" stroke-width="1.4" stroke-linecap="round" opacity=".55" d="M42 25c-5 8-7 17-7 27M53 23c6 8 8 18 8 29"/>
-  </g>
-</svg>`;
-}
-
-function createBuranSvg() {
-    return `
-<svg xmlns="http://www.w3.org/2000/svg" width="54" height="54" viewBox="0 0 54 54">
-  <defs><linearGradient id="buran" x1="11" y1="45" x2="43" y2="7"><stop stop-color="#94A3B8"/><stop offset=".45" stop-color="#F8FAFC"/><stop offset="1" stop-color="#FFFFFF"/></linearGradient><filter id="shadow" x="-35%" y="-35%" width="170%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="4" flood-color="#061018" flood-opacity="0.34"/></filter></defs>
-  <g filter="url(#shadow)">
-    <path fill="url(#buran)" stroke="#fff" stroke-width="2" d="M27 3c5 6 8 14 8 25l15 16-14-4-5 10h-8l-5-10-14 4 15-16c0-11 3-19 8-25Z"/>
-    <path fill="#111827" opacity=".82" d="M27 12c3 4 4 9 4 16l-4 4-4-4c0-7 1-12 4-16Z"/>
-    <path fill="#CBD5E1" d="M19 28h16l-3 13H22l-3-13Z"/>
-    <path fill="#EF4444" d="M22 43h10l-2 5h-6l-2-5Z"/>
-    <path stroke="#2563EB" stroke-width="1.5" stroke-linecap="round" d="M19 35h16"/>
-  </g>
-</svg>`;
-}
-
 function getSelectedUserLocationIcon() {
     const saved = window.localStorage?.getItem(USER_LOCATION_ICON_STORAGE_KEY);
 
-    return USER_LOCATION_ICON_OPTIONS.some((option) => option.id === saved) ? saved : 'auralith';
+    return USER_LOCATION_ICON_OPTIONS.some((option) => option.id === saved) ? saved : DEFAULT_USER_LOCATION_ICON_ID;
 }
 
 function getUserLocationIconImage(icon = getSelectedUserLocationIcon()) {
