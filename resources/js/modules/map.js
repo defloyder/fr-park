@@ -1,5 +1,21 @@
 import maplibregl from 'maplibre-gl';
 import {
+    Camera,
+    Color,
+    CylinderGeometry,
+    DirectionalLight,
+    ExtrudeGeometry,
+    Group,
+    HemisphereLight,
+    Matrix4,
+    Mesh,
+    MeshStandardMaterial,
+    Scene,
+    Shape,
+    Vector3,
+    WebGLRenderer,
+} from 'three';
+import {
     fetchDrivingRoute as fetchYandexDrivingRoute,
     fetchFuelStations,
     fetchParkingSpots,
@@ -16,6 +32,8 @@ let addressRequestId = 0;
 let userLocationRenderFrame = null;
 let renderedUserLocation = null;
 let targetUserLocation = null;
+let userLocationModelLayer = null;
+let isUserLocationModelLayerReady = false;
 let isPickingMode = false;
 let isRouteDestinationPickingMode = false;
 let routeManeuverMarker = null;
@@ -42,6 +60,7 @@ const MAP_CONTAINER_ID = 'parking-map';
 const SOURCE_ID = 'parking-spots';
 const PENDING_SOURCE_ID = 'pending-parking-spot';
 const USER_LOCATION_SOURCE_ID = 'user-location';
+const USER_LOCATION_MODEL_LAYER_ID = 'user-location-3d-model';
 const ROUTE_SOURCE_ID = 'active-route';
 const SPEED_CAMERA_SOURCE_ID = 'speed-cameras';
 const FUEL_STATION_SOURCE_ID = 'fuel-stations';
@@ -82,6 +101,7 @@ const TRAFFIC_LAYER_STORAGE_KEY = 'auralith:traffic-enabled';
 const FUEL_LAYER_STORAGE_KEY = 'auralith:fuel-layer-enabled';
 const USER_LOCATION_ICON_STORAGE_KEY = 'auralith:user-location-icon';
 const USER_LOCATION_ICON_PREFIX = 'user-location-';
+const USER_LOCATION_MODEL_LENGTH_METERS = 6.2;
 const ROAD_MARKING_LAYER_PATTERNS = [
     /^road_marking_/,
     /^base_road_lane_marking_/,
@@ -989,6 +1009,7 @@ function initMapLibreMap() {
             addPendingSourceAndLayer();
             addPersonalPlacesSourceAndLayer();
             addUserLocationSourceAndLayer();
+            addUserLocationModelLayer();
             addRouteSourceAndLayer();
             addSpeedCameraSourceAndLayer();
             addTrafficFlowLayer();
@@ -2545,6 +2566,9 @@ function addUserLocationSourceAndLayer() {
             'icon-allow-overlap': true,
             'icon-ignore-placement': true,
         },
+        paint: {
+            'icon-opacity': ['case', ['boolean', ['get', 'render3d'], false], 0, 1],
+        },
     });
 
     map.addLayer({
@@ -2561,7 +2585,353 @@ function addUserLocationSourceAndLayer() {
             'icon-allow-overlap': true,
             'icon-ignore-placement': true,
         },
+        paint: {
+            'icon-opacity': ['case', ['boolean', ['get', 'render3d'], false], 0, 1],
+        },
     });
+}
+
+function addUserLocationModelLayer() {
+    if (!map || map.getLayer(USER_LOCATION_MODEL_LAYER_ID)) {
+        return;
+    }
+
+    userLocationModelLayer = createUserLocationModelLayer();
+    map.addLayer(userLocationModelLayer);
+}
+
+function createUserLocationModelLayer() {
+    return {
+        id: USER_LOCATION_MODEL_LAYER_ID,
+        type: 'custom',
+        renderingMode: '3d',
+        camera: null,
+        scene: null,
+        renderer: null,
+        model: null,
+        layerMap: null,
+        activeIconId: null,
+        onAdd(layerMap, gl) {
+            this.layerMap = layerMap;
+            this.camera = new Camera();
+            this.scene = new Scene();
+            this.model = createNavigationVehicleModel();
+            this.scene.add(this.model);
+            this.scene.add(new HemisphereLight(0xffffff, 0x27364d, 1.85));
+
+            const keyLight = new DirectionalLight(0xffffff, 2.15);
+            keyLight.position.set(-3, -4, 8);
+            this.scene.add(keyLight);
+
+            const rimLight = new DirectionalLight(0x8bdcff, 0.92);
+            rimLight.position.set(4, 2, 5);
+            this.scene.add(rimLight);
+
+            this.renderer = new WebGLRenderer({
+                canvas: layerMap.getCanvas(),
+                context: gl,
+                antialias: true,
+            });
+            this.renderer.autoClear = false;
+            isUserLocationModelLayerReady = true;
+            if (renderedUserLocation) {
+                renderUserLocationFeature(renderedUserLocation);
+            }
+        },
+        render(gl, options = {}) {
+            const location = renderedUserLocation || targetUserLocation;
+            const matrix = options.modelViewProjectionMatrix || options.defaultProjectionData?.projectionMatrix;
+
+            if (!this.renderer || !this.camera || !this.model || !matrix || !isRenderableUserLocationModel(location)) {
+                return;
+            }
+
+            const selectedIcon = getSelectedUserLocationIcon();
+            if (this.activeIconId !== selectedIcon) {
+                applyNavigationVehicleStyle(this.model, selectedIcon);
+                this.activeIconId = selectedIcon;
+            }
+
+            const coordinate = maplibregl.MercatorCoordinate.fromLngLat(
+                [Number(location.longitude), Number(location.latitude)],
+                0.25,
+            );
+            const scale = coordinate.meterInMercatorCoordinateUnits();
+            const heading = Number.isFinite(Number(location.heading)) ? Number(location.heading) : 0;
+            const worldMatrix = new Matrix4()
+                .makeTranslation(coordinate.x, coordinate.y, coordinate.z)
+                .scale(new Vector3(scale, -scale, scale))
+                .multiply(new Matrix4().makeRotationZ(-degreesToRadians(heading)));
+
+            this.camera.projectionMatrix = new Matrix4()
+                .fromArray(matrix)
+                .multiply(worldMatrix);
+            this.renderer.resetState();
+            this.renderer.render(this.scene, this.camera);
+        },
+        onRemove() {
+            this.scene?.traverse((object) => {
+                object.geometry?.dispose?.();
+                if (Array.isArray(object.material)) {
+                    object.material.forEach((material) => material.dispose?.());
+                } else {
+                    object.material?.dispose?.();
+                }
+            });
+            this.renderer?.dispose?.();
+            this.renderer = null;
+            this.scene = null;
+            this.camera = null;
+            this.model = null;
+            this.layerMap = null;
+            isUserLocationModelLayerReady = false;
+        },
+    };
+}
+
+function isRenderableUserLocationModel(location) {
+    return Boolean(
+        location
+            && Number.isFinite(Number(location.latitude))
+            && Number.isFinite(Number(location.longitude))
+    );
+}
+
+function createNavigationVehicleModel() {
+    const group = new Group();
+    const car = createNavigationCarModel();
+    const arrow = createNavigationArrowModel();
+
+    car.name = 'vehicle-car';
+    arrow.name = 'vehicle-arrow';
+    group.add(car, arrow);
+    applyNavigationVehicleStyle(group, DEFAULT_USER_LOCATION_ICON_ID);
+
+    return group;
+}
+
+function createNavigationCarModel() {
+    const group = new Group();
+    const materials = createNavigationVehicleMaterials('#1f8cff');
+    const chassis = createRoundedVehiclePart(2.28, USER_LOCATION_MODEL_LENGTH_METERS, 0.62, 0.38, materials.body);
+    chassis.position.z = 0.48;
+    chassis.userData.role = 'body';
+    group.add(chassis);
+
+    const lower = createRoundedVehiclePart(2.46, USER_LOCATION_MODEL_LENGTH_METERS * 0.92, 0.30, 0.32, materials.side);
+    lower.position.z = 0.26;
+    lower.userData.role = 'side';
+    group.add(lower);
+
+    const cabin = createRoundedVehiclePart(1.48, 2.46, 0.48, 0.28, materials.glass);
+    cabin.position.set(0, -0.10, 0.96);
+    cabin.userData.role = 'glass';
+    group.add(cabin);
+
+    const roof = createRoundedVehiclePart(1.30, 1.28, 0.22, 0.22, materials.body);
+    roof.position.set(0, -0.32, 1.28);
+    roof.userData.role = 'body';
+    group.add(roof);
+
+    const hoodGlass = createVehiclePanel(1.34, 0.58, 0.045, materials.glass);
+    hoodGlass.position.set(0, 1.24, 0.92);
+    group.add(hoodGlass);
+
+    const rearGlass = createVehiclePanel(1.28, 0.54, 0.045, materials.glass);
+    rearGlass.position.set(0, -1.52, 0.88);
+    group.add(rearGlass);
+
+    const wheelMaterial = new MeshStandardMaterial({
+        color: 0x070b12,
+        roughness: 0.34,
+        metalness: 0.22,
+    });
+    [
+        [-1.25, 1.72],
+        [1.25, 1.72],
+        [-1.25, -1.82],
+        [1.25, -1.82],
+    ].forEach(([x, y]) => {
+        const wheel = new Mesh(new CylinderGeometry(0.42, 0.42, 0.34, 24), wheelMaterial);
+        wheel.rotation.y = Math.PI / 2;
+        wheel.position.set(x, y, 0.38);
+        group.add(wheel);
+    });
+
+    const headlightMaterial = new MeshStandardMaterial({
+        color: 0xeaf8ff,
+        emissive: 0x6ed8ff,
+        emissiveIntensity: 0.48,
+        roughness: 0.16,
+        metalness: 0.12,
+    });
+    const tailMaterial = new MeshStandardMaterial({
+        color: 0xff264a,
+        emissive: 0xff1e45,
+        emissiveIntensity: 0.62,
+        roughness: 0.18,
+        metalness: 0.08,
+    });
+    [
+        [-0.55, 3.03, headlightMaterial],
+        [0.55, 3.03, headlightMaterial],
+        [-0.58, -3.03, tailMaterial],
+        [0.58, -3.03, tailMaterial],
+    ].forEach(([x, y, material]) => {
+        const light = createVehiclePanel(0.46, 0.11, 0.05, material);
+        light.position.set(x, y, 0.66);
+        group.add(light);
+    });
+
+    group.userData.materials = materials;
+
+    return group;
+}
+
+function createNavigationArrowModel() {
+    const group = new Group();
+    const sideMaterial = new MeshStandardMaterial({
+        color: 0x17224c,
+        roughness: 0.24,
+        metalness: 0.62,
+    });
+    const topMaterial = new MeshStandardMaterial({
+        color: 0x1fa8ff,
+        roughness: 0.14,
+        metalness: 0.72,
+        emissive: 0x063b7e,
+        emissiveIntensity: 0.18,
+    });
+    const shape = new Shape();
+    shape.moveTo(0, 3.45);
+    shape.lineTo(1.55, -2.20);
+    shape.lineTo(0, -1.34);
+    shape.lineTo(-1.55, -2.20);
+    shape.closePath();
+
+    const geometry = new ExtrudeGeometry(shape, {
+        depth: 0.50,
+        bevelEnabled: true,
+        bevelSize: 0.08,
+        bevelThickness: 0.10,
+        bevelSegments: 4,
+    });
+    geometry.translate(0, 0, 0.20);
+
+    const arrow = new Mesh(geometry, [topMaterial, sideMaterial]);
+    arrow.userData.role = 'arrow';
+    group.add(arrow);
+
+    return group;
+}
+
+function createNavigationVehicleMaterials(bodyColor) {
+    const color = new Color(bodyColor);
+    const sideColor = color.clone().multiplyScalar(0.46);
+
+    return {
+        body: new MeshStandardMaterial({
+            color,
+            roughness: 0.18,
+            metalness: 0.66,
+            emissive: color.clone().multiplyScalar(0.08),
+        }),
+        side: new MeshStandardMaterial({
+            color: sideColor,
+            roughness: 0.24,
+            metalness: 0.72,
+        }),
+        glass: new MeshStandardMaterial({
+            color: 0x071321,
+            roughness: 0.08,
+            metalness: 0.32,
+            transparent: true,
+            opacity: 0.92,
+        }),
+    };
+}
+
+function createRoundedVehiclePart(width, length, height, radius, material) {
+    const x = width / 2;
+    const y = length / 2;
+    const r = Math.min(radius, x, y);
+    const shape = new Shape();
+
+    shape.moveTo(-x + r, -y);
+    shape.lineTo(x - r, -y);
+    shape.quadraticCurveTo(x, -y, x, -y + r);
+    shape.lineTo(x, y - r);
+    shape.quadraticCurveTo(x, y, x - r, y);
+    shape.lineTo(-x + r, y);
+    shape.quadraticCurveTo(-x, y, -x, y - r);
+    shape.lineTo(-x, -y + r);
+    shape.quadraticCurveTo(-x, -y, -x + r, -y);
+
+    const geometry = new ExtrudeGeometry(shape, {
+        depth: height,
+        bevelEnabled: true,
+        bevelSize: Math.min(0.08, height * 0.35),
+        bevelThickness: Math.min(0.08, height * 0.35),
+        bevelSegments: 4,
+    });
+    geometry.translate(0, 0, -height / 2);
+
+    return new Mesh(geometry, material);
+}
+
+function createVehiclePanel(width, length, height, material) {
+    const mesh = createRoundedVehiclePart(width, length, height, Math.min(width, length) * 0.18, material);
+    mesh.rotation.x = 0;
+
+    return mesh;
+}
+
+function applyNavigationVehicleStyle(model, iconId) {
+    const car = model.getObjectByName('vehicle-car');
+    const arrow = model.getObjectByName('vehicle-arrow');
+    const isArrow = iconId === 'auralith-nav-arrow';
+    const color = getNavigationVehicleColor(iconId);
+
+    if (car) {
+        car.visible = !isArrow;
+        updateNavigationCarColor(car, color);
+    }
+    if (arrow) {
+        arrow.visible = isArrow;
+    }
+}
+
+function updateNavigationCarColor(car, colorValue) {
+    const color = new Color(colorValue);
+    const sideColor = color.clone().multiplyScalar(0.46);
+
+    car.traverse((object) => {
+        if (!object.isMesh) {
+            return;
+        }
+
+        if (object.userData.role === 'body') {
+            object.material.color.copy(color);
+            object.material.emissive?.copy(color.clone().multiplyScalar(0.08));
+        }
+        if (object.userData.role === 'side') {
+            object.material.color.copy(sideColor);
+        }
+    });
+}
+
+function getNavigationVehicleColor(iconId) {
+    return {
+        'auralith-nav-black': '#111827',
+        'auralith-nav-red': '#ef233c',
+        'auralith-nav-white': '#f8fbff',
+        'auralith-nav-cyan': '#20d5f5',
+        'auralith-nav-graphite': '#3f4654',
+    }[iconId] ?? '#1f8cff';
+}
+
+function degreesToRadians(value) {
+    return (Number(value) || 0) * Math.PI / 180;
 }
 
 function addRouteSourceAndLayer() {
@@ -3152,6 +3522,7 @@ function renderUserLocationFeature(location) {
                 heading: location.heading,
                 mode: location.headingMode,
                 iconImage: getUserLocationIconImage(),
+                render3d: isUserLocationModelLayerReady,
             },
             geometry: {
                 type: 'Point',
@@ -3159,6 +3530,9 @@ function renderUserLocationFeature(location) {
             },
         }],
     });
+    if (isUserLocationModelLayerReady) {
+        map?.triggerRepaint();
+    }
 }
 
 function startUserLocationAnimation() {
@@ -3289,6 +3663,7 @@ function keepNavigationLayersOrdered() {
         'user-location-accuracy',
         'user-location-dot',
         'user-navigation-dot',
+        USER_LOCATION_MODEL_LAYER_ID,
         'speed-cameras',
         'speed-camera-direction',
         'speed-camera-label',

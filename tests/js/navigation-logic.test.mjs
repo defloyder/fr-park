@@ -296,9 +296,15 @@ test('map settings expose selectable GPS cursor icons', () => {
     assert.match(mapSource, /auralith-nav-graphite/);
     assert.match(mapSource, /DEFAULT_USER_LOCATION_ICON_ID/);
     assert.match(mapSource, /addRasterImage/);
+    assert.match(mapSource, /USER_LOCATION_MODEL_LAYER_ID/);
+    assert.match(mapSource, /type: 'custom'/);
+    assert.match(mapSource, /renderingMode: '3d'/);
+    assert.match(mapSource, /new WebGLRenderer/);
+    assert.match(mapSource, /MercatorCoordinate\.fromLngLat/);
     assert.doesNotMatch(mapSource, /kenney|quaternius|PolyPizza|removePolyPizzaBackground/);
     assert.match(mapSource, /settings\.classList\.remove\('is-open'\)/);
     assert.match(mapSource, /iconImage: getUserLocationIconImage/);
+    assert.match(mapSource, /render3d: isUserLocationModelLayerReady/);
     assert.match(mapSource, /id: 'user-location-dot'[\s\S]*'icon-rotate': 0/);
     assert.match(cssSource, /\.map-settings__grid/);
     assert.match(cssSource, /\.map-settings__preview img/);
