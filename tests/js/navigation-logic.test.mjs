@@ -492,11 +492,14 @@ test('navigation ignores isolated GPS timeouts and warns after a sustained outag
 
 test('navigation cockpit inverts against the active map and keeps alerts compact', () => {
     const cssSource = readFileSync(new URL('../../resources/css/map-ui.css', import.meta.url), 'utf8');
+    const formSource = readFileSync(new URL('../../resources/js/modules/parking-form.js', import.meta.url), 'utf8');
 
     assert.match(cssSource, /body\[data-map-layer="dark"\]\.is-navigation-mode,[\s\S]*?--nav-surface: linear-gradient\(145deg, rgba\(255, 255, 255, 0\.97\)/);
     assert.match(cssSource, /body\.is-navigation-mode \{[\s\S]*?--nav-surface: linear-gradient\(145deg, rgba\(7, 18, 40, 0\.96\)/);
+    assert.match(cssSource, /body\.is-navigation-mode \.route-maneuver-hint \{[\s\S]*?background: var\(--nav-surface\)/);
     assert.match(cssSource, /\.navigation-gps-alert \{[\s\S]*?grid-template-columns: 8px auto minmax\(0, 1fr\)/);
-    assert.match(cssSource, /@media \(max-width: 720px\)[\s\S]*?\.navigation-compass \{[\s\S]*?display: none;/);
+    assert.match(cssSource, /@media \(max-width: 720px\)[\s\S]*?\.navigation-compass \{[\s\S]*?display: grid;/);
+    assert.match(formSource, /data-navigation-road-hint/);
 });
 
 test('active route uses casing glow traffic color and a highlight layer', () => {
@@ -520,13 +523,13 @@ test('active route can be hot-rerouted without clearing navigation or waiting fo
     assert.match(mapSource, /wait\(650\)\.then\(\(\) => fetchOpenStreetMapRoute/);
 });
 
-test('navigation explains route traffic colors and traffic button exposes an explicit state', () => {
+test('navigation hides route traffic legend and traffic button exposes an explicit state', () => {
     const formSource = readFileSync(new URL('../../resources/js/modules/parking-form.js', import.meta.url), 'utf8');
     const mapSource = readFileSync(new URL('../../resources/js/modules/map.js', import.meta.url), 'utf8');
     const viewSource = readFileSync(new URL('../../resources/views/pages/map.blade.php', import.meta.url), 'utf8');
 
-    assert.match(formSource, /navigation-traffic-legend/);
-    assert.match(formSource, /Цвет линии показывает скорость потока/);
+    assert.doesNotMatch(formSource, /navigation-traffic-legend/);
+    assert.doesNotMatch(formSource, /Цвет линии показывает скорость потока/);
     assert.match(viewSource, /data-traffic-state>Выкл/);
     assert.match(mapSource, /stateLabel\.textContent = isEnabled \? 'Вкл' : 'Выкл'/);
     assert.match(mapSource, /const nextValue = !isTrafficLayerEnabled\(\)/);

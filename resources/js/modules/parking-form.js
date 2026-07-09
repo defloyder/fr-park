@@ -2024,6 +2024,7 @@ export function initParkingUi() {
                 <div class="navigation-guidance__main">
                     <strong data-navigation-maneuver-distance></strong>
                     <span data-navigation-instruction></span>
+                    <small data-navigation-road-hint></small>
                 </div>
                 <div class="navigation-gps-alert hidden" role="status">
                     <span class="navigation-gps-alert__dot" aria-hidden="true"></span>
@@ -2043,13 +2044,6 @@ export function initParkingUi() {
                         <strong data-navigation-compass-heading></strong>
                         <span data-navigation-compass-direction></span>
                     </div>
-                </div>
-                <div class="navigation-traffic-legend" data-navigation-traffic-legend aria-label="Цвета загруженности маршрута">
-                    <span><i class="is-free"></i>Свободно</span>
-                    <span><i class="is-slow"></i>Плотно</span>
-                    <span><i class="is-heavy"></i>Затор</span>
-                    <span><i class="is-jam"></i>Пробка</span>
-                    <small data-navigation-traffic-source></small>
                 </div>
             `;
                 document.body.append(guidance);
@@ -2195,6 +2189,11 @@ export function initParkingUi() {
                 ? formatNavigationInstructionText(instruction?.text || '')
                 : 'Ожидание сигнала GPS',
         );
+        const roadHint = state.navigationGpsAvailable ? getNavigationRoadHint(instruction) : '';
+        setText('[data-navigation-road-hint]', roadHint);
+        document
+            .querySelector('[data-navigation-road-hint]')
+            ?.classList.toggle('hidden', !roadHint);
         setText('[data-navigation-traffic]', getTrafficLabel(state.navigationRoute));
         setText('[data-navigation-duration]', formatDuration(remainingDuration));
         setText('[data-navigation-distance]', formatDistance(remainingDistance));
@@ -2227,7 +2226,6 @@ export function initParkingUi() {
         }
 
         updateNavigationCompass();
-        updateNavigationTrafficLegend();
         const speedometer = document.querySelector('.navigation-speedometer');
         speedometer?.classList.toggle('is-speeding', isSpeeding);
         document.querySelector('.navigation-gps-alert')?.classList.toggle('hidden', state.navigationGpsAvailable);
@@ -2242,22 +2240,6 @@ export function initParkingUi() {
                 : 'Продолжаем по последней позиции',
         );
         renderCameraAlert();
-    }
-
-    function updateNavigationTrafficLegend() {
-        const legend = document.querySelector('[data-navigation-traffic-legend]');
-        const source = document.querySelector('[data-navigation-traffic-source]');
-        if (!legend || !source) return;
-
-        const hasTrafficSegments = ['tomtom-traffic', 'yandex-traffic']
-            .some((routeSource) => String(state.navigationRoute?.source || '').startsWith(routeSource))
-            && Array.isArray(state.navigationRoute?.segments)
-            && state.navigationRoute.segments.length > 0;
-
-        legend.classList.toggle('is-unavailable', !hasTrafficSegments);
-        source.textContent = hasTrafficSegments
-            ? 'Цвет линии показывает скорость потока'
-            : 'Для этого маршрута нет данных о пробках';
     }
 
     function hasReachedNavigationDestination(remainingDistance) {
@@ -3636,6 +3618,31 @@ function formatNavigationInstructionText(value) {
         .trim();
 
     return text ? `${text[0].toUpperCase()}${text.slice(1)}` : 'Двигайтесь по маршруту';
+}
+
+function getNavigationRoadHint(instruction) {
+    const roadName = String(instruction?.roadName || '').trim();
+    if (!roadName) return '';
+
+    const type = String(instruction?.maneuver || '').toLowerCase();
+
+    if (type.includes('ramp') || type.includes('exit')) {
+        return `Съезд на ${roadName}`;
+    }
+
+    if (type.includes('merge')) {
+        return `Выезд на ${roadName}`;
+    }
+
+    if (type.includes('fork')) {
+        return `Держитесь к ${roadName}`;
+    }
+
+    if (type.includes('roundabout') || type.includes('rotary')) {
+        return `После круга: ${roadName}`;
+    }
+
+    return `Далее: ${roadName}`;
 }
 
 function getNextRouteInstruction(route, userLocation) {
