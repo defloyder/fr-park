@@ -166,7 +166,11 @@ test('navigation GPS cursor is locked to route segment heading', () => {
     assert.match(mapSource, /function getUserLocationModelHeading/);
     assert.match(mapSource, /return normalizeDegrees\(heading\);/);
     assert.doesNotMatch(mapSource, /heading \+ Number\(map\?\.getBearing\?\.\(\) \|\| 0\)/);
-    assert.match(mapSource, /'icon-rotation-alignment': 'viewport'/);
+    assert.match(mapSource, /id: 'user-navigation-dot'[\s\S]*'icon-rotation-alignment': 'map'/);
+    assert.match(mapSource, /activeNavigationRouteCoordinates/);
+    assert.match(mapSource, /getUserLocationRenderCoordinate/);
+    assert.match(mapSource, /routeProgressMeters: Number\.isFinite\(Number\(routeProgressMeters\)\)/);
+    assert.match(mapSource, /coordinates: getUserLocationRenderCoordinate\(location\)/);
 });
 
 test('navigation position is snapped to route before rendering', () => {

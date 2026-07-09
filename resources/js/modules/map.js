@@ -39,6 +39,7 @@ let targetUserLocation = null;
 let userLocationModelLayer = null;
 let isUserLocationModelLayerReady = false;
 let isUserLocationModelLayerVisible = false;
+let activeNavigationRouteCoordinates = [];
 let isPickingMode = false;
 let isRouteDestinationPickingMode = false;
 let routeManeuverMarker = null;
@@ -2587,7 +2588,7 @@ function addUserLocationSourceAndLayer() {
             'icon-size': ['interpolate', ['linear'], ['zoom'], 12, 0.82, 16, 0.98, 18, 1.08],
             'icon-rotate': ['coalesce', ['to-number', ['get', 'fallbackHeading']], 0],
             'icon-pitch-alignment': 'viewport',
-            'icon-rotation-alignment': 'viewport',
+            'icon-rotation-alignment': 'map',
             'icon-allow-overlap': true,
             'icon-ignore-placement': true,
         },
@@ -2672,7 +2673,7 @@ function createUserLocationModelLayer() {
                 syncUserLocationModelRenderer(this.renderer, this.layerMap);
 
                 const coordinate = maplibregl.MercatorCoordinate.fromLngLat(
-                    [Number(location.longitude), Number(location.latitude)],
+                    getUserLocationRenderCoordinate(location),
                     USER_LOCATION_MODEL_ALTITUDE_METERS,
                 );
                 const scale = coordinate.meterInMercatorCoordinateUnits() * USER_LOCATION_MODEL_VISUAL_SCALE;
@@ -2728,13 +2729,29 @@ function markUserLocationModelVisible() {
 }
 
 function getUserLocationModelHeading(location) {
-    const heading = Number(location?.heading);
+    const routeBearing = Number(location?.routeBearing);
+    const heading = Number.isFinite(routeBearing) && location?.headingMode === 'navigation'
+        ? routeBearing
+        : Number(location?.heading);
 
     if (!Number.isFinite(heading)) {
         return 0;
     }
 
     return normalizeDegrees(heading);
+}
+
+function getUserLocationRenderCoordinate(location) {
+    const progress = Number(location?.routeProgressMeters);
+    const routeCoordinate = location?.headingMode === 'navigation' && Number.isFinite(progress)
+        ? getRouteCoordinateAtProgress(activeNavigationRouteCoordinates, progress)
+        : null;
+
+    if (routeCoordinate) {
+        return routeCoordinate;
+    }
+
+    return [Number(location.longitude), Number(location.latitude)];
 }
 
 function syncUserLocationModelRenderer(renderer, layerMap) {
@@ -3770,17 +3787,35 @@ export function focusSpots(spots) {
     });
 }
 
-export function focusUserLocation({ latitude, longitude, accuracy = 0, heading = 0, headingMode = 'compass' }, { focus = true } = {}) {
+export function focusUserLocation({
+    latitude,
+    longitude,
+    accuracy = 0,
+    heading = 0,
+    headingMode = 'compass',
+    routeBearing = null,
+    routeProgressMeters = null,
+    routeDistanceMeters = null,
+}, { focus = true } = {}) {
     if (!map) {
         return;
     }
 
+    const mode = headingMode === 'navigation' ? 'navigation' : 'compass';
+    const routeCoordinate = mode === 'navigation' && Number.isFinite(Number(routeProgressMeters))
+        ? getRouteCoordinateAtProgress(activeNavigationRouteCoordinates, Number(routeProgressMeters))
+        : null;
     const nextLocation = {
-        latitude: Number(latitude),
-        longitude: Number(longitude),
+        latitude: routeCoordinate ? Number(routeCoordinate[1]) : Number(latitude),
+        longitude: routeCoordinate ? Number(routeCoordinate[0]) : Number(longitude),
         accuracy: Math.max(Number(accuracy) || 0, 20),
-        heading: Number.isFinite(Number(heading)) ? Number(heading) : 0,
-        headingMode: headingMode === 'navigation' ? 'navigation' : 'compass',
+        heading: Number.isFinite(Number(routeBearing)) && mode === 'navigation'
+            ? Number(routeBearing)
+            : (Number.isFinite(Number(heading)) ? Number(heading) : 0),
+        headingMode: mode,
+        routeBearing: Number.isFinite(Number(routeBearing)) ? Number(routeBearing) : null,
+        routeProgressMeters: Number.isFinite(Number(routeProgressMeters)) ? Number(routeProgressMeters) : null,
+        routeDistanceMeters: Number.isFinite(Number(routeDistanceMeters)) ? Number(routeDistanceMeters) : null,
         updatedAt: performance.now(),
     };
 
@@ -3838,12 +3873,14 @@ function renderUserLocationFeature(location) {
                 accuracy: location.accuracy,
                 heading: location.heading,
                 fallbackHeading: getUserLocationFallbackHeading(location),
+                routeBearing: location.routeBearing,
+                routeProgressMeters: location.routeProgressMeters,
                 mode: location.headingMode,
                 iconImage: getUserLocationIconImage(),
             },
             geometry: {
                 type: 'Point',
-                coordinates: [location.longitude, location.latitude],
+                coordinates: getUserLocationRenderCoordinate(location),
             },
         }],
     });
@@ -3866,7 +3903,10 @@ function refreshRenderedUserLocationFeature() {
 }
 
 function getUserLocationFallbackHeading(location) {
-    const heading = Number(location?.heading);
+    const routeBearing = Number(location?.routeBearing);
+    const heading = Number.isFinite(routeBearing) && location?.headingMode === 'navigation'
+        ? routeBearing
+        : Number(location?.heading);
 
     if (!Number.isFinite(heading)) {
         return 0;
@@ -4232,6 +4272,7 @@ function buildRouteFeatureCollection(route) {
 
 export function clearActiveRoute() {
     map?.getSource(ROUTE_SOURCE_ID)?.setData(buildFeatureCollection([]));
+    activeNavigationRouteCoordinates = [];
     setRouteTrafficMode(false);
     clearRouteManeuverHint();
 }
@@ -4247,6 +4288,7 @@ export function restoreActiveRoute(route) {
         return;
     }
 
+    activeNavigationRouteCoordinates = coordinates;
     const displayCoordinates = smoothRouteLineCoordinates(coordinates);
 
     map.getSource(ROUTE_SOURCE_ID)?.setData(buildRouteFeatureCollection({
@@ -4280,6 +4322,7 @@ export function updateActiveRouteProgress(userLocation, route) {
         return;
     }
 
+    activeNavigationRouteCoordinates = routeCoordinates;
     const progressMeters = Number(userLocation?.routeProgressMeters);
     const visualRoute = Number.isFinite(progressMeters)
         ? trimRouteByProgress({
@@ -4579,6 +4622,7 @@ export function startRouteNavigation(route) {
         return;
     }
 
+    activeNavigationRouteCoordinates = coordinates;
     focusRouteStart(coordinates);
 }
 
