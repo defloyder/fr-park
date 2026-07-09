@@ -2566,9 +2566,6 @@ function addUserLocationSourceAndLayer() {
             'icon-allow-overlap': true,
             'icon-ignore-placement': true,
         },
-        paint: {
-            'icon-opacity': ['case', ['boolean', ['get', 'render3d'], false], 0, 1],
-        },
     });
 
     map.addLayer({
@@ -2584,9 +2581,6 @@ function addUserLocationSourceAndLayer() {
             'icon-rotation-alignment': 'map',
             'icon-allow-overlap': true,
             'icon-ignore-placement': true,
-        },
-        paint: {
-            'icon-opacity': ['case', ['boolean', ['get', 'render3d'], false], 0, 1],
         },
     });
 }
@@ -2611,63 +2605,80 @@ function createUserLocationModelLayer() {
         model: null,
         layerMap: null,
         activeIconId: null,
+        renderFailed: false,
         onAdd(layerMap, gl) {
-            this.layerMap = layerMap;
-            this.camera = new Camera();
-            this.scene = new Scene();
-            this.model = createNavigationVehicleModel();
-            this.scene.add(this.model);
-            this.scene.add(new HemisphereLight(0xffffff, 0x27364d, 1.85));
+            try {
+                this.layerMap = layerMap;
+                this.camera = new Camera();
+                this.scene = new Scene();
+                this.model = createNavigationVehicleModel();
+                this.scene.add(this.model);
+                this.scene.add(new HemisphereLight(0xffffff, 0x27364d, 1.85));
 
-            const keyLight = new DirectionalLight(0xffffff, 2.15);
-            keyLight.position.set(-3, -4, 8);
-            this.scene.add(keyLight);
+                const keyLight = new DirectionalLight(0xffffff, 2.15);
+                keyLight.position.set(-3, -4, 8);
+                this.scene.add(keyLight);
 
-            const rimLight = new DirectionalLight(0x8bdcff, 0.92);
-            rimLight.position.set(4, 2, 5);
-            this.scene.add(rimLight);
+                const rimLight = new DirectionalLight(0x8bdcff, 0.92);
+                rimLight.position.set(4, 2, 5);
+                this.scene.add(rimLight);
 
-            this.renderer = new WebGLRenderer({
-                canvas: layerMap.getCanvas(),
-                context: gl,
-                antialias: true,
-            });
-            this.renderer.autoClear = false;
-            isUserLocationModelLayerReady = true;
-            if (renderedUserLocation) {
-                renderUserLocationFeature(renderedUserLocation);
+                this.renderer = new WebGLRenderer({
+                    canvas: layerMap.getCanvas(),
+                    context: gl,
+                    antialias: true,
+                });
+                this.renderer.autoClear = false;
+                isUserLocationModelLayerReady = true;
+                if (renderedUserLocation) {
+                    renderUserLocationFeature(renderedUserLocation);
+                }
+            } catch (error) {
+                this.renderFailed = true;
+                isUserLocationModelLayerReady = false;
+                console.warn('3D GPS cursor renderer disabled.', error);
             }
         },
         render(gl, options = {}) {
-            const location = renderedUserLocation || targetUserLocation;
-            const matrix = options.modelViewProjectionMatrix || options.defaultProjectionData?.projectionMatrix;
-
-            if (!this.renderer || !this.camera || !this.model || !matrix || !isRenderableUserLocationModel(location)) {
+            if (this.renderFailed) {
                 return;
             }
 
-            const selectedIcon = getSelectedUserLocationIcon();
-            if (this.activeIconId !== selectedIcon) {
-                applyNavigationVehicleStyle(this.model, selectedIcon);
-                this.activeIconId = selectedIcon;
+            try {
+                const location = renderedUserLocation || targetUserLocation;
+                const matrix = options.modelViewProjectionMatrix || options.defaultProjectionData?.projectionMatrix;
+
+                if (!this.renderer || !this.camera || !this.model || !matrix || !isRenderableUserLocationModel(location)) {
+                    return;
+                }
+
+                const selectedIcon = getSelectedUserLocationIcon();
+                if (this.activeIconId !== selectedIcon) {
+                    applyNavigationVehicleStyle(this.model, selectedIcon);
+                    this.activeIconId = selectedIcon;
+                }
+
+                const coordinate = maplibregl.MercatorCoordinate.fromLngLat(
+                    [Number(location.longitude), Number(location.latitude)],
+                    0.25,
+                );
+                const scale = coordinate.meterInMercatorCoordinateUnits();
+                const heading = Number.isFinite(Number(location.heading)) ? Number(location.heading) : 0;
+                const worldMatrix = new Matrix4()
+                    .makeTranslation(coordinate.x, coordinate.y, coordinate.z)
+                    .scale(new Vector3(scale, -scale, scale))
+                    .multiply(new Matrix4().makeRotationZ(-degreesToRadians(heading)));
+
+                this.camera.projectionMatrix = new Matrix4()
+                    .fromArray(matrix)
+                    .multiply(worldMatrix);
+                this.renderer.resetState();
+                this.renderer.render(this.scene, this.camera);
+            } catch (error) {
+                this.renderFailed = true;
+                isUserLocationModelLayerReady = false;
+                console.warn('3D GPS cursor render failed.', error);
             }
-
-            const coordinate = maplibregl.MercatorCoordinate.fromLngLat(
-                [Number(location.longitude), Number(location.latitude)],
-                0.25,
-            );
-            const scale = coordinate.meterInMercatorCoordinateUnits();
-            const heading = Number.isFinite(Number(location.heading)) ? Number(location.heading) : 0;
-            const worldMatrix = new Matrix4()
-                .makeTranslation(coordinate.x, coordinate.y, coordinate.z)
-                .scale(new Vector3(scale, -scale, scale))
-                .multiply(new Matrix4().makeRotationZ(-degreesToRadians(heading)));
-
-            this.camera.projectionMatrix = new Matrix4()
-                .fromArray(matrix)
-                .multiply(worldMatrix);
-            this.renderer.resetState();
-            this.renderer.render(this.scene, this.camera);
         },
         onRemove() {
             this.scene?.traverse((object) => {
@@ -3522,7 +3533,6 @@ function renderUserLocationFeature(location) {
                 heading: location.heading,
                 mode: location.headingMode,
                 iconImage: getUserLocationIconImage(),
-                render3d: isUserLocationModelLayerReady,
             },
             geometry: {
                 type: 'Point',

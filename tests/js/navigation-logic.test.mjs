@@ -304,7 +304,8 @@ test('map settings expose selectable GPS cursor icons', () => {
     assert.doesNotMatch(mapSource, /kenney|quaternius|PolyPizza|removePolyPizzaBackground/);
     assert.match(mapSource, /settings\.classList\.remove\('is-open'\)/);
     assert.match(mapSource, /iconImage: getUserLocationIconImage/);
-    assert.match(mapSource, /render3d: isUserLocationModelLayerReady/);
+    assert.doesNotMatch(mapSource, /render3d/);
+    assert.doesNotMatch(mapSource, /icon-opacity['"]?: \['case', \['boolean', \['get', 'render3d'\]/);
     assert.match(mapSource, /id: 'user-location-dot'[\s\S]*'icon-rotate': 0/);
     assert.match(cssSource, /\.map-settings__grid/);
     assert.match(cssSource, /\.map-settings__preview img/);
