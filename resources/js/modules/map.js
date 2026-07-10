@@ -113,6 +113,7 @@ const USER_LOCATION_MODEL_LENGTH_METERS = 6.2;
 const USER_LOCATION_MODEL_ALTITUDE_METERS = 0.18;
 const USER_LOCATION_MODEL_VISUAL_SCALE = 1.85;
 const USER_LOCATION_MODEL_VERTICAL_SCALE = 2.85;
+const USER_LOCATION_EXTRUSION_MODEL_SCALE = 0.54;
 const ROAD_MARKING_LAYER_PATTERNS = [
     /^road_marking_/,
     /^base_road_lane_marking_/,
@@ -3525,8 +3526,9 @@ function renderUserLocationFeature(location) {
 
 function renderUserLocationModelFeature(location) {
     const source = map?.getSource(USER_LOCATION_MODEL_SOURCE_ID);
+    const iconId = getSelectedUserLocationIcon();
 
-    if (!source || !isRenderableUserLocationModel(location)) {
+    if (!source || !isRenderableUserLocationModel(location) || iconId === DEFAULT_USER_LOCATION_ICON_ID) {
         source?.setData?.(buildFeatureCollection([]));
         return false;
     }
@@ -3535,7 +3537,7 @@ function renderUserLocationModelFeature(location) {
     const features = buildUserLocationVehicleExtrusions(
         coordinate,
         getUserLocationModelHeading(location),
-        getSelectedUserLocationIcon(),
+        iconId,
     );
 
     source.setData({
@@ -3652,8 +3654,8 @@ function buildRotatedMeterPolygon(center, heading, points) {
     const corners = points.map(([x, y]) => offsetCoordinateByHeading(
         center,
         heading,
-        x,
-        y,
+        x * USER_LOCATION_EXTRUSION_MODEL_SCALE,
+        y * USER_LOCATION_EXTRUSION_MODEL_SCALE,
     ));
 
     return [...corners, corners[0]];

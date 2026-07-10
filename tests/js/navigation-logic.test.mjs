@@ -339,6 +339,8 @@ test('map settings expose selectable GPS cursor icons', () => {
     assert.match(mapSource, /USER_LOCATION_MODEL_ALTITUDE_METERS/);
     assert.match(mapSource, /USER_LOCATION_MODEL_VISUAL_SCALE/);
     assert.match(mapSource, /USER_LOCATION_MODEL_VERTICAL_SCALE/);
+    assert.match(mapSource, /USER_LOCATION_EXTRUSION_MODEL_SCALE = 0\.54/);
+    assert.match(mapSource, /iconId === DEFAULT_USER_LOCATION_ICON_ID/);
     assert.match(mapSource, /scale \* USER_LOCATION_MODEL_VERTICAL_SCALE/);
     assert.match(mapSource, /USER_LOCATION_MODEL_VERTICAL_SCALE = 2\.85/);
     assert.match(vehicleProfilesSource, /getNavigationVehicleProfile/);
@@ -664,6 +666,7 @@ test('map chrome uses inverse contrast for light and dark map themes', () => {
     assert.match(mapSource, /applyMapUiTheme\(nextLayerId\)/);
     assert.match(cssSource, /body\[data-map-ui-theme="dark"\] \{[\s\S]*?--map-ui-surface: linear-gradient\(145deg, rgba\(5, 15, 35, 0\.94\)/);
     assert.match(cssSource, /body\[data-map-ui-theme="light"\] \{[\s\S]*?--map-ui-surface: linear-gradient\(145deg, rgba\(255, 255, 255, 0\.96\)/);
+    assert.match(cssSource, /body\[data-map-tone="dark"\]\[data-map-ui-theme="light"\]:not\(\.is-navigation-mode\) \.top-panel/);
     assert.match(cssSource, /body\[data-map-ui-theme\]:not\(\.is-navigation-mode\) \.top-panel,[\s\S]*?\.layer-switcher__panel/);
     assert.match(cssSource, /body\[data-map-ui-theme\]:not\(\.is-navigation-mode\) \.map-control-button,[\s\S]*?\.layer-switcher__option/);
     assert.match(cssSource, /color: var\(--map-ui-text\);/);

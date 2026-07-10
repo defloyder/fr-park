@@ -5869,6 +5869,34 @@ body[data-map-ui-theme]:not(.is-navigation-mode) .navigator-place small {
     color: var(--map-ui-placeholder);
 }
 
+body[data-map-tone="dark"][data-map-ui-theme="light"]:not(.is-navigation-mode) .top-panel,
+body[data-map-tone="dark"][data-map-ui-theme="light"]:not(.is-navigation-mode) .floating-nav,
+body[data-map-tone="dark"][data-map-ui-theme="light"]:not(.is-navigation-mode) .map-control-stack,
+body[data-map-tone="dark"][data-map-ui-theme="light"]:not(.is-navigation-mode) .map-settings__panel,
+body[data-map-tone="dark"][data-map-ui-theme="light"]:not(.is-navigation-mode) .layer-switcher__panel,
+body[data-map-tone="dark"][data-map-ui-theme="light"]:not(.is-navigation-mode) .spot-card,
+body[data-map-tone="dark"][data-map-ui-theme="light"]:not(.is-navigation-mode) .spot-list,
+body[data-map-tone="dark"][data-map-ui-theme="light"]:not(.is-navigation-mode) .search-panel,
+body[data-map-tone="dark"][data-map-ui-theme="light"]:not(.is-navigation-mode) .profile-panel,
+body[data-map-tone="dark"][data-map-ui-theme="light"]:not(.is-navigation-mode) .bottom-sheet,
+body[data-map-tone="dark"][data-map-ui-theme="light"]:not(.is-navigation-mode) .route-picker,
+body[data-map-tone="dark"][data-map-ui-theme="light"]:not(.is-navigation-mode) .navigator-panel,
+body[data-map-tone="dark"][data-map-ui-theme="light"]:not(.is-navigation-mode) .status-panel {
+    color: var(--map-ui-text);
+    background: var(--map-ui-surface);
+    border-color: var(--map-ui-border);
+    box-shadow: var(--map-ui-shadow);
+}
+
+body[data-map-tone="dark"][data-map-ui-theme="light"]:not(.is-navigation-mode) .map-control-button,
+body[data-map-tone="dark"][data-map-ui-theme="light"]:not(.is-navigation-mode) .map-settings__option,
+body[data-map-tone="dark"][data-map-ui-theme="light"]:not(.is-navigation-mode) .layer-switcher__option {
+    color: var(--map-ui-text);
+    background: var(--map-ui-control);
+    border-color: var(--map-ui-border);
+    box-shadow: var(--map-ui-control-shadow);
+}
+
 body[data-map-ui-theme="dark"].is-navigation-mode {
     --nav-surface: linear-gradient(145deg, rgba(7, 18, 40, 0.96), rgba(13, 31, 67, 0.90));
     --nav-surface-soft: rgba(13, 29, 60, 0.90);
