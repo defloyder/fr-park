@@ -108,11 +108,11 @@ const USER_LOCATION_ICON_OPTIONS = [
     { id: 'auralith-nav-graphite', label: 'Graphite SUV', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-graphite.png` },
 ];
 const USER_LOCATION_GLB_MODELS = {
-    'auralith-nav-black': `${GPS_CURSOR_MODEL_ASSET_BASE}toy-car.glb`,
-    'auralith-nav-red': `${GPS_CURSOR_MODEL_ASSET_BASE}toy-car.glb`,
-    'auralith-nav-white': `${GPS_CURSOR_MODEL_ASSET_BASE}toy-car.glb`,
-    'auralith-nav-cyan': `${GPS_CURSOR_MODEL_ASSET_BASE}toy-car.glb`,
-    'auralith-nav-graphite': `${GPS_CURSOR_MODEL_ASSET_BASE}toy-car.glb`,
+    'auralith-nav-black': `${GPS_CURSOR_MODEL_ASSET_BASE}gps-car.glb`,
+    'auralith-nav-red': `${GPS_CURSOR_MODEL_ASSET_BASE}gps-car.glb`,
+    'auralith-nav-white': `${GPS_CURSOR_MODEL_ASSET_BASE}gps-car.glb`,
+    'auralith-nav-cyan': `${GPS_CURSOR_MODEL_ASSET_BASE}gps-car.glb`,
+    'auralith-nav-graphite': `${GPS_CURSOR_MODEL_ASSET_BASE}gps-car.glb`,
 };
 const USER_LOCATION_GLB_MODEL_LENGTH_METERS = 4.15;
 const userLocationGltfModelCache = new Map();
@@ -3004,7 +3004,7 @@ function applyNavigationGltfMaterials(model, iconId) {
             const luminance = (color.r * 0.2126) + (color.g * 0.7152) + (color.b * 0.0722);
             const name = `${object.name || ''} ${material.name || ''}`.toLowerCase();
 
-            if (name.includes('toycar')) {
+            if (name.includes('truck') || name.includes('body') || name.includes('paint')) {
                 material.color = new Color(palette.body);
                 material.roughness = 0.12;
                 material.metalness = 0.64;
@@ -3016,7 +3016,7 @@ function applyNavigationGltfMaterials(model, iconId) {
                 return;
             }
 
-            if (name.includes('fabric')) {
+            if (name.includes('wheel') || name.includes('tire')) {
                 material.color = new Color('#05070d');
                 material.roughness = 0.42;
                 material.metalness = 0.24;

@@ -370,8 +370,9 @@ test('map settings expose selectable GPS cursor icons', () => {
     assert.match(mapSource, /settings\.classList\.remove\('is-open'\)/);
     assert.match(mapSource, /iconImage: getUserLocationIconImage/);
     assert.match(mapSource, /uses3dModel: shouldRenderUserLocationWithGltfModel\(\)/);
-    assert.match(mapSource, /'auralith-nav-red': `\$\{GPS_CURSOR_MODEL_ASSET_BASE\}toy-car\.glb`/);
-    assert.match(mapSource, /'auralith-nav-graphite': `\$\{GPS_CURSOR_MODEL_ASSET_BASE\}toy-car\.glb`/);
+    assert.match(mapSource, /'auralith-nav-red': `\$\{GPS_CURSOR_MODEL_ASSET_BASE\}gps-car\.glb`/);
+    assert.match(mapSource, /'auralith-nav-graphite': `\$\{GPS_CURSOR_MODEL_ASSET_BASE\}gps-car\.glb`/);
+    assert.doesNotMatch(mapSource, /toy-car\.glb/);
     assert.doesNotMatch(mapSource, /sports-red\.glb|sports-cyan\.glb|car-black\.glb|car-white\.glb|suv-graphite\.glb/);
     assert.match(mapSource, /const modelVisible = renderUserLocationModelFeature\(location\)/);
     assert.match(mapSource, /modelVisible,/);
