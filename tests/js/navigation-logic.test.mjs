@@ -334,7 +334,7 @@ test('map settings expose selectable GPS cursor icons', () => {
     assert.match(mapSource, /USER_LOCATION_MODEL_VISUAL_SCALE/);
     assert.match(mapSource, /USER_LOCATION_MODEL_VERTICAL_SCALE/);
     assert.match(mapSource, /scale \* USER_LOCATION_MODEL_VERTICAL_SCALE/);
-    assert.match(mapSource, /USER_LOCATION_MODEL_VERTICAL_SCALE = 2\.05/);
+    assert.match(mapSource, /USER_LOCATION_MODEL_VERTICAL_SCALE = 2\.85/);
     assert.match(vehicleProfilesSource, /getNavigationVehicleProfile/);
     assert.match(carModelSource, /vehicle-car-\$\{iconId\}/);
     assert.match(carModelSource, /addVehicleShadow/);

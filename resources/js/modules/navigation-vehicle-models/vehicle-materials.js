@@ -6,7 +6,7 @@ import {
 
 export function createNavigationVehicleMaterials(profile) {
     const color = new Color(profile.bodyColor);
-    const sideColor = color.clone().multiplyScalar(profile.sideShade);
+    const sideColor = color.clone().multiplyScalar(profile.sideShade * 0.72);
     const accentColor = new Color(profile.accentColor);
 
     return {
@@ -26,8 +26,9 @@ export function createNavigationVehicleMaterials(profile) {
         }),
         side: new MeshStandardMaterial({
             color: sideColor,
-            roughness: profile.roughness + 0.08,
-            metalness: Math.min(0.9, profile.metalness + 0.08),
+            roughness: profile.roughness + 0.16,
+            metalness: Math.min(0.9, profile.metalness + 0.04),
+            emissive: sideColor.clone().multiplyScalar(0.04),
             flatShading: true,
         }),
         glass: new MeshStandardMaterial({
