@@ -355,6 +355,9 @@ test('map settings expose selectable GPS cursor icons', () => {
     assert.doesNotMatch(mapSource, /render3d/);
     assert.match(mapSource, /id: 'user-navigation-dot'[\s\S]*?\['!', \['boolean', \['get', 'modelVisible'\], false\]\]/);
     assert.match(mapSource, /id: 'user-location-dot'[\s\S]*?\['!', \['boolean', \['get', 'modelVisible'\], false\]\]/);
+    assert.match(mapSource, /function ensureUserLocationModelLayerOnTop/);
+    assert.match(mapSource, /map\.moveLayer\(USER_LOCATION_MODEL_LAYER_ID\)/);
+    assert.match(mapSource, /addTrafficFlowLayer\(\);\s*addUserLocationModelLayer\(\);/);
     assert.doesNotMatch(mapSource, /icon-opacity['"]?: \['case', \['boolean', \['get', 'render3d'\]/);
     assert.match(mapSource, /id: 'user-location-dot'[\s\S]*'icon-rotate': 0/);
     assert.match(cssSource, /\.map-settings__grid/);

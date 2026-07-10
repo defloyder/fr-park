@@ -1010,10 +1010,11 @@ function initMapLibreMap() {
             addPendingSourceAndLayer();
             addPersonalPlacesSourceAndLayer();
             addUserLocationSourceAndLayer();
-            addUserLocationModelLayer();
             addRouteSourceAndLayer();
             addSpeedCameraSourceAndLayer();
             addTrafficFlowLayer();
+            addUserLocationModelLayer();
+            ensureUserLocationModelLayerOnTop();
             if (ENABLE_ROAD_DETAILS) {
                 addRoadDetails(map, {
                     baseRoadSource: ROAD_SOURCE_ID,
@@ -2596,11 +2597,23 @@ function addUserLocationSourceAndLayer() {
 
 function addUserLocationModelLayer() {
     if (!map || map.getLayer(USER_LOCATION_MODEL_LAYER_ID)) {
+        ensureUserLocationModelLayerOnTop();
         return;
     }
 
     userLocationModelLayer = createUserLocationModelLayer();
     map.addLayer(userLocationModelLayer);
+    ensureUserLocationModelLayerOnTop();
+}
+
+function ensureUserLocationModelLayerOnTop() {
+    if (!map?.getLayer(USER_LOCATION_MODEL_LAYER_ID)) {
+        return;
+    }
+
+    try {
+        map.moveLayer(USER_LOCATION_MODEL_LAYER_ID);
+    } catch {}
 }
 
 function createUserLocationModelLayer() {
@@ -3380,6 +3393,7 @@ export function getMapCenterLocation() {
 }
 
 function renderUserLocationFeature(location) {
+    ensureUserLocationModelLayerOnTop();
     map.getSource(USER_LOCATION_SOURCE_ID)?.setData({
         type: 'FeatureCollection',
         features: [{
