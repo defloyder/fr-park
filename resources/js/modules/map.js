@@ -2557,7 +2557,11 @@ function addUserLocationSourceAndLayer() {
         id: 'user-location-dot',
         type: 'symbol',
         source: USER_LOCATION_SOURCE_ID,
-        filter: ['!=', ['get', 'mode'], 'navigation'],
+        filter: [
+            'all',
+            ['!=', ['get', 'mode'], 'navigation'],
+            ['!', ['boolean', ['get', 'modelVisible'], false]],
+        ],
         layout: {
             'icon-image': ['get', 'iconImage'],
             'icon-size': ['interpolate', ['linear'], ['zoom'], 12, 0.78, 16, 0.98, 18, 1.12],
@@ -2573,7 +2577,11 @@ function addUserLocationSourceAndLayer() {
         id: 'user-navigation-dot',
         type: 'symbol',
         source: USER_LOCATION_SOURCE_ID,
-        filter: ['==', ['get', 'mode'], 'navigation'],
+        filter: [
+            'all',
+            ['==', ['get', 'mode'], 'navigation'],
+            ['!', ['boolean', ['get', 'modelVisible'], false]],
+        ],
         layout: {
             'icon-image': ['get', 'iconImage'],
             'icon-size': ['interpolate', ['linear'], ['zoom'], 12, 0.82, 16, 0.98, 18, 1.08],
@@ -3384,6 +3392,7 @@ function renderUserLocationFeature(location) {
                 routeProgressMeters: location.routeProgressMeters,
                 mode: location.headingMode,
                 iconImage: getUserLocationIconImage(),
+                modelVisible: isUserLocationModelLayerVisible && isRenderableUserLocationModel(location),
             },
             geometry: {
                 type: 'Point',
