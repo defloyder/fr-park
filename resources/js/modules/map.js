@@ -2812,6 +2812,14 @@ function createUserLocationModelLayer() {
                     this.activeIconId = selectedIcon;
                 }
 
+                if (!this.hasRenderableAssetModel(selectedIcon)) {
+                    if (isUserLocationModelLayerVisible) {
+                        isUserLocationModelLayerVisible = false;
+                        refreshRenderedUserLocationFeature();
+                    }
+                    return;
+                }
+
                 syncUserLocationModelRenderer(this.renderer, this.layerMap);
 
                 const coordinate = maplibregl.MercatorCoordinate.fromLngLat(
@@ -2839,6 +2847,14 @@ function createUserLocationModelLayer() {
                 refreshRenderedUserLocationFeature();
                 console.warn('3D GPS cursor render failed.', error);
             }
+        },
+        hasRenderableAssetModel(iconId) {
+            return Boolean(
+                iconId !== DEFAULT_USER_LOCATION_ICON_ID
+                && this.assetModel
+                && this.assetIconId === iconId
+                && this.assetModel.visible !== false
+            );
         },
         setActiveVehicleIcon(iconId) {
             isUserLocationModelLayerVisible = false;
@@ -2965,7 +2981,7 @@ function prepareNavigationGltfModel(scene, iconId) {
     const longestAxis = Math.max(size.x, size.y, size.z, 1);
     const scale = USER_LOCATION_GLB_MODEL_LENGTH_METERS / longestAxis;
     model.scale.setScalar(scale);
-    model.position.set(-center.x * scale, -center.y * scale, -center.z * scale);
+    model.position.set(-center.x * scale, -center.y * scale, -box.min.z * scale);
 
     applyNavigationGltfMaterials(model, iconId);
     wrapper.add(model);

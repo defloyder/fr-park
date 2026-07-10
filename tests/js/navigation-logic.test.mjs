@@ -331,6 +331,8 @@ test('map settings expose selectable GPS cursor icons', () => {
     assert.match(mapSource, /isUserLocationGltfModelLoading\(iconId\)/);
     assert.match(mapSource, /shouldRenderUserLocationExtrusionFallback\(iconId\)/);
     assert.match(mapSource, /return isUserLocationModelLayerVisible && isUserLocationGltfModelActive\(iconId\)/);
+    assert.match(mapSource, /hasRenderableAssetModel\(selectedIcon\)/);
+    assert.match(mapSource, /model\.position\.set\(-center\.x \* scale, -center\.y \* scale, -box\.min\.z \* scale\)/);
     assert.match(mapSource, /new WebGLRenderer/);
     assert.match(mapSource, /from '\.\/navigation-vehicle-models'/);
     assert.doesNotMatch(mapSource, /BoxGeometry|SphereGeometry|MeshBasicMaterial|getNavigationVehicleProfile/);
