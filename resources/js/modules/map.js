@@ -108,11 +108,11 @@ const USER_LOCATION_ICON_OPTIONS = [
     { id: 'auralith-nav-graphite', label: 'Graphite SUV', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-graphite.png` },
 ];
 const USER_LOCATION_GLB_MODELS = {
-    'auralith-nav-black': `${GPS_CURSOR_MODEL_ASSET_BASE}car-black.glb`,
-    'auralith-nav-red': `${GPS_CURSOR_MODEL_ASSET_BASE}sports-red.glb`,
-    'auralith-nav-white': `${GPS_CURSOR_MODEL_ASSET_BASE}car-white.glb`,
-    'auralith-nav-cyan': `${GPS_CURSOR_MODEL_ASSET_BASE}sports-cyan.glb`,
-    'auralith-nav-graphite': `${GPS_CURSOR_MODEL_ASSET_BASE}suv-graphite.glb`,
+    'auralith-nav-black': `${GPS_CURSOR_MODEL_ASSET_BASE}toy-car.glb`,
+    'auralith-nav-red': `${GPS_CURSOR_MODEL_ASSET_BASE}toy-car.glb`,
+    'auralith-nav-white': `${GPS_CURSOR_MODEL_ASSET_BASE}toy-car.glb`,
+    'auralith-nav-cyan': `${GPS_CURSOR_MODEL_ASSET_BASE}toy-car.glb`,
+    'auralith-nav-graphite': `${GPS_CURSOR_MODEL_ASSET_BASE}toy-car.glb`,
 };
 const USER_LOCATION_GLB_MODEL_LENGTH_METERS = 4.15;
 const userLocationGltfModelCache = new Map();
@@ -3004,6 +3004,26 @@ function applyNavigationGltfMaterials(model, iconId) {
             const luminance = (color.r * 0.2126) + (color.g * 0.7152) + (color.b * 0.0722);
             const name = `${object.name || ''} ${material.name || ''}`.toLowerCase();
 
+            if (name.includes('toycar')) {
+                material.color = new Color(palette.body);
+                material.roughness = 0.12;
+                material.metalness = 0.64;
+                material.flatShading = false;
+                material.emissive = new Color(palette.body).multiplyScalar(0.035);
+                material.emissiveIntensity = 0.35;
+                if ('clearcoat' in material) material.clearcoat = 0.82;
+                if ('clearcoatRoughness' in material) material.clearcoatRoughness = 0.08;
+                return;
+            }
+
+            if (name.includes('fabric')) {
+                material.color = new Color('#05070d');
+                material.roughness = 0.42;
+                material.metalness = 0.24;
+                material.flatShading = false;
+                return;
+            }
+
             material.roughness = name.includes('glass') || name.includes('window') ? 0.05 : 0.16;
             material.metalness = luminance < 0.14 ? 0.28 : 0.72;
             material.flatShading = false;
@@ -3011,9 +3031,10 @@ function applyNavigationGltfMaterials(model, iconId) {
             if (name.includes('glass') || name.includes('window') || (color.b > color.r * 1.15 && color.b > color.g * 0.85)) {
                 material.color = new Color(palette.glass);
                 material.transparent = true;
-                material.opacity = 0.92;
+                material.opacity = 0.72;
                 material.metalness = 0.42;
                 material.roughness = 0.04;
+                if ('transmission' in material) material.transmission = 0.42;
                 return;
             }
 
