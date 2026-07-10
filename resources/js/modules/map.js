@@ -62,6 +62,8 @@ const USER_LOCATION_MODEL_SOURCE_ID = 'user-location-3d-vehicle';
 const USER_LOCATION_MODEL_LAYER_ID = 'user-location-3d-model';
 const USER_LOCATION_MODEL_EXTRUSION_LAYERS = [
     'user-location-3d-shadow',
+    'user-location-3d-body-fill',
+    'user-location-3d-detail-fill',
     'user-location-3d-body',
     'user-location-3d-cabin',
     'user-location-3d-glass',
@@ -2642,6 +2644,26 @@ function addUserLocationExtrusionModelLayers() {
     }
 
     [
+        ['user-location-3d-body-fill', ['match', ['get', 'part'], ['body', 'trim', 'cabin', 'roof'], true, false], 0.98],
+        ['user-location-3d-detail-fill', ['match', ['get', 'part'], ['glass', 'headlight', 'tail'], true, false], 0.94],
+    ].forEach(([id, filter, opacity]) => {
+        if (map.getLayer(id)) {
+            return;
+        }
+
+        map.addLayer({
+            id,
+            type: 'fill',
+            source: USER_LOCATION_MODEL_SOURCE_ID,
+            filter,
+            paint: {
+                'fill-color': ['get', 'color'],
+                'fill-opacity': opacity,
+            },
+        });
+    });
+
+    [
         ['user-location-3d-body', ['match', ['get', 'part'], ['body', 'trim'], true, false]],
         ['user-location-3d-cabin', ['match', ['get', 'part'], ['cabin', 'roof'], true, false]],
         ['user-location-3d-glass', ['==', ['get', 'part'], 'glass']],
@@ -2651,19 +2673,23 @@ function addUserLocationExtrusionModelLayers() {
             return;
         }
 
-        map.addLayer({
-            id,
-            type: 'fill-extrusion',
-            source: USER_LOCATION_MODEL_SOURCE_ID,
-            filter,
-            paint: {
-                'fill-extrusion-color': ['get', 'color'],
-                'fill-extrusion-base': ['get', 'base'],
-                'fill-extrusion-height': ['get', 'height'],
-                'fill-extrusion-opacity': ['coalesce', ['to-number', ['get', 'opacity']], 1],
-                'fill-extrusion-vertical-gradient': true,
-            },
-        });
+        try {
+            map.addLayer({
+                id,
+                type: 'fill-extrusion',
+                source: USER_LOCATION_MODEL_SOURCE_ID,
+                filter,
+                paint: {
+                    'fill-extrusion-color': ['get', 'color'],
+                    'fill-extrusion-base': ['to-number', ['get', 'base'], 0],
+                    'fill-extrusion-height': ['to-number', ['get', 'height'], 0],
+                    'fill-extrusion-opacity': 0.98,
+                    'fill-extrusion-vertical-gradient': true,
+                },
+            });
+        } catch (error) {
+            console.warn('Failed to add 3D user location layer', id, error);
+        }
     });
 }
 
