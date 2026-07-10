@@ -64,6 +64,7 @@ const USER_LOCATION_MODEL_EXTRUSION_LAYERS = [
     'user-location-3d-shadow',
     'user-location-3d-body-fill',
     'user-location-3d-detail-fill',
+    'user-location-3d-gloss-fill',
     'user-location-3d-body',
     'user-location-3d-cabin',
     'user-location-3d-glass',
@@ -2644,8 +2645,9 @@ function addUserLocationExtrusionModelLayers() {
     }
 
     [
-        ['user-location-3d-body-fill', ['match', ['get', 'part'], ['body', 'trim', 'cabin', 'roof'], true, false], 0.98],
-        ['user-location-3d-detail-fill', ['match', ['get', 'part'], ['glass', 'headlight', 'tail'], true, false], 0.94],
+        ['user-location-3d-body-fill', ['match', ['get', 'part'], ['body', 'hood', 'trunk', 'trim', 'cabin', 'roof'], true, false], 0.98],
+        ['user-location-3d-detail-fill', ['match', ['get', 'part'], ['glass', 'wheel', 'headlight', 'tail', 'running-light'], true, false], 0.94],
+        ['user-location-3d-gloss-fill', ['==', ['get', 'part'], 'highlight'], 0.72],
     ].forEach(([id, filter, opacity]) => {
         if (map.getLayer(id)) {
             return;
@@ -2664,10 +2666,10 @@ function addUserLocationExtrusionModelLayers() {
     });
 
     [
-        ['user-location-3d-body', ['match', ['get', 'part'], ['body', 'trim'], true, false]],
-        ['user-location-3d-cabin', ['match', ['get', 'part'], ['cabin', 'roof'], true, false]],
+        ['user-location-3d-body', ['match', ['get', 'part'], ['body', 'hood', 'trunk', 'trim'], true, false]],
+        ['user-location-3d-cabin', ['match', ['get', 'part'], ['cabin', 'roof', 'wheel'], true, false]],
         ['user-location-3d-glass', ['==', ['get', 'part'], 'glass']],
-        ['user-location-3d-lights', ['match', ['get', 'part'], ['headlight', 'tail'], true, false]],
+        ['user-location-3d-lights', ['match', ['get', 'part'], ['headlight', 'tail', 'running-light', 'highlight'], true, false]],
     ].forEach(([id, filter]) => {
         if (map.getLayer(id)) {
             return;
@@ -3551,7 +3553,7 @@ function buildUserLocationVehicleExtrusions(center, heading, iconId) {
     }
 
     const colors = getUserLocationVehicleExtrusionColors(iconId);
-    const part = (name, localCenter, size, base, height, color, opacity = 1) => ({
+    const polygonPart = (name, points, base, height, color, opacity = 1) => ({
         type: 'Feature',
         properties: {
             part: name,
@@ -3562,37 +3564,96 @@ function buildUserLocationVehicleExtrusions(center, heading, iconId) {
         },
         geometry: {
             type: 'Polygon',
-            coordinates: [buildRotatedMeterRectangle(center, heading, localCenter, size)],
+            coordinates: [buildRotatedMeterPolygon(center, heading, points)],
         },
     });
+    const part = (name, localCenter, size, base, height, color, opacity = 1) => polygonPart(
+        name,
+        getRectangleMeterPoints(localCenter, size),
+        base,
+        height,
+        color,
+        opacity,
+    );
+    const body = [
+        [-1.18, -4.92],
+        [1.18, -4.92],
+        [1.72, -4.42],
+        [2.08, -2.74],
+        [2.18, 1.18],
+        [1.78, 3.74],
+        [1.20, 4.82],
+        [-1.20, 4.82],
+        [-1.78, 3.74],
+        [-2.18, 1.18],
+        [-2.08, -2.74],
+        [-1.72, -4.42],
+    ];
+    const cabin = [
+        [-1.06, -2.42],
+        [1.06, -2.42],
+        [1.36, -1.12],
+        [1.22, 1.62],
+        [0.78, 2.38],
+        [-0.78, 2.38],
+        [-1.22, 1.62],
+        [-1.36, -1.12],
+    ];
+    const glass = [
+        [-0.82, -2.08],
+        [0.82, -2.08],
+        [0.98, -0.82],
+        [0.84, 1.38],
+        [0.54, 1.90],
+        [-0.54, 1.90],
+        [-0.84, 1.38],
+        [-0.98, -0.82],
+    ];
 
     return [
-        part('shadow', [0, -0.10], [5.4, 11.4], 0, 0, '#000000', 0.32),
-        part('body', [0, 0], [4.05, 9.65], 0.15, 2.85, colors.body),
-        part('trim', [-2.16, -0.12], [0.48, 7.9], 0.34, 1.72, colors.side),
-        part('trim', [2.16, -0.12], [0.48, 7.9], 0.34, 1.72, colors.side),
-        part('cabin', [0, -0.34], [2.78, 4.36], 2.12, 4.62, colors.glass, 0.96),
-        part('roof', [0, -0.58], [2.04, 2.72], 4.34, 5.18, colors.roof),
-        part('glass', [-1.48, -0.30], [0.28, 3.52], 2.48, 4.32, colors.glass, 0.92),
-        part('glass', [1.48, -0.30], [0.28, 3.52], 2.48, 4.32, colors.glass, 0.92),
-        part('headlight', [-0.86, 4.95], [0.74, 0.34], 1.10, 1.86, '#e8fbff', 0.98),
-        part('headlight', [0.86, 4.95], [0.74, 0.34], 1.10, 1.86, '#e8fbff', 0.98),
-        part('tail', [-0.90, -4.95], [0.76, 0.36], 1.02, 1.86, '#ff1748', 0.98),
-        part('tail', [0.90, -4.95], [0.76, 0.36], 1.02, 1.86, '#ff1748', 0.98),
+        part('shadow', [0, -0.16], [5.35, 10.82], 0, 0, '#000000', 0.30),
+        polygonPart('body', body, 0.12, 1.38, colors.side),
+        polygonPart('body', body.map(([x, y]) => [x * 0.91, y * 0.96]), 1.38, 2.26, colors.body),
+        polygonPart('hood', [[-1.28, 2.20], [1.28, 2.20], [1.56, 3.54], [0.94, 4.54], [-0.94, 4.54], [-1.56, 3.54]], 2.28, 2.72, colors.lightBody),
+        polygonPart('trunk', [[-1.20, -4.44], [1.20, -4.44], [1.44, -3.20], [-1.44, -3.20]], 2.20, 2.62, colors.lightBody),
+        part('trim', [-1.88, -0.32], [0.30, 6.92], 0.42, 1.68, colors.darkTrim),
+        part('trim', [1.88, -0.32], [0.30, 6.92], 0.42, 1.68, colors.darkTrim),
+        part('wheel', [-2.08, -2.92], [0.46, 1.30], 0.22, 1.18, '#070b12', 0.98),
+        part('wheel', [2.08, -2.92], [0.46, 1.30], 0.22, 1.18, '#070b12', 0.98),
+        part('wheel', [-2.10, 2.76], [0.44, 1.24], 0.22, 1.14, '#070b12', 0.98),
+        part('wheel', [2.10, 2.76], [0.44, 1.24], 0.22, 1.14, '#070b12', 0.98),
+        polygonPart('cabin', cabin, 2.24, 3.34, colors.roof, 0.98),
+        polygonPart('glass', glass, 3.36, 3.74, colors.glass, 0.92),
+        part('highlight', [-0.56, 0.36], [0.28, 3.74], 3.78, 3.86, colors.gloss, 0.70),
+        part('highlight', [0.74, 1.74], [0.18, 1.82], 3.78, 3.86, colors.gloss, 0.58),
+        part('headlight', [-0.72, 4.68], [0.62, 0.32], 1.36, 1.94, colors.headlight, 0.98),
+        part('headlight', [0.72, 4.68], [0.62, 0.32], 1.36, 1.94, colors.headlight, 0.98),
+        part('running-light', [-1.42, 3.86], [0.20, 0.78], 1.42, 2.08, colors.runningLight, 0.94),
+        part('running-light', [1.42, 3.86], [0.20, 0.78], 1.42, 2.08, colors.runningLight, 0.94),
+        part('tail', [-0.86, -4.72], [0.72, 0.34], 1.28, 2.08, colors.tailLight, 0.98),
+        part('tail', [0.86, -4.72], [0.72, 0.34], 1.28, 2.08, colors.tailLight, 0.98),
     ];
 }
 
 function buildRotatedMeterRectangle(center, heading, [x, y], [width, length]) {
-    const corners = [
+    return buildRotatedMeterPolygon(center, heading, getRectangleMeterPoints([x, y], [width, length]));
+}
+
+function getRectangleMeterPoints([x, y], [width, length]) {
+    return [
         [-width / 2, -length / 2],
         [width / 2, -length / 2],
         [width / 2, length / 2],
         [-width / 2, length / 2],
-    ].map(([cornerX, cornerY]) => offsetCoordinateByHeading(
+    ].map(([cornerX, cornerY]) => [x + cornerX, y + cornerY]);
+}
+
+function buildRotatedMeterPolygon(center, heading, points) {
+    const corners = points.map(([x, y]) => offsetCoordinateByHeading(
         center,
         heading,
-        x + cornerX,
-        y + cornerY,
+        x,
+        y,
     ));
 
     return [...corners, corners[0]];
@@ -3619,24 +3680,44 @@ function offsetCoordinateByHeading(center, heading, rightMeters, forwardMeters) 
 function getUserLocationVehicleExtrusionColors(iconId) {
     const body = {
         'auralith-nav-black': '#101827',
-        'auralith-nav-red': '#ef233c',
-        'auralith-nav-white': '#f8fbff',
-        'auralith-nav-cyan': '#20d5f5',
+        'auralith-nav-red': '#f0193f',
+        'auralith-nav-white': '#f4f8ff',
+        'auralith-nav-cyan': '#1ad7ff',
         'auralith-nav-graphite': '#3f4654',
     }[iconId] ?? '#1f8cff';
     const side = {
         'auralith-nav-black': '#050814',
         'auralith-nav-red': '#8f1022',
-        'auralith-nav-white': '#b8c6d8',
-        'auralith-nav-cyan': '#087c95',
+        'auralith-nav-white': '#b9c8db',
+        'auralith-nav-cyan': '#057c9a',
         'auralith-nav-graphite': '#171d28',
     }[iconId] ?? '#0f3d82';
+    const lightBody = {
+        'auralith-nav-black': '#26354b',
+        'auralith-nav-red': '#ff345c',
+        'auralith-nav-white': '#ffffff',
+        'auralith-nav-cyan': '#65efff',
+        'auralith-nav-graphite': '#6b7584',
+    }[iconId] ?? '#43a5ff';
+    const gloss = {
+        'auralith-nav-black': '#a8c7ff',
+        'auralith-nav-red': '#ffd0da',
+        'auralith-nav-white': '#ffffff',
+        'auralith-nav-cyan': '#d4fbff',
+        'auralith-nav-graphite': '#d8e2f0',
+    }[iconId] ?? '#cceeff';
 
     return {
         body,
         side,
+        lightBody,
+        darkTrim: side,
         roof: body,
-        glass: '#071321',
+        glass: '#06111f',
+        gloss,
+        headlight: '#eaffff',
+        runningLight: iconId === 'auralith-nav-red' ? '#ff8ca0' : '#9ff7ff',
+        tailLight: '#ff164d',
     };
 }
 
