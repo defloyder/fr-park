@@ -1,13 +1,17 @@
 import maplibregl from 'maplibre-gl';
 import {
+    Box3,
     Camera,
+    Color,
     DirectionalLight,
+    Group,
     HemisphereLight,
     Matrix4,
     Scene,
     Vector3,
     WebGLRenderer,
 } from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import {
     fetchDrivingRoute as fetchYandexDrivingRoute,
     fetchFuelStations,
@@ -93,6 +97,7 @@ const POI_ICON_IMAGE_IDS = {
     fuel: 'poi-fuel',
 };
 const GPS_CURSOR_ASSET_BASE = '/assets/gps-cursors/';
+const GPS_CURSOR_MODEL_ASSET_BASE = `${GPS_CURSOR_ASSET_BASE}models/`;
 const DEFAULT_USER_LOCATION_ICON_ID = 'auralith-nav-arrow';
 const USER_LOCATION_ICON_OPTIONS = [
     { id: 'auralith-nav-arrow', label: 'Auralith arrow', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-arrow.png` },
@@ -102,6 +107,15 @@ const USER_LOCATION_ICON_OPTIONS = [
     { id: 'auralith-nav-cyan', label: 'Cyan EV', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-cyan.png` },
     { id: 'auralith-nav-graphite', label: 'Graphite SUV', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-graphite.png` },
 ];
+const USER_LOCATION_GLB_MODELS = {
+    'auralith-nav-black': `${GPS_CURSOR_MODEL_ASSET_BASE}car-black.glb`,
+    'auralith-nav-red': `${GPS_CURSOR_MODEL_ASSET_BASE}sports-red.glb`,
+    'auralith-nav-white': `${GPS_CURSOR_MODEL_ASSET_BASE}car-white.glb`,
+    'auralith-nav-cyan': `${GPS_CURSOR_MODEL_ASSET_BASE}sports-cyan.glb`,
+    'auralith-nav-graphite': `${GPS_CURSOR_MODEL_ASSET_BASE}suv-graphite.glb`,
+};
+const USER_LOCATION_GLB_MODEL_LENGTH_METERS = 2.55;
+const userLocationGltfModelCache = new Map();
 const DEFAULT_BASE_LAYER_ID = 'light';
 const BASE_LAYER_STORAGE_KEY = 'auralith:map-layer';
 const ROUTE_CACHE_STORAGE_KEY = 'auralith:last-driving-route';
@@ -2729,27 +2743,35 @@ function createUserLocationModelLayer() {
         scene: null,
         renderer: null,
         model: null,
+        fallbackModel: null,
+        assetModel: null,
+        gltfLoader: null,
         layerMap: null,
         activeIconId: null,
+        assetIconId: null,
+        loadingIconId: null,
         renderFailed: false,
         onAdd(layerMap, gl) {
             try {
                 this.layerMap = layerMap;
                 this.camera = new Camera();
                 this.scene = new Scene();
-                this.model = createNavigationVehicleModel({
+                this.gltfLoader = new GLTFLoader();
+                this.model = new Group();
+                this.fallbackModel = createNavigationVehicleModel({
                     iconOptions: USER_LOCATION_ICON_OPTIONS,
                     defaultIconId: DEFAULT_USER_LOCATION_ICON_ID,
                     modelLengthMeters: USER_LOCATION_MODEL_LENGTH_METERS,
                 });
+                this.model.add(this.fallbackModel);
                 this.scene.add(this.model);
-                this.scene.add(new HemisphereLight(0xffffff, 0x27364d, 1.85));
+                this.scene.add(new HemisphereLight(0xffffff, 0x27364d, 2.35));
 
-                const keyLight = new DirectionalLight(0xffffff, 2.15);
+                const keyLight = new DirectionalLight(0xffffff, 3.35);
                 keyLight.position.set(-3, -4, 8);
                 this.scene.add(keyLight);
 
-                const rimLight = new DirectionalLight(0x8bdcff, 0.92);
+                const rimLight = new DirectionalLight(0x8bdcff, 1.55);
                 rimLight.position.set(4, 2, 5);
                 this.scene.add(rimLight);
 
@@ -2786,7 +2808,7 @@ function createUserLocationModelLayer() {
 
                 const selectedIcon = getSelectedUserLocationIcon();
                 if (this.activeIconId !== selectedIcon) {
-                    applyNavigationVehicleStyle(this.model, selectedIcon);
+                    this.setActiveVehicleIcon(selectedIcon);
                     this.activeIconId = selectedIcon;
                 }
 
@@ -2818,6 +2840,72 @@ function createUserLocationModelLayer() {
                 console.warn('3D GPS cursor render failed.', error);
             }
         },
+        setActiveVehicleIcon(iconId) {
+            applyNavigationVehicleStyle(this.fallbackModel, iconId);
+
+            if (iconId === DEFAULT_USER_LOCATION_ICON_ID) {
+                this.clearAssetModel();
+                if (this.fallbackModel) this.fallbackModel.visible = true;
+                return;
+            }
+
+            if (this.fallbackModel) this.fallbackModel.visible = !this.assetModel;
+            this.loadAssetModel(iconId);
+        },
+        loadAssetModel(iconId) {
+            const url = USER_LOCATION_GLB_MODELS[iconId];
+
+            if (!url || !this.gltfLoader || this.loadingIconId === iconId || this.assetIconId === iconId) {
+                return;
+            }
+
+            this.loadingIconId = iconId;
+
+            const cached = userLocationGltfModelCache.get(iconId);
+            if (cached) {
+                this.useAssetModel(iconId, cloneNavigationGltfModel(cached));
+                this.loadingIconId = null;
+                return;
+            }
+
+            this.gltfLoader.load(
+                url,
+                (gltf) => {
+                    const prepared = prepareNavigationGltfModel(gltf.scene, iconId);
+                    userLocationGltfModelCache.set(iconId, prepared);
+
+                    if (this.activeIconId === iconId) {
+                        this.useAssetModel(iconId, cloneNavigationGltfModel(prepared));
+                    }
+
+                    this.loadingIconId = null;
+                    map?.triggerRepaint();
+                },
+                undefined,
+                (error) => {
+                    this.loadingIconId = null;
+                    if (this.fallbackModel) this.fallbackModel.visible = true;
+                    console.warn('Failed to load GLB GPS cursor model.', iconId, error);
+                },
+            );
+        },
+        useAssetModel(iconId, assetModel) {
+            this.clearAssetModel();
+            this.assetModel = assetModel;
+            this.assetIconId = iconId;
+            if (this.fallbackModel) this.fallbackModel.visible = false;
+            this.model?.add(assetModel);
+        },
+        clearAssetModel() {
+            if (!this.assetModel) {
+                this.assetIconId = null;
+                return;
+            }
+
+            this.model?.remove(this.assetModel);
+            this.assetModel = null;
+            this.assetIconId = null;
+        },
         onRemove() {
             this.scene?.traverse((object) => {
                 object.geometry?.dispose?.();
@@ -2837,6 +2925,103 @@ function createUserLocationModelLayer() {
             isUserLocationModelLayerVisible = false;
         },
     };
+}
+
+function cloneNavigationGltfModel(source) {
+    const clone = source.clone(true);
+
+    clone.traverse((object) => {
+        if (!object.isMesh) {
+            return;
+        }
+
+        if (Array.isArray(object.material)) {
+            object.material = object.material.map((material) => material.clone());
+        } else if (object.material) {
+            object.material = object.material.clone();
+        }
+    });
+
+    return clone;
+}
+
+function prepareNavigationGltfModel(scene, iconId) {
+    const wrapper = new Group();
+    const model = scene.clone(true);
+
+    model.rotation.x = Math.PI / 2;
+    model.rotation.z = Math.PI;
+    model.updateMatrixWorld(true);
+
+    const box = new Box3().setFromObject(model);
+    const size = new Vector3();
+    const center = new Vector3();
+    box.getSize(size);
+    box.getCenter(center);
+
+    const longestAxis = Math.max(size.x, size.y, size.z, 1);
+    const scale = USER_LOCATION_GLB_MODEL_LENGTH_METERS / longestAxis;
+    model.scale.setScalar(scale);
+    model.position.set(-center.x * scale, -center.y * scale, -center.z * scale);
+
+    applyNavigationGltfMaterials(model, iconId);
+    wrapper.add(model);
+
+    return wrapper;
+}
+
+function applyNavigationGltfMaterials(model, iconId) {
+    const palette = getUserLocationVehicleExtrusionColors(iconId);
+
+    model.traverse((object) => {
+        if (!object.isMesh || !object.material) {
+            return;
+        }
+
+        const materials = Array.isArray(object.material) ? object.material : [object.material];
+        materials.forEach((material) => {
+            const color = material.color instanceof Color ? material.color : new Color('#ffffff');
+            const luminance = (color.r * 0.2126) + (color.g * 0.7152) + (color.b * 0.0722);
+            const name = `${object.name || ''} ${material.name || ''}`.toLowerCase();
+
+            material.roughness = name.includes('glass') || name.includes('window') ? 0.05 : 0.16;
+            material.metalness = luminance < 0.14 ? 0.28 : 0.72;
+            material.flatShading = false;
+
+            if (name.includes('glass') || name.includes('window') || (color.b > color.r * 1.15 && color.b > color.g * 0.85)) {
+                material.color = new Color(palette.glass);
+                material.transparent = true;
+                material.opacity = 0.92;
+                material.metalness = 0.42;
+                material.roughness = 0.04;
+                return;
+            }
+
+            if (luminance < 0.10) {
+                material.color = new Color('#05070d');
+                material.roughness = 0.34;
+                material.metalness = 0.24;
+                return;
+            }
+
+            if (color.r > 0.72 && color.g < 0.26 && color.b < 0.30) {
+                material.color = new Color(palette.tailLight);
+                material.emissive = new Color(palette.tailLight);
+                material.emissiveIntensity = 0.82;
+                return;
+            }
+
+            if (luminance > 0.82) {
+                material.color = new Color(palette.headlight);
+                material.emissive = new Color('#9df4ff');
+                material.emissiveIntensity = 0.54;
+                return;
+            }
+
+            material.color = new Color(palette.body);
+            material.emissive = new Color(palette.body).multiplyScalar(0.05);
+        });
+    });
 }
 
 function markUserLocationModelVisible() {

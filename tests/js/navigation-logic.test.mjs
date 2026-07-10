@@ -323,6 +323,10 @@ test('map settings expose selectable GPS cursor icons', () => {
     assert.match(mapSource, /fill-extrusion-height/);
     assert.match(mapSource, /buildUserLocationVehicleExtrusions/);
     assert.match(mapSource, /renderUserLocationModelFeature\(location\)/);
+    assert.match(mapSource, /GLTFLoader/);
+    assert.match(mapSource, /USER_LOCATION_GLB_MODELS/);
+    assert.match(mapSource, /GPS_CURSOR_MODEL_ASSET_BASE/);
+    assert.match(mapSource, /prepareNavigationGltfModel/);
     assert.match(mapSource, /new WebGLRenderer/);
     assert.match(mapSource, /from '\.\/navigation-vehicle-models'/);
     assert.doesNotMatch(mapSource, /BoxGeometry|SphereGeometry|MeshBasicMaterial|getNavigationVehicleProfile/);
@@ -669,6 +673,7 @@ test('map chrome uses inverse contrast for light and dark map themes', () => {
     assert.match(cssSource, /body\[data-map-tone="dark"\]\[data-map-ui-theme="light"\]:not\(\.is-navigation-mode\) \.top-panel/);
     assert.match(cssSource, /body\[data-map-ui-theme\]:not\(\.is-navigation-mode\) \.top-panel,[\s\S]*?\.layer-switcher__panel/);
     assert.match(cssSource, /body\[data-map-ui-theme\]:not\(\.is-navigation-mode\) \.map-control-button,[\s\S]*?\.layer-switcher__option/);
+    assert.doesNotMatch(cssSource, /body\[data-map-layer="(?:light|dark|satellite)"\]:not\(\.is-navigation-mode\)/);
     assert.match(cssSource, /color: var\(--map-ui-text\);/);
     assert.match(cssSource, /background: var\(--map-ui-surface\);/);
 });

@@ -470,20 +470,6 @@ body.is-navigation-mode .map-traffic-button.is-active {
     border-radius: 14px;
 }
 
-body[data-map-layer="light"]:not(.is-navigation-mode) .map-settings__panel,
-body[data-map-layer="light"]:not(.is-navigation-mode) .layer-switcher__panel {
-    color: #f8fbff;
-    background: linear-gradient(145deg, rgba(5, 15, 35, 0.92), rgba(13, 31, 67, 0.82));
-    border-color: rgba(105, 188, 255, 0.36);
-}
-
-body[data-map-layer="light"]:not(.is-navigation-mode) .map-settings__option,
-body[data-map-layer="light"]:not(.is-navigation-mode) .layer-switcher__option {
-    color: #f8fbff;
-    background: rgba(11, 31, 68, 0.72);
-    border-color: rgba(88, 191, 255, 0.34);
-}
-
 .map-settings__option {
     justify-items: center;
     gap: 0;
@@ -536,33 +522,11 @@ body[data-map-layer="light"]:not(.is-navigation-mode) .layer-switcher__option {
     border-color: rgba(61, 154, 255, 0.44);
 }
 
-body[data-map-layer="light"]:not(.is-navigation-mode) .map-control-button:hover,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .map-control-button:hover,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-control-button:hover {
-    color: #f8fbff;
-    background: linear-gradient(135deg, rgba(41, 184, 255, 0.28), rgba(124, 61, 255, 0.24));
-    border-color: rgba(103, 232, 249, 0.58);
-    box-shadow: 0 12px 28px rgba(0, 12, 34, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.18);
-}
-
-body[data-map-layer="light"]:not(.is-navigation-mode) .map-traffic-button.is-active,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .map-traffic-button.is-active,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-traffic-button.is-active {
+.map-traffic-button.is-active {
     color: #061226;
     background: linear-gradient(135deg, #67E8F9, #A78BFA);
     border-color: rgba(34, 211, 238, 0.92);
     box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.22), 0 14px 32px rgba(37, 99, 235, 0.32);
-}
-
-body[data-map-layer="light"]:not(.is-navigation-mode) .layer-switcher__option:hover,
-body[data-map-layer="light"]:not(.is-navigation-mode) .map-settings__option:hover,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .layer-switcher__option:hover,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .map-settings__option:hover,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .layer-switcher__option:hover,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-settings__option:hover {
-    color: #ffffff;
-    background: linear-gradient(135deg, rgba(41, 184, 255, 0.26), rgba(124, 61, 255, 0.22));
-    border-color: rgba(103, 232, 249, 0.58);
 }
 
 .layer-switcher__swatch {
@@ -1060,25 +1024,6 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-settings__option:
     border-radius: 50%;
     animation: app-spin 720ms linear infinite;
 }
-
-body[data-map-layer="dark"]:not(.is-navigation-mode) .status-panel,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .status-panel {
-    color: #102033;
-    background:
-        linear-gradient(145deg, rgba(255, 255, 255, 0.94), rgba(232, 243, 250, 0.86)),
-        rgba(255, 255, 255, 0.9);
-    border-color: rgba(148, 184, 204, 0.38);
-    box-shadow:
-        0 18px 54px rgba(2, 8, 23, 0.22),
-        inset 0 1px 0 rgba(255, 255, 255, 0.78);
-}
-
-body[data-map-layer="dark"]:not(.is-navigation-mode) .status-panel[data-state="loading"]::before,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .status-panel[data-state="loading"]::before {
-    border-color: rgba(14, 165, 233, 0.22);
-    border-top-color: #0EA5E9;
-}
-
 .status-panel[data-state="error"] {
     color: #be123c;
     border-color: rgba(244, 63, 94, 0.34);
@@ -1964,230 +1909,6 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .status-panel[data-sta
     background: rgba(232, 246, 252, 0.72);
     border-radius: 14px;
 }
-
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-card,
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-list,
-body[data-map-layer="light"]:not(.is-navigation-mode) .search-panel,
-body[data-map-layer="light"]:not(.is-navigation-mode) .profile-panel,
-body[data-map-layer="light"]:not(.is-navigation-mode) .bottom-sheet,
-body[data-map-layer="light"]:not(.is-navigation-mode) .floating-nav,
-body[data-map-layer="light"]:not(.is-navigation-mode) .map-control-stack {
-    color: #f8fbff;
-    background: linear-gradient(145deg, rgba(5, 15, 35, 0.88), rgba(13, 31, 67, 0.76));
-    border-color: rgba(105, 188, 255, 0.36);
-    box-shadow: 0 22px 56px rgba(0, 12, 34, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.16);
-}
-
-body[data-map-layer="light"]:not(.is-navigation-mode) .top-panel {
-    color: #f8fbff;
-    background: linear-gradient(145deg, rgba(5, 15, 35, 0.92), rgba(13, 31, 67, 0.82));
-    border-color: rgba(105, 188, 255, 0.36);
-    box-shadow: 0 18px 42px rgba(0, 12, 34, 0.36), inset 0 1px 0 rgba(255, 255, 255, 0.16);
-}
-
-body[data-map-layer="light"]:not(.is-navigation-mode) .brand-mark--maps__text-main {
-    color: #ffffff;
-}
-
-body[data-map-layer="light"]:not(.is-navigation-mode) .brand-mark--maps__text-accent {
-    color: #1677FF;
-}
-
-body[data-map-layer="light"]:not(.is-navigation-mode) .panel-eyebrow,
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-card__label,
-body[data-map-layer="light"]:not(.is-navigation-mode) .export-selection-count {
-    color: var(--sky);
-}
-
-body[data-map-layer="light"]:not(.is-navigation-mode) .panel-header h2,
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-card h2,
-body[data-map-layer="light"]:not(.is-navigation-mode) .profile-user strong,
-body[data-map-layer="light"]:not(.is-navigation-mode) .install-app-panel strong,
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-list__content strong,
-body[data-map-layer="light"]:not(.is-navigation-mode) .search-result strong,
-body[data-map-layer="light"]:not(.is-navigation-mode) .favorite-item strong,
-body[data-map-layer="light"]:not(.is-navigation-mode) .nav-button {
-    color: #f8fbff;
-}
-
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-list__content small,
-body[data-map-layer="light"]:not(.is-navigation-mode) .search-result small,
-body[data-map-layer="light"]:not(.is-navigation-mode) .favorite-item small,
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-card__address,
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-card__description,
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-detail p,
-body[data-map-layer="light"]:not(.is-navigation-mode) .profile-user span,
-body[data-map-layer="light"]:not(.is-navigation-mode) .install-app-panel span,
-body[data-map-layer="light"]:not(.is-navigation-mode) .search-field,
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-form label,
-body[data-map-layer="light"]:not(.is-navigation-mode) .auth-form label {
-    color: rgba(226, 239, 255, 0.76);
-}
-
-body[data-map-layer="light"]:not(.is-navigation-mode) .search-field input,
-body[data-map-layer="light"]:not(.is-navigation-mode) .search-field select,
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-form input,
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-form textarea,
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-form select,
-body[data-map-layer="light"]:not(.is-navigation-mode) .auth-form input,
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-detail,
-body[data-map-layer="light"]:not(.is-navigation-mode) .install-app-panel,
-body[data-map-layer="light"]:not(.is-navigation-mode) .profile-user,
-body[data-map-layer="light"]:not(.is-navigation-mode) .photo-dropzone,
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-card__meta span,
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-card__address {
-    color: #f8fbff;
-    background: rgba(12, 27, 58, 0.62);
-    border-color: rgba(105, 188, 255, 0.30);
-}
-
-body[data-map-layer="light"]:not(.is-navigation-mode) .search-field input::placeholder,
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-form input::placeholder,
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-form textarea::placeholder,
-body[data-map-layer="light"]:not(.is-navigation-mode) .auth-form input::placeholder {
-    color: rgba(226, 239, 255, 0.48);
-}
-
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-list__status,
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-card__meta .spot-status {
-    color: #67e8b7;
-    background: rgba(16, 185, 129, 0.08);
-    border-color: rgba(103, 232, 183, 0.76);
-}
-
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-status--unverified {
-    color: #fdba74 !important;
-    background: rgba(251, 146, 60, 0.10) !important;
-    border-color: rgba(253, 186, 116, 0.78) !important;
-}
-
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-list__item,
-body[data-map-layer="light"]:not(.is-navigation-mode) .search-result,
-body[data-map-layer="light"]:not(.is-navigation-mode) .favorite-item {
-    background: linear-gradient(145deg, rgba(14, 38, 80, 0.78), rgba(9, 25, 54, 0.64));
-    border-color: rgba(88, 191, 255, 0.46);
-    box-shadow: 0 14px 30px rgba(0, 10, 30, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.12);
-}
-
-body[data-map-layer="light"]:not(.is-navigation-mode) .map-control-button,
-body[data-map-layer="light"]:not(.is-navigation-mode) .icon-button,
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-card__close,
-body[data-map-layer="light"]:not(.is-navigation-mode) .route-picker__close,
-body[data-map-layer="light"]:not(.is-navigation-mode) .photo-lightbox__close,
-body[data-map-layer="light"]:not(.is-navigation-mode) .ghost-button,
-body[data-map-layer="light"]:not(.is-navigation-mode) .edit-button,
-body[data-map-layer="light"]:not(.is-navigation-mode) .favorite-button,
-body[data-map-layer="light"]:not(.is-navigation-mode) .copy-address-button,
-body[data-map-layer="light"]:not(.is-navigation-mode) .field-icon-button {
-    color: #f8fbff;
-    background: rgba(238, 246, 255, 0.12);
-    border-color: rgba(162, 213, 255, 0.28);
-}
-
-body[data-map-layer="light"]:not(.is-navigation-mode) .nav-button.is-active,
-body[data-map-layer="light"]:not(.is-navigation-mode) .route-button {
-    color: #ffffff;
-    background: linear-gradient(135deg, var(--violet), #21a8ff);
-}
-
-body[data-map-layer="dark"]:not(.is-navigation-mode) .top-panel,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .floating-nav,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .map-control-stack,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .map-settings__panel,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .layer-switcher__panel,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .top-panel,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .floating-nav,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-control-stack,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-settings__panel,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .layer-switcher__panel {
-    color: #071126;
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(229, 243, 250, 0.88));
-    border-color: rgba(148, 163, 184, 0.26);
-    box-shadow: 0 20px 48px rgba(15, 23, 42, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-}
-
-body[data-map-layer="dark"]:not(.is-navigation-mode) .brand-mark--maps__text-main,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .brand-mark--maps__text-main,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .nav-button,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .nav-button {
-    color: #071126;
-}
-
-body[data-map-layer="dark"]:not(.is-navigation-mode) .map-control-button,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .map-settings__option,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .layer-switcher__option,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-control-button {
-    color: #071126;
-    background: rgba(255, 255, 255, 0.78);
-    border-color: rgba(100, 116, 139, 0.2);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.94);
-}
-
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-settings__option,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .layer-switcher__option {
-    color: #071126;
-    background: rgba(255, 255, 255, 0.78);
-    border-color: rgba(100, 116, 139, 0.2);
-}
-
-body[data-map-layer="dark"]:not(.is-navigation-mode) .nav-button.is-active,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .nav-button.is-active {
-    color: #071126;
-    background: linear-gradient(135deg, rgba(41, 184, 255, 0.22), rgba(124, 61, 255, 0.18));
-    border-color: rgba(61, 154, 255, 0.44);
-}
-
-body[data-map-layer="dark"]:not(.is-navigation-mode) .spot-card,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .spot-list,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .search-panel,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .profile-panel,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .bottom-sheet,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .route-picker,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .spot-card,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .spot-list,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .search-panel,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .profile-panel,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .bottom-sheet,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .route-picker {
-    color: #071126;
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(229, 243, 250, 0.88));
-    border-color: rgba(148, 163, 184, 0.26);
-    box-shadow: 0 24px 56px rgba(15, 23, 42, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.90);
-}
-
-body[data-map-layer="dark"]:not(.is-navigation-mode) .route-picker h3,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .route-option strong,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .route-picker h3,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .route-option strong {
-    color: #071126;
-}
-
-body[data-map-layer="dark"]:not(.is-navigation-mode) .route-option,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .route-option {
-    color: #071126;
-    background: rgba(232, 246, 252, 0.78);
-    border-color: rgba(14, 165, 233, 0.24);
-}
-
-body[data-map-layer="dark"]:not(.is-navigation-mode) .route-option--app,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .route-option--app {
-    color: #ffffff;
-    background: linear-gradient(135deg, rgba(124, 61, 255, 0.92), rgba(33, 168, 255, 0.86));
-    border-color: rgba(116, 214, 255, 0.62);
-}
-
-body[data-map-layer="dark"]:not(.is-navigation-mode) .route-option--app strong,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .route-option--app strong {
-    color: #ffffff;
-}
-
-body[data-map-layer="dark"]:not(.is-navigation-mode) .route-option small,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .route-picker__note,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .route-option small,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .route-picker__note {
-    color: rgba(7, 17, 31, 0.62);
-}
-
 .auth-tab {
     min-height: 38px;
     color: var(--text-muted);
@@ -2484,54 +2205,6 @@ body[data-map-layer="satellite"]:not(.is-navigation-mode) .route-picker__note {
         transform: rotate(360deg);
     }
 }
-
-body[data-map-layer="dark"]:not(.is-navigation-mode) .navigator-panel,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .navigator-panel,
-body[data-map-layer="light"]:not(.is-navigation-mode) .navigator-panel {
-    color: #071126;
-    background: linear-gradient(145deg, rgba(248, 252, 255, 0.94), rgba(231, 244, 251, 0.88));
-    border-color: rgba(58, 137, 166, 0.24);
-    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.72);
-}
-
-body[data-map-layer="dark"]:not(.is-navigation-mode) .navigator-panel label,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .navigator-panel__hint,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .navigator-panel label,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .navigator-panel__hint,
-body[data-map-layer="light"]:not(.is-navigation-mode) .navigator-panel label,
-body[data-map-layer="light"]:not(.is-navigation-mode) .navigator-panel__hint {
-    color: rgba(7, 17, 38, 0.68);
-}
-
-body[data-map-layer="dark"]:not(.is-navigation-mode) .navigator-panel input,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .navigator-suggestion,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .navigator-place,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .navigator-suggestions__loading,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .navigator-panel input,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .navigator-suggestion,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .navigator-place,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .navigator-suggestions__loading,
-body[data-map-layer="light"]:not(.is-navigation-mode) .navigator-panel input,
-body[data-map-layer="light"]:not(.is-navigation-mode) .navigator-suggestion,
-body[data-map-layer="light"]:not(.is-navigation-mode) .navigator-place,
-body[data-map-layer="light"]:not(.is-navigation-mode) .navigator-suggestions__loading {
-    color: #071126;
-    background: rgba(232, 246, 252, 0.74);
-    border-color: rgba(58, 137, 166, 0.24);
-}
-
-body[data-map-layer="dark"]:not(.is-navigation-mode) .navigator-panel input::placeholder,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .navigator-suggestion small,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .navigator-place small,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .navigator-panel input::placeholder,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .navigator-suggestion small,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .navigator-place small,
-body[data-map-layer="light"]:not(.is-navigation-mode) .navigator-panel input::placeholder,
-body[data-map-layer="light"]:not(.is-navigation-mode) .navigator-suggestion small,
-body[data-map-layer="light"]:not(.is-navigation-mode) .navigator-place small {
-    color: rgba(7, 17, 38, 0.54);
-}
-
 @media (max-width: 720px) {
     .navigator-panel {
         right: max(10px, var(--safe-right));
@@ -5166,28 +4839,6 @@ body[data-map-layer="light"].is-navigation-mode .navigation-panel__summary small
 .spot-card__actions:not(:has(.edit-button)) .route-button {
     grid-column: 2 / 4;
 }
-
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-card {
-    background: linear-gradient(145deg, rgba(247, 252, 255, 0.88), rgba(225, 241, 248, 0.78));
-    border-color: rgba(148, 210, 232, 0.52);
-}
-
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-card h2 {
-    color: #071126;
-}
-
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-card__description,
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-card__address {
-    color: rgba(7, 17, 38, 0.72);
-}
-
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-card__address,
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-card__meta span,
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-detail {
-    background: rgba(239, 249, 253, 0.76);
-    border-color: rgba(80, 184, 222, 0.24);
-}
-
 @media (max-width: 720px) {
     .spot-card {
         top: auto;
@@ -5259,25 +4910,6 @@ body[data-map-layer="light"]:not(.is-navigation-mode) .spot-detail {
         grid-column: 2 / 4;
     }
 }
-
-body[data-map-layer="light"]:not(.is-navigation-mode) .map-control-stack,
-body[data-map-layer="light"]:not(.is-navigation-mode) .top-panel,
-body[data-map-layer="light"]:not(.is-navigation-mode) .floating-nav {
-    color: #f8fbff;
-    background:
-        linear-gradient(145deg, rgba(9, 21, 46, 0.94), rgba(13, 31, 67, 0.84)),
-        rgba(5, 7, 14, 0.86);
-    border-color: rgba(105, 188, 255, 0.26);
-    box-shadow: 0 18px 42px rgba(0, 12, 34, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.14);
-}
-
-body[data-map-layer="light"]:not(.is-navigation-mode) .map-control-button {
-    color: #f8fbff;
-    background: rgba(8, 20, 44, 0.9);
-    border-color: rgba(105, 188, 255, 0.24);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.13);
-}
-
 .navigator-panel .panel-close,
 .icon-button,
 .spot-card__close,
@@ -5298,94 +4930,6 @@ body[data-map-layer="light"]:not(.is-navigation-mode) .map-control-button {
 .navigator-panel__actions .route-button {
     min-height: 46px;
 }
-
-body[data-map-layer="light"]:not(.is-navigation-mode) .top-panel,
-body[data-map-layer="light"]:not(.is-navigation-mode) .floating-nav,
-body[data-map-layer="light"]:not(.is-navigation-mode) .map-control-stack,
-body[data-map-layer="light"]:not(.is-navigation-mode) .map-settings__panel,
-body[data-map-layer="light"]:not(.is-navigation-mode) .layer-switcher__panel,
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-card,
-body[data-map-layer="light"]:not(.is-navigation-mode) .spot-list,
-body[data-map-layer="light"]:not(.is-navigation-mode) .search-panel,
-body[data-map-layer="light"]:not(.is-navigation-mode) .profile-panel,
-body[data-map-layer="light"]:not(.is-navigation-mode) .bottom-sheet,
-body[data-map-layer="light"]:not(.is-navigation-mode) .route-picker {
-    color: #f8fbff;
-    background:
-        linear-gradient(145deg, rgba(9, 21, 46, 0.94), rgba(13, 31, 67, 0.84)),
-        rgba(5, 7, 14, 0.86);
-    border-color: rgba(105, 188, 255, 0.26);
-    box-shadow: 0 18px 42px rgba(0, 12, 34, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.14);
-}
-
-body[data-map-layer="light"]:not(.is-navigation-mode) .brand-mark--maps__text-main,
-body[data-map-layer="light"]:not(.is-navigation-mode) .nav-button,
-body[data-map-layer="light"]:not(.is-navigation-mode) .map-settings__option,
-body[data-map-layer="light"]:not(.is-navigation-mode) .layer-switcher__option,
-body[data-map-layer="light"]:not(.is-navigation-mode) .map-control-button {
-    color: #f8fbff;
-}
-
-body[data-map-layer="light"]:not(.is-navigation-mode) .map-control-button,
-body[data-map-layer="light"]:not(.is-navigation-mode) .map-settings__option,
-body[data-map-layer="light"]:not(.is-navigation-mode) .layer-switcher__option {
-    background: rgba(8, 20, 44, 0.9);
-    border-color: rgba(105, 188, 255, 0.24);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.13);
-}
-
-body[data-map-layer="dark"]:not(.is-navigation-mode) .top-panel,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .floating-nav,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .map-control-stack,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .map-settings__panel,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .layer-switcher__panel,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .spot-card,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .spot-list,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .search-panel,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .profile-panel,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .bottom-sheet,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .route-picker,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .top-panel,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .floating-nav,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-control-stack,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-settings__panel,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .layer-switcher__panel,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .spot-card,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .spot-list,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .search-panel,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .profile-panel,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .bottom-sheet,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .route-picker {
-    color: #071126;
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(229, 243, 250, 0.88));
-    border-color: rgba(148, 163, 184, 0.26);
-    box-shadow: 0 20px 48px rgba(15, 23, 42, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-}
-
-body[data-map-layer="dark"]:not(.is-navigation-mode) .brand-mark--maps__text-main,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .nav-button,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .map-settings__option,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .layer-switcher__option,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .map-control-button,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .brand-mark--maps__text-main,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .nav-button,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-settings__option,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .layer-switcher__option,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-control-button {
-    color: #071126;
-}
-
-body[data-map-layer="dark"]:not(.is-navigation-mode) .map-control-button,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .map-settings__option,
-body[data-map-layer="dark"]:not(.is-navigation-mode) .layer-switcher__option,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-control-button,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .map-settings__option,
-body[data-map-layer="satellite"]:not(.is-navigation-mode) .layer-switcher__option {
-    background: rgba(255, 255, 255, 0.78);
-    border-color: rgba(100, 116, 139, 0.2);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.94);
-}
-
 /* Navigation cockpit: inverse map contrast and compact, glanceable guidance. */
 body.is-navigation-mode {
     --nav-surface: linear-gradient(145deg, rgba(7, 18, 40, 0.96), rgba(13, 31, 67, 0.90));
