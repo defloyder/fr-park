@@ -114,7 +114,7 @@ const USER_LOCATION_GLB_MODELS = {
     'auralith-nav-cyan': `${GPS_CURSOR_MODEL_ASSET_BASE}sports-cyan.glb`,
     'auralith-nav-graphite': `${GPS_CURSOR_MODEL_ASSET_BASE}suv-graphite.glb`,
 };
-const USER_LOCATION_GLB_MODEL_LENGTH_METERS = 2.55;
+const USER_LOCATION_GLB_MODEL_LENGTH_METERS = 4.15;
 const userLocationGltfModelCache = new Map();
 const DEFAULT_BASE_LAYER_ID = 'light';
 const BASE_LAYER_STORAGE_KEY = 'auralith:map-layer';
@@ -125,7 +125,7 @@ const USER_LOCATION_ICON_STORAGE_KEY = 'auralith:user-location-icon';
 const USER_LOCATION_ICON_PREFIX = 'user-location-';
 const USER_LOCATION_MODEL_LENGTH_METERS = 6.2;
 const USER_LOCATION_MODEL_ALTITUDE_METERS = 0.18;
-const USER_LOCATION_MODEL_VISUAL_SCALE = 1.85;
+const USER_LOCATION_MODEL_VISUAL_SCALE = 2.35;
 const USER_LOCATION_MODEL_VERTICAL_SCALE = 2.85;
 const USER_LOCATION_EXTRUSION_MODEL_SCALE = 0.54;
 const ROAD_MARKING_LAYER_PATTERNS = [
@@ -2833,7 +2833,7 @@ function createUserLocationModelLayer() {
                 const worldMatrix = new Matrix4()
                     .makeTranslation(coordinate.x, coordinate.y, coordinate.z)
                     .scale(new Vector3(scale, -scale, scale * USER_LOCATION_MODEL_VERTICAL_SCALE))
-                    .multiply(new Matrix4().makeRotationZ(-degreesToRadians(heading)));
+                    .multiply(new Matrix4().makeRotationZ(degreesToRadians(heading + 180)));
 
                 this.camera.projectionMatrix = new Matrix4()
                     .fromArray(matrix)
