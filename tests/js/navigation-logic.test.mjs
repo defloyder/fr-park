@@ -325,12 +325,16 @@ test('map settings expose selectable GPS cursor icons', () => {
     assert.match(carModelSource, /BoxGeometry/);
     assert.match(carModelSource, /SphereGeometry/);
     assert.match(carModelSource, /addVehicleVerticalBodySides/);
+    assert.match(carModelSource, /createTaperedVehiclePart/);
     assert.match(vehicleMaterialsSource, /MeshBasicMaterial/);
+    assert.match(vehicleMaterialsSource, /flatShading: true/);
+    assert.match(vehiclePartsSource, /BufferGeometry/);
     assert.match(vehiclePartsSource, /rotation\.z = Math\.PI \/ 2/);
     assert.match(mapSource, /USER_LOCATION_MODEL_ALTITUDE_METERS/);
     assert.match(mapSource, /USER_LOCATION_MODEL_VISUAL_SCALE/);
     assert.match(mapSource, /USER_LOCATION_MODEL_VERTICAL_SCALE/);
     assert.match(mapSource, /scale \* USER_LOCATION_MODEL_VERTICAL_SCALE/);
+    assert.match(mapSource, /USER_LOCATION_MODEL_VERTICAL_SCALE = 2\.05/);
     assert.match(vehicleProfilesSource, /getNavigationVehicleProfile/);
     assert.match(carModelSource, /vehicle-car-\$\{iconId\}/);
     assert.match(carModelSource, /addVehicleShadow/);

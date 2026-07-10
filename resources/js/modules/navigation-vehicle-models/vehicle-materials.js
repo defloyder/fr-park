@@ -15,17 +15,20 @@ export function createNavigationVehicleMaterials(profile) {
             roughness: profile.roughness,
             metalness: profile.metalness,
             emissive: color.clone().multiplyScalar(profile.emissive),
+            flatShading: true,
         }),
         bodyHighlight: new MeshStandardMaterial({
             color: color.clone().multiplyScalar(1.18),
             roughness: profile.roughness * 0.9,
             metalness: Math.min(0.88, profile.metalness + 0.08),
             emissive: color.clone().multiplyScalar(profile.emissive * 0.75),
+            flatShading: true,
         }),
         side: new MeshStandardMaterial({
             color: sideColor,
             roughness: profile.roughness + 0.08,
             metalness: Math.min(0.9, profile.metalness + 0.08),
+            flatShading: true,
         }),
         glass: new MeshStandardMaterial({
             color: 0x071321,
@@ -33,6 +36,7 @@ export function createNavigationVehicleMaterials(profile) {
             metalness: 0.42,
             transparent: true,
             opacity: 0.92,
+            flatShading: true,
         }),
         wheel: new MeshStandardMaterial({
             color: 0x070b12,

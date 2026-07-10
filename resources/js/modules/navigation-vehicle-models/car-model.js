@@ -8,7 +8,12 @@ import {
 } from 'three';
 
 import { createNavigationVehicleMaterials } from './vehicle-materials.js';
-import { createRoundedVehiclePart, createSideWheel, createVehiclePanel } from './vehicle-parts.js';
+import {
+    createRoundedVehiclePart,
+    createSideWheel,
+    createTaperedVehiclePart,
+    createVehiclePanel,
+} from './vehicle-parts.js';
 import { getNavigationVehicleProfile } from './vehicle-profiles.js';
 
 export function createNavigationCarModel(iconId, modelLengthMeters) {
@@ -25,34 +30,76 @@ export function createNavigationCarModel(iconId, modelLengthMeters) {
 
     addVehicleShadow(group, profile);
 
-    const lower = createRoundedVehiclePart(profile.width * 1.08, profile.length * 0.92, profile.lowerHeight, profile.radius * 0.9, materials.side);
+    const lower = createTaperedVehiclePart({
+        bottomWidth: profile.width * 1.18,
+        bottomLength: profile.length * 0.98,
+        topWidth: profile.width * 1.06,
+        topLength: profile.length * 0.92,
+        height: profile.lowerHeight,
+        material: materials.side,
+    });
     lower.position.z = profile.rideHeight + (profile.lowerHeight / 2);
     lower.userData.role = 'side';
     group.add(lower);
 
-    const chassis = createRoundedVehiclePart(profile.width, profile.length, profile.bodyHeight, profile.radius, materials.body);
+    const chassis = createTaperedVehiclePart({
+        bottomWidth: profile.width * 1.06,
+        bottomLength: profile.length,
+        topWidth: profile.width * 0.88,
+        topLength: profile.length * 0.88,
+        height: profile.bodyHeight,
+        material: materials.body,
+    });
     chassis.position.z = profile.rideHeight + profile.lowerHeight + (profile.bodyHeight / 2);
     chassis.userData.role = 'body';
     group.add(chassis);
 
     addVehicleVerticalBodySides(group, profile, materials, chassis);
 
-    const bonnet = createRoundedVehiclePart(profile.width * 0.82, profile.length * 0.24, profile.panelHeight, profile.radius * 0.45, materials.bodyHighlight);
-    bonnet.position.set(0, profile.length * 0.24, chassis.position.z + (profile.bodyHeight / 2) + 0.04);
+    const bonnet = createTaperedVehiclePart({
+        bottomWidth: profile.width * 0.76,
+        bottomLength: profile.length * 0.28,
+        topWidth: profile.width * 0.58,
+        topLength: profile.length * 0.20,
+        height: profile.panelHeight * 2.2,
+        material: materials.bodyHighlight,
+    });
+    bonnet.position.set(0, profile.length * 0.24, chassis.position.z + (profile.bodyHeight / 2) + 0.07);
     bonnet.userData.role = 'body-highlight';
     group.add(bonnet);
 
-    const rearDeck = createRoundedVehiclePart(profile.width * 0.78, profile.length * 0.20, profile.panelHeight, profile.radius * 0.42, materials.bodyHighlight);
-    rearDeck.position.set(0, -profile.length * 0.32, chassis.position.z + (profile.bodyHeight / 2) + 0.045);
+    const rearDeck = createTaperedVehiclePart({
+        bottomWidth: profile.width * 0.76,
+        bottomLength: profile.length * 0.23,
+        topWidth: profile.width * 0.58,
+        topLength: profile.length * 0.16,
+        height: profile.panelHeight * 2.2,
+        material: materials.bodyHighlight,
+    });
+    rearDeck.position.set(0, -profile.length * 0.32, chassis.position.z + (profile.bodyHeight / 2) + 0.07);
     rearDeck.userData.role = 'body-highlight';
     group.add(rearDeck);
 
-    const cabin = createRoundedVehiclePart(profile.cabinWidth, profile.cabinLength, profile.cabinHeight, profile.radius * 0.62, materials.glass);
+    const cabin = createTaperedVehiclePart({
+        bottomWidth: profile.cabinWidth,
+        bottomLength: profile.cabinLength,
+        topWidth: profile.roofWidth,
+        topLength: profile.roofLength,
+        height: profile.cabinHeight,
+        material: materials.glass,
+    });
     cabin.position.set(0, profile.cabinY, chassis.position.z + (profile.bodyHeight / 2) + (profile.cabinHeight / 2));
     cabin.userData.role = 'glass';
     group.add(cabin);
 
-    const roof = createRoundedVehiclePart(profile.roofWidth, profile.roofLength, profile.roofHeight, profile.radius * 0.5, materials.body);
+    const roof = createTaperedVehiclePart({
+        bottomWidth: profile.roofWidth,
+        bottomLength: profile.roofLength,
+        topWidth: profile.roofWidth * 0.86,
+        topLength: profile.roofLength * 0.82,
+        height: profile.roofHeight,
+        material: materials.body,
+    });
     roof.position.set(0, profile.roofY, cabin.position.z + (profile.cabinHeight / 2) + (profile.roofHeight / 2) - 0.02);
     roof.userData.role = 'body';
     group.add(roof);
@@ -86,12 +133,20 @@ function addVehicleVerticalBodySides(group, profile, materials, chassis) {
 
     [-1, 1].forEach((side) => {
         const sideWall = new Mesh(
-            new BoxGeometry(0.08, profile.length * 0.82, profile.bodyHeight * 0.78),
+            new BoxGeometry(0.14, profile.length * 0.86, profile.bodyHeight * 0.86),
             materials.side,
         );
-        sideWall.position.set(side * (profile.width / 2 + 0.035), -0.02, sideZ);
+        sideWall.position.set(side * (profile.width / 2 + 0.02), -0.02, sideZ);
         sideWall.userData.role = 'body-side';
         group.add(sideWall);
+
+        const rocker = new Mesh(
+            new BoxGeometry(0.18, profile.length * 0.64, profile.bodyHeight * 0.16),
+            materials.accent,
+        );
+        rocker.position.set(side * (profile.width / 2 + 0.08), -0.10, profile.rideHeight + profile.wheelRadius * 0.92);
+        rocker.userData.role = 'side-rocker';
+        group.add(rocker);
     });
 
     const frontBumper = new Mesh(
@@ -123,12 +178,20 @@ function addVehicleGlassPanels(group, profile, materials, chassis, cabin) {
 
     [-1, 1].forEach((side) => {
         const sideGlass = new Mesh(
-            new BoxGeometry(0.05, profile.cabinLength * 0.58, profile.cabinHeight * 0.50),
+            new BoxGeometry(0.065, profile.cabinLength * 0.66, profile.cabinHeight * 0.54),
             materials.glass,
         );
-        sideGlass.position.set(side * (profile.cabinWidth / 2 + 0.04), profile.cabinY - 0.05, cabin.position.z + 0.02);
+        sideGlass.position.set(side * (profile.cabinWidth / 2 + 0.055), profile.cabinY - 0.05, cabin.position.z + 0.02);
         sideGlass.userData.role = 'side-glass';
         group.add(sideGlass);
+
+        const pillar = new Mesh(
+            new BoxGeometry(0.075, 0.10, profile.cabinHeight * 0.58),
+            materials.body,
+        );
+        pillar.position.set(side * (profile.cabinWidth / 2 + 0.06), profile.cabinY + profile.cabinLength * 0.02, cabin.position.z + 0.01);
+        pillar.userData.role = 'b-pillar';
+        group.add(pillar);
     });
 }
 
@@ -163,7 +226,7 @@ function addVehicleLights(group, profile, materials, chassis) {
         [-profile.width * 0.30, -profile.length * 0.518, materials.tail],
         [profile.width * 0.30, -profile.length * 0.518, materials.tail],
     ].forEach(([x, y, material]) => {
-        const light = new Mesh(new BoxGeometry(profile.width * 0.18, 0.055, 0.13), material);
+        const light = new Mesh(new BoxGeometry(profile.width * 0.20, 0.07, 0.18), material);
         light.position.set(x, y, lightZ);
         light.userData.role = y > 0 ? 'headlight' : 'tail-light';
         group.add(light);
