@@ -327,6 +327,9 @@ test('map settings expose selectable GPS cursor icons', () => {
     assert.match(mapSource, /USER_LOCATION_GLB_MODELS/);
     assert.match(mapSource, /GPS_CURSOR_MODEL_ASSET_BASE/);
     assert.match(mapSource, /prepareNavigationGltfModel/);
+    assert.match(mapSource, /isUserLocationGltfModelActive\(iconId\)/);
+    assert.match(mapSource, /isUserLocationGltfModelLoading\(iconId\)/);
+    assert.match(mapSource, /shouldRenderUserLocationExtrusionFallback\(iconId\)/);
     assert.match(mapSource, /new WebGLRenderer/);
     assert.match(mapSource, /from '\.\/navigation-vehicle-models'/);
     assert.doesNotMatch(mapSource, /BoxGeometry|SphereGeometry|MeshBasicMaterial|getNavigationVehicleProfile/);

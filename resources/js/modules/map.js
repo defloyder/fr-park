@@ -2876,6 +2876,7 @@ function createUserLocationModelLayer() {
 
                     if (this.activeIconId === iconId) {
                         this.useAssetModel(iconId, cloneNavigationGltfModel(prepared));
+                        refreshRenderedUserLocationFeature();
                     }
 
                     this.loadingIconId = null;
@@ -3718,6 +3719,16 @@ function renderUserLocationModelFeature(location) {
         return false;
     }
 
+    if (isUserLocationGltfModelActive(iconId) || isUserLocationGltfModelLoading(iconId)) {
+        source.setData(buildFeatureCollection([]));
+        return isUserLocationGltfModelActive(iconId);
+    }
+
+    if (!shouldRenderUserLocationExtrusionFallback(iconId)) {
+        source.setData(buildFeatureCollection([]));
+        return false;
+    }
+
     const coordinate = getUserLocationRenderCoordinate(location);
     const features = buildUserLocationVehicleExtrusions(
         coordinate,
@@ -3732,6 +3743,31 @@ function renderUserLocationModelFeature(location) {
     ensureUserLocationModelLayerOnTop();
 
     return features.length > 0;
+}
+
+function isUserLocationGltfModelActive(iconId) {
+    return Boolean(
+        userLocationModelLayer
+        && !userLocationModelLayer.renderFailed
+        && userLocationModelLayer.assetIconId === iconId
+        && userLocationModelLayer.assetModel
+    );
+}
+
+function isUserLocationGltfModelLoading(iconId) {
+    return Boolean(
+        userLocationModelLayer
+        && !userLocationModelLayer.renderFailed
+        && userLocationModelLayer.loadingIconId === iconId
+    );
+}
+
+function shouldRenderUserLocationExtrusionFallback(iconId) {
+    return Boolean(
+        iconId !== DEFAULT_USER_LOCATION_ICON_ID
+        && userLocationModelLayer
+        && userLocationModelLayer.renderFailed
+    );
 }
 
 function buildUserLocationVehicleExtrusions(center, heading, iconId) {
