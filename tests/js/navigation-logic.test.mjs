@@ -369,11 +369,14 @@ test('map settings expose selectable GPS cursor icons', () => {
     assert.doesNotMatch(mapSource, /kenney|quaternius|PolyPizza|removePolyPizzaBackground/);
     assert.match(mapSource, /settings\.classList\.remove\('is-open'\)/);
     assert.match(mapSource, /iconImage: getUserLocationIconImage/);
+    assert.match(mapSource, /uses3dModel: shouldRenderUserLocationWithGltfModel\(\)/);
     assert.match(mapSource, /const modelVisible = renderUserLocationModelFeature\(location\)/);
     assert.match(mapSource, /modelVisible,/);
     assert.doesNotMatch(mapSource, /render3d/);
-    assert.match(mapSource, /id: 'user-navigation-dot'[\s\S]*?\['!', \['boolean', \['get', 'modelVisible'\], false\]\]/);
-    assert.match(mapSource, /id: 'user-location-dot'[\s\S]*?\['!', \['boolean', \['get', 'modelVisible'\], false\]\]/);
+    assert.doesNotMatch(mapSource, /id: 'user-navigation-dot'[\s\S]*?\['!', \['boolean', \['get', 'modelVisible'\], false\]\]/);
+    assert.doesNotMatch(mapSource, /id: 'user-location-dot'[\s\S]*?\['!', \['boolean', \['get', 'modelVisible'\], false\]\]/);
+    assert.match(mapSource, /id: 'user-navigation-dot'[\s\S]*?\['!', \['boolean', \['get', 'uses3dModel'\], false\]\]/);
+    assert.match(mapSource, /id: 'user-location-dot'[\s\S]*?\['!', \['boolean', \['get', 'uses3dModel'\], false\]\]/);
     assert.match(mapSource, /function ensureUserLocationModelLayerOnTop/);
     assert.match(mapSource, /map\.moveLayer\(layerId\)/);
     assert.match(mapSource, /map\.moveLayer\(USER_LOCATION_MODEL_LAYER_ID\)/);

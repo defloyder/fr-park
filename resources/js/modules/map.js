@@ -2587,7 +2587,7 @@ function addUserLocationSourceAndLayer() {
         filter: [
             'all',
             ['!=', ['get', 'mode'], 'navigation'],
-            ['!', ['boolean', ['get', 'modelVisible'], false]],
+            ['!', ['boolean', ['get', 'uses3dModel'], false]],
         ],
         layout: {
             'icon-image': ['get', 'iconImage'],
@@ -2607,7 +2607,7 @@ function addUserLocationSourceAndLayer() {
         filter: [
             'all',
             ['==', ['get', 'mode'], 'navigation'],
-            ['!', ['boolean', ['get', 'modelVisible'], false]],
+            ['!', ['boolean', ['get', 'uses3dModel'], false]],
         ],
         layout: {
             'icon-image': ['get', 'iconImage'],
@@ -2800,7 +2800,9 @@ function createUserLocationModelLayer() {
 
             try {
                 const location = renderedUserLocation || targetUserLocation;
-                const matrix = options.modelViewProjectionMatrix || options.defaultProjectionData?.projectionMatrix;
+                const matrix = options.defaultProjectionData?.mainMatrix
+                    || options.defaultProjectionData?.projectionMatrix
+                    || options.modelViewProjectionMatrix;
 
                 if (!this.renderer || !this.camera || !this.model || !matrix || !isRenderableUserLocationModel(location)) {
                     return;
@@ -3715,6 +3717,7 @@ function renderUserLocationFeature(location) {
                 routeProgressMeters: location.routeProgressMeters,
                 mode: location.headingMode,
                 iconImage: getUserLocationIconImage(),
+                uses3dModel: shouldRenderUserLocationWithGltfModel(),
                 modelVisible,
             },
             geometry: {
@@ -3770,6 +3773,12 @@ function isUserLocationGltfModelActive(iconId) {
         && userLocationModelLayer.assetIconId === iconId
         && userLocationModelLayer.assetModel
     );
+}
+
+function shouldRenderUserLocationWithGltfModel() {
+    const iconId = getSelectedUserLocationIcon();
+
+    return Boolean(iconId !== DEFAULT_USER_LOCATION_ICON_ID && USER_LOCATION_GLB_MODELS[iconId]);
 }
 
 function isUserLocationGltfModelLoading(iconId) {
