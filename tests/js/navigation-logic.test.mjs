@@ -330,6 +330,7 @@ test('map settings expose selectable GPS cursor icons', () => {
     assert.match(mapSource, /isUserLocationGltfModelActive\(iconId\)/);
     assert.match(mapSource, /isUserLocationGltfModelLoading\(iconId\)/);
     assert.match(mapSource, /shouldRenderUserLocationExtrusionFallback\(iconId\)/);
+    assert.match(mapSource, /return isUserLocationModelLayerVisible && isUserLocationGltfModelActive\(iconId\)/);
     assert.match(mapSource, /new WebGLRenderer/);
     assert.match(mapSource, /from '\.\/navigation-vehicle-models'/);
     assert.doesNotMatch(mapSource, /BoxGeometry|SphereGeometry|MeshBasicMaterial|getNavigationVehicleProfile/);
@@ -577,6 +578,8 @@ test('navigation cockpit inverts against the active map and keeps alerts compact
 
     assert.match(cssSource, /body\[data-map-ui-theme="light"\]\.is-navigation-mode \{[\s\S]*?--nav-surface: linear-gradient\(145deg, rgba\(255, 255, 255, 0\.97\)/);
     assert.match(cssSource, /body\[data-map-ui-theme="dark"\]\.is-navigation-mode \{[\s\S]*?--nav-surface: linear-gradient\(145deg, rgba\(7, 18, 40, 0\.96\)/);
+    assert.match(cssSource, /body\[data-map-ui-theme\]\.is-navigation-mode \.map-settings__panel/);
+    assert.match(cssSource, /body\[data-map-ui-theme\]\.is-navigation-mode \.map-settings__option/);
     assert.match(cssSource, /body\.is-navigation-mode \{[\s\S]*?--nav-surface: linear-gradient\(145deg, rgba\(7, 18, 40, 0\.96\)/);
     assert.match(cssSource, /body\.is-navigation-mode \.route-maneuver-hint \{[\s\S]*?background: var\(--nav-surface\)/);
     assert.match(cssSource, /\.navigation-gps-alert \{[\s\S]*?grid-template-columns: 8px auto minmax\(0, 1fr\)/);

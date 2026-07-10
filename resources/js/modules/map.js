@@ -2841,15 +2841,16 @@ function createUserLocationModelLayer() {
             }
         },
         setActiveVehicleIcon(iconId) {
+            isUserLocationModelLayerVisible = false;
             applyNavigationVehicleStyle(this.fallbackModel, iconId);
 
             if (iconId === DEFAULT_USER_LOCATION_ICON_ID) {
                 this.clearAssetModel();
-                if (this.fallbackModel) this.fallbackModel.visible = true;
+                if (this.fallbackModel) this.fallbackModel.visible = false;
                 return;
             }
 
-            if (this.fallbackModel) this.fallbackModel.visible = !this.assetModel;
+            if (this.fallbackModel) this.fallbackModel.visible = false;
             this.loadAssetModel(iconId);
         },
         loadAssetModel(iconId) {
@@ -2885,7 +2886,8 @@ function createUserLocationModelLayer() {
                 undefined,
                 (error) => {
                     this.loadingIconId = null;
-                    if (this.fallbackModel) this.fallbackModel.visible = true;
+                    if (this.fallbackModel) this.fallbackModel.visible = false;
+                    refreshRenderedUserLocationFeature();
                     console.warn('Failed to load GLB GPS cursor model.', iconId, error);
                 },
             );
@@ -3721,7 +3723,7 @@ function renderUserLocationModelFeature(location) {
 
     if (isUserLocationGltfModelActive(iconId) || isUserLocationGltfModelLoading(iconId)) {
         source.setData(buildFeatureCollection([]));
-        return isUserLocationGltfModelActive(iconId);
+        return isUserLocationModelLayerVisible && isUserLocationGltfModelActive(iconId);
     }
 
     if (!shouldRenderUserLocationExtrusionFallback(iconId)) {
