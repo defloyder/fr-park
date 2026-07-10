@@ -58,7 +58,15 @@ const MAP_CONTAINER_ID = 'parking-map';
 const SOURCE_ID = 'parking-spots';
 const PENDING_SOURCE_ID = 'pending-parking-spot';
 const USER_LOCATION_SOURCE_ID = 'user-location';
+const USER_LOCATION_MODEL_SOURCE_ID = 'user-location-3d-vehicle';
 const USER_LOCATION_MODEL_LAYER_ID = 'user-location-3d-model';
+const USER_LOCATION_MODEL_EXTRUSION_LAYERS = [
+    'user-location-3d-shadow',
+    'user-location-3d-body',
+    'user-location-3d-cabin',
+    'user-location-3d-glass',
+    'user-location-3d-lights',
+];
 const ROUTE_SOURCE_ID = 'active-route';
 const SPEED_CAMERA_SOURCE_ID = 'speed-cameras';
 const FUEL_STATION_SOURCE_ID = 'fuel-stations';
@@ -2596,7 +2604,13 @@ function addUserLocationSourceAndLayer() {
 }
 
 function addUserLocationModelLayer() {
-    if (!map || map.getLayer(USER_LOCATION_MODEL_LAYER_ID)) {
+    if (!map) {
+        return;
+    }
+
+    addUserLocationExtrusionModelLayers();
+
+    if (map.getLayer(USER_LOCATION_MODEL_LAYER_ID)) {
         ensureUserLocationModelLayerOnTop();
         return;
     }
@@ -2606,8 +2620,69 @@ function addUserLocationModelLayer() {
     ensureUserLocationModelLayerOnTop();
 }
 
+function addUserLocationExtrusionModelLayers() {
+    if (!map?.getSource(USER_LOCATION_MODEL_SOURCE_ID)) {
+        map.addSource(USER_LOCATION_MODEL_SOURCE_ID, {
+            type: 'geojson',
+            data: buildFeatureCollection([]),
+        });
+    }
+
+    if (!map.getLayer('user-location-3d-shadow')) {
+        map.addLayer({
+            id: 'user-location-3d-shadow',
+            type: 'fill',
+            source: USER_LOCATION_MODEL_SOURCE_ID,
+            filter: ['==', ['get', 'part'], 'shadow'],
+            paint: {
+                'fill-color': 'rgba(0, 0, 0, 0.34)',
+                'fill-opacity': 0.42,
+            },
+        });
+    }
+
+    [
+        ['user-location-3d-body', ['match', ['get', 'part'], ['body', 'trim'], true, false]],
+        ['user-location-3d-cabin', ['match', ['get', 'part'], ['cabin', 'roof'], true, false]],
+        ['user-location-3d-glass', ['==', ['get', 'part'], 'glass']],
+        ['user-location-3d-lights', ['match', ['get', 'part'], ['headlight', 'tail'], true, false]],
+    ].forEach(([id, filter]) => {
+        if (map.getLayer(id)) {
+            return;
+        }
+
+        map.addLayer({
+            id,
+            type: 'fill-extrusion',
+            source: USER_LOCATION_MODEL_SOURCE_ID,
+            filter,
+            paint: {
+                'fill-extrusion-color': ['get', 'color'],
+                'fill-extrusion-base': ['get', 'base'],
+                'fill-extrusion-height': ['get', 'height'],
+                'fill-extrusion-opacity': ['coalesce', ['to-number', ['get', 'opacity']], 1],
+                'fill-extrusion-vertical-gradient': true,
+            },
+        });
+    });
+}
+
 function ensureUserLocationModelLayerOnTop() {
-    if (!map?.getLayer(USER_LOCATION_MODEL_LAYER_ID)) {
+    if (!map) {
+        return;
+    }
+
+    USER_LOCATION_MODEL_EXTRUSION_LAYERS.forEach((layerId) => {
+        if (!map.getLayer(layerId)) {
+            return;
+        }
+
+        try {
+            map.moveLayer(layerId);
+        } catch {}
+    });
+
+    if (!map.getLayer(USER_LOCATION_MODEL_LAYER_ID)) {
         return;
     }
 
@@ -3394,6 +3469,7 @@ export function getMapCenterLocation() {
 
 function renderUserLocationFeature(location) {
     ensureUserLocationModelLayerOnTop();
+    const modelVisible = renderUserLocationModelFeature(location);
     map.getSource(USER_LOCATION_SOURCE_ID)?.setData({
         type: 'FeatureCollection',
         features: [{
@@ -3406,7 +3482,7 @@ function renderUserLocationFeature(location) {
                 routeProgressMeters: location.routeProgressMeters,
                 mode: location.headingMode,
                 iconImage: getUserLocationIconImage(),
-                modelVisible: isUserLocationModelLayerVisible && isRenderableUserLocationModel(location),
+                modelVisible,
             },
             geometry: {
                 type: 'Point',
@@ -3417,6 +3493,125 @@ function renderUserLocationFeature(location) {
     if (isUserLocationModelLayerReady) {
         map?.triggerRepaint();
     }
+}
+
+function renderUserLocationModelFeature(location) {
+    const source = map?.getSource(USER_LOCATION_MODEL_SOURCE_ID);
+
+    if (!source || !isRenderableUserLocationModel(location)) {
+        source?.setData?.(buildFeatureCollection([]));
+        return false;
+    }
+
+    const coordinate = getUserLocationRenderCoordinate(location);
+    const features = buildUserLocationVehicleExtrusions(
+        coordinate,
+        getUserLocationModelHeading(location),
+        getSelectedUserLocationIcon(),
+    );
+
+    source.setData({
+        type: 'FeatureCollection',
+        features,
+    });
+    ensureUserLocationModelLayerOnTop();
+
+    return features.length > 0;
+}
+
+function buildUserLocationVehicleExtrusions(center, heading, iconId) {
+    if (!Array.isArray(center) || !Number.isFinite(Number(center[0])) || !Number.isFinite(Number(center[1]))) {
+        return [];
+    }
+
+    const colors = getUserLocationVehicleExtrusionColors(iconId);
+    const part = (name, localCenter, size, base, height, color, opacity = 1) => ({
+        type: 'Feature',
+        properties: {
+            part: name,
+            base,
+            height,
+            color,
+            opacity,
+        },
+        geometry: {
+            type: 'Polygon',
+            coordinates: [buildRotatedMeterRectangle(center, heading, localCenter, size)],
+        },
+    });
+
+    return [
+        part('shadow', [0, -0.10], [5.4, 11.4], 0, 0, '#000000', 0.32),
+        part('body', [0, 0], [4.05, 9.65], 0.15, 2.85, colors.body),
+        part('trim', [-2.16, -0.12], [0.48, 7.9], 0.34, 1.72, colors.side),
+        part('trim', [2.16, -0.12], [0.48, 7.9], 0.34, 1.72, colors.side),
+        part('cabin', [0, -0.34], [2.78, 4.36], 2.12, 4.62, colors.glass, 0.96),
+        part('roof', [0, -0.58], [2.04, 2.72], 4.34, 5.18, colors.roof),
+        part('glass', [-1.48, -0.30], [0.28, 3.52], 2.48, 4.32, colors.glass, 0.92),
+        part('glass', [1.48, -0.30], [0.28, 3.52], 2.48, 4.32, colors.glass, 0.92),
+        part('headlight', [-0.86, 4.95], [0.74, 0.34], 1.10, 1.86, '#e8fbff', 0.98),
+        part('headlight', [0.86, 4.95], [0.74, 0.34], 1.10, 1.86, '#e8fbff', 0.98),
+        part('tail', [-0.90, -4.95], [0.76, 0.36], 1.02, 1.86, '#ff1748', 0.98),
+        part('tail', [0.90, -4.95], [0.76, 0.36], 1.02, 1.86, '#ff1748', 0.98),
+    ];
+}
+
+function buildRotatedMeterRectangle(center, heading, [x, y], [width, length]) {
+    const corners = [
+        [-width / 2, -length / 2],
+        [width / 2, -length / 2],
+        [width / 2, length / 2],
+        [-width / 2, length / 2],
+    ].map(([cornerX, cornerY]) => offsetCoordinateByHeading(
+        center,
+        heading,
+        x + cornerX,
+        y + cornerY,
+    ));
+
+    return [...corners, corners[0]];
+}
+
+function offsetCoordinateByHeading(center, heading, rightMeters, forwardMeters) {
+    const angle = degreesToRadians(heading);
+    const eastMeters = (rightMeters * Math.cos(angle)) + (forwardMeters * Math.sin(angle));
+    const northMeters = (forwardMeters * Math.cos(angle)) - (rightMeters * Math.sin(angle));
+    const latitude = Number(center[1]);
+    const longitude = Number(center[0]);
+    const metersPerDegreeLatitude = 111320;
+    const metersPerDegreeLongitude = Math.max(
+        1,
+        metersPerDegreeLatitude * Math.cos(degreesToRadians(latitude)),
+    );
+
+    return [
+        longitude + (eastMeters / metersPerDegreeLongitude),
+        latitude + (northMeters / metersPerDegreeLatitude),
+    ];
+}
+
+function getUserLocationVehicleExtrusionColors(iconId) {
+    const body = {
+        'auralith-nav-black': '#101827',
+        'auralith-nav-red': '#ef233c',
+        'auralith-nav-white': '#f8fbff',
+        'auralith-nav-cyan': '#20d5f5',
+        'auralith-nav-graphite': '#3f4654',
+    }[iconId] ?? '#1f8cff';
+    const side = {
+        'auralith-nav-black': '#050814',
+        'auralith-nav-red': '#8f1022',
+        'auralith-nav-white': '#b8c6d8',
+        'auralith-nav-cyan': '#087c95',
+        'auralith-nav-graphite': '#171d28',
+    }[iconId] ?? '#0f3d82';
+
+    return {
+        body,
+        side,
+        roof: body,
+        glass: '#071321',
+    };
 }
 
 function refreshRenderedUserLocationFeature() {
