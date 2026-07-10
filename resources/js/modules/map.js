@@ -2979,7 +2979,7 @@ function prepareNavigationGltfModel(scene, iconId) {
     box.getSize(size);
     box.getCenter(center);
 
-    const longestAxis = Math.max(size.x, size.y, size.z, 1);
+    const longestAxis = Math.max(size.x, size.y, size.z, Number.EPSILON);
     const scale = USER_LOCATION_GLB_MODEL_LENGTH_METERS / longestAxis;
     model.scale.setScalar(scale);
     model.position.set(-center.x * scale, -center.y * scale, -box.min.z * scale);

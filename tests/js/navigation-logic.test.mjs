@@ -385,6 +385,8 @@ test('map settings expose selectable GPS cursor icons', () => {
     assert.match(mapSource, /map\.moveLayer\(USER_LOCATION_MODEL_LAYER_ID\)/);
     assert.match(mapSource, /model\.rotation\.x = Math\.PI \/ 2/);
     assert.doesNotMatch(mapSource, /model\.rotation\.z = Math\.PI/);
+    assert.match(mapSource, /Math\.max\(size\.x, size\.y, size\.z, Number\.EPSILON\)/);
+    assert.doesNotMatch(mapSource, /Math\.max\(size\.x, size\.y, size\.z, 1\)/);
     assert.match(mapSource, /makeRotationZ\(degreesToRadians\(heading \+ 180\)\)/);
     assert.match(mapSource, /addTrafficFlowLayer\(\);\s*addUserLocationModelLayer\(\);/);
     assert.doesNotMatch(mapSource, /icon-opacity['"]?: \['case', \['boolean', \['get', 'render3d'\]/);
