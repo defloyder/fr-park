@@ -2971,7 +2971,6 @@ function prepareNavigationGltfModel(scene, iconId) {
     const model = scene.clone(true);
 
     model.rotation.x = Math.PI / 2;
-    model.rotation.z = Math.PI;
     model.updateMatrixWorld(true);
 
     const box = new Box3().setFromObject(model);
