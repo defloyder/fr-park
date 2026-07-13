@@ -98,21 +98,22 @@ const POI_ICON_IMAGE_IDS = {
 };
 const GPS_CURSOR_ASSET_BASE = '/assets/gps-cursors/';
 const GPS_CURSOR_MODEL_ASSET_BASE = `${GPS_CURSOR_ASSET_BASE}models/`;
+const GPS_CURSOR_SOURCE_MODEL_ASSET_BASE = `${GPS_CURSOR_MODEL_ASSET_BASE}source/`;
 const DEFAULT_USER_LOCATION_ICON_ID = 'auralith-nav-arrow';
 const USER_LOCATION_ICON_OPTIONS = [
     { id: 'auralith-nav-arrow', label: 'Auralith arrow', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-arrow.png` },
-    { id: 'auralith-nav-black', label: 'Black GT', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-black.png` },
-    { id: 'auralith-nav-red', label: 'Red GT', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-red.png` },
-    { id: 'auralith-nav-white', label: 'White GT', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-white.png` },
-    { id: 'auralith-nav-cyan', label: 'Cyan EV', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-cyan.png` },
-    { id: 'auralith-nav-graphite', label: 'Graphite SUV', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-graphite.png` },
+    { id: 'auralith-nav-black', label: 'BMW E30', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-black.png`, modelLabel: 'BMW' },
+    { id: 'auralith-nav-red', label: 'Lamborghini', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-red.png`, modelLabel: 'Lambo' },
+    { id: 'auralith-nav-white', label: 'Porsche Singer', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-white.png`, modelLabel: 'Porsche' },
+    { id: 'auralith-nav-cyan', label: 'Nissan GT-R', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-cyan.png`, modelLabel: 'GT-R' },
+    { id: 'auralith-nav-graphite', label: 'Fairlady Z', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-graphite.png`, modelLabel: 'Z 1978' },
 ];
 const USER_LOCATION_GLB_MODELS = {
-    'auralith-nav-black': `${GPS_CURSOR_MODEL_ASSET_BASE}gps-car.glb`,
-    'auralith-nav-red': `${GPS_CURSOR_MODEL_ASSET_BASE}gps-car.glb`,
-    'auralith-nav-white': `${GPS_CURSOR_MODEL_ASSET_BASE}gps-car.glb`,
-    'auralith-nav-cyan': `${GPS_CURSOR_MODEL_ASSET_BASE}gps-car.glb`,
-    'auralith-nav-graphite': `${GPS_CURSOR_MODEL_ASSET_BASE}gps-car.glb`,
+    'auralith-nav-black': `${GPS_CURSOR_SOURCE_MODEL_ASSET_BASE}bmw_m3_coupe_e30_1986.glb`,
+    'auralith-nav-red': `${GPS_CURSOR_SOURCE_MODEL_ASSET_BASE}lamborghini_aventador_lp700.glb`,
+    'auralith-nav-white': `${GPS_CURSOR_SOURCE_MODEL_ASSET_BASE}xyz_school_coursework_highpoly_porsche_singer.glb`,
+    'auralith-nav-cyan': `${GPS_CURSOR_SOURCE_MODEL_ASSET_BASE}nissan_gt-r_2008.glb`,
+    'auralith-nav-graphite': `${GPS_CURSOR_SOURCE_MODEL_ASSET_BASE}nissan_fairlady_z_s30240z_1978.glb`,
 };
 const USER_LOCATION_GLB_MODEL_LENGTH_METERS = 4.15;
 const userLocationGltfModelCache = new Map();
@@ -2066,7 +2067,11 @@ async function addMarkerImages() {
 
 function renderUserLocationIconPreview(option) {
     if (option.image) {
-        return `<img src="${option.image}" alt="" loading="lazy" decoding="async">`;
+        const badge = option.modelLabel
+            ? `<span class="map-settings__model-name">${option.modelLabel}</span>`
+            : '';
+
+        return `<img src="${option.image}" alt="" loading="lazy" decoding="async">${badge}`;
     }
 
     return option.svg();

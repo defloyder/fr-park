@@ -370,8 +370,12 @@ test('map settings expose selectable GPS cursor icons', () => {
     assert.match(mapSource, /settings\.classList\.remove\('is-open'\)/);
     assert.match(mapSource, /iconImage: getUserLocationIconImage/);
     assert.match(mapSource, /uses3dModel: shouldRenderUserLocationWithGltfModel\(\)/);
-    assert.match(mapSource, /'auralith-nav-red': `\$\{GPS_CURSOR_MODEL_ASSET_BASE\}gps-car\.glb`/);
-    assert.match(mapSource, /'auralith-nav-graphite': `\$\{GPS_CURSOR_MODEL_ASSET_BASE\}gps-car\.glb`/);
+    assert.match(mapSource, /GPS_CURSOR_SOURCE_MODEL_ASSET_BASE/);
+    assert.match(mapSource, /'auralith-nav-black': `\$\{GPS_CURSOR_SOURCE_MODEL_ASSET_BASE\}bmw_m3_coupe_e30_1986\.glb`/);
+    assert.match(mapSource, /'auralith-nav-red': `\$\{GPS_CURSOR_SOURCE_MODEL_ASSET_BASE\}lamborghini_aventador_lp700\.glb`/);
+    assert.match(mapSource, /'auralith-nav-white': `\$\{GPS_CURSOR_SOURCE_MODEL_ASSET_BASE\}xyz_school_coursework_highpoly_porsche_singer\.glb`/);
+    assert.match(mapSource, /'auralith-nav-cyan': `\$\{GPS_CURSOR_SOURCE_MODEL_ASSET_BASE\}nissan_gt-r_2008\.glb`/);
+    assert.match(mapSource, /'auralith-nav-graphite': `\$\{GPS_CURSOR_SOURCE_MODEL_ASSET_BASE\}nissan_fairlady_z_s30240z_1978\.glb`/);
     assert.doesNotMatch(mapSource, /toy-car\.glb/);
     assert.doesNotMatch(mapSource, /sports-red\.glb|sports-cyan\.glb|car-black\.glb|car-white\.glb|suv-graphite\.glb/);
     assert.match(mapSource, /const modelVisible = renderUserLocationModelFeature\(location\)/);
@@ -394,6 +398,7 @@ test('map settings expose selectable GPS cursor icons', () => {
     assert.match(mapSource, /id: 'user-location-dot'[\s\S]*'icon-rotate': 0/);
     assert.match(cssSource, /\.map-settings__grid/);
     assert.match(cssSource, /\.map-settings__preview img/);
+    assert.match(cssSource, /\.map-settings__model-name/);
     assert.match(cssSource, /width: min\(238px, calc\(100vw - 154px\)\)/);
     assert.match(cssSource, /right: calc\(100% \+ 12px\)/);
     assert.match(cssSource, /width: min\(250px, calc\(100vw - 120px\)\)/);
