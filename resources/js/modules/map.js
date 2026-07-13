@@ -3018,28 +3018,24 @@ function applyNavigationGltfMaterials(model, iconId) {
             const isInteriorName = /interior|interieur|seat|steer|dashboard|lcd|screen|sign|moteur|engine/.test(name);
 
             if (isInteriorName) {
-                material.color = new Color(palette.trimDark);
-                material.roughness = 0.38;
-                material.metalness = 0.16;
+                material.roughness = Math.max(Number(material.roughness ?? 0.38), 0.34);
+                material.metalness = Math.min(Number(material.metalness ?? 0.16), 0.24);
                 material.flatShading = false;
                 return;
             }
 
             if (isBodyName || (!isGlassName && !isWheelName && !isLightName && !isTrimName)) {
-                material.map = null;
-                material.color = new Color(palette.body);
-                material.roughness = 0.18;
-                material.metalness = 0.52;
+                material.roughness = Math.min(Number(material.roughness ?? 0.18), 0.2);
+                material.metalness = Math.max(Number(material.metalness ?? 0.52), 0.48);
                 material.flatShading = false;
-                material.emissive = new Color(palette.body).multiplyScalar(0.018);
-                material.emissiveIntensity = 0.16;
+                material.emissive = color.clone().multiplyScalar(0.012);
+                material.emissiveIntensity = 0.1;
                 if ('clearcoat' in material) material.clearcoat = 0.9;
                 if ('clearcoatRoughness' in material) material.clearcoatRoughness = 0.12;
                 return;
             }
 
             if (isWheelName) {
-                material.color = name.includes('rim') || name.includes('brake') ? new Color(palette.wheelMetal) : new Color(palette.tire);
                 material.roughness = name.includes('rim') ? 0.2 : 0.46;
                 material.metalness = name.includes('rim') ? 0.78 : 0.16;
                 material.flatShading = false;
@@ -3051,20 +3047,17 @@ function applyNavigationGltfMaterials(model, iconId) {
             material.flatShading = false;
 
             if (isGlassName || (color.b > color.r * 1.15 && color.b > color.g * 0.85 && luminance > 0.25)) {
-                material.map = null;
-                material.color = new Color(palette.glass);
                 material.transparent = true;
-                material.opacity = 0.58;
+                material.opacity = Math.min(Number(material.opacity ?? 0.72), 0.72);
                 material.metalness = 0.18;
                 material.roughness = 0.04;
-                material.emissive = new Color(palette.glass).multiplyScalar(0.02);
-                material.emissiveIntensity = 0.12;
+                material.emissive = color.clone().multiplyScalar(0.018);
+                material.emissiveIntensity = 0.1;
                 if ('transmission' in material) material.transmission = 0.28;
                 return;
             }
 
             if (luminance < 0.10) {
-                material.color = new Color(palette.trimDark);
                 material.roughness = 0.34;
                 material.metalness = 0.24;
                 return;
@@ -3078,31 +3071,29 @@ function applyNavigationGltfMaterials(model, iconId) {
             }
 
             if (luminance > 0.82) {
-                material.color = new Color(palette.headlight);
-                material.emissive = new Color(palette.headlight);
-                material.emissiveIntensity = 0.36;
+                material.emissive = color.clone().lerp(new Color(palette.headlight), 0.35);
+                material.emissiveIntensity = 0.32;
                 return;
             }
 
             if (isTrimName) {
-                material.map = null;
-                material.color = new Color(palette.trimMetal);
                 material.roughness = 0.18;
                 material.metalness = 0.76;
                 return;
             }
 
-            material.color = color.lerp(new Color(palette.body), 0.18);
-            material.emissive = new Color(palette.body).multiplyScalar(0.012);
+            material.emissive = color.clone().multiplyScalar(0.01);
         });
     });
 }
 
 function getUserLocationGltfVisualScale() {
     const zoom = Number(map?.getZoom?.() ?? 15);
-    const yandexLikeScreenCompensation = 1.35 * (2 ** (16 - zoom));
+    const pitch = Number(map?.getPitch?.() ?? 0);
+    const pitchCompensation = 1 + Math.min(0.65, Math.max(0, pitch - 25) / 55);
+    const yandexLikeScreenCompensation = 2.2 * pitchCompensation * (2 ** (16 - zoom));
 
-    return USER_LOCATION_MODEL_VISUAL_SCALE * Math.min(8.5, Math.max(0.95, yandexLikeScreenCompensation));
+    return USER_LOCATION_MODEL_VISUAL_SCALE * Math.min(14, Math.max(1.35, yandexLikeScreenCompensation));
 }
 
 function getUserLocationGltfPalette(iconId) {
