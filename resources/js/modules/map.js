@@ -12,6 +12,7 @@ import {
     WebGLRenderer,
 } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import {
     fetchDrivingRoute as fetchYandexDrivingRoute,
     fetchFuelStations,
@@ -98,7 +99,7 @@ const POI_ICON_IMAGE_IDS = {
 };
 const GPS_CURSOR_ASSET_BASE = '/assets/gps-cursors/';
 const GPS_CURSOR_MODEL_ASSET_BASE = `${GPS_CURSOR_ASSET_BASE}models/`;
-const GPS_CURSOR_SOURCE_MODEL_ASSET_BASE = `${GPS_CURSOR_MODEL_ASSET_BASE}source/`;
+const GPS_CURSOR_RUNTIME_MODEL_ASSET_BASE = `${GPS_CURSOR_MODEL_ASSET_BASE}runtime/`;
 const DEFAULT_USER_LOCATION_ICON_ID = 'auralith-nav-arrow';
 const USER_LOCATION_ICON_OPTIONS = [
     { id: 'auralith-nav-arrow', label: 'Auralith arrow', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-arrow.png` },
@@ -109,11 +110,11 @@ const USER_LOCATION_ICON_OPTIONS = [
     { id: 'auralith-nav-graphite', label: 'Fairlady Z', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-graphite.png`, modelLabel: 'Z 1978' },
 ];
 const USER_LOCATION_GLB_MODELS = {
-    'auralith-nav-black': `${GPS_CURSOR_SOURCE_MODEL_ASSET_BASE}bmw_m3_coupe_e30_1986.glb`,
-    'auralith-nav-red': `${GPS_CURSOR_SOURCE_MODEL_ASSET_BASE}lamborghini_aventador_lp700.glb`,
-    'auralith-nav-white': `${GPS_CURSOR_SOURCE_MODEL_ASSET_BASE}xyz_school_coursework_highpoly_porsche_singer.glb`,
-    'auralith-nav-cyan': `${GPS_CURSOR_SOURCE_MODEL_ASSET_BASE}nissan_gt-r_2008.glb`,
-    'auralith-nav-graphite': `${GPS_CURSOR_SOURCE_MODEL_ASSET_BASE}nissan_fairlady_z_s30240z_1978.glb`,
+    'auralith-nav-black': `${GPS_CURSOR_RUNTIME_MODEL_ASSET_BASE}bmw_m3_coupe_e30_1986.glb`,
+    'auralith-nav-red': `${GPS_CURSOR_RUNTIME_MODEL_ASSET_BASE}lamborghini_aventador_lp700.glb`,
+    'auralith-nav-white': `${GPS_CURSOR_RUNTIME_MODEL_ASSET_BASE}xyz_school_coursework_highpoly_porsche_singer.glb`,
+    'auralith-nav-cyan': `${GPS_CURSOR_RUNTIME_MODEL_ASSET_BASE}nissan_gt-r_2008.glb`,
+    'auralith-nav-graphite': `${GPS_CURSOR_RUNTIME_MODEL_ASSET_BASE}nissan_fairlady_z_s30240z_1978.glb`,
 };
 const USER_LOCATION_GLB_MODEL_LENGTH_METERS = 4.15;
 const userLocationGltfModelCache = new Map();
@@ -126,8 +127,8 @@ const USER_LOCATION_ICON_STORAGE_KEY = 'auralith:user-location-icon';
 const USER_LOCATION_ICON_PREFIX = 'user-location-';
 const USER_LOCATION_MODEL_LENGTH_METERS = 6.2;
 const USER_LOCATION_MODEL_ALTITUDE_METERS = 0.18;
-const USER_LOCATION_MODEL_VISUAL_SCALE = 2.35;
-const USER_LOCATION_MODEL_VERTICAL_SCALE = 2.85;
+const USER_LOCATION_MODEL_VISUAL_SCALE = 2.65;
+const USER_LOCATION_MODEL_VERTICAL_SCALE = 1;
 const USER_LOCATION_EXTRUSION_MODEL_SCALE = 0.54;
 const ROAD_MARKING_LAYER_PATTERNS = [
     /^road_marking_/,
@@ -2762,6 +2763,7 @@ function createUserLocationModelLayer() {
                 this.camera = new Camera();
                 this.scene = new Scene();
                 this.gltfLoader = new GLTFLoader();
+                this.gltfLoader.setMeshoptDecoder(MeshoptDecoder);
                 this.model = new Group();
                 this.fallbackModel = createNavigationVehicleModel({
                     iconOptions: USER_LOCATION_ICON_OPTIONS,
