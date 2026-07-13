@@ -349,6 +349,9 @@ test('map settings expose selectable GPS cursor icons', () => {
     assert.match(mapSource, /USER_LOCATION_MODEL_ALTITUDE_METERS/);
     assert.match(mapSource, /USER_LOCATION_MODEL_VISUAL_SCALE/);
     assert.match(mapSource, /USER_LOCATION_MODEL_VERTICAL_SCALE/);
+    assert.match(mapSource, /targetPixelLength/);
+    assert.match(mapSource, /metersPerPixel/);
+    assert.match(mapSource, /targetMeters \/ USER_LOCATION_GLB_MODEL_LENGTH_METERS/);
     assert.match(mapSource, /USER_LOCATION_EXTRUSION_MODEL_SCALE = 0\.54/);
     assert.match(mapSource, /iconId === DEFAULT_USER_LOCATION_ICON_ID/);
     assert.match(mapSource, /scale \* USER_LOCATION_MODEL_VERTICAL_SCALE/);
@@ -401,6 +404,7 @@ test('map settings expose selectable GPS cursor icons', () => {
     assert.match(cssSource, /\.map-settings__grid/);
     assert.match(cssSource, /\.map-settings__preview img/);
     assert.match(cssSource, /\.map-settings__model-name/);
+    assert.match(cssSource, /\.map-settings__model-swatch/);
     assert.match(cssSource, /width: min\(238px, calc\(100vw - 154px\)\)/);
     assert.match(cssSource, /right: calc\(100% \+ 12px\)/);
     assert.match(cssSource, /width: min\(250px, calc\(100vw - 120px\)\)/);

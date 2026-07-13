@@ -103,11 +103,11 @@ const GPS_CURSOR_RUNTIME_MODEL_ASSET_BASE = `${GPS_CURSOR_MODEL_ASSET_BASE}runti
 const DEFAULT_USER_LOCATION_ICON_ID = 'auralith-nav-arrow';
 const USER_LOCATION_ICON_OPTIONS = [
     { id: 'auralith-nav-arrow', label: 'Auralith arrow', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-arrow.png` },
-    { id: 'auralith-nav-black', label: 'BMW E30', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-black.png`, modelLabel: 'BMW' },
-    { id: 'auralith-nav-red', label: 'Lamborghini', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-red.png`, modelLabel: 'Lambo' },
-    { id: 'auralith-nav-white', label: 'Porsche Singer', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-white.png`, modelLabel: 'Porsche' },
-    { id: 'auralith-nav-cyan', label: 'Nissan GT-R', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-cyan.png`, modelLabel: 'GT-R' },
-    { id: 'auralith-nav-graphite', label: 'Fairlady Z', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-graphite.png`, modelLabel: 'Z 1978' },
+    { id: 'auralith-nav-black', label: 'BMW E30', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-black.png`, modelLabel: 'BMW', swatch: '#111827' },
+    { id: 'auralith-nav-red', label: 'Lamborghini', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-red.png`, modelLabel: 'Lambo', swatch: '#dc143c' },
+    { id: 'auralith-nav-white', label: 'Porsche Singer', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-white.png`, modelLabel: 'Porsche', swatch: '#f8fafc' },
+    { id: 'auralith-nav-cyan', label: 'Nissan GT-R', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-cyan.png`, modelLabel: 'GT-R', swatch: '#06b6d4' },
+    { id: 'auralith-nav-graphite', label: 'Fairlady Z', image: `${GPS_CURSOR_ASSET_BASE}auralith-nav-graphite.png`, modelLabel: 'Z 1978', swatch: '#475569' },
 ];
 const USER_LOCATION_GLB_MODELS = {
     'auralith-nav-black': `${GPS_CURSOR_RUNTIME_MODEL_ASSET_BASE}bmw_m3_coupe_e30_1986.glb`,
@@ -2071,8 +2071,11 @@ function renderUserLocationIconPreview(option) {
         const badge = option.modelLabel
             ? `<span class="map-settings__model-name">${option.modelLabel}</span>`
             : '';
+        const swatch = option.swatch
+            ? `<span class="map-settings__model-swatch" style="--gps-model-swatch:${option.swatch}"></span>`
+            : '';
 
-        return `<img src="${option.image}" alt="" loading="lazy" decoding="async">${badge}`;
+        return `<img src="${option.image}" alt="" loading="lazy" decoding="async">${badge}${swatch}`;
     }
 
     return option.svg();
@@ -2835,7 +2838,7 @@ function createUserLocationModelLayer() {
                     getUserLocationRenderCoordinate(location),
                     USER_LOCATION_MODEL_ALTITUDE_METERS,
                 );
-                const scale = coordinate.meterInMercatorCoordinateUnits() * getUserLocationGltfVisualScale();
+                const scale = coordinate.meterInMercatorCoordinateUnits() * getUserLocationGltfVisualScale(location);
                 const heading = getUserLocationModelHeading(location);
                 const worldMatrix = new Matrix4()
                     .makeTranslation(coordinate.x, coordinate.y, coordinate.z)
@@ -3087,13 +3090,25 @@ function applyNavigationGltfMaterials(model, iconId) {
     });
 }
 
-function getUserLocationGltfVisualScale() {
+function getUserLocationGltfVisualScale(location) {
     const zoom = Number(map?.getZoom?.() ?? 15);
     const pitch = Number(map?.getPitch?.() ?? 0);
-    const pitchCompensation = 1 + Math.min(0.65, Math.max(0, pitch - 25) / 55);
-    const yandexLikeScreenCompensation = 2.2 * pitchCompensation * (2 ** (16 - zoom));
+    const coordinate = getUserLocationRenderCoordinate(location);
+    const latitude = Number.isFinite(Number(coordinate?.[1]))
+        ? Number(coordinate[1])
+        : MOSCOW_CENTER[1];
+    const latitudeScale = Math.max(0.18, Math.cos(degreesToRadians(latitude)));
+    const metersPerPixel = (156543.03392 * latitudeScale) / (2 ** zoom);
+    const isMobileViewport = window.matchMedia?.('(max-width: 720px)')?.matches ?? false;
+    const isNavigationViewport = document.body?.classList.contains('is-navigation-mode') ?? false;
+    const targetPixelLength = isMobileViewport
+        ? (isNavigationViewport ? 66 : 56)
+        : (isNavigationViewport ? 78 : 64);
+    const pitchCompensation = 1 + Math.min(0.36, Math.max(0, pitch - 35) / 95);
+    const targetMeters = targetPixelLength * metersPerPixel * pitchCompensation;
+    const scale = targetMeters / USER_LOCATION_GLB_MODEL_LENGTH_METERS;
 
-    return USER_LOCATION_MODEL_VISUAL_SCALE * Math.min(14, Math.max(1.35, yandexLikeScreenCompensation));
+    return USER_LOCATION_MODEL_VISUAL_SCALE * Math.min(120, Math.max(4.5, scale));
 }
 
 function getUserLocationGltfPalette(iconId) {

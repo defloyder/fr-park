@@ -530,6 +530,18 @@ body.is-navigation-mode .map-traffic-button.is-active {
     transform: translateX(50%);
 }
 
+.map-settings__model-swatch {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 13px;
+    height: 13px;
+    background: var(--gps-model-swatch, #38bdf8);
+    border: 2px solid rgba(255, 255, 255, 0.92);
+    border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(2, 8, 23, 0.28);
+}
+
 .layer-switcher__option {
     grid-template-columns: 30px minmax(0, 1fr);
     min-height: 40px;
@@ -5501,6 +5513,10 @@ body[data-map-ui-theme].is-navigation-mode .map-settings__model-name {
     color: var(--nav-text);
     background: var(--nav-control);
     border-color: var(--nav-border);
+}
+
+body[data-map-ui-theme].is-navigation-mode .map-settings__model-swatch {
+    border-color: var(--nav-control);
 }
 
 body[data-map-ui-theme="dark"].is-navigation-mode {
