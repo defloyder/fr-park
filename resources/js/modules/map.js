@@ -3010,14 +3010,23 @@ function applyNavigationGltfMaterials(model, iconId) {
             const color = material.color instanceof Color ? material.color : new Color('#ffffff');
             const luminance = (color.r * 0.2126) + (color.g * 0.7152) + (color.b * 0.0722);
             const name = `${object.name || ''} ${material.name || ''}`.toLowerCase();
-            const saturation = Math.max(color.r, color.g, color.b) - Math.min(color.r, color.g, color.b);
             const isBodyName = /body|paint|carpaint|car_paint|exterior|chassis|bonnet|hood|door|bumper|fender|quarter|roof|trunk|spoiler/.test(name);
             const isGlassName = /glass|window|windshield|windscreen|rear_window/.test(name);
             const isWheelName = /wheel|tire|tyre|rim|brake|caliper/.test(name);
             const isLightName = /light|lamp|head|tail|stop|signal/.test(name);
             const isTrimName = /chrome|metal|mirror|grill|grille|trim|exhaust|badge/.test(name);
+            const isInteriorName = /interior|interieur|seat|steer|dashboard|lcd|screen|sign|moteur|engine/.test(name);
 
-            if (isBodyName || (!isGlassName && !isWheelName && !isLightName && !isTrimName && saturation > 0.16 && luminance > 0.08)) {
+            if (isInteriorName) {
+                material.color = new Color(palette.trimDark);
+                material.roughness = 0.38;
+                material.metalness = 0.16;
+                material.flatShading = false;
+                return;
+            }
+
+            if (isBodyName || (!isGlassName && !isWheelName && !isLightName && !isTrimName)) {
+                material.map = null;
                 material.color = new Color(palette.body);
                 material.roughness = 0.18;
                 material.metalness = 0.52;
@@ -3042,6 +3051,7 @@ function applyNavigationGltfMaterials(model, iconId) {
             material.flatShading = false;
 
             if (isGlassName || (color.b > color.r * 1.15 && color.b > color.g * 0.85 && luminance > 0.25)) {
+                material.map = null;
                 material.color = new Color(palette.glass);
                 material.transparent = true;
                 material.opacity = 0.58;
@@ -3075,6 +3085,7 @@ function applyNavigationGltfMaterials(model, iconId) {
             }
 
             if (isTrimName) {
+                material.map = null;
                 material.color = new Color(palette.trimMetal);
                 material.roughness = 0.18;
                 material.metalness = 0.76;
@@ -3089,14 +3100,9 @@ function applyNavigationGltfMaterials(model, iconId) {
 
 function getUserLocationGltfVisualScale() {
     const zoom = Number(map?.getZoom?.() ?? 15);
+    const yandexLikeScreenCompensation = 1.35 * (2 ** (16 - zoom));
 
-    if (zoom >= 17) return USER_LOCATION_MODEL_VISUAL_SCALE * 1.18;
-    if (zoom >= 16) return USER_LOCATION_MODEL_VISUAL_SCALE * 1.34;
-    if (zoom >= 15) return USER_LOCATION_MODEL_VISUAL_SCALE * 1.64;
-    if (zoom >= 14) return USER_LOCATION_MODEL_VISUAL_SCALE * 2.05;
-    if (zoom >= 13) return USER_LOCATION_MODEL_VISUAL_SCALE * 2.65;
-
-    return USER_LOCATION_MODEL_VISUAL_SCALE * 3.25;
+    return USER_LOCATION_MODEL_VISUAL_SCALE * Math.min(8.5, Math.max(0.95, yandexLikeScreenCompensation));
 }
 
 function getUserLocationGltfPalette(iconId) {
