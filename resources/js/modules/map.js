@@ -3028,6 +3028,7 @@ function applyNavigationGltfMaterials(model, iconId) {
             }
 
             if (isBodyName || (!isGlassName && !isWheelName && !isLightName && !isTrimName)) {
+                material.color = color.clone().lerp(new Color(palette.body), 0.72);
                 material.roughness = Math.min(Number(material.roughness ?? 0.18), 0.2);
                 material.metalness = Math.max(Number(material.metalness ?? 0.52), 0.48);
                 material.flatShading = false;
@@ -3102,13 +3103,13 @@ function getUserLocationGltfVisualScale(location) {
     const isMobileViewport = window.matchMedia?.('(max-width: 720px)')?.matches ?? false;
     const isNavigationViewport = document.body?.classList.contains('is-navigation-mode') ?? false;
     const targetPixelLength = isMobileViewport
-        ? (isNavigationViewport ? 66 : 56)
-        : (isNavigationViewport ? 78 : 64);
-    const pitchCompensation = 1 + Math.min(0.36, Math.max(0, pitch - 35) / 95);
+        ? (isNavigationViewport ? 42 : 36)
+        : (isNavigationViewport ? 34 : 30);
+    const pitchCompensation = 1 + Math.min(0.22, Math.max(0, pitch - 35) / 130);
     const targetMeters = targetPixelLength * metersPerPixel * pitchCompensation;
     const scale = targetMeters / USER_LOCATION_GLB_MODEL_LENGTH_METERS;
 
-    return USER_LOCATION_MODEL_VISUAL_SCALE * Math.min(120, Math.max(4.5, scale));
+    return USER_LOCATION_MODEL_VISUAL_SCALE * Math.min(24, Math.max(2.8, scale));
 }
 
 function getUserLocationGltfPalette(iconId) {
