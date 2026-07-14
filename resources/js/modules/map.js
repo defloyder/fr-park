@@ -3027,18 +3027,6 @@ function applyNavigationGltfMaterials(model, iconId) {
                 return;
             }
 
-            if (isBodyName || (!isGlassName && !isWheelName && !isLightName && !isTrimName)) {
-                material.color = color.clone().lerp(new Color(palette.body), 0.72);
-                material.roughness = Math.min(Number(material.roughness ?? 0.18), 0.2);
-                material.metalness = Math.max(Number(material.metalness ?? 0.52), 0.48);
-                material.flatShading = false;
-                material.emissive = color.clone().multiplyScalar(0.012);
-                material.emissiveIntensity = 0.1;
-                if ('clearcoat' in material) material.clearcoat = 0.9;
-                if ('clearcoatRoughness' in material) material.clearcoatRoughness = 0.12;
-                return;
-            }
-
             if (isWheelName) {
                 material.roughness = name.includes('rim') ? 0.2 : 0.46;
                 material.metalness = name.includes('rim') ? 0.78 : 0.16;
@@ -3083,6 +3071,19 @@ function applyNavigationGltfMaterials(model, iconId) {
             if (isTrimName) {
                 material.roughness = 0.18;
                 material.metalness = 0.76;
+                return;
+            }
+
+            if (isBodyName || (!isGlassName && !isWheelName && !isLightName && !isTrimName)) {
+                material.map = null;
+                material.color = new Color(palette.body);
+                material.roughness = Math.min(Number(material.roughness ?? 0.18), 0.2);
+                material.metalness = Math.max(Number(material.metalness ?? 0.52), 0.48);
+                material.flatShading = false;
+                material.emissive = new Color(palette.body).multiplyScalar(0.012);
+                material.emissiveIntensity = 0.1;
+                if ('clearcoat' in material) material.clearcoat = 0.9;
+                if ('clearcoatRoughness' in material) material.clearcoatRoughness = 0.12;
                 return;
             }
 
