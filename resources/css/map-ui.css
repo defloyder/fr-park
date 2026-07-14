@@ -508,28 +508,6 @@ body.is-navigation-mode .map-traffic-button.is-active {
     overflow: hidden;
 }
 
-.map-settings__model-name {
-    position: absolute;
-    right: 50%;
-    bottom: -4px;
-    max-width: 60px;
-    padding: 2px 5px;
-    color: var(--map-ui-text, #071126);
-    background: var(--map-ui-control, rgba(255, 255, 255, 0.92));
-    border: 1px solid var(--map-ui-border, rgba(148, 163, 184, 0.30));
-    border-radius: 999px;
-    box-shadow: 0 4px 10px rgba(2, 8, 23, 0.18);
-    font-size: 0.46rem;
-    font-weight: 900;
-    line-height: 1;
-    text-align: center;
-    text-overflow: ellipsis;
-    text-transform: uppercase;
-    white-space: nowrap;
-    overflow: hidden;
-    transform: translateX(50%);
-}
-
 .map-settings__model-swatch {
     position: absolute;
     top: -2px;
@@ -5506,12 +5484,6 @@ body[data-map-ui-theme].is-navigation-mode .map-settings__option.is-active,
 body[data-map-ui-theme].is-navigation-mode .layer-switcher__option.is-active {
     color: var(--nav-text);
     background: var(--nav-surface-soft);
-    border-color: var(--nav-border);
-}
-
-body[data-map-ui-theme].is-navigation-mode .map-settings__model-name {
-    color: var(--nav-text);
-    background: var(--nav-control);
     border-color: var(--nav-border);
 }
 

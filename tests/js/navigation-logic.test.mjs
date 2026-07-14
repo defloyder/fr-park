@@ -410,7 +410,7 @@ test('map settings expose selectable GPS cursor icons', () => {
     assert.match(mapSource, /id: 'user-location-dot'[\s\S]*'icon-rotate': 0/);
     assert.match(cssSource, /\.map-settings__grid/);
     assert.match(cssSource, /\.map-settings__preview img/);
-    assert.match(cssSource, /\.map-settings__model-name/);
+    assert.doesNotMatch(cssSource, /\.map-settings__model-name/);
     assert.match(cssSource, /\.map-settings__model-swatch/);
     assert.match(cssSource, /width: min\(238px, calc\(100vw - 154px\)\)/);
     assert.match(cssSource, /right: calc\(100% \+ 12px\)/);

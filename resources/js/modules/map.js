@@ -2082,14 +2082,11 @@ async function addMarkerImages() {
 
 function renderUserLocationIconPreview(option) {
     if (option.image) {
-        const badge = option.modelLabel
-            ? `<span class="map-settings__model-name">${option.modelLabel}</span>`
-            : '';
         const swatch = option.swatch
             ? `<span class="map-settings__model-swatch" style="--gps-model-swatch:${option.swatch}"></span>`
             : '';
 
-        return `<img src="${option.image}" alt="" loading="lazy" decoding="async">${badge}${swatch}`;
+        return `<img src="${option.image}" alt="" loading="lazy" decoding="async">${swatch}`;
     }
 
     return option.svg();
@@ -3039,12 +3036,13 @@ function applyNavigationGltfMaterials(model, iconId) {
             const isBodyMaterial = isConfiguredBodyMaterial || isBodyName;
 
             if (isBodyMaterial || (!isGlassName && !isWheelName && !isLightName && !isTrimName && !isInteriorName)) {
-                if (iconId !== 'auralith-nav-white' && (isConfiguredBodyMaterial || isBodyName)) {
+                if (isConfiguredBodyMaterial || isBodyName) {
+                    material.map = null;
                     material.color = new Color(palette.body);
-                    material.emissive = new Color(palette.body).multiplyScalar(hasAuthoredTexture ? 0.035 : 0.018);
-                    material.emissiveIntensity = hasAuthoredTexture ? 0.28 : 0.16;
-                    material.metalness = Math.min(Number(material.metalness ?? 0.28), 0.32);
-                    material.roughness = Math.max(Number(material.roughness ?? 0.2), 0.18);
+                    material.emissive = new Color(palette.body).multiplyScalar(0.022);
+                    material.emissiveIntensity = 0.18;
+                    material.metalness = Math.min(Number(material.metalness ?? 0.36), 0.42);
+                    material.roughness = Math.max(Number(material.roughness ?? 0.18), 0.16);
                 }
                 material.flatShading = false;
                 if ('clearcoat' in material) material.clearcoat = Math.max(Number(material.clearcoat ?? 0.72), 0.72);
