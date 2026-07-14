@@ -378,6 +378,10 @@ test('map settings expose selectable GPS cursor icons', () => {
     assert.match(mapSource, /GPS_CURSOR_RUNTIME_MODEL_ASSET_BASE/);
     assert.match(mapSource, /USER_LOCATION_GLB_HEADING_OFFSETS/);
     assert.match(mapSource, /USER_LOCATION_GLB_HEADING_OFFSETS\[selectedIcon\]/);
+    assert.match(mapSource, /'auralith-nav-red': 270/);
+    assert.match(mapSource, /'auralith-nav-white': 0/);
+    assert.match(mapSource, /USER_LOCATION_GLB_BODY_MATERIALS/);
+    assert.match(mapSource, /isUserLocationGltfBodyMaterial\(iconId, name\)/);
     assert.match(mapSource, /modelHeading \+ 180/);
     assert.match(mapSource, /'auralith-nav-black': `\$\{GPS_CURSOR_RUNTIME_MODEL_ASSET_BASE\}bmw_m3_coupe_e30_1986\.glb`/);
     assert.match(mapSource, /'auralith-nav-red': `\$\{GPS_CURSOR_RUNTIME_MODEL_ASSET_BASE\}lamborghini_aventador_lp700\.glb`/);

@@ -117,11 +117,18 @@ const USER_LOCATION_GLB_MODELS = {
     'auralith-nav-graphite': `${GPS_CURSOR_RUNTIME_MODEL_ASSET_BASE}nissan_fairlady_z_s30240z_1978.glb`,
 };
 const USER_LOCATION_GLB_HEADING_OFFSETS = {
-    'auralith-nav-black': 90,
-    'auralith-nav-red': 90,
+    'auralith-nav-black': 270,
+    'auralith-nav-red': 270,
     'auralith-nav-white': 0,
-    'auralith-nav-cyan': 90,
-    'auralith-nav-graphite': 90,
+    'auralith-nav-cyan': 270,
+    'auralith-nav-graphite': 270,
+};
+const USER_LOCATION_GLB_BODY_MATERIALS = {
+    'auralith-nav-black': [/material\.002/, /material\.003/, /material\.024/],
+    'auralith-nav-red': [/^body$/, /^lp_700$/],
+    'auralith-nav-white': [/car_paint/, /^white$/],
+    'auralith-nav-cyan': [/^lambert1$/, /^default_material$/],
+    'auralith-nav-graphite': [/material\.005/, /material\.011/, /material\.016/],
 };
 const USER_LOCATION_GLB_MODEL_LENGTH_METERS = 4.15;
 const userLocationGltfModelCache = new Map();
@@ -3028,10 +3035,21 @@ function applyNavigationGltfMaterials(model, iconId) {
             const isLightName = /light|lamp|head|tail|stop|signal/.test(name);
             const isTrimName = /chrome|metal|mirror|grill|grille|trim|exhaust|badge/.test(name);
             const isInteriorName = /interior|interieur|seat|steer|dashboard|lcd|screen|sign|moteur|engine/.test(name);
+            const isConfiguredBodyMaterial = isUserLocationGltfBodyMaterial(iconId, name);
+            const isBodyMaterial = isConfiguredBodyMaterial || isBodyName;
 
-            if (hasAuthoredTexture && (isBodyName || (!isGlassName && !isWheelName && !isLightName && !isTrimName))) {
+            if (isBodyMaterial || (!isGlassName && !isWheelName && !isLightName && !isTrimName && !isInteriorName)) {
+                if (iconId !== 'auralith-nav-white' && (isConfiguredBodyMaterial || isBodyName)) {
+                    material.color = new Color(palette.body);
+                    material.emissive = new Color(palette.body).multiplyScalar(hasAuthoredTexture ? 0.035 : 0.018);
+                    material.emissiveIntensity = hasAuthoredTexture ? 0.28 : 0.16;
+                    material.metalness = Math.min(Number(material.metalness ?? 0.28), 0.32);
+                    material.roughness = Math.max(Number(material.roughness ?? 0.2), 0.18);
+                }
                 material.flatShading = false;
-                material.needsUpdate = true;
+                if ('clearcoat' in material) material.clearcoat = Math.max(Number(material.clearcoat ?? 0.72), 0.72);
+                if ('clearcoatRoughness' in material) material.clearcoatRoughness = Math.min(Number(material.clearcoatRoughness ?? 0.16), 0.16);
+                if (hasAuthoredTexture) material.needsUpdate = true;
                 return;
             }
 
@@ -3089,13 +3107,6 @@ function applyNavigationGltfMaterials(model, iconId) {
                 return;
             }
 
-            if (isBodyName || (!isGlassName && !isWheelName && !isLightName && !isTrimName)) {
-                material.flatShading = false;
-                if ('clearcoat' in material) material.clearcoat = 0.9;
-                if ('clearcoatRoughness' in material) material.clearcoatRoughness = 0.12;
-                return;
-            }
-
             material.emissive = color.clone().multiplyScalar(0.01);
         });
     });
@@ -3120,6 +3131,12 @@ function getUserLocationGltfVisualScale(location) {
     const scale = targetMeters / USER_LOCATION_GLB_MODEL_LENGTH_METERS;
 
     return USER_LOCATION_MODEL_VISUAL_SCALE * Math.min(24, Math.max(2.8, scale));
+}
+
+function isUserLocationGltfBodyMaterial(iconId, materialName) {
+    const patterns = USER_LOCATION_GLB_BODY_MATERIALS[iconId] ?? [];
+
+    return patterns.some((pattern) => pattern.test(materialName));
 }
 
 function getUserLocationGltfPalette(iconId) {
