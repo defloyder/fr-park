@@ -376,6 +376,9 @@ test('map settings expose selectable GPS cursor icons', () => {
     assert.match(mapSource, /MeshoptDecoder/);
     assert.match(mapSource, /setMeshoptDecoder\(MeshoptDecoder\)/);
     assert.match(mapSource, /GPS_CURSOR_RUNTIME_MODEL_ASSET_BASE/);
+    assert.match(mapSource, /USER_LOCATION_GLB_HEADING_OFFSETS/);
+    assert.match(mapSource, /USER_LOCATION_GLB_HEADING_OFFSETS\[selectedIcon\]/);
+    assert.match(mapSource, /modelHeading \+ 180/);
     assert.match(mapSource, /'auralith-nav-black': `\$\{GPS_CURSOR_RUNTIME_MODEL_ASSET_BASE\}bmw_m3_coupe_e30_1986\.glb`/);
     assert.match(mapSource, /'auralith-nav-red': `\$\{GPS_CURSOR_RUNTIME_MODEL_ASSET_BASE\}lamborghini_aventador_lp700\.glb`/);
     assert.match(mapSource, /'auralith-nav-white': `\$\{GPS_CURSOR_RUNTIME_MODEL_ASSET_BASE\}xyz_school_coursework_highpoly_porsche_singer\.glb`/);
@@ -397,7 +400,7 @@ test('map settings expose selectable GPS cursor icons', () => {
     assert.doesNotMatch(mapSource, /model\.rotation\.z = Math\.PI/);
     assert.match(mapSource, /Math\.max\(size\.x, size\.y, size\.z, Number\.EPSILON\)/);
     assert.doesNotMatch(mapSource, /Math\.max\(size\.x, size\.y, size\.z, 1\)/);
-    assert.match(mapSource, /makeRotationZ\(degreesToRadians\(heading \+ 180\)\)/);
+    assert.match(mapSource, /makeRotationZ\(degreesToRadians\(modelHeading \+ 180\)\)/);
     assert.match(mapSource, /addTrafficFlowLayer\(\);\s*addUserLocationModelLayer\(\);/);
     assert.doesNotMatch(mapSource, /icon-opacity['"]?: \['case', \['boolean', \['get', 'render3d'\]/);
     assert.match(mapSource, /id: 'user-location-dot'[\s\S]*'icon-rotate': 0/);

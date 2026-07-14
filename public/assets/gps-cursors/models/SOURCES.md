@@ -11,7 +11,7 @@ Current runtime bindings:
 - `auralith-nav-cyan`: `runtime/nissan_gt-r_2008.glb`
 - `auralith-nav-graphite`: `runtime/nissan_fairlady_z_s30240z_1978.glb`
 
-Runtime files are generated from `source/` with glTF Transform optimize, Meshopt geometry compression, and 1024px max textures.
+Runtime files are generated from `source/` with glTF Transform optimize, Meshopt geometry compression, 1024px max textures, and palette/join disabled so original authored textures stay intact.
 The app configures Three.js `GLTFLoader` with `MeshoptDecoder` before loading these files.
 
 `gps-car.glb` is kept only as the previous emergency fallback asset and is no longer referenced by the GPS cursor selector.

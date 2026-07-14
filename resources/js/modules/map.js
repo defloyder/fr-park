@@ -116,6 +116,13 @@ const USER_LOCATION_GLB_MODELS = {
     'auralith-nav-cyan': `${GPS_CURSOR_RUNTIME_MODEL_ASSET_BASE}nissan_gt-r_2008.glb`,
     'auralith-nav-graphite': `${GPS_CURSOR_RUNTIME_MODEL_ASSET_BASE}nissan_fairlady_z_s30240z_1978.glb`,
 };
+const USER_LOCATION_GLB_HEADING_OFFSETS = {
+    'auralith-nav-black': 90,
+    'auralith-nav-red': 90,
+    'auralith-nav-white': 0,
+    'auralith-nav-cyan': 90,
+    'auralith-nav-graphite': 90,
+};
 const USER_LOCATION_GLB_MODEL_LENGTH_METERS = 4.15;
 const userLocationGltfModelCache = new Map();
 const DEFAULT_BASE_LAYER_ID = 'light';
@@ -2840,10 +2847,11 @@ function createUserLocationModelLayer() {
                 );
                 const scale = coordinate.meterInMercatorCoordinateUnits() * getUserLocationGltfVisualScale(location);
                 const heading = getUserLocationModelHeading(location);
+                const modelHeading = heading + (USER_LOCATION_GLB_HEADING_OFFSETS[selectedIcon] ?? 0);
                 const worldMatrix = new Matrix4()
                     .makeTranslation(coordinate.x, coordinate.y, coordinate.z)
                     .scale(new Vector3(scale, -scale, scale * USER_LOCATION_MODEL_VERTICAL_SCALE))
-                    .multiply(new Matrix4().makeRotationZ(degreesToRadians(heading + 180)));
+                    .multiply(new Matrix4().makeRotationZ(degreesToRadians(modelHeading + 180)));
 
                 this.camera.projectionMatrix = new Matrix4()
                     .fromArray(matrix)
@@ -3013,12 +3021,19 @@ function applyNavigationGltfMaterials(model, iconId) {
             const color = material.color instanceof Color ? material.color : new Color('#ffffff');
             const luminance = (color.r * 0.2126) + (color.g * 0.7152) + (color.b * 0.0722);
             const name = `${object.name || ''} ${material.name || ''}`.toLowerCase();
+            const hasAuthoredTexture = Boolean(material.map);
             const isBodyName = /body|paint|carpaint|car_paint|exterior|chassis|bonnet|hood|door|bumper|fender|quarter|roof|trunk|spoiler/.test(name);
             const isGlassName = /glass|window|windshield|windscreen|rear_window/.test(name);
             const isWheelName = /wheel|tire|tyre|rim|brake|caliper/.test(name);
             const isLightName = /light|lamp|head|tail|stop|signal/.test(name);
             const isTrimName = /chrome|metal|mirror|grill|grille|trim|exhaust|badge/.test(name);
             const isInteriorName = /interior|interieur|seat|steer|dashboard|lcd|screen|sign|moteur|engine/.test(name);
+
+            if (hasAuthoredTexture && (isBodyName || (!isGlassName && !isWheelName && !isLightName && !isTrimName))) {
+                material.flatShading = false;
+                material.needsUpdate = true;
+                return;
+            }
 
             if (isInteriorName) {
                 material.roughness = Math.max(Number(material.roughness ?? 0.38), 0.34);
@@ -3075,13 +3090,7 @@ function applyNavigationGltfMaterials(model, iconId) {
             }
 
             if (isBodyName || (!isGlassName && !isWheelName && !isLightName && !isTrimName)) {
-                material.map = null;
-                material.color = new Color(palette.body);
-                material.roughness = Math.min(Number(material.roughness ?? 0.18), 0.2);
-                material.metalness = Math.max(Number(material.metalness ?? 0.52), 0.48);
                 material.flatShading = false;
-                material.emissive = new Color(palette.body).multiplyScalar(0.012);
-                material.emissiveIntensity = 0.1;
                 if ('clearcoat' in material) material.clearcoat = 0.9;
                 if ('clearcoatRoughness' in material) material.clearcoatRoughness = 0.12;
                 return;
